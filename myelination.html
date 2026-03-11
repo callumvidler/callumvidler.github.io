@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>BMEN90033 2026: Myelinated vs Unmyelinated Neuron Conduction</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #111;
+      color: #ccc;
+      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+    }
+
+    #container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* --- Panels --- */
+    .panel {
+      position: absolute;
+      z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .panel h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .panel h3 {
+      font-size: 12px;
+      font-weight: 500;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    .panel p {
+      font-size: 11px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    #info {
+      top: 16px;
+      left: 16px;
+      max-width: 280px;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 3px 0;
+      color: #aaa;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .swatch {
+      width: 16px;
+      height: 8px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    #controls {
+      bottom: 16px;
+      left: 16px;
+      max-width: 320px;
+    }
+
+    #controls label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4px 0;
+      color: #999;
+      gap: 10px;
+    }
+
+    #controls input[type=range] {
+      width: 120px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    #controls input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button.ctrl-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #bbb;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    button.ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    button.ctrl-btn.active {
+      background: rgba(255, 200, 50, 0.15);
+      border-color: rgba(255, 200, 50, 0.4);
+      color: #ffc832;
+    }
+
+    #signal-panel {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      resize: both;
+      overflow: hidden;
+      width: 320px;
+      height: 340px;
+      min-width: 200px;
+      min-height: 200px;
+    }
+
+    #signal-panel h3 {
+      font-size: 12px;
+      font-weight: 500;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    canvas#signalCanvas {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      display: block;
+      width: 100%;
+      height: calc(100% - 28px);
+    }
+
+    #readout {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(10, 10, 10, 0.75);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #readout .val-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 4px;
+    }
+
+    #readout .val {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #readout .label {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 8px;
+      margin-bottom: 3px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <div id="info" class="panel">
+      <h2>Myelinated vs Unmyelinated</h2>
+      <div class="section-label">Upper — Myelinated</div>
+      <div class="legend">
+        <div class="swatch" style="background:#6ea8d7"></div> Myelin sheath (insulator)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#f0c040"></div> Node of Ranvier (ion channels)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#fff"></div> Dipole (+/&minus;) jumps between nodes
+      </div>
+      <div class="section-label" style="margin-top:10px">Lower — Unmyelinated</div>
+      <div class="legend">
+        <div class="swatch" style="background:rgba(255,255,255,0.2)"></div> Bare axon membrane
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#e05050"></div> Dipole propagates continuously
+      </div>
+      <div class="section-label" style="margin-top:10px">Dipole</div>
+      <div class="legend">
+        <div class="dot" style="background:#ff8888"></div> + (depolarised ahead)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#8888ff"></div> &minus; (resting behind)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#ffaa44"></div> Intracellular current
+      </div>
+      <div class="legend">
+        <div class="swatch" style="background:linear-gradient(90deg,#440154,#31688e,#35b779,#fde725)"></div> Extracellular field (viridis)
+      </div>
+      <p>The action potential creates a current dipole at the wavefront. In myelinated
+        fibres this dipole jumps (saltatory conduction) between Nodes of Ranvier.
+        In unmyelinated fibres it propagates continuously along the membrane.</p>
+    </div>
+
+    <div id="readout">
+      <div class="val-row">
+        <span class="val" style="color:#6ea8d7" id="myelSpeed">Myelinated: 0.0 m/s</span>
+        <span class="val" style="color:#e05050" id="unmyelSpeed">Unmyelinated: 0.0 m/s</span>
+      </div>
+      <div class="val-row">
+        <span class="val" style="color:#ffc832" id="speedRatio">Ratio: —</span>
+      </div>
+      <div class="label">Conduction velocity comparison</div>
+    </div>
+
+    <div id="signal-panel">
+      <h3>Membrane Potential at Recording Point</h3>
+      <canvas id="signalCanvas" width="520" height="150"></canvas>
+    </div>
+
+    <div id="controls" class="panel">
+      <label>Simulation speed <input type="range" id="speedSlider" min="0.2" max="3" step="0.1" value="1"></label>
+      <label>Myelin thickness <input type="range" id="myelinSlider" min="0.3" max="1.5" step="0.1" value="0.8"></label>
+      <label>Internode distance <input type="range" id="internodeSlider" min="4" max="12" step="1" value="7"></label>
+      <label>Field density <input type="range" id="densitySlider" min="1" max="6" step="1" value="2"></label>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="resetBtn">Reset</button>
+        <button class="ctrl-btn" id="pauseBtn">Pause</button>
+        <button class="ctrl-btn" id="freezeBtn">Freeze Frame</button>
+      </div>
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="ctrl-btn" id="toggleCurrentBtn">Show Currents</button>
+        <button class="ctrl-btn" id="crossSectionBtn">Cross-section</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // --- Scene setup ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.FogExp2(0x111111, 0.006);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(0, 18, 45);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.getElementById('container').appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 0, 0);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(20, 30, 20);
+    scene.add(dirLight);
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    backLight.position.set(-10, 10, -10);
+    scene.add(backLight);
+
+    // --- Constants ---
+    const AXON_LENGTH = 60;
+    const HALF_LEN = AXON_LENGTH / 2;
+    const AXON_RADIUS = 0.6;
+    const MYEL_Y = 5;
+    const UNMYEL_Y = -5;
+    let MYELIN_THICKNESS = 0.8;
+    let INTERNODE_DIST = 7;
+    const NODE_WIDTH = 0.6;
+    const DEPOL_WIDTH_UNMYEL = 8;
+
+    const UNMYEL_BASE_SPEED = 4;
+    const MYEL_SPEED_MULTIPLIER = 6;
+
+    // --- Grid ---
+    const grid = new THREE.GridHelper(100, 50, 0x222222, 0x181818);
+    grid.position.y = -10;
+    scene.add(grid);
+
+    // --- Viridis colourmap ---
+    const VIRIDIS_STOPS = [
+      [0.267004, 0.004874, 0.329415],
+      [0.282327, 0.094955, 0.417331],
+      [0.278826, 0.176998, 0.483397],
+      [0.258965, 0.251537, 0.524736],
+      [0.229739, 0.322361, 0.545706],
+      [0.199430, 0.387607, 0.554642],
+      [0.172719, 0.448791, 0.557885],
+      [0.149039, 0.508051, 0.557250],
+      [0.127568, 0.566949, 0.550556],
+      [0.120638, 0.625828, 0.533488],
+      [0.157851, 0.683765, 0.501686],
+      [0.246070, 0.738910, 0.452024],
+      [0.369214, 0.788888, 0.382914],
+      [0.516398, 0.831158, 0.295952],
+      [0.678490, 0.863742, 0.189503],
+      [0.993248, 0.906157, 0.143936],
+    ];
+
+    function viridis(t) {
+      t = Math.max(0, Math.min(1, t));
+      const idx = t * (VIRIDIS_STOPS.length - 1);
+      const lo = Math.floor(idx);
+      const hi = Math.min(lo + 1, VIRIDIS_STOPS.length - 1);
+      const f = idx - lo;
+      const a = VIRIDIS_STOPS[lo], b = VIRIDIS_STOPS[hi];
+      return new THREE.Color(
+        a[0] + (b[0] - a[0]) * f,
+        a[1] + (b[1] - a[1]) * f,
+        a[2] + (b[2] - a[2]) * f
+      );
+    }
+
+    // --- Dipole field math ---
+    function dipoleField(dipolePos, dipoleDir, point) {
+      const r = new THREE.Vector3().subVectors(point, dipolePos);
+      const dist = r.length();
+      if (dist < 1.5) return new THREE.Vector3(0, 0, 0);
+      const rNorm = r.clone().normalize();
+      const pDotR = dipoleDir.dot(rNorm);
+      return rNorm.clone().multiplyScalar(3 * pDotR).sub(dipoleDir).divideScalar(dist * dist * dist);
+    }
+
+    // --- Extracellular vector field arrows ---
+    let fieldArrows = [];
+    let fieldDensity = 2;
+
+    function buildFieldArrows(density) {
+      fieldArrows.forEach(a => scene.remove(a));
+      fieldArrows = [];
+
+      const step = 5 / density;
+      const xRange = HALF_LEN + 6;
+      // y-levels around both axons
+      const yLevels = [];
+      for (let dy = -6; dy <= 6; dy += step) {
+        yLevels.push(MYEL_Y + dy);
+        yLevels.push(UNMYEL_Y + dy);
+      }
+      // Deduplicate y-levels that are very close
+      const uniqueY = [...new Set(yLevels.map(y => Math.round(y * 10) / 10))];
+
+      for (let x = -xRange; x <= xRange; x += step) {
+        for (const y of uniqueY) {
+          // Skip positions inside the axon cores
+          const nearMyelCore = Math.abs(y - MYEL_Y) < AXON_RADIUS + 0.3 &&
+                               Math.abs(x) < HALF_LEN;
+          const nearUnmyelCore = Math.abs(y - UNMYEL_Y) < AXON_RADIUS + 0.3 &&
+                                 Math.abs(x) < HALF_LEN;
+          if (nearMyelCore || nearUnmyelCore) continue;
+
+          for (let z = -4; z <= 4; z += step * 1.5) {
+            const arrow = new THREE.ArrowHelper(
+              new THREE.Vector3(1, 0, 0),
+              new THREE.Vector3(x, y, z),
+              1, 0x444444, 0.3, 0.2
+            );
+            arrow.userData = { basePos: new THREE.Vector3(x, y, z) };
+            scene.add(arrow);
+            fieldArrows.push(arrow);
+          }
+        }
+      }
+    }
+
+    buildFieldArrows(fieldDensity);
+
+    // --- Sprite helpers ---
+    function makeTextSprite(text, color, fontSize = 48) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 32);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const s = new THREE.Sprite(mat);
+      s.scale.set(8, 1, 1);
+      return s;
+    }
+
+    function makeCharSprite(text, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.font = 'bold 48px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 32, 32);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const s = new THREE.Sprite(mat);
+      s.scale.set(1.8, 1.8, 1);
+      return s;
+    }
+
+    // --- Labels ---
+    const myelLabel = makeTextSprite('Myelinated Axon', '#6ea8d7');
+    myelLabel.position.set(0, MYEL_Y + 5.5, 0);
+    scene.add(myelLabel);
+
+    const unmyelLabel = makeTextSprite('Unmyelinated Axon', '#e08080');
+    unmyelLabel.position.set(0, UNMYEL_Y + 4.5, 0);
+    scene.add(unmyelLabel);
+
+    const stimLabel1 = makeTextSprite('Stimulus', '#ffc832', 36);
+    stimLabel1.position.set(-HALF_LEN - 3, MYEL_Y + 2.5, 0);
+    stimLabel1.scale.set(5, 0.7, 1);
+    scene.add(stimLabel1);
+
+    const stimLabel2 = makeTextSprite('Stimulus', '#ffc832', 36);
+    stimLabel2.position.set(-HALF_LEN - 3, UNMYEL_Y + 2.5, 0);
+    stimLabel2.scale.set(5, 0.7, 1);
+    scene.add(stimLabel2);
+
+    // Recording point
+    const RECORD_X = 15;
+    function makeRecordMarker(y) {
+      const geo = new THREE.CylinderGeometry(0.3, 0.3, 0.3, 12);
+      const mat = new THREE.MeshPhongMaterial({ color: 0x50e080, emissive: 0x1a5030 });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(RECORD_X, y + AXON_RADIUS + MYELIN_THICKNESS + 0.8, 0);
+      return mesh;
+    }
+
+    let recordMarkerMyel = makeRecordMarker(MYEL_Y);
+    let recordMarkerUnmyel = makeRecordMarker(UNMYEL_Y);
+    scene.add(recordMarkerMyel);
+    scene.add(recordMarkerUnmyel);
+
+    const recLabel = makeTextSprite('Recording', '#50e080', 30);
+    recLabel.position.set(RECORD_X, MYEL_Y + 7, 0);
+    recLabel.scale.set(5, 0.6, 1);
+    scene.add(recLabel);
+
+    // ================================================================
+    //  UNMYELINATED AXON — continuous dipole propagation
+    // ================================================================
+    const unmyelAxonGeo = new THREE.CylinderGeometry(AXON_RADIUS, AXON_RADIUS, AXON_LENGTH, 16);
+    unmyelAxonGeo.rotateZ(Math.PI / 2);
+    const unmyelAxonMat = new THREE.MeshPhongMaterial({
+      color: 0xcccccc, transparent: true, opacity: 0.2
+    });
+    const unmyelAxon = new THREE.Mesh(unmyelAxonGeo, unmyelAxonMat);
+    unmyelAxon.position.set(0, UNMYEL_Y, 0);
+    scene.add(unmyelAxon);
+
+    // Depolarised region behind wavefront
+    const unmyelDepolGeo = new THREE.CylinderGeometry(AXON_RADIUS * 1.15, AXON_RADIUS * 1.15, DEPOL_WIDTH_UNMYEL, 16);
+    unmyelDepolGeo.rotateZ(Math.PI / 2);
+    const unmyelDepolMat = new THREE.MeshPhongMaterial({
+      color: 0xe05050, transparent: true, opacity: 0.45, emissive: 0xe05050, emissiveIntensity: 0.15
+    });
+    const unmyelDepol = new THREE.Mesh(unmyelDepolGeo, unmyelDepolMat);
+    unmyelDepol.position.set(-HALF_LEN, UNMYEL_Y, 0);
+    scene.add(unmyelDepol);
+
+    // Unmyelinated dipole blob (white core at wavefront)
+    const unmyelDipoleGroup = new THREE.Group();
+    scene.add(unmyelDipoleGroup);
+
+    const unmyelBlobGeo = new THREE.SphereGeometry(1.2, 24, 24);
+    const unmyelBlobMat = new THREE.MeshPhongMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.85,
+      emissive: 0xffffff, emissiveIntensity: 0.25
+    });
+    unmyelDipoleGroup.add(new THREE.Mesh(unmyelBlobGeo, unmyelBlobMat));
+
+    const unmyelGlowGeo = new THREE.SphereGeometry(2.2, 16, 16);
+    const unmyelGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xe05050, transparent: true, opacity: 0.06, depthWrite: false
+    });
+    const unmyelGlow = new THREE.Mesh(unmyelGlowGeo, unmyelGlowMat);
+    unmyelDipoleGroup.add(unmyelGlow);
+
+    const unmyelDipoleLight = new THREE.PointLight(0xe05050, 0.8, 12, 2);
+    unmyelDipoleGroup.add(unmyelDipoleLight);
+
+    // Unmyelinated dipole arrow (points +x = direction of propagation)
+    const unmyelDipoleArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 4, 0xffffff, 0.8, 0.5
+    );
+    unmyelDipoleArrow.line.material.transparent = true;
+    unmyelDipoleArrow.line.material.opacity = 0.6;
+    unmyelDipoleArrow.cone.material.transparent = true;
+    unmyelDipoleArrow.cone.material.opacity = 0.6;
+    scene.add(unmyelDipoleArrow);
+
+    // Unmyelinated +/- sprites
+    const unmyelPlus = makeCharSprite('+', '#ff8888');
+    const unmyelMinus = makeCharSprite('\u2212', '#8888ff');
+    scene.add(unmyelPlus);
+    scene.add(unmyelMinus);
+
+    // ================================================================
+    //  MYELINATED AXON — saltatory dipole jumping between nodes
+    // ================================================================
+    const myelAxonGeo = new THREE.CylinderGeometry(AXON_RADIUS, AXON_RADIUS, AXON_LENGTH, 16);
+    myelAxonGeo.rotateZ(Math.PI / 2);
+    const myelAxonMat = new THREE.MeshPhongMaterial({
+      color: 0xcccccc, transparent: true, opacity: 0.15
+    });
+    const myelAxon = new THREE.Mesh(myelAxonGeo, myelAxonMat);
+    myelAxon.position.set(0, MYEL_Y, 0);
+    scene.add(myelAxon);
+
+    // Myelin sheaths and nodes
+    let myelinSheaths = [];
+    let nodesOfRanvier = [];
+    let nodePositions = [];
+
+    function buildMyelinatedStructure() {
+      myelinSheaths.forEach(m => scene.remove(m));
+      nodesOfRanvier.forEach(m => scene.remove(m));
+      myelinSheaths = [];
+      nodesOfRanvier = [];
+      nodePositions = [];
+
+      const startX = -HALF_LEN;
+      const endX = HALF_LEN;
+      let x = startX;
+      nodePositions.push(x);
+
+      while (x < endX) {
+        const nodeGeo = new THREE.CylinderGeometry(AXON_RADIUS * 1.3, AXON_RADIUS * 1.3, NODE_WIDTH, 16);
+        nodeGeo.rotateZ(Math.PI / 2);
+        const nodeMat = new THREE.MeshPhongMaterial({
+          color: 0xf0c040, transparent: true, opacity: 0.7, emissive: 0xf0c040, emissiveIntensity: 0.1
+        });
+        const node = new THREE.Mesh(nodeGeo, nodeMat);
+        node.position.set(x, MYEL_Y, 0);
+        scene.add(node);
+        nodesOfRanvier.push(node);
+
+        const sheathLen = INTERNODE_DIST - NODE_WIDTH;
+        if (x + NODE_WIDTH / 2 + sheathLen / 2 < endX) {
+          const sheathGeo = new THREE.CylinderGeometry(
+            AXON_RADIUS + MYELIN_THICKNESS,
+            AXON_RADIUS + MYELIN_THICKNESS,
+            sheathLen, 16
+          );
+          sheathGeo.rotateZ(Math.PI / 2);
+          const sheathMat = new THREE.MeshPhongMaterial({
+            color: 0x6ea8d7, transparent: true, opacity: 0.35
+          });
+          const sheath = new THREE.Mesh(sheathGeo, sheathMat);
+          sheath.position.set(x + NODE_WIDTH / 2 + sheathLen / 2, MYEL_Y, 0);
+          scene.add(sheath);
+          myelinSheaths.push(sheath);
+        }
+
+        x += INTERNODE_DIST;
+        if (x < endX) nodePositions.push(x);
+      }
+      if (nodePositions[nodePositions.length - 1] < endX - 1) {
+        nodePositions.push(endX);
+        const nodeGeo = new THREE.CylinderGeometry(AXON_RADIUS * 1.3, AXON_RADIUS * 1.3, NODE_WIDTH, 16);
+        nodeGeo.rotateZ(Math.PI / 2);
+        const nodeMat = new THREE.MeshPhongMaterial({
+          color: 0xf0c040, transparent: true, opacity: 0.7, emissive: 0xf0c040, emissiveIntensity: 0.1
+        });
+        const node = new THREE.Mesh(nodeGeo, nodeMat);
+        node.position.set(endX, MYEL_Y, 0);
+        scene.add(node);
+        nodesOfRanvier.push(node);
+      }
+    }
+
+    buildMyelinatedStructure();
+
+    // --- Myelinated dipole blob (jumps to node positions) ---
+    const myelDipoleGroup = new THREE.Group();
+    scene.add(myelDipoleGroup);
+
+    const myelBlobGeo = new THREE.SphereGeometry(1.5, 24, 24);
+    const myelBlobMat = new THREE.MeshPhongMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.9,
+      emissive: 0xffffff, emissiveIntensity: 0.3
+    });
+    myelDipoleGroup.add(new THREE.Mesh(myelBlobGeo, myelBlobMat));
+
+    const myelGlowGeo = new THREE.SphereGeometry(2.8, 16, 16);
+    const myelGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.08, depthWrite: false
+    });
+    const myelGlow = new THREE.Mesh(myelGlowGeo, myelGlowMat);
+    myelDipoleGroup.add(myelGlow);
+
+    const myelDipoleLight = new THREE.PointLight(0xffffff, 1.5, 18, 2);
+    myelDipoleGroup.add(myelDipoleLight);
+
+    // Myelinated dipole arrow
+    const myelDipoleArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 4.5, 0xffffff, 0.9, 0.55
+    );
+    myelDipoleArrow.line.material.transparent = true;
+    myelDipoleArrow.line.material.opacity = 0.6;
+    myelDipoleArrow.cone.material.transparent = true;
+    myelDipoleArrow.cone.material.opacity = 0.6;
+    scene.add(myelDipoleArrow);
+
+    // Myelinated +/- sprites
+    const myelPlus = makeCharSprite('+', '#ff8888');
+    const myelMinus = makeCharSprite('\u2212', '#8888ff');
+    scene.add(myelPlus);
+    scene.add(myelMinus);
+
+    // Depolarised region on myelinated (between first depolarised node and current)
+    const myelDepolGeo = new THREE.CylinderGeometry(AXON_RADIUS * 1.1, AXON_RADIUS * 1.1, 1, 16);
+    myelDepolGeo.rotateZ(Math.PI / 2);
+    const myelDepolMat = new THREE.MeshPhongMaterial({
+      color: 0xe05050, transparent: true, opacity: 0.3, emissive: 0xe05050, emissiveIntensity: 0.1
+    });
+    const myelDepolMesh = new THREE.Mesh(myelDepolGeo, myelDepolMat);
+    myelDepolMesh.position.y = MYEL_Y;
+    scene.add(myelDepolMesh);
+
+    // Trail: fading dipole "ghosts" at previous nodes
+    const TRAIL_COUNT = 3;
+    const trailMeshes = [];
+    for (let i = 0; i < TRAIL_COUNT; i++) {
+      const geo = new THREE.SphereGeometry(1.0 - i * 0.15, 12, 12);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xff5555, transparent: true, opacity: 0, depthWrite: false
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.y = MYEL_Y;
+      scene.add(mesh);
+      trailMeshes.push(mesh);
+    }
+
+    // --- Intracellular current arrows (always visible, contextual to wavefront) ---
+    let intraArrowsMyel = [];
+    let intraArrowsUnmyel = [];
+
+    function buildCurrentArrows() {
+      [...intraArrowsMyel, ...intraArrowsUnmyel].forEach(a => scene.remove(a));
+      intraArrowsMyel = [];
+      intraArrowsUnmyel = [];
+
+      // Myelinated: intracellular arrows between adjacent nodes
+      for (let i = 0; i < nodePositions.length - 1; i++) {
+        const x1 = nodePositions[i];
+        const x2 = nodePositions[i + 1];
+        const midX = (x1 + x2) / 2;
+        const arrow = new THREE.ArrowHelper(
+          new THREE.Vector3(1, 0, 0),
+          new THREE.Vector3(midX - 1.5, MYEL_Y, 0),
+          3.0, 0xffaa44, 0.5, 0.3
+        );
+        arrow.line.material.transparent = true;
+        arrow.cone.material.transparent = true;
+        arrow.visible = false;
+        arrow.userData = { segIdx: i };
+        scene.add(arrow);
+        intraArrowsMyel.push(arrow);
+      }
+
+      // Unmyelinated: intracellular arrows along axon
+      for (let x = -HALF_LEN + 2; x < HALF_LEN - 2; x += 3.5) {
+        const arrow = new THREE.ArrowHelper(
+          new THREE.Vector3(1, 0, 0),
+          new THREE.Vector3(x, UNMYEL_Y, 0),
+          2.2, 0xffaa44, 0.4, 0.25
+        );
+        arrow.line.material.transparent = true;
+        arrow.cone.material.transparent = true;
+        arrow.visible = false;
+        arrow.userData = { baseX: x };
+        scene.add(arrow);
+        intraArrowsUnmyel.push(arrow);
+      }
+    }
+
+    buildCurrentArrows();
+
+    // --- Cross-section view ---
+    let showCrossSection = false;
+    const crossGroup = new THREE.Group();
+    crossGroup.visible = false;
+    scene.add(crossGroup);
+
+    function buildCrossSection() {
+      while (crossGroup.children.length) crossGroup.remove(crossGroup.children[0]);
+
+      const csX = 25;
+      const csScale = 3;
+
+      // Myelinated
+      const csMyY = MYEL_Y + 8;
+      const axGeo = new THREE.CircleGeometry(AXON_RADIUS * csScale, 32);
+      const axMat = new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.3 });
+      const axMesh = new THREE.Mesh(axGeo, axMat);
+      axMesh.position.set(csX, csMyY, 0);
+      crossGroup.add(axMesh);
+
+      const myRingGeo = new THREE.RingGeometry(AXON_RADIUS * csScale, (AXON_RADIUS + MYELIN_THICKNESS) * csScale, 32);
+      const myRingMat = new THREE.MeshBasicMaterial({ color: 0x6ea8d7, transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+      crossGroup.add(new THREE.Mesh(myRingGeo, myRingMat)).position.set(csX, csMyY, 0);
+
+      const csLabel1 = makeTextSprite('Cross-section (myelinated)', '#6ea8d7', 28);
+      csLabel1.position.set(csX, csMyY + 5, 0);
+      csLabel1.scale.set(7, 0.7, 1);
+      crossGroup.add(csLabel1);
+
+      // Unmyelinated
+      const csUnY = UNMYEL_Y - 6;
+      const axGeo2 = new THREE.CircleGeometry(AXON_RADIUS * csScale, 32);
+      crossGroup.add(new THREE.Mesh(axGeo2, new THREE.MeshBasicMaterial({ color: 0xdddddd, transparent: true, opacity: 0.3 }))).position.set(csX, csUnY, 0);
+
+      const memRingGeo = new THREE.RingGeometry(AXON_RADIUS * csScale, (AXON_RADIUS + 0.1) * csScale, 32);
+      crossGroup.add(new THREE.Mesh(memRingGeo, new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true, opacity: 0.4, side: THREE.DoubleSide }))).position.set(csX, csUnY, 0);
+
+      const csLabel2 = makeTextSprite('Cross-section (unmyelinated)', '#e08080', 28);
+      csLabel2.position.set(csX, csUnY - 4, 0);
+      csLabel2.scale.set(7, 0.7, 1);
+      crossGroup.add(csLabel2);
+
+      const annot1 = makeTextSprite('Myelin insulates \u2014 no ion flow', '#6ea8d7', 24);
+      annot1.position.set(csX, csMyY + 3.5, 0);
+      annot1.scale.set(7, 0.6, 1);
+      crossGroup.add(annot1);
+
+      const annot2 = makeTextSprite('Full membrane exposed \u2014 continuous ion exchange', '#e08080', 24);
+      annot2.position.set(csX, csUnY - 2.8, 0);
+      annot2.scale.set(9, 0.6, 1);
+      crossGroup.add(annot2);
+    }
+
+    buildCrossSection();
+
+    // ================================================================
+    //  STATE
+    // ================================================================
+    let simSpeed = 1;
+    let paused = false;
+    let frozen = false;
+    let showCurrents = false;
+
+    let myelWavefrontX = -HALF_LEN;
+    let unmyelWavefrontX = -HALF_LEN;
+    let myelCurrentNode = 0;
+    let myelNodeTimer = 0;           // time spent at current node
+    const DWELL_TIME = 0.08;         // seconds the dipole "dwells" at a node before jumping
+    let myelJumping = false;          // true during the visual jump animation
+    let myelJumpProgress = 0;         // 0..1 during jump
+    const JUMP_DURATION = 0.12;       // seconds for the visual jump
+    let myelDisplayX = -HALF_LEN;     // interpolated display position during jump
+
+    const SIGNAL_LEN = 400;
+    const signalMyel = new Array(SIGNAL_LEN).fill(0);
+    const signalUnmyel = new Array(SIGNAL_LEN).fill(0);
+
+    const sigCanvas = document.getElementById('signalCanvas');
+    const sigCtx = sigCanvas.getContext('2d');
+
+    function resizeSignalCanvas() {
+      const rect = sigCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (sigCanvas.width !== w || sigCanvas.height !== h) {
+        sigCanvas.width = w;
+        sigCanvas.height = h;
+      }
+    }
+    const sigObserver = new ResizeObserver(resizeSignalCanvas);
+    sigObserver.observe(sigCanvas);
+    resizeSignalCanvas();
+
+    function apShape(dist) {
+      if (dist > 2) return 0;
+      if (dist > 0) return Math.pow(1 - dist / 2, 2);
+      if (dist > -3) return 1.0 * Math.exp(dist / 1.5);
+      if (dist > -8) return -0.15 * Math.exp((dist + 3) / 3);
+      return 0;
+    }
+
+    function drawSignal() {
+      resizeSignalCanvas();
+      const dpr = window.devicePixelRatio || 1;
+      const rect = sigCanvas.getBoundingClientRect();
+      const W = Math.round(rect.width), H = Math.round(rect.height);
+      sigCtx.save();
+      sigCtx.scale(dpr, dpr);
+
+      sigCtx.fillStyle = 'rgba(0,0,0,0.85)';
+      sigCtx.fillRect(0, 0, W, H);
+
+      sigCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+      sigCtx.lineWidth = 0.5;
+      for (let y = 0; y <= H; y += 25) {
+        sigCtx.beginPath(); sigCtx.moveTo(0, y); sigCtx.lineTo(W, y); sigCtx.stroke();
+      }
+      for (let x = 0; x <= W; x += 40) {
+        sigCtx.beginPath(); sigCtx.moveTo(x, 0); sigCtx.lineTo(x, H); sigCtx.stroke();
+      }
+
+      const baseY = H * 0.7;
+      sigCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+      sigCtx.lineWidth = 1;
+      sigCtx.beginPath(); sigCtx.moveTo(0, baseY); sigCtx.lineTo(W, baseY); sigCtx.stroke();
+
+      const scale = H * 0.55;
+
+      // Myelinated trace
+      sigCtx.strokeStyle = '#6ea8d7';
+      sigCtx.lineWidth = 2;
+      sigCtx.beginPath();
+      for (let px = 0; px < W; px++) {
+        const idx = Math.floor(px / W * SIGNAL_LEN);
+        const v = signalMyel[Math.min(idx, SIGNAL_LEN - 1)] || 0;
+        const y = baseY - v * scale;
+        if (px === 0) sigCtx.moveTo(px, y); else sigCtx.lineTo(px, y);
+      }
+      sigCtx.stroke();
+
+      // Unmyelinated trace
+      sigCtx.strokeStyle = '#e05050';
+      sigCtx.lineWidth = 2;
+      sigCtx.beginPath();
+      for (let px = 0; px < W; px++) {
+        const idx = Math.floor(px / W * SIGNAL_LEN);
+        const v = signalUnmyel[Math.min(idx, SIGNAL_LEN - 1)] || 0;
+        const y = baseY - v * scale;
+        if (px === 0) sigCtx.moveTo(px, y); else sigCtx.lineTo(px, y);
+      }
+      sigCtx.stroke();
+
+      sigCtx.font = '10px sans-serif';
+      sigCtx.fillStyle = '#6ea8d7';
+      sigCtx.fillRect(W - 130, 10, 10, 3);
+      sigCtx.fillText('Myelinated', W - 116, 16);
+      sigCtx.fillStyle = '#e05050';
+      sigCtx.fillRect(W - 60, 10, 10, 3);
+      sigCtx.fillText('Unmyel.', W - 46, 16);
+
+      sigCtx.fillStyle = '#666';
+      sigCtx.font = '11px sans-serif';
+      sigCtx.fillText('+40 mV', 4, 14);
+      sigCtx.fillText('-70 mV', 4, baseY + 4);
+      sigCtx.fillText('time \u2192', W - 52, H - 6);
+
+      if (frozen) {
+        sigCtx.fillStyle = '#ffc832';
+        sigCtx.font = '10px sans-serif';
+        sigCtx.fillText('Frozen', 4, baseY - 20);
+      }
+
+      sigCtx.restore();
+    }
+
+    // ================================================================
+    //  ANIMATION
+    // ================================================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      controls.update();
+
+      if (!paused && !frozen) {
+        const unmyelSpeed = UNMYEL_BASE_SPEED * simSpeed;
+        const myelSpeed = UNMYEL_BASE_SPEED * MYEL_SPEED_MULTIPLIER * simSpeed;
+
+        // --- Unmyelinated: smooth continuous propagation ---
+        unmyelWavefrontX += dt * unmyelSpeed;
+
+        // --- Myelinated: saltatory — dwell at node, then quick jump ---
+        if (myelCurrentNode < nodePositions.length - 1) {
+          if (!myelJumping) {
+            // Dwelling at current node
+            myelNodeTimer += dt * simSpeed;
+            const totalTransitTime = INTERNODE_DIST / myelSpeed;
+            if (myelNodeTimer >= DWELL_TIME / simSpeed) {
+              // Start jump
+              myelJumping = true;
+              myelJumpProgress = 0;
+            }
+            myelDisplayX = nodePositions[myelCurrentNode];
+          } else {
+            // Jumping to next node
+            const totalTransitTime = INTERNODE_DIST / myelSpeed;
+            myelJumpProgress += dt / Math.max(JUMP_DURATION / simSpeed, 0.01);
+            if (myelJumpProgress >= 1) {
+              myelJumpProgress = 1;
+              myelJumping = false;
+              myelCurrentNode++;
+              myelNodeTimer = 0;
+              myelDisplayX = nodePositions[Math.min(myelCurrentNode, nodePositions.length - 1)];
+            } else {
+              // Smooth ease for the jump
+              const ease = myelJumpProgress < 0.5
+                ? 2 * myelJumpProgress * myelJumpProgress
+                : 1 - Math.pow(-2 * myelJumpProgress + 2, 2) / 2;
+              const fromX = nodePositions[myelCurrentNode];
+              const toX = nodePositions[myelCurrentNode + 1];
+              myelDisplayX = fromX + (toX - fromX) * ease;
+            }
+          }
+        } else {
+          myelDisplayX = nodePositions[nodePositions.length - 1];
+        }
+
+        myelWavefrontX = myelDisplayX;
+
+        // Reset when both done
+        if (unmyelWavefrontX > HALF_LEN + 15 && myelCurrentNode >= nodePositions.length - 1) {
+          unmyelWavefrontX = -HALF_LEN;
+          myelWavefrontX = -HALF_LEN;
+          myelDisplayX = -HALF_LEN;
+          myelCurrentNode = 0;
+          myelNodeTimer = 0;
+          myelJumping = false;
+          myelJumpProgress = 0;
+          signalMyel.fill(0);
+          signalUnmyel.fill(0);
+        }
+
+        // Record signals
+        const myelDist = RECORD_X - myelWavefrontX;
+        const unmyelDist = RECORD_X - unmyelWavefrontX;
+        signalMyel.push(apShape(-myelDist));
+        signalUnmyel.push(apShape(-unmyelDist));
+        if (signalMyel.length > SIGNAL_LEN) signalMyel.shift();
+        if (signalUnmyel.length > SIGNAL_LEN) signalUnmyel.shift();
+      }
+
+      // ============================================================
+      //  UNMYELINATED VISUALS — continuous dipole
+      // ============================================================
+      const unmyelClampedX = Math.max(-HALF_LEN, Math.min(HALF_LEN, unmyelWavefrontX));
+      const unmyelInTissue = unmyelWavefrontX >= -HALF_LEN && unmyelWavefrontX <= HALF_LEN + 2;
+
+      // Depolarised region
+      unmyelDepol.position.x = unmyelClampedX;
+      unmyelDepol.visible = unmyelInTissue;
+
+      // Dipole group at wavefront
+      unmyelDipoleGroup.position.set(unmyelClampedX, UNMYEL_Y, 0);
+      unmyelDipoleGroup.visible = unmyelInTissue;
+
+      const pulse = 1 + Math.sin(Date.now() * 0.006) * 0.08;
+      unmyelGlow.scale.setScalar(pulse);
+      unmyelDipoleLight.intensity = unmyelInTissue ? (0.8 + Math.sin(Date.now() * 0.006) * 0.2) : 0;
+
+      // Dipole arrow
+      unmyelDipoleArrow.visible = unmyelInTissue;
+      unmyelDipoleArrow.position.set(unmyelClampedX - 2, UNMYEL_Y, 0);
+
+      // +/- labels
+      unmyelPlus.visible = unmyelInTissue;
+      unmyelMinus.visible = unmyelInTissue;
+      unmyelPlus.position.set(unmyelClampedX + 3, UNMYEL_Y + 2.2, 0);
+      unmyelMinus.position.set(unmyelClampedX - 3, UNMYEL_Y + 2.2, 0);
+
+      // ============================================================
+      //  MYELINATED VISUALS — saltatory jumping dipole
+      // ============================================================
+      const myelNodeX = myelDisplayX;
+      const myelInTissue = myelCurrentNode < nodePositions.length;
+
+      // Dipole blob — snaps/jumps between nodes
+      myelDipoleGroup.position.set(myelNodeX, MYEL_Y, 0);
+      myelDipoleGroup.visible = myelInTissue;
+
+      const myelPulse = 1 + Math.sin(Date.now() * 0.007) * 0.08;
+      myelGlow.scale.setScalar(myelPulse);
+      myelDipoleLight.intensity = myelInTissue ? (1.2 + Math.sin(Date.now() * 0.007) * 0.3) : 0;
+
+      // During jump, make the blob stretch slightly for visual effect
+      if (myelJumping) {
+        const stretch = 1 + myelJumpProgress * (1 - myelJumpProgress) * 1.5;
+        myelDipoleGroup.scale.set(stretch, 1 / Math.sqrt(stretch), 1 / Math.sqrt(stretch));
+      } else {
+        myelDipoleGroup.scale.set(1, 1, 1);
+      }
+
+      // Dipole arrow
+      myelDipoleArrow.visible = myelInTissue;
+      myelDipoleArrow.position.set(myelNodeX - 2.2, MYEL_Y, 0);
+
+      // +/- labels
+      myelPlus.visible = myelInTissue;
+      myelMinus.visible = myelInTissue;
+      myelPlus.position.set(myelNodeX + 3.5, MYEL_Y + 2.5, 0);
+      myelMinus.position.set(myelNodeX - 3.5, MYEL_Y + 2.5, 0);
+
+      // Depolarised region behind dipole
+      const depolStart = nodePositions[0];
+      const depolLen = myelNodeX - depolStart;
+      if (depolLen > 0.2 && myelInTissue) {
+        myelDepolMesh.visible = true;
+        myelDepolMesh.scale.x = depolLen;
+        myelDepolMesh.position.x = depolStart + depolLen / 2;
+      } else {
+        myelDepolMesh.visible = false;
+      }
+
+      // Highlight nodes: depolarised vs resting
+      const activeNodeIdx = myelCurrentNode;
+      for (let i = 0; i < nodesOfRanvier.length; i++) {
+        const node = nodesOfRanvier[i];
+        if (i < activeNodeIdx) {
+          const fade = Math.max(0, 1 - (activeNodeIdx - i) * 0.2);
+          node.material.emissiveIntensity = 0.4 * fade;
+          node.material.opacity = 0.5 + 0.3 * fade;
+          node.material.color.setHex(0xe08040);
+        } else if (i === activeNodeIdx) {
+          node.material.emissiveIntensity = 0.6;
+          node.material.opacity = 0.95;
+          node.material.color.setHex(0xff5555);
+        } else {
+          node.material.emissiveIntensity = 0.1;
+          node.material.opacity = 0.7;
+          node.material.color.setHex(0xf0c040);
+        }
+      }
+
+      // Trail ghosts at previous nodes
+      for (let t = 0; t < TRAIL_COUNT; t++) {
+        const prevIdx = activeNodeIdx - t - 1;
+        if (prevIdx >= 0 && prevIdx < nodePositions.length) {
+          trailMeshes[t].position.x = nodePositions[prevIdx];
+          trailMeshes[t].visible = true;
+          trailMeshes[t].material.opacity = 0.2 * (1 - t / TRAIL_COUNT);
+        } else {
+          trailMeshes[t].visible = false;
+        }
+      }
+
+      // ============================================================
+      //  INTRACELLULAR CURRENT ARROWS
+      // ============================================================
+      if (showCurrents) {
+        // Myelinated: show arrow for the internode segment just ahead of dipole
+        for (const arrow of intraArrowsMyel) {
+          const seg = arrow.userData.segIdx;
+          // Show arrows at and just behind the active node
+          if (seg >= Math.max(0, activeNodeIdx - 1) && seg <= activeNodeIdx) {
+            arrow.visible = true;
+            arrow.line.material.opacity = 0.7;
+            arrow.cone.material.opacity = 0.7;
+          } else {
+            arrow.visible = false;
+          }
+        }
+
+        // Unmyelinated: show near wavefront
+        for (const arrow of intraArrowsUnmyel) {
+          const ax = arrow.userData.baseX;
+          if (ax > unmyelWavefrontX - DEPOL_WIDTH_UNMYEL && ax < unmyelWavefrontX + 2) {
+            arrow.visible = true;
+            arrow.line.material.opacity = 0.6;
+            arrow.cone.material.opacity = 0.6;
+          } else {
+            arrow.visible = false;
+          }
+        }
+      } else {
+        intraArrowsMyel.forEach(a => a.visible = false);
+        intraArrowsUnmyel.forEach(a => a.visible = false);
+      }
+
+      // ============================================================
+      //  EXTRACELLULAR VECTOR FIELD
+      // ============================================================
+      const myelDipolePos = new THREE.Vector3(myelDisplayX, MYEL_Y, 0);
+      const unmyelDipolePos = new THREE.Vector3(
+        Math.max(-HALF_LEN, Math.min(HALF_LEN, unmyelWavefrontX)), UNMYEL_Y, 0);
+      const dipoleDir = new THREE.Vector3(1, 0, 0); // both dipoles point +x
+
+      const myelActive = myelCurrentNode < nodePositions.length &&
+                          myelDisplayX >= -HALF_LEN && myelDisplayX <= HALF_LEN;
+      const unmyelActive = unmyelWavefrontX >= -HALF_LEN && unmyelWavefrontX <= HALF_LEN + 2;
+
+      const maxFieldMag = 0.004;
+
+      for (const arrow of fieldArrows) {
+        const pos = arrow.userData.basePos;
+        const field = new THREE.Vector3(0, 0, 0);
+
+        if (myelActive) {
+          field.add(dipoleField(myelDipolePos, dipoleDir, pos));
+        }
+        if (unmyelActive) {
+          field.add(dipoleField(unmyelDipolePos, dipoleDir, pos));
+        }
+
+        const mag = field.length();
+        if (mag < 1e-7 || (!myelActive && !unmyelActive)) {
+          arrow.visible = false;
+          continue;
+        }
+        arrow.visible = true;
+
+        const dir = field.clone().normalize();
+        arrow.setDirection(dir);
+
+        const len = Math.min(mag / maxFieldMag * 3, 3.5);
+        arrow.setLength(Math.max(len, 0.4), len * 0.25, len * 0.15);
+
+        const t = Math.min(mag / maxFieldMag, 1);
+        arrow.setColor(viridis(t));
+      }
+
+      // ============================================================
+      //  READOUT
+      // ============================================================
+      const effectiveMyelSpeed = (UNMYEL_BASE_SPEED * MYEL_SPEED_MULTIPLIER).toFixed(1);
+      const effectiveUnmyelSpeed = UNMYEL_BASE_SPEED.toFixed(1);
+      document.getElementById('myelSpeed').textContent = `Myelinated: ~${effectiveMyelSpeed} m/s`;
+      document.getElementById('unmyelSpeed').textContent = `Unmyelinated: ~${effectiveUnmyelSpeed} m/s`;
+      document.getElementById('speedRatio').textContent = `Ratio: ${MYEL_SPEED_MULTIPLIER}\u00D7 faster`;
+
+      drawSignal();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // ================================================================
+    //  CONTROLS
+    // ================================================================
+    document.getElementById('speedSlider').addEventListener('input', e => {
+      simSpeed = parseFloat(e.target.value);
+    });
+
+    document.getElementById('myelinSlider').addEventListener('input', e => {
+      MYELIN_THICKNESS = parseFloat(e.target.value);
+      buildMyelinatedStructure();
+      buildCurrentArrows();
+      buildCrossSection();
+    });
+
+    document.getElementById('densitySlider').addEventListener('input', e => {
+      fieldDensity = parseInt(e.target.value);
+      buildFieldArrows(fieldDensity);
+    });
+
+    document.getElementById('internodeSlider').addEventListener('input', e => {
+      INTERNODE_DIST = parseInt(e.target.value);
+      buildMyelinatedStructure();
+      buildCurrentArrows();
+      myelCurrentNode = 0;
+      myelNodeTimer = 0;
+      myelJumping = false;
+      myelJumpProgress = 0;
+      myelWavefrontX = -HALF_LEN;
+      myelDisplayX = -HALF_LEN;
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      unmyelWavefrontX = -HALF_LEN;
+      myelWavefrontX = -HALF_LEN;
+      myelDisplayX = -HALF_LEN;
+      myelCurrentNode = 0;
+      myelNodeTimer = 0;
+      myelJumping = false;
+      myelJumpProgress = 0;
+      signalMyel.fill(0);
+      signalUnmyel.fill(0);
+      frozen = false;
+      paused = false;
+      document.getElementById('freezeBtn').textContent = 'Freeze Frame';
+      document.getElementById('freezeBtn').classList.remove('active');
+      document.getElementById('pauseBtn').textContent = 'Pause';
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      if (frozen) return;
+      paused = !paused;
+      document.getElementById('pauseBtn').textContent = paused ? 'Play' : 'Pause';
+    });
+
+    document.getElementById('freezeBtn').addEventListener('click', () => {
+      frozen = !frozen;
+      const btn = document.getElementById('freezeBtn');
+      if (frozen) {
+        paused = true;
+        btn.textContent = 'Unfreeze';
+        btn.classList.add('active');
+        document.getElementById('pauseBtn').textContent = 'Play';
+      } else {
+        paused = false;
+        btn.textContent = 'Freeze Frame';
+        btn.classList.remove('active');
+        document.getElementById('pauseBtn').textContent = 'Pause';
+      }
+    });
+
+    document.getElementById('toggleCurrentBtn').addEventListener('click', () => {
+      showCurrents = !showCurrents;
+      const btn = document.getElementById('toggleCurrentBtn');
+      btn.textContent = showCurrents ? 'Hide Currents' : 'Show Currents';
+      if (showCurrents) btn.classList.add('active'); else btn.classList.remove('active');
+    });
+
+    document.getElementById('crossSectionBtn').addEventListener('click', () => {
+      showCrossSection = !showCrossSection;
+      crossGroup.visible = showCrossSection;
+      const btn = document.getElementById('crossSectionBtn');
+      if (showCrossSection) btn.classList.add('active'); else btn.classList.remove('active');
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+
+</html>

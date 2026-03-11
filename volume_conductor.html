@@ -1,0 +1,1808 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>BMEN90033 2026: Volume Conductor Problem — 3D Visualisation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #111;
+      color: #ccc;
+      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+    }
+
+    #container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* --- Panels --- */
+    .panel {
+      position: absolute;
+      z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .panel h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .panel h3 {
+      font-size: 12px;
+      font-weight: 500;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    .panel p {
+      font-size: 11px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    /* Info panel */
+    #info {
+      top: 16px;
+      left: 16px;
+      max-width: 260px;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 3px 0;
+      color: #aaa;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Controls panel */
+    #controls {
+      bottom: 16px;
+      left: 16px;
+      max-width: 320px;
+    }
+
+    #controls label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4px 0;
+      color: #999;
+      gap: 10px;
+    }
+
+    #controls input[type=range] {
+      width: 120px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    #controls input[type=range]::-webkit-slider-thumb,
+    #signal-panel input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button.ctrl-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #bbb;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    button.ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    button.ctrl-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      color: #fff;
+    }
+
+    /* Tissue panel */
+    #tissue-panel {
+      top: 16px;
+      right: 16px;
+      width: 280px;
+      max-height: calc(100vh - 200px);
+      overflow-y: auto;
+    }
+
+    .tissue-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      margin: 3px 0;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.15s;
+    }
+
+    .tissue-item:hover {
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .tissue-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .tissue-name {
+      flex: 1;
+      color: #bbb;
+      font-size: 11px;
+    }
+
+    .tissue-sigma {
+      color: #666;
+      font-size: 10px;
+      font-family: monospace;
+    }
+
+    .tissue-toggle {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .tissue-toggle:checked {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .tissue-toggle:checked::after {
+      content: '✓';
+      position: absolute;
+      top: -2px;
+      left: 1px;
+      font-size: 11px;
+      color: #fff;
+    }
+
+    /* Signal panel — resizable from top-left corner */
+    #signal-panel {
+      bottom: 16px;
+      right: 16px;
+      overflow: hidden;
+      min-width: 320px;
+      min-height: 180px;
+      width: 400px;
+      height: 220px;
+    }
+
+    #signal-panel .resize-handle {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 18px;
+      height: 18px;
+      cursor: nw-resize;
+      z-index: 2;
+    }
+
+    #signal-panel .resize-handle::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 8px;
+      height: 8px;
+      border-top: 2px solid rgba(255, 255, 255, 0.2);
+      border-left: 2px solid rgba(255, 255, 255, 0.2);
+    }
+
+    canvas#signalCanvas {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      display: block;
+      width: 100%;
+      height: calc(100% - 52px);
+    }
+
+    /* Electrode panel */
+    #electrode-panel {
+      bottom: 16px;
+      left: 350px;
+      max-width: 260px;
+    }
+
+    .electrode-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 3px 0;
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .electrode-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .electrode-item button {
+      background: none;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #888;
+      padding: 2px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 10px;
+    }
+
+    .electrode-item button:hover {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .electrode-item.selected {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <!-- Info panel -->
+    <div class="panel" id="info">
+      <h2>BMEN90033 2026: Volume Conductor Problem — 3D Visualisation</h2>
+      <div class="legend">
+        <div class="dot" style="background:#ff6644"></div> Dipole source
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#50e080"></div> Electrode (+)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#e08050"></div> Electrode (−)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#4488ff"></div> True field (homogeneous)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#ff4488"></div> Recorded field (with tissues)
+      </div>
+      <p>Toggle tissue layers to see how volume conductor effects attenuate and spatially low-pass filter the signal.
+        Increase <em>Source complexity</em> to add higher spatial harmonics (quadrupole, octupole) — the volume
+        conductor selectively removes these, leaving only the smooth dipole component.</p>
+    </div>
+
+    <!-- Tissue layer panel -->
+    <div class="panel" id="tissue-panel">
+      <h3>Volume Conductor Layers</h3>
+      <div id="tissue-list"></div>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="allOnBtn">All On</button>
+        <button class="ctrl-btn" id="allOffBtn">All Off</button>
+        <button class="ctrl-btn" id="presetEcgBtn">ECG Preset</button>
+        <button class="ctrl-btn" id="presetEegBtn">EEG Preset</button>
+      </div>
+    </div>
+
+    <!-- Signal panel -->
+    <div class="panel" id="signal-panel">
+      <div class="resize-handle" id="signalResizeHandle"></div>
+      <h3 id="signalTitle">Signal Comparison: True vs Recorded</h3>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <label style="color:#999;font-size:11px;display:flex;align-items:center;gap:6px;">
+          Recorded scale <input type="range" id="recordedScale" min="0.1" max="10000" step="1" value="1"
+            style="width:80px;-webkit-appearance:none;background:rgba(255,255,255,0.1);height:3px;border-radius:2px;outline:none;">
+          <span id="recordedScaleVal"
+            style="color:#ff4488;font-size:10px;font-family:monospace;min-width:30px;">1.0x</span>
+        </label>
+      </div>
+      <canvas id="signalCanvas" width="600" height="180"></canvas>
+    </div>
+
+    <!-- Controls -->
+    <div class="panel" id="controls">
+      <h3>Controls</h3>
+      <label>Dipole strength <input type="range" id="dipoleStrength" min="0.1" max="3" step="0.1" value="1"></label>
+      <label>Source complexity <input type="range" id="sourceComplexity" min="0" max="1" step="0.05"
+          value="0.4"></label>
+      <label>Field density <input type="range" id="densitySlider" min="1" max="6" step="1" value="2"></label>
+      <label>Dipole rotation <input type="range" id="dipoleAngle" min="0" max="360" step="5" value="0"></label>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="toggleTrueField">True Field</button>
+        <button class="ctrl-btn" id="toggleRecordedField">Recorded Field</button>
+        <button class="ctrl-btn" id="toggleBothFields">Both Fields</button>
+      </div>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="addElectrodeBtn">+ Electrode</button>
+        <button class="ctrl-btn" id="resetElectrodes">Reset Electrodes</button>
+        <button class="ctrl-btn" id="animateDipole">Stop Animation</button>
+        <button class="ctrl-btn active" id="playPauseBtn">⏸ Pause</button>
+      </div>
+    </div>
+
+    <!-- Electrode panel -->
+    <div class="panel" id="electrode-panel">
+      <h3>Electrodes</h3>
+      <div id="electrode-list"></div>
+      <p>Click an electrode to select it and drag the 3D gizmo to reposition. Press Escape to deselect.</p>
+    </div>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+    // =============================================
+    // VIRIDIS COLOURMAP
+    // =============================================
+    const VIRIDIS_STOPS = [
+      [0.267004, 0.004874, 0.329415],
+      [0.282327, 0.094955, 0.417331],
+      [0.278826, 0.176998, 0.483397],
+      [0.258965, 0.251537, 0.524736],
+      [0.229739, 0.322361, 0.545706],
+      [0.199430, 0.387607, 0.554642],
+      [0.172719, 0.448791, 0.557885],
+      [0.149039, 0.508051, 0.557250],
+      [0.127568, 0.566949, 0.550556],
+      [0.120638, 0.625828, 0.533488],
+      [0.157851, 0.683765, 0.501686],
+      [0.246070, 0.738910, 0.452024],
+      [0.369214, 0.788888, 0.382914],
+      [0.516398, 0.831158, 0.295952],
+      [0.678490, 0.863742, 0.189503],
+      [0.993248, 0.906157, 0.143936],
+    ];
+
+    function viridis(t) {
+      t = Math.max(0, Math.min(1, t));
+      const idx = t * (VIRIDIS_STOPS.length - 1);
+      const lo = Math.floor(idx);
+      const hi = Math.min(lo + 1, VIRIDIS_STOPS.length - 1);
+      const f = idx - lo;
+      const a = VIRIDIS_STOPS[lo], b = VIRIDIS_STOPS[hi];
+      return new THREE.Color(
+        a[0] + (b[0] - a[0]) * f,
+        a[1] + (b[1] - a[1]) * f,
+        a[2] + (b[2] - a[2]) * f
+      );
+    }
+
+    function viridisCSS(t) {
+      const c = viridis(t);
+      return `rgb(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)})`;
+    }
+
+    // =============================================
+    // TISSUE LAYER DEFINITIONS
+    // =============================================
+    // Conductivity values in S/m (approximate physiological values)
+    const TISSUE_DEFS = [
+      { name: 'Heart (source)', sigma: 0.6, radius: 3, color: '#ff6644', defaultOn: true, category: 'organ' },
+      { name: 'Blood', sigma: 0.7, radius: 5, color: '#cc3333', defaultOn: true, category: 'fluid' },
+      { name: 'Lung', sigma: 0.04, radius: 8, color: '#6688aa', defaultOn: true, category: 'organ' },
+      { name: 'Muscle', sigma: 0.4, radius: 11, color: '#cc5555', defaultOn: true, category: 'tissue' },
+      { name: 'Fat', sigma: 0.04, radius: 13, color: '#ddaa44', defaultOn: true, category: 'tissue' },
+      { name: 'Bone (ribs)', sigma: 0.02, radius: 12, color: '#ccccaa', defaultOn: false, category: 'tissue' },
+      { name: 'Skin', sigma: 0.001, radius: 14, color: '#ddbb99', defaultOn: true, category: 'tissue' },
+      { name: 'Electrode gel', sigma: 1.0, radius: 14.3, color: '#44aadd', defaultOn: false, category: 'interface' },
+      { name: 'CSF (brain)', sigma: 1.8, radius: 6, color: '#66ccee', defaultOn: false, category: 'fluid' },
+      { name: 'Skull', sigma: 0.01, radius: 8.5, color: '#aaaaaa', defaultOn: false, category: 'tissue' },
+      { name: 'Scalp', sigma: 0.44, radius: 9.5, color: '#cc9977', defaultOn: false, category: 'tissue' },
+    ];
+
+    // State for each tissue layer
+    const tissueLayers = TISSUE_DEFS.map((def, i) => ({
+      ...def,
+      enabled: def.defaultOn,
+      mesh: null,
+      wireframe: null,
+      index: i,
+    }));
+
+    // =============================================
+    // SCENE SETUP
+    // =============================================
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.FogExp2(0x111111, 0.006);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(25, 18, 30);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.getElementById('container').appendChild(renderer.domElement);
+
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.enableDamping = true;
+    orbitControls.dampingFactor = 0.08;
+    orbitControls.target.set(0, 0, 0);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(20, 30, 20);
+    scene.add(dirLight);
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    backLight.position.set(-10, 10, -10);
+    scene.add(backLight);
+
+    // Grid
+    const grid = new THREE.GridHelper(60, 30, 0x222222, 0x181818);
+    grid.position.y = -15;
+    scene.add(grid);
+
+    // Axis labels
+    function makeTextSprite(text, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.font = 'bold 36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 32, 32);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const s = new THREE.Sprite(mat);
+      s.scale.set(2, 2, 1);
+      return s;
+    }
+
+    // =============================================
+    // BUILD TISSUE MESHES (concentric spheres)
+    // =============================================
+    function buildTissueMeshes() {
+      tissueLayers.forEach(layer => {
+        if (layer.mesh) { scene.remove(layer.mesh); scene.remove(layer.wireframe); }
+
+        const geo = new THREE.SphereGeometry(layer.radius, 32, 24);
+        const col = new THREE.Color(layer.color);
+        const mat = new THREE.MeshPhongMaterial({
+          color: col,
+          transparent: true,
+          opacity: 0.08,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.visible = layer.enabled;
+        scene.add(mesh);
+        layer.mesh = mesh;
+
+        const wireGeo = new THREE.EdgesGeometry(geo);
+        const wireMat = new THREE.LineBasicMaterial({
+          color: col,
+          transparent: true,
+          opacity: 0.12,
+        });
+        const wire = new THREE.LineSegments(wireGeo, wireMat);
+        wire.visible = layer.enabled;
+        scene.add(wire);
+        layer.wireframe = wire;
+      });
+    }
+    buildTissueMeshes();
+
+    // =============================================
+    // DIPOLE SOURCE
+    // =============================================
+    const dipoleGroup = new THREE.Group();
+    scene.add(dipoleGroup);
+
+    // Core sphere
+    const dipoleCoreGeo = new THREE.SphereGeometry(0.8, 24, 24);
+    const dipoleCoreMat = new THREE.MeshPhongMaterial({
+      color: 0xff6644, emissive: 0xff6644, emissiveIntensity: 0.5,
+      transparent: true, opacity: 0.9,
+    });
+    dipoleGroup.add(new THREE.Mesh(dipoleCoreGeo, dipoleCoreMat));
+
+    // Glow
+    const dipoleGlowGeo = new THREE.SphereGeometry(1.5, 24, 24);
+    const dipoleGlowMat = new THREE.MeshBasicMaterial({
+      color: 0xff6644, transparent: true, opacity: 0.1, depthWrite: false,
+    });
+    const dipoleGlow = new THREE.Mesh(dipoleGlowGeo, dipoleGlowMat);
+    dipoleGroup.add(dipoleGlow);
+
+    const dipoleLight = new THREE.PointLight(0xff6644, 1.5, 15, 2);
+    dipoleGroup.add(dipoleLight);
+
+    // Dipole direction arrow
+    const dipoleArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0), new THREE.Vector3(), 3, 0xffffff, 0.6, 0.4
+    );
+    dipoleArrow.line.material.transparent = true;
+    dipoleArrow.line.material.opacity = 0.6;
+    dipoleArrow.cone.material.transparent = true;
+    dipoleArrow.cone.material.opacity = 0.6;
+    dipoleGroup.add(dipoleArrow);
+
+    // +/- labels on dipole
+    const plusSprite = makeTextSprite('+', '#ff8888');
+    const minusSprite = makeTextSprite('−', '#8888ff');
+    scene.add(plusSprite);
+    scene.add(minusSprite);
+
+    // Signal history arrays (declared early — referenced by electrode gizmo)
+    const SIGNAL_LEN = 600;
+    const trueSignalHistory = new Array(SIGNAL_LEN).fill(0);
+    const recordedSignalHistory = new Array(SIGNAL_LEN).fill(0);
+
+    // =============================================
+    // ELECTRODES  (group.position = electrode world pos)
+    // =============================================
+    const ELECTRODE_COLORS = [
+      '#50e080', '#e08050', '#5080e0', '#e0e050', '#e050e0',
+      '#50e0e0', '#e07070', '#70e070', '#7070e0', '#e0a050',
+    ];
+
+    let electrodes = [];
+    let nextElectrodeId = 0;
+    let placingElectrode = false;
+    let selectedElectrode = null; // currently selected for gizmo
+
+    // --- Transform gizmo ---
+    const transformControls = new TransformControls(camera, renderer.domElement);
+    transformControls.setMode('translate');
+    transformControls.setSize(0.8);
+    scene.add(transformControls);
+
+    // Disable orbit while dragging gizmo
+    transformControls.addEventListener('dragging-changed', (event) => {
+      orbitControls.enabled = !event.value;
+    });
+
+    // Sync electrode.pos when gizmo moves
+    transformControls.addEventListener('objectChange', () => {
+      if (selectedElectrode) {
+        const p = selectedElectrode.group.position;
+        selectedElectrode.pos.copy(p);
+        updateElectrodeOrientation(selectedElectrode);
+        rebuildElectrodeList();
+        // Clear signal history when electrode moves
+        trueSignalHistory.fill(0);
+        recordedSignalHistory.fill(0);
+      }
+    });
+
+    function updateElectrodeOrientation(elec) {
+      const dir = elec.pos.clone().normalize();
+      if (dir.length() < 0.01) dir.set(0, 1, 0);
+      // Re-orient disc to face outward from origin
+      elec.discMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      // Ring
+      elec.ringMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      // Label offset
+      elec.labelSprite.position.copy(dir.clone().multiplyScalar(2));
+      // Wire
+      const wireEnd = dir.clone().multiplyScalar(4);
+      const wirePositions = elec.wireLine.geometry.attributes.position;
+      wirePositions.setXYZ(0, 0, 0, 0);
+      wirePositions.setXYZ(1, wireEnd.x, wireEnd.y, wireEnd.z);
+      wirePositions.needsUpdate = true;
+    }
+
+    function createElectrode3D(pos, color, label) {
+      const col = new THREE.Color(color);
+      const group = new THREE.Group();
+      group.position.copy(pos);
+
+      // All sub-objects are at LOCAL origin (group.position = world pos)
+      const dir = pos.clone().normalize();
+      if (dir.length() < 0.01) dir.set(0, 1, 0);
+
+      // Disc (the raycast target)
+      const geo = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16);
+      const mat = new THREE.MeshPhongMaterial({ color: col, emissive: col, emissiveIntensity: 0.3 });
+      const discMesh = new THREE.Mesh(geo, mat);
+      discMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      group.add(discMesh);
+
+      // Larger invisible sphere for easier click targeting
+      const hitGeo = new THREE.SphereGeometry(1.2, 8, 8);
+      const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+      const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+      group.add(hitMesh);
+
+      // Ring glow
+      const ringGeo = new THREE.RingGeometry(0.5, 0.9, 24);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: col, transparent: true, opacity: 0.15, side: THREE.DoubleSide
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+      group.add(ringMesh);
+
+      // Label
+      const labelSprite = makeTextSprite(label, color);
+      labelSprite.position.copy(dir.clone().multiplyScalar(2));
+      labelSprite.scale.set(1.5, 1.5, 1);
+      group.add(labelSprite);
+
+      // Wire from electrode outward
+      const wireEnd = dir.clone().multiplyScalar(4);
+      const lineGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, 0), wireEnd
+      ]);
+      const lineMat = new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.3 });
+      const wireLine = new THREE.Line(lineGeo, lineMat);
+      group.add(wireLine);
+
+      scene.add(group);
+      return { group, ringMat, discMesh, hitMesh, ringMesh, labelSprite, wireLine };
+    }
+
+    function addElectrode(pos, label) {
+      const id = nextElectrodeId++;
+      const color = ELECTRODE_COLORS[id % ELECTRODE_COLORS.length];
+      if (!label) label = String.fromCharCode(65 + id);
+      const obj = createElectrode3D(pos, color, label);
+      electrodes.push({ id, pos: pos.clone(), color, label, ...obj });
+      rebuildElectrodeList();
+    }
+
+    function removeElectrode(id) {
+      const idx = electrodes.findIndex(e => e.id === id);
+      if (idx >= 0) {
+        if (selectedElectrode && selectedElectrode.id === id) deselectElectrode();
+        scene.remove(electrodes[idx].group);
+        electrodes.splice(idx, 1);
+        rebuildElectrodeList();
+      }
+    }
+
+    function selectElectrode(elec) {
+      if (selectedElectrode === elec) return;
+      deselectElectrode();
+      selectedElectrode = elec;
+      transformControls.attach(elec.group);
+      // Highlight
+      elec.discMesh.material.emissiveIntensity = 0.8;
+      rebuildElectrodeList();
+    }
+
+    function deselectElectrode() {
+      if (selectedElectrode) {
+        selectedElectrode.discMesh.material.emissiveIntensity = 0.3;
+        selectedElectrode = null;
+      }
+      transformControls.detach();
+      rebuildElectrodeList();
+    }
+
+    function rebuildElectrodeList() {
+      const list = document.getElementById('electrode-list');
+      list.innerHTML = '';
+      electrodes.forEach(e => {
+        const div = document.createElement('div');
+        div.className = 'electrode-item';
+        const isSel = selectedElectrode && selectedElectrode.id === e.id;
+        div.innerHTML = `
+          <div class="electrode-dot" style="background:${e.color};${isSel ? 'box-shadow:0 0 6px ' + e.color : ''}"></div>
+          <span style="${isSel ? 'color:#fff' : ''}">${e.label} (${e.pos.x.toFixed(1)}, ${e.pos.y.toFixed(1)}, ${e.pos.z.toFixed(1)})</span>
+          <button data-id="${e.id}">✕</button>
+        `;
+        div.querySelector('button').addEventListener('click', () => removeElectrode(e.id));
+        list.appendChild(div);
+      });
+    }
+
+    // Default electrodes
+    addElectrode(new THREE.Vector3(14, 0, 0), 'A');
+    addElectrode(new THREE.Vector3(-14, 0, 0), 'B');
+
+    // =============================================
+    // VECTOR FIELD
+    // =============================================
+    let trueFieldArrows = [];
+    let recordedFieldArrows = [];
+    let fieldDensity = 2;
+    let showTrueField = true;
+    let showRecordedField = true;
+
+    function buildFieldArrows(density) {
+      trueFieldArrows.forEach(a => scene.remove(a));
+      recordedFieldArrows.forEach(a => scene.remove(a));
+      trueFieldArrows = [];
+      recordedFieldArrows = [];
+
+      const step = 5 / density;
+      const range = 20;
+
+      for (let x = -range; x <= range; x += step) {
+        for (let y = -range; y <= range; y += step) {
+          for (let z = -range; z <= range; z += step) {
+            const r = Math.sqrt(x * x + y * y + z * z);
+            if (r < 4 || r > 22) continue; // skip inside source and too far
+
+            // True field arrows (blue-ish)
+            const arrowTrue = new THREE.ArrowHelper(
+              new THREE.Vector3(1, 0, 0),
+              new THREE.Vector3(x, y, z),
+              1, 0x4488ff, 0.25, 0.15
+            );
+            arrowTrue.userData = { basePos: new THREE.Vector3(x, y, z) };
+            arrowTrue.visible = showTrueField;
+            scene.add(arrowTrue);
+            trueFieldArrows.push(arrowTrue);
+
+            // Recorded field arrows (pink-ish)
+            const arrowRec = new THREE.ArrowHelper(
+              new THREE.Vector3(1, 0, 0),
+              new THREE.Vector3(x, y, z),
+              1, 0xff4488, 0.25, 0.15
+            );
+            arrowRec.userData = { basePos: new THREE.Vector3(x, y, z) };
+            arrowRec.visible = showRecordedField;
+            scene.add(arrowRec);
+            recordedFieldArrows.push(arrowRec);
+          }
+        }
+      }
+    }
+    buildFieldArrows(fieldDensity);
+
+    // =============================================
+    // PHYSICS: MULTIPOLE SOURCE + VOLUME CONDUCTOR
+    // =============================================
+    //
+    // A real bioelectric source (e.g. the heart) is NOT a pure dipole.
+    // It contains higher-order multipole components (quadrupole l=2,
+    // octupole l=3, etc.) that carry high spatial-frequency information.
+    //
+    // The volume conductor acts as a SPATIAL LOW-PASS FILTER:
+    // each concentric tissue shell has an l-dependent transfer coefficient
+    //
+    //   T_l = (2l+1)·σ_out / [ (l+1)·σ_in + l·σ_out ]
+    //
+    // For a resistive shell (σ_out << σ_in), T_l decreases with l, so
+    // higher spatial harmonics are attenuated MORE than the dipole (l=1).
+    //
+    // Additionally, the multipole potential decays as 1/r^(l+1), so higher
+    // terms also suffer greater geometric attenuation through thick shells.
+    // We model this with the factor (r_inner/r_outer)^(2l+1).
+    //
+    // Result: the recorded surface signal is a smoothed, attenuated version
+    // of the true source — high spatial frequencies are selectively removed.
+
+    let sourceComplexity = 0.4; // 0 = pure dipole, 1 = strong higher harmonics
+
+    // Reference radii for source amplitude compensation
+    const SRC_RADIUS = 3;      // source region radius
+    const SURFACE_RADIUS = 14; // measurement surface radius
+
+    // --- Legendre polynomials P_l(cosθ) ---
+    function legendreP(l, x) {
+      if (l === 0) return 1;
+      if (l === 1) return x;
+      if (l === 2) return 0.5 * (3 * x * x - 1);
+      if (l === 3) return 0.5 * (5 * x * x * x - 3 * x);
+      if (l === 4) return 0.125 * (35 * x * x * x * x - 30 * x * x + 3);
+      return 0;
+    }
+
+    // --- dP_l/dθ = -sin(θ) · P_l'(cosθ) — we return P_l'(x) ---
+    function legendrePprime(l, x) {
+      if (l === 0) return 0;
+      if (l === 1) return 1;
+      if (l === 2) return 3 * x;
+      if (l === 3) return 0.5 * (15 * x * x - 3);
+      if (l === 4) return 0.5 * (35 * x * x * x - 15 * x);
+      return 0;
+    }
+
+    // --- Source amplitude with geometric compensation ---
+    //
+    // Without compensation, Φ_l ∝ 1/r^(l+1), so at r=14 the l=4
+    // term is ~2700× weaker than l=1. The volume conductor filtering
+    // is invisible because the signal is already >99% dipole.
+    //
+    // We scale source amplitudes so each harmonic contributes visibly
+    // at SURFACE_RADIUS. This makes the spatial LPF effect apparent.
+    function multipoleWeight(l) {
+      if (l === 1) return 1.0;
+      if (sourceComplexity < 1e-6) return 0;
+      // Compensate for the extra 1/r^(l-1) decay relative to l=1
+      const compensation = Math.pow(SURFACE_RADIUS, l - 1);
+      // Gentle roll-off so higher orders don't completely dominate
+      const rolloff = Math.pow(0.7, l - 2);
+      return sourceComplexity * compensation * rolloff;
+    }
+
+    // --- Helper: spherical basis vectors ---
+    function sphericalBasis(dipoleDir, rVec, dist) {
+      const rHat = rVec.clone().divideScalar(dist);
+      const cosTheta = rHat.dot(dipoleDir);
+      const sinTheta = Math.sqrt(Math.max(0, 1 - cosTheta * cosTheta));
+      let thetaHat;
+      if (sinTheta > 1e-6) {
+        thetaHat = dipoleDir.clone().sub(rHat.clone().multiplyScalar(cosTheta)).divideScalar(sinTheta);
+      } else {
+        thetaHat = new THREE.Vector3(0, 1, 0);
+        if (Math.abs(dipoleDir.dot(thetaHat)) > 0.9) thetaHat.set(1, 0, 0);
+        thetaHat.sub(dipoleDir.clone().multiplyScalar(dipoleDir.dot(thetaHat))).normalize();
+      }
+      return { rHat, thetaHat, cosTheta, sinTheta };
+    }
+
+    // --- True (homogeneous medium) potential ---
+    function trueMultipolePotential(dipolePos, dipoleDir, point, strength) {
+      const r = new THREE.Vector3().subVectors(point, dipolePos);
+      const dist = r.length();
+      if (dist < 1.0) return 0;
+      const cosTheta = r.dot(dipoleDir) / dist;
+      let pot = 0;
+      for (let l = 1; l <= 4; l++) {
+        const w = multipoleWeight(l);
+        if (Math.abs(w) < 1e-9) continue;
+        pot += w * legendreP(l, cosTheta) / Math.pow(dist, l + 1);
+      }
+      return strength * pot;
+    }
+
+    // --- True (homogeneous medium) field ---
+    function trueMultipoleField(dipolePos, dipoleDir, point, strength) {
+      const r = new THREE.Vector3().subVectors(point, dipolePos);
+      const dist = r.length();
+      if (dist < 1.5) return new THREE.Vector3(0, 0, 0);
+      const { rHat, thetaHat, cosTheta, sinTheta } = sphericalBasis(dipoleDir, r, dist);
+
+      let Er = 0, Etheta = 0;
+      for (let l = 1; l <= 4; l++) {
+        const w = multipoleWeight(l);
+        if (Math.abs(w) < 1e-9) continue;
+        Er += w * (l + 1) * legendreP(l, cosTheta) / Math.pow(dist, l + 2);
+        Etheta += w * sinTheta * legendrePprime(l, cosTheta) / Math.pow(dist, l + 2);
+      }
+      return rHat.clone().multiplyScalar(strength * Er)
+        .add(thetaHat.clone().multiplyScalar(strength * Etheta));
+    }
+
+    // --- l-dependent transfer coefficient through tissue stack ---
+    //
+    // Per boundary (Rush & Driscoll 1968, concentric sphere model):
+    //
+    //   Conductivity:  T_l = (2l+1)·σ_out / [(l+1)·σ_in + l·σ_out]
+    //   Geometric:     G_l = (r_in/r_out)^(2l+1)
+    //   Shell factor:  S_l = 1 / [1 - l·(σ_in-σ_out)/((l+1)σ_in+lσ_out) · G_l]
+    //
+    //   Combined:  T_l × S_l  per boundary
+    //
+    // Key: T_l DECREASES with l for σ_out << σ_in (spatial LPF),
+    // and G_l causes exponentially more suppression for higher l
+    // through thick shells.
+    function computeTransferCoeff(l, rFromOrigin) {
+      const activeLayers = tissueLayers.filter(lay => lay.enabled);
+      activeLayers.sort((a, b) => a.radius - b.radius);
+
+      let T = 1.0;
+      for (let i = 0; i < activeLayers.length - 1; i++) {
+        const inner = activeLayers[i];
+        const outer = activeLayers[i + 1];
+
+        if (rFromOrigin > inner.radius) {
+          const sIn = inner.sigma;
+          const sOut = outer.sigma;
+
+          // Conductivity transfer (l-dependent)
+          const denom = (l + 1) * sIn + l * sOut;
+          const Tl = ((2 * l + 1) * sOut) / denom;
+
+          // Geometric shell factor
+          const G = Math.pow(inner.radius / outer.radius, 2 * l + 1);
+
+          // Shell correction from concentric sphere solution
+          const correction = (l * (sIn - sOut)) / denom;
+          const shellFactor = 1.0 / Math.max(0.01, 1.0 - correction * G);
+
+          T *= Tl * shellFactor;
+        }
+      }
+      return Math.max(1e-10, Math.min(10, T));
+    }
+
+    // --- Volume-conductor modified potential (l-dependent filtering) ---
+    function volumeConductorPotential(dipolePos, dipoleDir, point, strength) {
+      const r = new THREE.Vector3().subVectors(point, dipolePos);
+      const dist = r.length();
+      if (dist < 1.0) return 0;
+      const rFromOrigin = point.length();
+      const cosTheta = r.dot(dipoleDir) / dist;
+
+      let pot = 0;
+      for (let l = 1; l <= 4; l++) {
+        const w = multipoleWeight(l);
+        if (Math.abs(w) < 1e-9) continue;
+        const baseTerm = w * legendreP(l, cosTheta) / Math.pow(dist, l + 1);
+        const Tl = computeTransferCoeff(l, rFromOrigin);
+        pot += baseTerm * Tl;
+      }
+      return strength * pot;
+    }
+
+    // --- Volume-conductor modified field ---
+    function volumeConductorField(dipolePos, dipoleDir, point, strength) {
+      const r = new THREE.Vector3().subVectors(point, dipolePos);
+      const dist = r.length();
+      if (dist < 1.5) return new THREE.Vector3(0, 0, 0);
+      const rFromOrigin = point.length();
+      const { rHat, thetaHat, cosTheta, sinTheta } = sphericalBasis(dipoleDir, r, dist);
+
+      let Er = 0, Etheta = 0;
+      for (let l = 1; l <= 4; l++) {
+        const w = multipoleWeight(l);
+        if (Math.abs(w) < 1e-9) continue;
+        const Tl = computeTransferCoeff(l, rFromOrigin);
+        Er += w * Tl * (l + 1) * legendreP(l, cosTheta) / Math.pow(dist, l + 2);
+        Etheta += w * Tl * sinTheta * legendrePprime(l, cosTheta) / Math.pow(dist, l + 2);
+      }
+      return rHat.clone().multiplyScalar(strength * Er)
+        .add(thetaHat.clone().multiplyScalar(strength * Etheta));
+    }
+
+    // =============================================
+    // TISSUE LIST UI
+    // =============================================
+    function rebuildTissueList() {
+      const list = document.getElementById('tissue-list');
+      list.innerHTML = '';
+      tissueLayers.forEach((layer, i) => {
+        const div = document.createElement('div');
+        div.className = 'tissue-item';
+        div.innerHTML = `
+          <input type="checkbox" class="tissue-toggle" data-idx="${i}" ${layer.enabled ? 'checked' : ''}>
+          <div class="tissue-swatch" style="background:${layer.color}"></div>
+          <span class="tissue-name">${layer.name}</span>
+          <span class="tissue-sigma">σ=${layer.sigma}</span>
+        `;
+        div.querySelector('.tissue-toggle').addEventListener('change', (e) => {
+          layer.enabled = e.target.checked;
+          if (layer.mesh) layer.mesh.visible = layer.enabled;
+          if (layer.wireframe) layer.wireframe.visible = layer.enabled;
+        });
+        list.appendChild(div);
+      });
+    }
+    rebuildTissueList();
+
+    // =============================================
+    // SIGNAL CANVAS
+    // =============================================
+    const sigCanvas = document.getElementById('signalCanvas');
+    const sigCtx = sigCanvas.getContext('2d');
+
+    function resizeSignalCanvas() {
+      const rect = sigCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (sigCanvas.width !== w || sigCanvas.height !== h) {
+        sigCanvas.width = w;
+        sigCanvas.height = h;
+      }
+    }
+    const sigObserver = new ResizeObserver(resizeSignalCanvas);
+    sigObserver.observe(sigCanvas);
+    resizeSignalCanvas();
+
+    function drawSignal() {
+      resizeSignalCanvas();
+      const dpr = window.devicePixelRatio || 1;
+      const rect = sigCanvas.getBoundingClientRect();
+      const W = Math.round(rect.width), H = Math.round(rect.height);
+      sigCtx.save();
+      sigCtx.scale(dpr, dpr);
+
+      sigCtx.fillStyle = 'rgba(0,0,0,0.85)';
+      sigCtx.fillRect(0, 0, W, H);
+
+      // Grid
+      sigCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+      sigCtx.lineWidth = 0.5;
+      for (let y = 0; y <= H; y += 25) {
+        sigCtx.beginPath(); sigCtx.moveTo(0, y); sigCtx.lineTo(W, y); sigCtx.stroke();
+      }
+      for (let x = 0; x <= W; x += 40) {
+        sigCtx.beginPath(); sigCtx.moveTo(x, 0); sigCtx.lineTo(x, H); sigCtx.stroke();
+      }
+
+      // Zero line
+      sigCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+      sigCtx.lineWidth = 1;
+      sigCtx.beginPath();
+      sigCtx.moveTo(0, H / 2);
+      sigCtx.lineTo(W, H / 2);
+      sigCtx.stroke();
+
+      // Auto-scale
+      let peak = 0;
+      for (let i = 0; i < SIGNAL_LEN; i++) {
+        peak = Math.max(peak, Math.abs(trueSignalHistory[i] || 0), Math.abs(recordedSignalHistory[i] || 0));
+      }
+      if (peak < 1e-6) peak = 1;
+      const scale = (H * 0.4) / peak;
+      const midY = H / 2;
+
+      // Draw true signal (blue)
+      if (electrodes.length >= 2) {
+        sigCtx.strokeStyle = '#4488ff';
+        sigCtx.lineWidth = 2;
+        sigCtx.globalAlpha = 0.8;
+        sigCtx.beginPath();
+        for (let px = 0; px < W; px++) {
+          const idx = Math.floor(px / W * SIGNAL_LEN);
+          const v = trueSignalHistory[Math.min(idx, SIGNAL_LEN - 1)] || 0;
+          const y = midY - v * scale;
+          if (px === 0) sigCtx.moveTo(px, y);
+          else sigCtx.lineTo(px, y);
+        }
+        sigCtx.stroke();
+
+        // Draw recorded signal (pink) — scaled by user slider
+        sigCtx.strokeStyle = '#ff4488';
+        sigCtx.lineWidth = 2;
+        sigCtx.globalAlpha = 0.8;
+        sigCtx.beginPath();
+        for (let px = 0; px < W; px++) {
+          const idx = Math.floor(px / W * SIGNAL_LEN);
+          const v = (recordedSignalHistory[Math.min(idx, SIGNAL_LEN - 1)] || 0) * recordedScaleFactor;
+          const y = midY - v * scale;
+          if (px === 0) sigCtx.moveTo(px, y);
+          else sigCtx.lineTo(px, y);
+        }
+        sigCtx.stroke();
+        sigCtx.globalAlpha = 1;
+      }
+
+      // Labels
+      sigCtx.fillStyle = '#666';
+      sigCtx.font = '11px sans-serif';
+      sigCtx.fillText('+', 4, 14);
+      sigCtx.fillText('−', 4, H - 6);
+      sigCtx.fillText('time →', W - 60, H - 6);
+
+      // Legend
+      sigCtx.fillStyle = '#4488ff';
+      sigCtx.fillText('— True', W - 120, 14);
+      sigCtx.fillStyle = '#ff4488';
+      sigCtx.fillText(recordedScaleFactor !== 1.0 ? `— Recorded (${recordedScaleFactor.toFixed(1)}x)` : '— Recorded', W - 120, 28);
+
+      if (electrodes.length >= 2) {
+        sigCtx.fillStyle = '#666';
+        sigCtx.font = '10px sans-serif';
+        const a = electrodes[0], b = electrodes[1];
+        sigCtx.fillText(`V(${a.label}) − V(${b.label})`, 4, H - 20);
+      }
+
+      // Attenuation ratio + LPF cutoff display
+      if (electrodes.length >= 2) {
+        const lastTrue = trueSignalHistory[trueSignalHistory.length - 1];
+        const lastRec = recordedSignalHistory[recordedSignalHistory.length - 1];
+        sigCtx.fillStyle = '#999';
+        sigCtx.font = '10px monospace';
+        if (Math.abs(lastTrue) > 1e-6) {
+          const ratio = lastRec / lastTrue;
+          const scaleLabel = recordedScaleFactor !== 1.0 ? `  (display: ${(ratio * recordedScaleFactor).toFixed(3)}x)` : '';
+          sigCtx.fillText(`atten: ${ratio.toFixed(3)}x${scaleLabel}`, 4, 28);
+        }
+        const tau = computeEffectiveTau();
+        if (tau > 1e-6) {
+          const fc = 1 / (2 * Math.PI * tau);
+          sigCtx.fillText(`LPF f_c: ${fc.toFixed(0)} Hz  τ: ${(tau * 1000).toFixed(1)} ms`, 4, 40);
+        } else {
+          sigCtx.fillStyle = '#555';
+          sigCtx.fillText('LPF: off (no layers)', 4, 40);
+        }
+      }
+
+      sigCtx.restore();
+    }
+
+    // =============================================
+    // STATE
+    // =============================================
+    let dipoleStrength = 1;
+    let dipoleAngle = 0; // degrees
+    let animatingDipole = true; // auto-start so spatial frequency difference is visible
+    let animTime = 0;
+    let signalMode = 'free'; // 'free', 'ecg', 'eeg'
+    let paused = false;
+    let recordedScaleFactor = 1.0;
+
+    // =============================================
+    // REALISTIC ECG — Cardiac Vector Loop
+    // =============================================
+    // The heart's electrical activity traces a 3D vector loop each beat.
+    // We parameterise the dipole direction + magnitude over one cardiac
+    // cycle (~0.8 s at 75 BPM) to produce a realistic Lead-I/II type
+    // P-QRS-T waveform at the surface electrodes.
+    //
+    // Phases (fraction of cycle):
+    //   0.00–0.10  P wave:  atrial depolarisation (small, rightward→leftward)
+    //   0.10–0.16  PR seg:  isoelectric (AV node delay)
+    //   0.16–0.20  Q wave:  septal depolarisation (rightward)
+    //   0.20–0.26  R wave:  ventricular depol. (large, leftward & inferior)
+    //   0.26–0.30  S wave:  basal depol. (rightward)
+    //   0.30–0.42  ST seg:  isoelectric (plateau)
+    //   0.42–0.58  T wave:  ventricular repolarisation (leftward)
+    //   0.58–1.00  baseline
+
+    const ECG_CYCLE = 0.8; // seconds per beat
+
+    function ecgDipole(t) {
+      const phase = ((t % ECG_CYCLE) / ECG_CYCLE); // 0..1
+      let mag = 0;
+      let azimuth = 0;   // angle in XZ plane (radians)
+      let elevation = 0; // vertical angle (radians)
+
+      if (phase < 0.10) {
+        // P wave — small, sweeps left and slightly inferior
+        const p = phase / 0.10;
+        const env = Math.sin(p * Math.PI); // smooth hump
+        mag = 0.15 * env;
+        azimuth = -0.3 + p * 1.0;  // rightward → leftward
+        elevation = -0.15 * env;
+      } else if (phase < 0.16) {
+        // PR segment — isoelectric
+        mag = 0;
+      } else if (phase < 0.20) {
+        // Q wave — small negative (rightward)
+        const p = (phase - 0.16) / 0.04;
+        const env = Math.sin(p * Math.PI);
+        mag = 0.2 * env;
+        azimuth = Math.PI + 0.3; // rightward (opposite to R)
+        elevation = 0.1;
+      } else if (phase < 0.26) {
+        // R wave — large, leftward and inferior
+        const p = (phase - 0.20) / 0.06;
+        const env = Math.sin(p * Math.PI);
+        mag = 1.0 * env;
+        azimuth = 0.4;           // leftward
+        elevation = -0.5 * env;  // inferior
+      } else if (phase < 0.30) {
+        // S wave — small negative
+        const p = (phase - 0.26) / 0.04;
+        const env = Math.sin(p * Math.PI);
+        mag = 0.25 * env;
+        azimuth = Math.PI - 0.2; // rightward
+        elevation = 0.3;
+      } else if (phase < 0.42) {
+        // ST segment — near isoelectric with slight elevation
+        const p = (phase - 0.30) / 0.12;
+        mag = 0.03 * Math.sin(p * Math.PI);
+        azimuth = 0.3;
+        elevation = -0.1;
+      } else if (phase < 0.58) {
+        // T wave — broad, same direction as R (normally)
+        const p = (phase - 0.42) / 0.16;
+        const env = Math.sin(p * Math.PI);
+        mag = 0.35 * env;
+        azimuth = 0.5;           // leftward (concordant with QRS)
+        elevation = -0.3 * env;
+      } else {
+        // Baseline
+        mag = 0;
+      }
+
+      const dir = new THREE.Vector3(
+        Math.cos(azimuth) * Math.cos(elevation),
+        -Math.sin(elevation),
+        Math.sin(azimuth) * Math.cos(elevation)
+      );
+      if (dir.length() > 0.01) dir.normalize();
+
+      return { dir, mag };
+    }
+
+    // =============================================
+    // REALISTIC EEG — Cortical Oscillation Model
+    // =============================================
+    // EEG signals arise from synchronised postsynaptic potentials in
+    // cortical pyramidal cells. The signal is a superposition of
+    // oscillatory bands:
+    //   Delta (0.5–4 Hz):  deep sleep, large amplitude
+    //   Theta (4–8 Hz):    drowsiness, memory
+    //   Alpha (8–13 Hz):   relaxed/eyes-closed, dominant rhythm
+    //   Beta  (13–30 Hz):  active thinking, small amplitude
+    //   Gamma (30–50 Hz):  cognitive processing, tiny amplitude
+    //
+    // We model a dominant alpha rhythm with contributions from other
+    // bands, creating a realistic "resting-state" EEG appearance.
+    // The dipole oscillates in direction (cortical orientation) and
+    // the composite signal shows the characteristic 1/f spectral shape.
+
+    const EEG_BANDS = [
+      { freq: 2.5, amp: 0.20, phase: 0.0, label: 'delta' },
+      { freq: 6.0, amp: 0.25, phase: 1.2, label: 'theta' },
+      { freq: 10.0, amp: 1.00, phase: 0.0, label: 'alpha' },
+      { freq: 11.5, amp: 0.60, phase: 0.7, label: 'alpha2' },
+      { freq: 15.0, amp: 0.15, phase: 2.1, label: 'beta1' },
+      { freq: 22.0, amp: 0.08, phase: 0.5, label: 'beta2' },
+      { freq: 35.0, amp: 0.03, phase: 1.8, label: 'gamma' },
+    ];
+
+    function eegDipole(t) {
+      // Composite magnitude from all bands
+      let mag = 0;
+      for (const band of EEG_BANDS) {
+        mag += band.amp * Math.sin(2 * Math.PI * band.freq * t + band.phase);
+      }
+      // Add slight alpha spindle modulation (waxing/waning)
+      const spindle = 0.7 + 0.3 * Math.sin(2 * Math.PI * 0.8 * t);
+      mag *= spindle * 0.3; // scale down — EEG is µV vs ECG mV
+
+      // Cortical dipole direction: primarily radial (perpendicular to scalp)
+      // with slight oscillatory wobble modelling different cortical sources
+      const azimuth = 0.2 * Math.sin(2 * Math.PI * 1.3 * t);
+      const elevation = -Math.PI / 4 + 0.15 * Math.sin(2 * Math.PI * 0.7 * t);
+
+      const absMag = Math.abs(mag);
+      const sign = mag >= 0 ? 1 : -1;
+
+      const dir = new THREE.Vector3(
+        sign * Math.cos(azimuth) * Math.cos(elevation),
+        -sign * Math.sin(elevation),
+        sign * Math.sin(azimuth) * Math.cos(elevation)
+      );
+      if (dir.length() > 0.01) dir.normalize();
+
+      return { dir, mag: absMag };
+    }
+
+    // =============================================
+    // RAYCASTING for electrode selection & placement
+    // =============================================
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    // Track mouse-down position to distinguish clicks from drags
+    let mouseDownPos = { x: 0, y: 0 };
+    renderer.domElement.addEventListener('mousedown', (event) => {
+      mouseDownPos.x = event.clientX;
+      mouseDownPos.y = event.clientY;
+    });
+
+    renderer.domElement.addEventListener('click', (event) => {
+      // Ignore if this was a drag (orbit / gizmo)
+      const dx = event.clientX - mouseDownPos.x;
+      const dy = event.clientY - mouseDownPos.y;
+      if (dx * dx + dy * dy > 9) return;
+
+      // Skip clicks on UI panels
+      if (event.target !== renderer.domElement) return;
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      // --- Mode: placing a new electrode ---
+      if (placingElectrode) {
+        const activeLayers = tissueLayers.filter(l => l.enabled && l.mesh);
+        if (activeLayers.length === 0) {
+          const dir = new THREE.Vector3();
+          raycaster.ray.at(30, dir);
+          dir.normalize().multiplyScalar(14);
+          addElectrode(dir);
+        } else {
+          activeLayers.sort((a, b) => b.radius - a.radius);
+          let placed = false;
+          for (const layer of activeLayers) {
+            const intersects = raycaster.intersectObject(layer.mesh);
+            if (intersects.length > 0) {
+              addElectrode(intersects[0].point);
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) {
+            const point = new THREE.Vector3();
+            raycaster.ray.at(25, point);
+            addElectrode(point);
+          }
+        }
+        placingElectrode = false;
+        renderer.domElement.style.cursor = 'default';
+        return;
+      }
+
+      // --- Mode: select / deselect electrode ---
+      // Collect all electrode hit-targets (disc + invisible sphere)
+      const hitTargets = [];
+      electrodes.forEach(e => {
+        hitTargets.push({ mesh: e.discMesh, elec: e });
+        hitTargets.push({ mesh: e.hitMesh, elec: e });
+      });
+      const meshes = hitTargets.map(h => h.mesh);
+      const intersects = raycaster.intersectObjects(meshes, false);
+
+      if (intersects.length > 0) {
+        const hitObj = intersects[0].object;
+        const hit = hitTargets.find(h => h.mesh === hitObj);
+        if (hit) {
+          selectElectrode(hit.elec);
+          return;
+        }
+      }
+
+      // Clicked empty space — deselect
+      deselectElectrode();
+    });
+
+    // Escape key to deselect / cancel placement
+    window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        if (placingElectrode) {
+          placingElectrode = false;
+          renderer.domElement.style.cursor = 'default';
+        }
+        deselectElectrode();
+      }
+    });
+
+    // =============================================
+    // TEMPORAL LOW-PASS FILTER (volume conductor RC effect)
+    // =============================================
+    //
+    // Tissue layers are not purely resistive — they have capacitive
+    // properties (cell membranes, tissue interfaces). Each resistive
+    // barrier acts as an RC low-pass filter on the temporal signal:
+    //
+    //   τ_eff = Σ (thickness_i / σ_i)  ×  C_tissue
+    //
+    // More resistive layers → larger τ → lower cutoff frequency →
+    // the high-frequency components of the signal are smoothed out.
+    //
+    // This is why ECG through the torso loses sharp QRS detail, and
+    // why EEG through the skull loses fast beta/gamma oscillations.
+    //
+    // Implementation: first-order IIR filter per sample
+    //   y[n] = α·x[n] + (1-α)·y[n-1]
+    //   α = dt / (dt + τ)
+
+    let filteredRecA = 0;  // filter state for electrode A
+    let filteredRecB = 0;  // filter state for electrode B
+
+    function computeEffectiveTau() {
+      const activeLayers = tissueLayers.filter(l => l.enabled);
+      activeLayers.sort((a, b) => a.radius - b.radius);
+
+      let resistanceSum = 0;
+      for (let i = 0; i < activeLayers.length - 1; i++) {
+        const inner = activeLayers[i];
+        const outer = activeLayers[i + 1];
+        const thickness = outer.radius - inner.radius;
+        // Each layer's contribution: thickness / conductivity
+        // Low-σ layers (skin, skull, fat) dominate the sum
+        resistanceSum += thickness / outer.sigma;
+      }
+
+      // Scale to a physiologically reasonable time constant range.
+      // Typical tissue capacitance ~1e-4 F/m² gives τ in the ms range
+      // for realistic layer stacks.
+      //   No layers:    τ ≈ 0       → no filtering
+      //   ECG torso:    τ ≈ 5-15 ms → smooths sharp QRS peaks slightly
+      //   EEG + skull:  τ ≈ 15-40 ms → removes fast beta/gamma
+      const C_tissue = 3e-4;  // effective capacitance scaling factor
+      return resistanceSum * C_tissue;
+    }
+
+    // =============================================
+    // ANIMATION LOOP
+    // =============================================
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      orbitControls.update();
+
+      if (paused) {
+        drawSignal();
+        renderer.render(scene, camera);
+        return;
+      }
+
+      animTime += dt;
+
+      // --- Determine dipole direction & effective strength ---
+      let dipoleDir, effectiveStrength;
+      const dipolePos = new THREE.Vector3(0, 0, 0);
+
+      if (signalMode === 'ecg') {
+        const ecg = ecgDipole(animTime);
+        dipoleDir = ecg.dir;
+        effectiveStrength = dipoleStrength * ecg.mag;
+        // Update angle slider to reflect current direction
+        const a = Math.atan2(ecg.dir.z, ecg.dir.x) * 180 / Math.PI;
+        document.getElementById('dipoleAngle').value = Math.round((a + 360) % 360);
+      } else if (signalMode === 'eeg') {
+        const eeg = eegDipole(animTime);
+        dipoleDir = eeg.dir;
+        effectiveStrength = dipoleStrength * eeg.mag;
+        const a = Math.atan2(eeg.dir.z, eeg.dir.x) * 180 / Math.PI;
+        document.getElementById('dipoleAngle').value = Math.round((a + 360) % 360);
+      } else {
+        // Free mode — manual angle or rotation animation
+        if (animatingDipole) {
+          dipoleAngle = (animTime * 60) % 360;
+          document.getElementById('dipoleAngle').value = Math.round(dipoleAngle);
+        }
+        const angleRad = (dipoleAngle * Math.PI) / 180;
+        dipoleDir = new THREE.Vector3(Math.cos(angleRad), 0, Math.sin(angleRad));
+        effectiveStrength = dipoleStrength;
+      }
+
+      // Update dipole visuals
+      const pulse = 1 + Math.sin(Date.now() * 0.004) * 0.1;
+      const glowScale = signalMode === 'ecg'
+        ? 1 + effectiveStrength * 0.5  // pulse with heartbeat
+        : signalMode === 'eeg'
+          ? 1 + effectiveStrength * 2   // subtle brain oscillation
+          : pulse;
+      dipoleGlow.scale.setScalar(Math.max(0.5, glowScale));
+      dipoleLight.intensity = 0.5 + effectiveStrength * 2;
+
+      if (dipoleDir.length() > 0.01) {
+        dipoleArrow.setDirection(dipoleDir);
+        dipoleArrow.visible = true;
+      } else {
+        dipoleArrow.visible = false;
+      }
+      plusSprite.position.copy(dipoleDir.clone().multiplyScalar(2.5)).add(new THREE.Vector3(0, 1.5, 0));
+      minusSprite.position.copy(dipoleDir.clone().multiplyScalar(-2.5)).add(new THREE.Vector3(0, 1.5, 0));
+
+      // Update field arrows
+      const maxFieldMag = 0.004 * Math.max(dipoleStrength, 0.1);
+
+      // TRUE FIELD (homogeneous medium — includes all multipole terms)
+      for (const arrow of trueFieldArrows) {
+        if (!showTrueField) { arrow.visible = false; continue; }
+        const pos = arrow.userData.basePos;
+        const field = trueMultipoleField(dipolePos, dipoleDir, pos, effectiveStrength);
+        const mag = field.length();
+        if (mag < 1e-8) { arrow.visible = false; continue; }
+        arrow.visible = true;
+        const dir = field.clone().normalize();
+        arrow.setDirection(dir);
+        const len = Math.min(mag / maxFieldMag * 2.5, 3.5);
+        arrow.setLength(Math.max(len, 0.4), len * 0.25, len * 0.15);
+        const t = Math.min(mag / maxFieldMag, 1);
+        const col = viridis(t);
+        // Tint toward blue
+        arrow.setColor(new THREE.Color(col.r * 0.5, col.g * 0.7, col.b * 1.0));
+      }
+
+      // RECORDED FIELD (volume conductor modified)
+      for (const arrow of recordedFieldArrows) {
+        if (!showRecordedField) { arrow.visible = false; continue; }
+        const pos = arrow.userData.basePos;
+        const field = volumeConductorField(dipolePos, dipoleDir, pos, effectiveStrength);
+        const mag = field.length();
+        if (mag < 1e-8) { arrow.visible = false; continue; }
+        arrow.visible = true;
+        const dir = field.clone().normalize();
+        arrow.setDirection(dir);
+        const len = Math.min(mag / maxFieldMag * 2.5, 3.5);
+        arrow.setLength(Math.max(len, 0.4), len * 0.25, len * 0.15);
+        const t = Math.min(mag / maxFieldMag, 1);
+        const col = viridis(t);
+        // Tint toward pink
+        arrow.setColor(new THREE.Color(col.r * 1.0, col.g * 0.5, col.b * 0.7));
+      }
+
+      // Update signal traces with temporal LPF
+      if (electrodes.length >= 2) {
+        const eA = electrodes[0].pos;
+        const eB = electrodes[1].pos;
+
+        // True signal — no filtering (what you'd see with perfect electrodes
+        // in a homogeneous medium)
+        const truePotA = trueMultipolePotential(dipolePos, dipoleDir, eA, effectiveStrength) * 80;
+        const truePotB = trueMultipolePotential(dipolePos, dipoleDir, eB, effectiveStrength) * 80;
+        trueSignalHistory.push(truePotA - truePotB);
+        if (trueSignalHistory.length > SIGNAL_LEN) trueSignalHistory.shift();
+
+        // Recorded signal — spatially filtered (l-dependent transfer) THEN
+        // temporally filtered (RC low-pass from tissue layers)
+        const rawRecA = volumeConductorPotential(dipolePos, dipoleDir, eA, effectiveStrength) * 80;
+        const rawRecB = volumeConductorPotential(dipolePos, dipoleDir, eB, effectiveStrength) * 80;
+
+        // Apply temporal LPF:  y[n] = α·x[n] + (1-α)·y[n-1]
+        const tau = computeEffectiveTau();
+        if (tau > 1e-6 && dt > 0) {
+          const alpha = dt / (dt + tau);
+          filteredRecA = alpha * rawRecA + (1 - alpha) * filteredRecA;
+          filteredRecB = alpha * rawRecB + (1 - alpha) * filteredRecB;
+        } else {
+          // No filtering (no layers or τ ≈ 0)
+          filteredRecA = rawRecA;
+          filteredRecB = rawRecB;
+        }
+
+        recordedSignalHistory.push(filteredRecA - filteredRecB);
+        if (recordedSignalHistory.length > SIGNAL_LEN) recordedSignalHistory.shift();
+      }
+
+      // Electrode ring glow
+      const sig = electrodes.length >= 2 ? Math.abs(trueSignalHistory[trueSignalHistory.length - 1] || 0) : 0;
+      electrodes.forEach(e => {
+        e.ringMat.opacity = 0.1 + Math.min(sig * 0.8, 0.4);
+      });
+
+      drawSignal();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // =============================================
+    // CONTROLS
+    // =============================================
+    document.getElementById('dipoleStrength').addEventListener('input', e => {
+      dipoleStrength = parseFloat(e.target.value);
+    });
+
+    document.getElementById('sourceComplexity').addEventListener('input', e => {
+      sourceComplexity = parseFloat(e.target.value);
+      trueSignalHistory.fill(0);
+      recordedSignalHistory.fill(0);
+      filteredRecA = 0; filteredRecB = 0;
+    });
+
+    document.getElementById('densitySlider').addEventListener('input', e => {
+      fieldDensity = parseInt(e.target.value);
+      buildFieldArrows(fieldDensity);
+    });
+
+    document.getElementById('dipoleAngle').addEventListener('input', e => {
+      dipoleAngle = parseFloat(e.target.value);
+      animatingDipole = false;
+      document.getElementById('animateDipole').textContent = 'Animate Dipole';
+    });
+
+    document.getElementById('toggleTrueField').addEventListener('click', () => {
+      showTrueField = !showTrueField;
+      document.getElementById('toggleTrueField').classList.toggle('active', showTrueField);
+    });
+
+    document.getElementById('toggleRecordedField').addEventListener('click', () => {
+      showRecordedField = !showRecordedField;
+      document.getElementById('toggleRecordedField').classList.toggle('active', showRecordedField);
+    });
+
+    document.getElementById('toggleBothFields').addEventListener('click', () => {
+      showTrueField = true;
+      showRecordedField = true;
+      document.getElementById('toggleTrueField').classList.add('active');
+      document.getElementById('toggleRecordedField').classList.add('active');
+    });
+
+    document.getElementById('addElectrodeBtn').addEventListener('click', () => {
+      placingElectrode = true;
+      renderer.domElement.style.cursor = 'crosshair';
+    });
+
+    document.getElementById('resetElectrodes').addEventListener('click', () => {
+      while (electrodes.length > 0) {
+        removeElectrode(electrodes[0].id);
+      }
+      nextElectrodeId = 0;
+      addElectrode(new THREE.Vector3(14, 0, 0), 'A');
+      addElectrode(new THREE.Vector3(-14, 0, 0), 'B');
+      trueSignalHistory.fill(0);
+      recordedSignalHistory.fill(0);
+      filteredRecA = 0; filteredRecB = 0;
+    });
+
+    document.getElementById('animateDipole').addEventListener('click', () => {
+      if (signalMode !== 'free') {
+        // Switch back to free mode
+        signalMode = 'free';
+        animatingDipole = true;
+        document.getElementById('signalTitle').innerHTML = 'Signal Comparison: True vs Recorded';
+      } else {
+        animatingDipole = !animatingDipole;
+      }
+      document.getElementById('animateDipole').textContent = animatingDipole ? 'Stop Animation' : 'Animate Dipole';
+      trueSignalHistory.fill(0);
+      recordedSignalHistory.fill(0);
+      filteredRecA = 0; filteredRecB = 0;
+    });
+
+    document.getElementById('playPauseBtn').addEventListener('click', () => {
+      paused = !paused;
+      const btn = document.getElementById('playPauseBtn');
+      btn.textContent = paused ? '▶ Play' : '⏸ Pause';
+      btn.classList.toggle('active', !paused);
+      if (!paused) {
+        // Reset clock delta so we don't get a huge dt jump after unpausing
+        clock.getDelta();
+      }
+    });
+
+    document.getElementById('recordedScale').addEventListener('input', e => {
+      recordedScaleFactor = parseFloat(e.target.value);
+      document.getElementById('recordedScaleVal').textContent = recordedScaleFactor.toFixed(1) + 'x';
+    });
+
+    document.getElementById('allOnBtn').addEventListener('click', () => {
+      tissueLayers.forEach(l => {
+        l.enabled = true;
+        if (l.mesh) l.mesh.visible = true;
+        if (l.wireframe) l.wireframe.visible = true;
+      });
+      rebuildTissueList();
+    });
+
+    document.getElementById('allOffBtn').addEventListener('click', () => {
+      tissueLayers.forEach(l => {
+        l.enabled = false;
+        if (l.mesh) l.mesh.visible = false;
+        if (l.wireframe) l.wireframe.visible = false;
+      });
+      rebuildTissueList();
+    });
+
+    // ECG preset: heart + blood + lung + muscle + fat + skin + cardiac signal
+    document.getElementById('presetEcgBtn').addEventListener('click', () => {
+      const ecgLayers = ['Heart (source)', 'Blood', 'Lung', 'Muscle', 'Fat', 'Skin'];
+      tissueLayers.forEach(l => {
+        l.enabled = ecgLayers.includes(l.name);
+        if (l.mesh) l.mesh.visible = l.enabled;
+        if (l.wireframe) l.wireframe.visible = l.enabled;
+      });
+      rebuildTissueList();
+      signalMode = 'ecg';
+      animatingDipole = false;
+      animTime = 0;
+      trueSignalHistory.fill(0);
+      recordedSignalHistory.fill(0);
+      filteredRecA = 0; filteredRecB = 0;
+      document.getElementById('signalTitle').innerHTML = 'ECG: True vs Recorded (V<sub>A</sub> − V<sub>B</sub>)';
+      document.getElementById('animateDipole').textContent = 'Animate Dipole';
+    });
+
+    // EEG preset: CSF + skull + scalp + brain oscillation signal
+    document.getElementById('presetEegBtn').addEventListener('click', () => {
+      const eegLayers = ['Heart (source)', 'CSF (brain)', 'Skull', 'Scalp', 'Skin'];
+      tissueLayers.forEach(l => {
+        l.enabled = eegLayers.includes(l.name);
+        if (l.mesh) l.mesh.visible = l.enabled;
+        if (l.wireframe) l.wireframe.visible = l.enabled;
+      });
+      rebuildTissueList();
+      signalMode = 'eeg';
+      animatingDipole = false;
+      animTime = 0;
+      trueSignalHistory.fill(0);
+      recordedSignalHistory.fill(0);
+      filteredRecA = 0; filteredRecB = 0;
+      document.getElementById('signalTitle').innerHTML = 'EEG: True vs Recorded (V<sub>A</sub> − V<sub>B</sub>)';
+      document.getElementById('animateDipole').textContent = 'Animate Dipole';
+    });
+
+    // Set initial active states
+    document.getElementById('toggleTrueField').classList.add('active');
+    document.getElementById('toggleRecordedField').classList.add('active');
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- Signal panel top-left resize handle ---
+    {
+      const panel = document.getElementById('signal-panel');
+      const handle = document.getElementById('signalResizeHandle');
+      let dragging = false, startX, startY, startW, startH;
+
+      handle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startW = panel.offsetWidth;
+        startH = panel.offsetHeight;
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!dragging) return;
+        // Dragging top-left: moving left increases width, moving up increases height
+        const dx = startX - e.clientX;
+        const dy = startY - e.clientY;
+        const newW = Math.max(320, startW + dx);
+        const newH = Math.max(180, startH + dy);
+        panel.style.width = newW + 'px';
+        panel.style.height = newH + 'px';
+      });
+
+      window.addEventListener('mouseup', () => {
+        dragging = false;
+      });
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>BMEN90033 2026: Ag/AgCl Electrode–Body Interface — 3D Visualisation</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #111;
+      color: #ccc;
+      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+    }
+
+    #container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .panel {
+      position: absolute;
+      z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .panel h2 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .panel h3 {
+      font-size: 12px;
+      font-weight: 500;
+      color: #999;
+      margin-bottom: 6px;
+    }
+
+    .panel p {
+      font-size: 11px;
+      color: #666;
+      margin-top: 6px;
+    }
+
+    #info {
+      top: 16px;
+      left: 16px;
+      max-width: 280px;
+    }
+
+    .legend {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 3px 0;
+      color: #aaa;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    #reaction-panel {
+      top: 16px;
+      right: 16px;
+      max-width: 300px;
+    }
+
+    #reaction-panel .reaction {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: #fff;
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 6px;
+      text-align: center;
+    }
+
+    #reaction-panel .reaction .arrow {
+      color: #ffc832;
+    }
+
+    #signal-panel {
+      bottom: 16px;
+      right: 16px;
+      resize: both;
+      overflow: hidden;
+      width: 320px;
+      height: 240px;
+      min-width: 200px;
+      min-height: 160px;
+    }
+
+    canvas#signalCanvas {
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      display: block;
+      width: 100%;
+      height: calc(100% - 28px);
+    }
+
+    #controls {
+      bottom: 16px;
+      left: 16px;
+    }
+
+    #controls label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 5px 0;
+      color: #999;
+      gap: 10px;
+    }
+
+    #controls input[type=range] {
+      width: 120px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+    }
+
+    #controls input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    button.ctrl-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #bbb;
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+
+    button.ctrl-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    button.ctrl-btn.active {
+      background: rgba(255, 200, 50, 0.15);
+      border-color: rgba(255, 200, 50, 0.4);
+      color: #ffc832;
+    }
+
+    #voltage-readout {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(10, 10, 10, 0.75);
+      backdrop-filter: blur(10px);
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    #voltage-readout .val {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    #voltage-readout .label {
+      font-size: 10px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    #mode-indicator {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(10, 10, 10, 0.75);
+      backdrop-filter: blur(10px);
+      padding: 6px 16px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 11px;
+      color: #999;
+      pointer-events: none;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <div id="info" class="panel">
+      <h2>BMEN90033 2026: Ag/AgCl Electrode Interface</h2>
+      <div class="legend">
+        <div class="dot" style="background:#b0b0b0"></div> Ag metal (silver)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#8060a0"></div> AgCl coating layer
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#50c8ff"></div> Cl⁻ ions (chloride)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#ff6644"></div> Na⁺ ions (sodium)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#50e080"></div> K⁺ ions (potassium)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#ffd700"></div> e⁻ electrons (in metal)
+      </div>
+      <div class="legend">
+        <div class="dot" style="background:#ff44aa"></div> Current flow direction
+      </div>
+      <p>Shows the Ag/AgCl electrode–electrolyte interface.
+        Cl⁻ ions in the body participate in the half-cell reaction
+        at the AgCl surface. Electrons flow through the metal wire
+        while ions carry charge in the electrolyte.</p>
+    </div>
+
+    <div id="voltage-readout">
+      <div class="val" id="halfCellVal">E = +0.222 V</div>
+      <div class="label">Ag/AgCl half-cell potential (vs SHE)</div>
+    </div>
+
+    <div id="mode-indicator">
+      <span id="modeText">Equilibrium — no net current</span>
+    </div>
+
+    <div id="reaction-panel" class="panel">
+      <h3>Half-Cell Reaction</h3>
+      <div class="reaction">
+        AgCl + e⁻ <span class="arrow">⇌</span> Ag + Cl⁻
+      </div>
+      <h3>At the Interface</h3>
+      <p>
+        <strong style="color:#aaa">Reduction (← ):</strong> AgCl gains an electron,
+        releasing Cl⁻ into the electrolyte and depositing Ag.<br><br>
+        <strong style="color:#aaa">Oxidation (→ ):</strong> Cl⁻ from electrolyte combines
+        with Ag, forming AgCl and releasing an electron into the wire.<br><br>
+        <strong style="color:#aaa">E° = +0.222 V</strong> vs Standard Hydrogen Electrode.
+        This stable potential makes Ag/AgCl ideal for biopotential recording.
+      </p>
+    </div>
+
+    <div id="signal-panel" class="panel">
+      <h3>Electrode Current</h3>
+      <canvas id="signalCanvas" width="520" height="150"></canvas>
+    </div>
+
+    <div id="controls" class="panel">
+      <label>Animation speed <input type="range" id="speedSlider" min="0.2" max="3" step="0.1" value="1"></label>
+      <label>Ion density <input type="range" id="ionDensity" min="5" max="40" step="5" value="15"></label>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="resetBtn">Reset</button>
+        <button class="ctrl-btn" id="pauseBtn">Pause</button>
+      </div>
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="ctrl-btn" id="modeEquil">Equilibrium</button>
+        <button class="ctrl-btn active" id="modeReduce">Reduction</button>
+        <button class="ctrl-btn" id="modeOxidize">Oxidation</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // --- Scene setup ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.FogExp2(0x111111, 0.012);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(0, 12, 35);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.getElementById('container').appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 0, 0);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(15, 20, 15);
+    scene.add(dirLight);
+    const backLight = new THREE.DirectionalLight(0xffffff, 0.2);
+    backLight.position.set(-10, 10, -10);
+    scene.add(backLight);
+
+    // --- Geometry constants ---
+    const ELECTRODE_W = 6;
+    const ELECTRODE_H = 14;
+    const ELECTRODE_D = 0.8;
+    const AGCL_THICKNESS = 0.6;
+    const ELECTROLYTE_W = 20;
+    const ELECTROLYTE_H = 14;
+    const ELECTROLYTE_D = 14;
+    const WIRE_HEIGHT = 8;
+
+    // Electrode is on the left, electrolyte on the right
+    const ELECTRODE_X = -ELECTROLYTE_W / 2 + 1;
+    const INTERFACE_X = ELECTRODE_X + ELECTRODE_D / 2 + AGCL_THICKNESS / 2;
+
+    // --- Ag metal electrode ---
+    const agGeo = new THREE.BoxGeometry(ELECTRODE_D, ELECTRODE_H, ELECTRODE_W);
+    const agMat = new THREE.MeshPhongMaterial({
+      color: 0xc0c0c0, specular: 0x999999, shininess: 80
+    });
+    const agMesh = new THREE.Mesh(agGeo, agMat);
+    agMesh.position.set(ELECTRODE_X, 0, 0);
+    scene.add(agMesh);
+
+    // --- AgCl coating ---
+    const agclGeo = new THREE.BoxGeometry(AGCL_THICKNESS, ELECTRODE_H, ELECTRODE_W);
+    const agclMat = new THREE.MeshPhongMaterial({
+      color: 0x8060a0, transparent: true, opacity: 0.7,
+      emissive: 0x301840, emissiveIntensity: 0.3
+    });
+    const agclMesh = new THREE.Mesh(agclGeo, agclMat);
+    agclMesh.position.set(INTERFACE_X, 0, 0);
+    scene.add(agclMesh);
+
+    // --- Wire extending up from electrode ---
+    const wirePts = [
+      new THREE.Vector3(ELECTRODE_X, ELECTRODE_H / 2, 0),
+      new THREE.Vector3(ELECTRODE_X, ELECTRODE_H / 2 + WIRE_HEIGHT, 0),
+      new THREE.Vector3(ELECTRODE_X + 15, ELECTRODE_H / 2 + WIRE_HEIGHT, 0),
+    ];
+    const wireGeo = new THREE.BufferGeometry().setFromPoints(wirePts);
+    const wireMat = new THREE.LineBasicMaterial({ color: 0x888888, linewidth: 2 });
+    scene.add(new THREE.Line(wireGeo, wireMat));
+
+    // Amplifier symbol at end of wire
+    const ampGeo = new THREE.CircleGeometry(1.2, 32);
+    const ampMat = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
+    const ampMesh = new THREE.Mesh(ampGeo, ampMat);
+    ampMesh.position.set(ELECTRODE_X + 15, ELECTRODE_H / 2 + WIRE_HEIGHT, 0);
+    scene.add(ampMesh);
+
+    // "A" label sprite on amplifier
+    function makeSprite(text, color, size = 2) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64; canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.font = 'bold 40px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 32, 32);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const s = new THREE.Sprite(mat);
+      s.scale.set(size, size, 1);
+      return s;
+    }
+
+    const ampLabel = makeSprite('A', '#ffffff', 1.5);
+    ampLabel.position.set(ELECTRODE_X + 15, ELECTRODE_H / 2 + WIRE_HEIGHT, 0.1);
+    scene.add(ampLabel);
+
+    // --- Electrolyte body region ---
+    const elecGeo = new THREE.BoxGeometry(ELECTROLYTE_W, ELECTROLYTE_H, ELECTROLYTE_D);
+    const elecMat = new THREE.MeshPhongMaterial({
+      color: 0x1a3050, transparent: true, opacity: 0.12,
+      side: THREE.DoubleSide, depthWrite: false
+    });
+    const elecMesh = new THREE.Mesh(elecGeo, elecMat);
+    elecMesh.position.set(ELECTROLYTE_W / 2 - ELECTROLYTE_W / 2 + 3, 0, 0);
+    scene.add(elecMesh);
+
+    // Wireframe
+    const elecWireGeo = new THREE.EdgesGeometry(elecGeo);
+    const elecWireMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.08 });
+    const elecWireMesh = new THREE.LineSegments(elecWireGeo, elecWireMat);
+    elecWireMesh.position.copy(elecMesh.position);
+    scene.add(elecWireMesh);
+
+    // "Body / Electrolyte" label
+    const bodyLabel = makeSprite('Body (electrolyte)', '#446688', 4);
+    bodyLabel.position.set(6, -ELECTROLYTE_H / 2 - 1.5, 0);
+    scene.add(bodyLabel);
+
+    // "Ag" label
+    const agLabel = makeSprite('Ag', '#c0c0c0', 2);
+    agLabel.position.set(ELECTRODE_X, -ELECTRODE_H / 2 - 1.5, 0);
+    scene.add(agLabel);
+
+    // "AgCl" label
+    const agclLabel = makeSprite('AgCl', '#8060a0', 2);
+    agclLabel.position.set(INTERFACE_X + 1.5, -ELECTRODE_H / 2 - 1.5, 0);
+    scene.add(agclLabel);
+
+    // --- Interface glow plane ---
+    const interfacePlaneGeo = new THREE.PlaneGeometry(0.3, ELECTRODE_H + 2, 1, 1);
+    const interfacePlaneMat = new THREE.MeshBasicMaterial({
+      color: 0xffc832, transparent: true, opacity: 0.1, side: THREE.DoubleSide, depthWrite: false
+    });
+    const interfacePlane = new THREE.Mesh(interfacePlaneGeo, interfacePlaneMat);
+    interfacePlane.position.set(INTERFACE_X + AGCL_THICKNESS / 2, 0, 0);
+    scene.add(interfacePlane);
+
+    // --- Grid ---
+    const grid = new THREE.GridHelper(60, 30, 0x222222, 0x181818);
+    grid.position.y = -ELECTRODE_H / 2 - 0.5;
+    scene.add(grid);
+
+    // --- Ions ---
+    // State
+    let mode = 'reduce'; // 'equil', 'reduce', 'oxidize'
+    let speed = 1;
+    let paused = false;
+    let ionCount = 15;
+
+    // Ion classes
+    class Ion {
+      constructor(type, position) {
+        this.type = type; // 'cl', 'na', 'k', 'electron'
+        this.pos = position.clone();
+        this.vel = new THREE.Vector3(
+          (Math.random() - 0.5) * 0.02,
+          (Math.random() - 0.5) * 0.02,
+          (Math.random() - 0.5) * 0.02
+        );
+        this.mesh = null;
+        this.label = null;
+        this.phase = Math.random() * Math.PI * 2;
+        this.driftSpeed = 0.3 + Math.random() * 0.3;
+        this.brownianAmp = 0.015;
+
+        // State for reaction animation
+        this.reacting = false;
+        this.reactTimer = 0;
+
+        this.createMesh();
+      }
+
+      createMesh() {
+        let color, size, labelText, labelColor;
+        switch (this.type) {
+          case 'cl':
+            color = 0x50c8ff; size = 0.45; labelText = 'Cl⁻'; labelColor = '#50c8ff';
+            break;
+          case 'na':
+            color = 0xff6644; size = 0.35; labelText = 'Na⁺'; labelColor = '#ff6644';
+            break;
+          case 'k':
+            color = 0x50e080; size = 0.38; labelText = 'K⁺'; labelColor = '#50e080';
+            break;
+          case 'electron':
+            color = 0xffd700; size = 0.2; labelText = 'e⁻'; labelColor = '#ffd700';
+            break;
+        }
+
+        const geo = new THREE.SphereGeometry(size, 16, 16);
+        const mat = new THREE.MeshPhongMaterial({
+          color, emissive: color, emissiveIntensity: 0.3,
+          transparent: true, opacity: 0.9
+        });
+        this.mesh = new THREE.Mesh(geo, mat);
+        this.mesh.position.copy(this.pos);
+
+        // Glow
+        const glowGeo = new THREE.SphereGeometry(size * 2, 12, 12);
+        const glowMat = new THREE.MeshBasicMaterial({
+          color, transparent: true, opacity: 0.08, depthWrite: false
+        });
+        this.glow = new THREE.Mesh(glowGeo, glowMat);
+        this.mesh.add(this.glow);
+
+        // Label
+        this.label = makeSprite(labelText, labelColor, 1.2);
+        this.label.position.set(0, size + 0.6, 0);
+        this.mesh.add(this.label);
+
+        scene.add(this.mesh);
+      }
+
+      remove() {
+        scene.remove(this.mesh);
+      }
+
+      update(dt, time) {
+        if (this.reacting) return;
+
+        // Brownian motion
+        this.vel.x += (Math.random() - 0.5) * this.brownianAmp;
+        this.vel.y += (Math.random() - 0.5) * this.brownianAmp;
+        this.vel.z += (Math.random() - 0.5) * this.brownianAmp;
+
+        // Damping
+        this.vel.multiplyScalar(0.96);
+
+        // Type-specific drift behavior
+        if (this.type === 'electron') {
+          // Electrons stay in the metal region
+          this.updateElectron(dt, time);
+        } else {
+          // Ions in electrolyte
+          this.updateIon(dt, time);
+        }
+
+        this.mesh.position.copy(this.pos);
+      }
+
+      updateElectron(dt, time) {
+        const metalLeft = ELECTRODE_X - ELECTRODE_D / 2;
+        const metalRight = ELECTRODE_X + ELECTRODE_D / 2;
+        const wireY = ELECTRODE_H / 2;
+
+        if (mode === 'reduce') {
+          // Electrons drift toward the AgCl interface (rightward / downward from wire)
+          this.vel.x += 0.005 * speed;
+          if (this.pos.y > wireY - 1) {
+            this.vel.y -= 0.003 * speed;
+          }
+        } else if (mode === 'oxidize') {
+          // Electrons drift away from interface (leftward / upward to wire)
+          this.vel.x -= 0.003 * speed;
+          if (this.pos.x < metalLeft + 0.5) {
+            this.vel.y += 0.005 * speed;
+          }
+        }
+
+        this.pos.add(this.vel.clone().multiplyScalar(dt * speed * 60));
+
+        // Bounds: metal + wire region
+        const halfH = ELECTRODE_H / 2;
+        const halfW = ELECTRODE_W / 2;
+
+        // If in wire region (above electrode)
+        if (this.pos.y > halfH) {
+          this.pos.y = Math.min(this.pos.y, halfH + WIRE_HEIGHT);
+          this.pos.z = THREE.MathUtils.clamp(this.pos.z, -0.3, 0.3);
+          this.pos.x = THREE.MathUtils.clamp(this.pos.x, metalLeft, ELECTRODE_X + 15);
+        } else {
+          // In electrode body
+          this.pos.x = THREE.MathUtils.clamp(this.pos.x, metalLeft, metalRight);
+          this.pos.y = THREE.MathUtils.clamp(this.pos.y, -halfH, halfH);
+          this.pos.z = THREE.MathUtils.clamp(this.pos.z, -halfW, halfW);
+        }
+
+        // Wrap: if electron reaches interface edge during reduction, respawn at wire end
+        if (mode === 'reduce' && this.pos.x >= metalRight - 0.1 && this.pos.y < halfH - 1) {
+          this.pos.set(
+            ELECTRODE_X + 10 + Math.random() * 5,
+            halfH + WIRE_HEIGHT - 0.5,
+            (Math.random() - 0.5) * 0.3
+          );
+        }
+        // Wrap: if electron goes too far up wire during oxidation, respawn near interface
+        if (mode === 'oxidize' && this.pos.x > ELECTRODE_X + 12) {
+          this.pos.set(
+            metalRight - 0.2,
+            (Math.random() - 0.5) * halfH,
+            (Math.random() - 0.5) * halfW * 0.5
+          );
+        }
+      }
+
+      updateIon(dt, time) {
+        const bodyLeft = INTERFACE_X + AGCL_THICKNESS / 2 + 0.3;
+        const bodyRight = 3 + ELECTROLYTE_W / 2 - 0.5;
+        const halfH = ELECTROLYTE_H / 2 - 0.5;
+        const halfD = ELECTROLYTE_D / 2 - 0.5;
+
+        if (this.type === 'cl') {
+          if (mode === 'reduce') {
+            // Cl- released from interface, drift away (rightward)
+            this.vel.x += 0.003 * speed;
+          } else if (mode === 'oxidize') {
+            // Cl- drawn toward interface (leftward)
+            this.vel.x -= 0.005 * speed;
+          }
+          // Wrap cl ions
+          if (mode === 'reduce' && this.pos.x > bodyRight) {
+            this.pos.x = bodyLeft + 0.5;
+            this.pos.y = (Math.random() - 0.5) * ELECTROLYTE_H * 0.8;
+            this.pos.z = (Math.random() - 0.5) * ELECTROLYTE_D * 0.6;
+          }
+          if (mode === 'oxidize' && this.pos.x < bodyLeft) {
+            this.pos.x = bodyRight - 1;
+            this.pos.y = (Math.random() - 0.5) * ELECTROLYTE_H * 0.8;
+            this.pos.z = (Math.random() - 0.5) * ELECTROLYTE_D * 0.6;
+          }
+        } else {
+          // Na+ and K+ — gentle random drift, slight response to charge balance
+          if (mode === 'reduce') {
+            this.vel.x -= 0.001 * speed; // slight drift left (attracted to positive depletion)
+          } else if (mode === 'oxidize') {
+            this.vel.x += 0.001 * speed;
+          }
+        }
+
+        this.pos.add(this.vel.clone().multiplyScalar(dt * speed * 60));
+
+        // Bounds
+        this.pos.x = THREE.MathUtils.clamp(this.pos.x, bodyLeft, bodyRight);
+        this.pos.y = THREE.MathUtils.clamp(this.pos.y, -halfH, halfH);
+        this.pos.z = THREE.MathUtils.clamp(this.pos.z, -halfD, halfD);
+      }
+    }
+
+    let ions = [];
+
+    function spawnIons(count) {
+      ions.forEach(ion => ion.remove());
+      ions = [];
+
+      const bodyLeft = INTERFACE_X + AGCL_THICKNESS / 2 + 0.5;
+      const bodyRight = 3 + ELECTROLYTE_W / 2 - 1;
+      const halfH = ELECTROLYTE_H / 2 - 1;
+      const halfD = ELECTROLYTE_D / 2 - 1;
+
+      // Cl- ions
+      for (let i = 0; i < count; i++) {
+        ions.push(new Ion('cl', new THREE.Vector3(
+          bodyLeft + Math.random() * (bodyRight - bodyLeft),
+          (Math.random() - 0.5) * halfH * 2,
+          (Math.random() - 0.5) * halfD * 2
+        )));
+      }
+
+      // Na+ ions
+      for (let i = 0; i < Math.floor(count * 0.7); i++) {
+        ions.push(new Ion('na', new THREE.Vector3(
+          bodyLeft + Math.random() * (bodyRight - bodyLeft),
+          (Math.random() - 0.5) * halfH * 2,
+          (Math.random() - 0.5) * halfD * 2
+        )));
+      }
+
+      // K+ ions
+      for (let i = 0; i < Math.floor(count * 0.3); i++) {
+        ions.push(new Ion('k', new THREE.Vector3(
+          bodyLeft + Math.random() * (bodyRight - bodyLeft),
+          (Math.random() - 0.5) * halfH * 2,
+          (Math.random() - 0.5) * halfD * 2
+        )));
+      }
+
+      // Electrons in the metal
+      const metalLeft = ELECTRODE_X - ELECTRODE_D / 2 + 0.1;
+      const metalRight = ELECTRODE_X + ELECTRODE_D / 2 - 0.1;
+      const eCount = Math.floor(count * 0.6);
+      for (let i = 0; i < eCount; i++) {
+        const inWire = Math.random() < 0.3;
+        let pos;
+        if (inWire) {
+          pos = new THREE.Vector3(
+            ELECTRODE_X + Math.random() * 15,
+            ELECTRODE_H / 2 + WIRE_HEIGHT * Math.random(),
+            (Math.random() - 0.5) * 0.3
+          );
+        } else {
+          pos = new THREE.Vector3(
+            metalLeft + Math.random() * (metalRight - metalLeft),
+            (Math.random() - 0.5) * ELECTRODE_H * 0.9,
+            (Math.random() - 0.5) * ELECTRODE_W * 0.4
+          );
+        }
+        ions.push(new Ion('electron', pos));
+      }
+    }
+
+    spawnIons(ionCount);
+
+    // --- Current flow arrows ---
+    // Arrow showing conventional current direction in the wire
+    let currentArrow = null;
+    let ionCurrentArrow = null;
+
+    function buildCurrentArrows() {
+      if (currentArrow) scene.remove(currentArrow);
+      if (ionCurrentArrow) scene.remove(ionCurrentArrow);
+
+      if (mode === 'equil') {
+        currentArrow = null;
+        ionCurrentArrow = null;
+        return;
+      }
+
+      const arrowColor = 0xff44aa;
+
+      if (mode === 'reduce') {
+        // Conventional current flows INTO electrode (electrons flow out of wire)
+        // Wire: right to left
+        currentArrow = new THREE.ArrowHelper(
+          new THREE.Vector3(-1, 0, 0),
+          new THREE.Vector3(ELECTRODE_X + 12, ELECTRODE_H / 2 + WIRE_HEIGHT + 1.5, 0),
+          10, arrowColor, 1.5, 0.8
+        );
+        // Ion current in electrolyte: left to right (Cl- moves right)
+        ionCurrentArrow = new THREE.ArrowHelper(
+          new THREE.Vector3(1, 0, 0),
+          new THREE.Vector3(INTERFACE_X + 2, -ELECTROLYTE_H / 2 - 1.5, 0),
+          8, arrowColor, 1.5, 0.8
+        );
+      } else {
+        // Conventional current flows OUT of electrode
+        currentArrow = new THREE.ArrowHelper(
+          new THREE.Vector3(1, 0, 0),
+          new THREE.Vector3(ELECTRODE_X + 2, ELECTRODE_H / 2 + WIRE_HEIGHT + 1.5, 0),
+          10, arrowColor, 1.5, 0.8
+        );
+        // Ion current in electrolyte: right to left (Cl- moves left)
+        ionCurrentArrow = new THREE.ArrowHelper(
+          new THREE.Vector3(-1, 0, 0),
+          new THREE.Vector3(INTERFACE_X + 10, -ELECTROLYTE_H / 2 - 1.5, 0),
+          8, arrowColor, 1.5, 0.8
+        );
+      }
+
+      if (currentArrow) {
+        currentArrow.line.material.transparent = true;
+        currentArrow.line.material.opacity = 0.7;
+        currentArrow.cone.material.transparent = true;
+        currentArrow.cone.material.opacity = 0.7;
+        scene.add(currentArrow);
+      }
+      if (ionCurrentArrow) {
+        ionCurrentArrow.line.material.transparent = true;
+        ionCurrentArrow.line.material.opacity = 0.7;
+        ionCurrentArrow.cone.material.transparent = true;
+        ionCurrentArrow.cone.material.opacity = 0.7;
+        scene.add(ionCurrentArrow);
+      }
+    }
+
+    // Current arrow labels
+    let wireCurrentLabel = null;
+    let ionCurrentLabel = null;
+
+    function buildCurrentLabels() {
+      if (wireCurrentLabel) scene.remove(wireCurrentLabel);
+      if (ionCurrentLabel) scene.remove(ionCurrentLabel);
+
+      if (mode === 'equil') return;
+
+      wireCurrentLabel = makeSprite('I (wire)', '#ff44aa', 2);
+      wireCurrentLabel.position.set(ELECTRODE_X + 7, ELECTRODE_H / 2 + WIRE_HEIGHT + 3, 0);
+      scene.add(wireCurrentLabel);
+
+      ionCurrentLabel = makeSprite('I (ionic)', '#ff44aa', 2);
+      ionCurrentLabel.position.set(INTERFACE_X + 6, -ELECTROLYTE_H / 2 - 3, 0);
+      scene.add(ionCurrentLabel);
+    }
+
+    buildCurrentArrows();
+    buildCurrentLabels();
+
+    // --- Reaction sparkle particles at interface ---
+    const sparkles = [];
+    const SPARKLE_COUNT = 20;
+    const sparkleGeo = new THREE.SphereGeometry(0.1, 8, 8);
+
+    for (let i = 0; i < SPARKLE_COUNT; i++) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffc832, transparent: true, opacity: 0, depthWrite: false
+      });
+      const mesh = new THREE.Mesh(sparkleGeo, mat);
+      mesh.position.set(
+        INTERFACE_X + AGCL_THICKNESS / 2,
+        (Math.random() - 0.5) * ELECTRODE_H,
+        (Math.random() - 0.5) * ELECTRODE_W
+      );
+      mesh.userData = {
+        life: 0,
+        maxLife: 0.5 + Math.random() * 1.0,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2),
+        delay: Math.random() * 2,
+        elapsed: 0,
+      };
+      scene.add(mesh);
+      sparkles.push(mesh);
+    }
+
+    // --- Signal history ---
+    const SIGNAL_LEN = 400;
+    const signalHistory = new Array(SIGNAL_LEN).fill(0);
+
+    const sigCanvas = document.getElementById('signalCanvas');
+    const sigCtx = sigCanvas.getContext('2d');
+
+    function resizeSignalCanvas() {
+      const rect = sigCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (sigCanvas.width !== w || sigCanvas.height !== h) {
+        sigCanvas.width = w;
+        sigCanvas.height = h;
+      }
+    }
+    const sigObserver = new ResizeObserver(resizeSignalCanvas);
+    sigObserver.observe(sigCanvas);
+    resizeSignalCanvas();
+
+    function drawSignal() {
+      resizeSignalCanvas();
+      const dpr = window.devicePixelRatio || 1;
+      const rect = sigCanvas.getBoundingClientRect();
+      const W = Math.round(rect.width), H = Math.round(rect.height);
+      sigCtx.save();
+      sigCtx.scale(dpr, dpr);
+
+      sigCtx.fillStyle = 'rgba(0,0,0,0.85)';
+      sigCtx.fillRect(0, 0, W, H);
+
+      // Grid
+      sigCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+      sigCtx.lineWidth = 0.5;
+      for (let y = 0; y <= H; y += 20) {
+        sigCtx.beginPath(); sigCtx.moveTo(0, y); sigCtx.lineTo(W, y); sigCtx.stroke();
+      }
+      for (let x = 0; x <= W; x += 30) {
+        sigCtx.beginPath(); sigCtx.moveTo(x, 0); sigCtx.lineTo(x, H); sigCtx.stroke();
+      }
+
+      // Zero line
+      sigCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+      sigCtx.lineWidth = 1;
+      sigCtx.beginPath();
+      sigCtx.moveTo(0, H / 2);
+      sigCtx.lineTo(W, H / 2);
+      sigCtx.stroke();
+
+      // Current trace
+      let peak = 0;
+      for (let i = 0; i < SIGNAL_LEN; i++) {
+        const a = Math.abs(signalHistory[i]);
+        if (a > peak) peak = a;
+      }
+      if (peak < 0.001) peak = 1;
+      const scale = (H * 0.38) / peak;
+
+      sigCtx.strokeStyle = 'rgba(255,68,170,0.9)';
+      sigCtx.lineWidth = 2;
+      sigCtx.beginPath();
+      for (let px = 0; px < W; px++) {
+        const idx = Math.floor(px / W * SIGNAL_LEN);
+        const v = signalHistory[Math.min(idx, SIGNAL_LEN - 1)] || 0;
+        const y = H / 2 - v * scale;
+        if (px === 0) sigCtx.moveTo(px, y);
+        else sigCtx.lineTo(px, y);
+      }
+      sigCtx.stroke();
+
+      // Labels
+      sigCtx.fillStyle = '#666';
+      sigCtx.font = '11px sans-serif';
+      sigCtx.fillText('Reduction ↑', 4, 14);
+      sigCtx.fillText('Oxidation ↓', 4, H - 6);
+      sigCtx.fillText('time →', W - 52, H - 6);
+
+      // Mode label
+      const modeColors = { equil: '#666', reduce: '#50c8ff', oxidize: '#ff6644' };
+      const modeNames = { equil: 'Equilibrium', reduce: 'Reduction', oxidize: 'Oxidation' };
+      sigCtx.fillStyle = modeColors[mode];
+      sigCtx.font = '10px sans-serif';
+      sigCtx.fillText(modeNames[mode], W - 80, 14);
+
+      sigCtx.restore();
+    }
+
+    // --- Animation ---
+    const clock = new THREE.Clock();
+    let time = 0;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+      controls.update();
+
+      if (!paused) {
+        time += dt * speed;
+
+        // Update ions
+        for (const ion of ions) {
+          ion.update(dt, time);
+        }
+
+        // Interface glow pulse
+        const glowPulse = mode === 'equil' ? 0.05 : 0.1 + Math.sin(time * 4) * 0.06;
+        interfacePlaneMat.opacity = glowPulse;
+        const glowColor = mode === 'reduce' ? 0x50c8ff : mode === 'oxidize' ? 0xff6644 : 0xffc832;
+        interfacePlaneMat.color.set(glowColor);
+
+        // AgCl coating pulse
+        const agclPulse = mode === 'equil' ? 0.7 : 0.6 + Math.sin(time * 3) * 0.15;
+        agclMat.opacity = agclPulse;
+
+        // Sparkles at interface
+        for (const s of sparkles) {
+          const ud = s.userData;
+          ud.elapsed += dt * speed;
+          if (ud.elapsed < ud.delay) continue;
+
+          if (mode === 'equil') {
+            s.material.opacity = 0;
+            continue;
+          }
+
+          ud.life += dt * speed;
+          if (ud.life > ud.maxLife) {
+            // Reset
+            ud.life = 0;
+            ud.maxLife = 0.3 + Math.random() * 0.8;
+            ud.vel.set(
+              (Math.random() - 0.5) * 3 * (mode === 'reduce' ? 1 : -1),
+              (Math.random() - 0.5) * 2,
+              (Math.random() - 0.5) * 2
+            );
+            s.position.set(
+              INTERFACE_X + AGCL_THICKNESS / 2,
+              (Math.random() - 0.5) * ELECTRODE_H * 0.8,
+              (Math.random() - 0.5) * ELECTRODE_W * 0.8
+            );
+          }
+
+          const t = ud.life / ud.maxLife;
+          s.material.opacity = Math.sin(t * Math.PI) * 0.6;
+          s.material.color.set(mode === 'reduce' ? 0x50c8ff : 0xff6644);
+          s.position.add(ud.vel.clone().multiplyScalar(dt * speed));
+        }
+
+        // Signal
+        let currentVal = 0;
+        if (mode === 'reduce') {
+          currentVal = 0.5 + Math.sin(time * 2) * 0.15 + (Math.random() - 0.5) * 0.05;
+        } else if (mode === 'oxidize') {
+          currentVal = -0.5 - Math.sin(time * 2) * 0.15 + (Math.random() - 0.5) * 0.05;
+        } else {
+          currentVal = (Math.random() - 0.5) * 0.02; // noise at equilibrium
+        }
+        signalHistory.push(currentVal);
+        if (signalHistory.length > SIGNAL_LEN) signalHistory.shift();
+
+        // Voltage readout
+        const E = 0.222;
+        const deltaE = mode === 'reduce' ? 0.01 * Math.sin(time * 2) : mode === 'oxidize' ? -0.01 * Math.sin(time * 2) : 0;
+        document.getElementById('halfCellVal').textContent = `E = +${(E + deltaE).toFixed(3)} V`;
+      }
+
+      drawSignal();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // --- Controls ---
+    document.getElementById('speedSlider').addEventListener('input', e => {
+      speed = parseFloat(e.target.value);
+    });
+
+    document.getElementById('ionDensity').addEventListener('input', e => {
+      ionCount = parseInt(e.target.value);
+      spawnIons(ionCount);
+    });
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('modeEquil').classList.toggle('active', m === 'equil');
+      document.getElementById('modeReduce').classList.toggle('active', m === 'reduce');
+      document.getElementById('modeOxidize').classList.toggle('active', m === 'oxidize');
+
+      const modeTexts = {
+        equil: 'Equilibrium — no net current',
+        reduce: 'Reduction: AgCl + e⁻ → Ag + Cl⁻ (electrons consumed)',
+        oxidize: 'Oxidation: Ag + Cl⁻ → AgCl + e⁻ (electrons released)',
+      };
+      document.getElementById('modeText').textContent = modeTexts[m];
+
+      buildCurrentArrows();
+      buildCurrentLabels();
+    }
+
+    document.getElementById('modeEquil').addEventListener('click', () => setMode('equil'));
+    document.getElementById('modeReduce').addEventListener('click', () => setMode('reduce'));
+    document.getElementById('modeOxidize').addEventListener('click', () => setMode('oxidize'));
+
+    // Start in reduction mode
+    setMode('reduce');
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      signalHistory.fill(0);
+      time = 0;
+      paused = false;
+      document.getElementById('pauseBtn').textContent = 'Pause';
+      spawnIons(ionCount);
+      setMode('reduce');
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      paused = !paused;
+      document.getElementById('pauseBtn').textContent = paused ? 'Play' : 'Pause';
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+
+</html>

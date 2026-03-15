@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic Action Potential Simulation</title>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #00ff88;
+            --secondary-color: #00ccff;
+            --bg-color: #020617;
+            --panel-bg: #1e293b;
+            --text-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 1rem 2rem;
+            background: rgba(15, 23, 42, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        h1 {
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.5rem;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            height: calc(100vh - 70px);
+        }
+
+        .vis-area {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background: #000;
+        }
+
+        #plot-container {
+            height: 35%;
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        #vis3d-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Sidebar Controls */
+        .controls-sidebar {
+            background: var(--panel-bg);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.3);
+            z-index: 20;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary-color);
+        }
+
+        button.action-btn {
+            background: linear-gradient(135deg, var(--primary-color), 80%, var(--secondary-color));
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            color: #0f172a;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button.action-btn:hover {
+            opacity: 0.9;
+        }
+
+        button.action-btn:active {
+            transform: scale(0.98);
+        }
+
+        .metric-card {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .metric-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            margin-bottom: 0.2rem;
+        }
+
+        .metric-value {
+            font-size: 1.1rem;
+            font-family: monospace;
+            color: var(--text-color);
+        }
+
+        .metric-value.highlight {
+            color: var(--primary-color);
+        }
+
+        /* Overlays */
+        .canvas-overlay {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            pointer-events: none;
+            display: flex;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            font-size: 0.8rem;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <a href="../index.html" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#ccc;text-decoration:none;font-size:12px;font-weight:500;backdrop-filter:blur(8px);transition:all 0.15s;margin-right:12px;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='#ccc'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+        <div>
+            <h1>BioSim: Hodgkin-Huxley</h1>
+        </div>
+        <div style="font-size: 0.8rem; opacity: 0.7;">Interactive 3D Cell Model</div>
+    </header>
+
+    <div class="main-layout">
+        <div class="vis-area">
+            <!-- 2D Plot -->
+            <div id="plot-container">
+                <canvas id="plotCanvas"></canvas>
+                <div class="canvas-overlay">
+                    <div><span class="legend-dot" style="background:var(--primary-color)"></span>Vm</div>
+                    <div><span class="legend-dot" style="background:#f59e0b"></span>Stimulus</div>
+                    <div><span class="legend-dot" style="background:#ffd700"></span>INa</div>
+                    <div><span class="legend-dot" style="background:#3b82f6"></span>IK</div>
+                </div>
+            </div>
+
+            <!-- 3D View -->
+            <div id="vis3d-container">
+                <!-- ThreeJS Canvas will be injected here -->
+                <div class="canvas-overlay" style="top: auto; bottom: 20px; right: 20px;">
+                    <div><span class="legend-dot" style="background:#ffd700"></span>Na+</div>
+                    <div><span class="legend-dot" style="background:#3b82f6"></span>K+</div>
+                    <div><span class="legend-dot" style="background:#ec4899"></span>Pump</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-sidebar">
+            <h3 style="margin:0; font-size: 1rem; color:white;">Simulation Controls</h3>
+
+            <div class="control-group">
+                <label>Stimulus Intensity</label>
+                <div style="display:flex; justify-content:space-between; margin-bottom: 5px;">
+                    <span id="stimValDisp">20</span> <span style="opacity:0.5">µA/cm²</span>
+                </div>
+                <input type="range" id="stimCurrent" min="0" max="60" value="20">
+            </div>
+
+            <button id="fireBtn" class="action-btn">Trigger Action Potential</button>
+
+            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 0.5rem 0;"></div>
+
+            <div class="metric-card">
+                <div class="metric-label">Membrane Potential</div>
+                <div class="metric-value highlight" id="vmDisp">-65.0 mV</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Na+ Conductance</div>
+                <div class="metric-value" id="gNaDisp">0.0 mS</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">K+ Conductance</div>
+                <div class="metric-value" id="gKDisp">0.0 mS</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Na+ Concentration (out | in)</div>
+                <div class="metric-value" id="naConcDisp">-- mM | -- mM</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">K+ Concentration (in | out)</div>
+                <div class="metric-value" id="kConcDisp">-- mM | -- mM</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Flux (Na in/out, K out/in)</div>
+                <div class="metric-value" id="fluxDisp">Na: --/-- | K: --/--</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shaders for particles (unused now but kept for legacy or future use) -->
+    <script type="x-shader/x-vertex" id="vertexshader">
+        attribute float size;
+        attribute vec3 customColor;
+        varying vec3 vColor;
+        void main() {
+            vColor = customColor;
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            gl_PointSize = size * ( 300.0 / -mvPosition.z );
+            gl_Position = projectionMatrix * mvPosition;
+        }
+    </script>
+    <script type="x-shader/x-fragment" id="fragmentshader">
+        uniform vec3 color;
+        uniform sampler2D pointTexture;
+        varying vec3 vColor;
+        void main() {
+            gl_FragColor = vec4( color * vColor, 1.0 );
+            gl_FragColor = gl_FragColor * texture2D( pointTexture, gl_PointCoord );
+            if ( gl_FragColor.a < 0.5 ) discard;
+        }
+    </script>
+
+    <script>
+        /**
+         * HODGKIN-HUXLEY MODEL ENGINE
+         */
+        const HH = {
+            V: -65.0, m: 0.052, h: 0.596, n: 0.317,
+            dt: 0.05,
+            C_m: 1.0, g_Na: 120.0, E_Na: 50.0, g_K: 36.0, E_K: -77.0, g_L: 0.3, E_L: -54.387,
+
+            stim: { active: false, cur: 20, timer: 0, dur: 1 },
+            INa: 0, IK: 0,
+
+            step: function () {
+                let I_stim = 0;
+                if (this.stim.active) {
+                    I_stim = this.stim.cur;
+                    this.stim.timer -= this.dt;
+                    if (this.stim.timer <= 0) this.stim.active = false;
+                }
+
+                const alpha_n = (v) => 0.01 * (v + 55) / (1 - Math.exp(-(v + 55) / 10));
+                const beta_n = (v) => 0.125 * Math.exp(-(v + 65) / 80);
+                const alpha_m = (v) => 0.1 * (v + 40) / (1 - Math.exp(-(v + 40) / 10));
+                const beta_m = (v) => 4.0 * Math.exp(-(v + 65) / 18);
+                const alpha_h = (v) => 0.07 * Math.exp(-(v + 65) / 20);
+                const beta_h = (v) => 1.0 / (1 + Math.exp(-(v + 35) / 10));
+
+                const gNa_val = this.g_Na * Math.pow(this.m, 3) * this.h;
+                const gK_val = this.g_K * Math.pow(this.n, 4);
+
+                this.INa = gNa_val * (this.V - this.E_Na);
+                this.IK = gK_val * (this.V - this.E_K);
+                const IL = this.g_L * (this.V - this.E_L);
+
+                const dV = (I_stim - this.INa - this.IK - IL) / this.C_m;
+                const dm = alpha_m(this.V) * (1 - this.m) - beta_m(this.V) * this.m;
+                const dh = alpha_h(this.V) * (1 - this.h) - beta_h(this.V) * this.h;
+                const dn = alpha_n(this.V) * (1 - this.n) - beta_n(this.V) * this.n;
+
+                this.V += dV * this.dt;
+                this.m += dm * this.dt;
+                this.h += dh * this.dt;
+                this.n += dn * this.dt;
+
+                return { V: this.V, I_stim, gNa: gNa_val, gK: gK_val, INa: this.INa, IK: this.IK };
+            },
+
+            trigger: function () {
+                this.stim.timer = this.stim.dur;
+                this.stim.active = true;
+            }
+        };
+
+        /**
+         * 3D VISUALIZATION ENGINE (Redesigned)
+         */
+        const VIS = {
+            scene: null, camera: null, renderer: null,
+            time: 0,
+
+            // Flux mapping (ties visible particle transfers to HH currents)
+            pendingFlux: { na: 0, k: 0 }, // signed particles ( + = out->in, - = in->out )
+            lastMoved: { na: 0, k: 0 },   // signed particles started this rendered frame
+            fluxMap: {
+                patchArea_cm2: 1e-8,         // ~1 µm^2 membrane patch
+                ionsPerParticle: 1000,       // each rendered particle represents this many ions
+                e_C: 1.602176634e-19
+            },
+
+            // Baseline concentrations (used to convert particle counts to mM)
+            baselineConc_mM: {
+                na: { out: 145, in: 15 },
+                k: { out: 5, in: 140 }
+            },
+            baselineCounts: null,
+
+            // Assets
+            ions: { na: null, k: null }, // InstancedMeshes
+            ionData: { na: [], k: [] }, // { velocity, region }
+            channels: { na: [], k: [], pump: null },
+
+            // Config
+            bounds: { x: 25, yTop: 15, yBot: -15, z: 5 },
+            membraneY: 0,
+            membraneThickness: 3.5,
+
+            // Ion transport / diffusion tuning (visual realism, not biophysical units)
+            fluxCfg: {
+                mouthY: 2.2,
+                captureRadius: 9.0,  // only ions near a channel can be transported
+                attractRadius: 12.0, // gentle pull/push field around a channel mouth
+                maxPerFrame: 28,
+                poreSpeed: 0.10,
+                poreSpeedJitter: 0.06,
+                lateralWiggle: 0.9,
+                exitSpread: 4.0,
+                exitSpeed: 0.30,
+                brownian: 0.008,
+                damping: 0.995,
+                maxSpeed: 0.35
+            },
+
+            channelX: { na: -10, k: 10, pump: 0 },
+            channelZ: { na: 0, k: 0, pump: 0 },
+
+            init: function () {
+                const container = document.getElementById('vis3d-container');
+
+                // Scene Setup
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x020617);
+                this.scene.fog = new THREE.FogExp2(0x020617, 0.02); // Distance fog
+
+                // Side View Camera
+                const aspect = container.clientWidth / container.clientHeight;
+                this.camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+                this.camera.position.set(0, 5, 45); // Side view
+                this.camera.lookAt(0, 0, 0);
+
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                container.appendChild(this.renderer.domElement);
+
+                // Lights
+                const ambient = new THREE.AmbientLight(0xffffff, 0.1);
+                this.scene.add(ambient);
+
+                const topLight = new THREE.DirectionalLight(0xffffff, 1);
+                topLight.position.set(5, 20, 10);
+                this.scene.add(topLight);
+
+                const botLight = new THREE.DirectionalLight(0x3b82f6, 0.5); // Blue tint from inside
+                botLight.position.set(-5, -20, 10);
+                this.scene.add(botLight);
+
+                const rimLight = new THREE.SpotLight(0x00ccff, 2);
+                rimLight.position.set(30, 0, 0);
+                rimLight.lookAt(0, 0, 0);
+                this.scene.add(rimLight);
+
+                // Build Elements
+                this.buildMembrane();
+                this.buildChannels();
+                this.buildIons();
+
+                window.addEventListener('resize', () => this.resize());
+            },
+
+            resize: function () {
+                const container = document.getElementById('vis3d-container');
+                this.camera.aspect = container.clientWidth / container.clientHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(container.clientWidth, container.clientHeight);
+            },
+
+            buildMembrane: function () {
+                // Bilayer Cross-Section
+                const headGeo = new THREE.SphereGeometry(0.5, 16, 16);
+                const headMat = new THREE.MeshStandardMaterial({
+                    color: 0xe2e8f0,
+                    roughness: 0.6,
+                    metalness: 0.1
+                });
+
+                // We'll place heads in two rows: y = +1.5 and y = -1.5
+                // Z depth from -5 to 5
+                // X width from -25 to 25
+                // BUT leave gaps for channels: x = -10 (Na), 0 (Pump), 10 (K)
+
+                const dummy = new THREE.Object3D();
+
+                const isGap = (x) => {
+                    if (Math.abs(x - (-10)) < 3) return true; // Na
+                    if (Math.abs(x - (0)) < 4) return true; // Pump
+                    if (Math.abs(x - (10)) < 3) return true; // K
+                    return false;
+                };
+
+                const mesh = new THREE.InstancedMesh(headGeo, headMat, 5000);
+
+                let idx = 0;
+                for (let x = -28; x <= 28; x += 1.0) {
+                    for (let z = -6; z <= 6; z += 1.0) {
+                        if (isGap(x)) continue;
+
+                        // Jitter
+                        const jx = (Math.random() - 0.5) * 0.3;
+                        const jz = (Math.random() - 0.5) * 0.3;
+                        const jy = (Math.random() - 0.5) * 0.1;
+
+                        // Top Layer (Ex)
+                        dummy.position.set(x + jx, 1.8 + jy, z + jz);
+                        dummy.updateMatrix();
+                        mesh.setMatrixAt(idx++, dummy.matrix);
+
+                        // Bot Layer (In)
+                        dummy.position.set(x + jx, -1.8 + jy, z + jz);
+                        dummy.updateMatrix();
+                        mesh.setMatrixAt(idx++, dummy.matrix);
+                    }
+                }
+                this.scene.add(mesh);
+
+                // Tails (Visual filler)
+                const tailMat = new THREE.MeshBasicMaterial({ color: 0x334155, transparent: true, opacity: 0.3 });
+                const coreGeo = new THREE.BoxGeometry(60, 3.0, 12);
+                const core = new THREE.Mesh(coreGeo, tailMat);
+                core.position.y = 0;
+                this.scene.add(core);
+
+                // Labels
+                // Not standard THREE text, we'll assume icons/overlay handle it
+            },
+
+            buildChannels: function () {
+                // Na Channel (Left, x=-10) - 4 subunits, closes like a gate
+                {
+                    const group = new THREE.Group();
+                    group.position.set(-10, 0, 0);
+
+                    const mat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.2 });
+                    const geo = new THREE.CapsuleGeometry(0.8, 4, 4, 16);
+
+                    const subunits = [];
+                    for (let i = 0; i < 4; i++) {
+                        const angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+                        const mesh = new THREE.Mesh(geo, mat);
+                        // Pivot group for rotation
+                        const pivot = new THREE.Group();
+                        mesh.position.set(0, 0, 0); // Local to pivot
+                        pivot.rotation.z = 0; // Initial
+                        pivot.position.set(Math.cos(angle) * 1.2, 0, Math.sin(angle) * 1.2);
+
+                        // We want them to tilt inward to close
+                        pivot.lookAt(0, 0, 0);
+                        pivot.add(mesh);
+
+                        group.add(pivot);
+                        subunits.push(pivot);
+                    }
+
+                    // Gate (Ball and Chain model simplified)
+                    const gate = new THREE.Mesh(new THREE.SphereGeometry(1.2), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+                    gate.position.set(0, -3.5, 0); // Intracellular side
+                    group.add(gate);
+
+                    this.scene.add(group);
+                    this.channels.na = { type: 'na', root: group, subunits, gate, isOpen: false };
+                }
+
+                // K Channel (Right, x=10) - Slow opening
+                {
+                    const group = new THREE.Group();
+                    group.position.set(10, 0, 0);
+
+                    const mat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.2 });
+                    const geo = new THREE.CapsuleGeometry(0.8, 4, 4, 16);
+
+                    const subunits = [];
+                    for (let i = 0; i < 4; i++) {
+                        const angle = (i / 4) * Math.PI * 2;
+                        const pivot = new THREE.Group();
+                        const mesh = new THREE.Mesh(geo, mat);
+                        pivot.position.set(Math.cos(angle) * 1.2, 0, Math.sin(angle) * 1.2);
+                        pivot.lookAt(0, 0, 0);
+                        pivot.add(mesh);
+                        group.add(pivot);
+                        subunits.push(pivot);
+                    }
+                    this.scene.add(group);
+                    this.channels.k = { type: 'k', root: group, subunits, isOpen: false };
+                }
+
+                // Na/K Pump (Center, x=0)
+                {
+                    const group = new THREE.Group();
+                    group.position.set(0, 0, 0);
+
+                    const mat = new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.4 });
+                    // Big complex shape
+                    const geoMain = new THREE.CylinderGeometry(2.5, 2.5, 5, 8);
+                    const main = new THREE.Mesh(geoMain, mat);
+
+                    // Two moving parts
+                    const topGate = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 4), mat);
+                    topGate.position.y = 2.5;
+                    const botGate = new THREE.Mesh(new THREE.BoxGeometry(4, 1, 4), mat);
+                    botGate.position.y = -2.5;
+
+                    group.add(main);
+                    group.add(topGate);
+                    group.add(botGate);
+
+                    this.scene.add(group);
+                    this.channels.pump = { type: 'pump', root: group, top: topGate, bot: botGate, time: 0 };
+                }
+            },
+
+            buildIons: function () {
+                // Na+ (Yellow)
+                // Outside: High (145mM) -> visually many
+                // Inside: Low (15mM) -> visually few
+                const naGeo = new THREE.SphereGeometry(0.2, 8, 8);
+                const naMat = new THREE.MeshBasicMaterial({ color: 0xffd700 }); // Gold
+                const naCount = 2000;
+                this.ions.na = new THREE.InstancedMesh(naGeo, naMat, naCount);
+                this.scene.add(this.ions.na);
+
+                // K+ (Blue)
+                // Inside: High (140mM)
+                // Outside: Low (5mM)
+                const kGeo = new THREE.SphereGeometry(0.25, 8, 8); // Slightly larger
+                const kMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6 }); // Sky Blue
+                const kCount = 2000;
+                this.ions.k = new THREE.InstancedMesh(kGeo, kMat, kCount);
+                this.scene.add(this.ions.k);
+
+                // Initialize Positions
+                const dummy = new THREE.Object3D();
+
+                // Helper to get random pos
+                const getPos = (isTop) => {
+                    const x = (Math.random() - 0.5) * 50;
+                    const z = (Math.random() - 0.5) * 10;
+                    // Keep ions away from membrane interior
+                    const y = isTop
+                        ? 3.5 + Math.random() * 12  // Top: 3.5 to 15.5
+                        : -3.5 - Math.random() * 12; // Bot: -3.5 to -15.5
+                    return new THREE.Vector3(x, y, z);
+                };
+
+                // Na Distribution: ~80% Outside, ~20% Inside
+                for (let i = 0; i < naCount; i++) {
+                    const isOut = Math.random() < 0.90;
+                    const pos = getPos(isOut);
+                    dummy.position.copy(pos);
+                    dummy.updateMatrix();
+                    this.ions.na.setMatrixAt(i, dummy.matrix);
+
+                    this.ionData.na.push({
+                        pos: pos.clone(),
+                        vel: new THREE.Vector3((Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.1),
+                        region: isOut ? 'out' : 'in',
+                        mode: 'free',
+                        pore: null
+                    });
+                }
+
+                // K Distribution: ~10% Outside, ~90% Inside
+                for (let i = 0; i < kCount; i++) {
+                    const isOut = Math.random() < 0.035;
+                    const pos = getPos(isOut);
+                    dummy.position.copy(pos);
+                    dummy.updateMatrix();
+                    this.ions.k.setMatrixAt(i, dummy.matrix);
+
+                    this.ionData.k.push({
+                        pos: pos.clone(),
+                        vel: new THREE.Vector3((Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.1, (Math.random() - 0.5) * 0.1),
+                        region: isOut ? 'out' : 'in',
+                        mode: 'free',
+                        pore: null
+                    });
+                }
+            
+                // Capture baseline particle counts per compartment (used for mM readouts)
+                const counts = this.countIonsByRegion();
+                this.baselineCounts = {
+                    na: { out: counts.na.out, in: counts.na.in },
+                    k: { out: counts.k.out, in: counts.k.in }
+                };
+            },
+
+            update: function () {
+                this.time += 0.05;
+
+                this.animateChannels();
+                this.animatePump();
+                this.animateIons();
+
+                this.renderer.render(this.scene, this.camera);
+            },
+
+            animateChannels: function () {
+                // Na Channel
+                const m = HH.m;
+                this.channels.na.subunits.forEach(grp => {
+                    const angle = 0.5 * (1 - m);
+                    grp.children[0].rotation.x = angle;
+                });
+
+                // H-gate
+                const h = HH.h;
+                // Swing into blocked position if h is low
+                const ballTarget = new THREE.Vector3(0, -2.0, 0).lerp(new THREE.Vector3(3, -5, 1), h);
+                this.channels.na.gate.position.lerp(ballTarget, 0.1);
+
+
+                // K Channel
+                const n = HH.n;
+                this.channels.k.subunits.forEach(grp => {
+                    // Invert rotation direction: -0.8 rad fully open (outward)
+                    const angle = -0.8 * n;
+                    grp.children[0].rotation.x = angle;
+                });
+            },
+
+            animatePump: function () {
+                // Visual-only pump animation.
+                // NOTE: we do NOT teleport ions here, so that the only transmembrane flux
+                // is the flux implied by HH INa and IK (and therefore matches the plots).
+                const t = this.time * 2;
+                const phase = Math.sin(t);
+                this.channels.pump.top.position.y = 2.5 + (phase > 0 ? 0.8 * phase : 0);
+                this.channels.pump.bot.position.y = -2.5 - (phase < 0 ? 0.8 * -phase : 0);
+            },
+
+            animateIons: function () {
+                const dummy = new THREE.Object3D();
+
+                // --- Channel-driven transport (only affects ions near the channel mouths) ---
+                const gNa_val = HH.g_Na * Math.pow(HH.m, 3) * HH.h;
+                const gK_val = HH.g_K * Math.pow(HH.n, 4);
+                const naOpen = THREE.MathUtils.clamp(gNa_val / HH.g_Na, 0, 1);
+                const kOpen = THREE.MathUtils.clamp(gK_val / HH.g_K, 0, 1);
+
+                // Direction follows sign (HH convention: INa < 0 means inward Na current)
+                const naFlow = (HH.INa < 0)
+                    ? { from: 'out', to: 'in' }
+                    : { from: 'in', to: 'out' };
+                const kFlow = (HH.IK > 0)
+                    ? { from: 'in', to: 'out' }
+                    : { from: 'out', to: 'in' };                // Fulfill the flux demanded by HH currents (pendingFlux is filled in the main loop)
+                const movedNa = this.fulfillPendingFlux('na', this.channelX.na, naOpen);
+                const movedK = this.fulfillPendingFlux('k', this.channelX.k, kOpen);
+                this.lastMoved.na = movedNa;
+                this.lastMoved.k = movedK;
+
+
+                // --- Update Na Ions ---
+                for (let i = 0; i < this.ionData.na.length; i++) {
+                    const p = this.ionData.na[i];
+
+                    if (p.mode === 'pore') {
+                        this.updatePoreMotion(p);
+                        dummy.position.copy(p.pos);
+                        dummy.updateMatrix();
+                        this.ions.na.setMatrixAt(i, dummy.matrix);
+                        continue;
+                    }
+
+                    // Diffusive motion
+                    this.applyBrownian(p);
+
+                    // Only ions near the channel mouth get pulled toward it
+                    this.applyChannelAttraction(p, this.channelX.na, naFlow.from, naOpen);
+
+                    p.pos.add(p.vel);
+
+                    // Bounce
+                    if (p.pos.y > this.bounds.yTop) p.vel.y *= -1;
+                    if (p.pos.y < this.bounds.yBot) p.vel.y *= -1;
+                    if (Math.abs(p.pos.x) > this.bounds.x) p.vel.x *= -1;
+                    if (Math.abs(p.pos.z) > this.bounds.z) p.vel.z *= -1;
+
+                    // Membrane Collision
+                    if (p.region === 'out' && p.pos.y < 2 && Math.abs(p.pos.x + 10) > 2.5 && Math.abs(p.pos.x) > 2.5) {
+                        p.pos.y = 2; p.vel.y = Math.abs(p.vel.y);
+                    }
+                    if (p.region === 'in' && p.pos.y > -2 && Math.abs(p.pos.x + 10) > 2.5 && Math.abs(p.pos.x) > 2.5) {
+                        p.pos.y = -2; p.vel.y = -Math.abs(p.vel.y);
+                    }
+
+                    dummy.position.copy(p.pos);
+                    dummy.updateMatrix();
+                    this.ions.na.setMatrixAt(i, dummy.matrix);
+                }
+                this.ions.na.instanceMatrix.needsUpdate = true;
+
+                // --- Update K Ions ---
+                for (let i = 0; i < this.ionData.k.length; i++) {
+                    const p = this.ionData.k[i];
+
+                    if (p.mode === 'pore') {
+                        this.updatePoreMotion(p);
+                        dummy.position.copy(p.pos);
+                        dummy.updateMatrix();
+                        this.ions.k.setMatrixAt(i, dummy.matrix);
+                        continue;
+                    }
+
+                    // Diffusive motion
+                    this.applyBrownian(p);
+
+                    // Only ions near the channel mouth get pulled toward it
+                    this.applyChannelAttraction(p, this.channelX.k, kFlow.from, kOpen);
+
+                    p.pos.add(p.vel);
+
+                    if (p.pos.y > this.bounds.yTop) p.vel.y *= -1;
+                    if (p.pos.y < this.bounds.yBot) p.vel.y *= -1;
+                    if (Math.abs(p.pos.x) > this.bounds.x) p.vel.x *= -1;
+                    if (Math.abs(p.pos.z) > this.bounds.z) p.vel.z *= -1;
+
+                    if (p.region === 'out' && p.pos.y < 2 && Math.abs(p.pos.x - 10) > 2.5 && Math.abs(p.pos.x) > 2.5) {
+                        p.pos.y = 2; p.vel.y = Math.abs(p.vel.y);
+                    }
+                    if (p.region === 'in' && p.pos.y > -2 && Math.abs(p.pos.x - 10) > 2.5 && Math.abs(p.pos.x) > 2.5) {
+                        p.pos.y = -2; p.vel.y = -Math.abs(p.vel.y);
+                    }
+
+                    dummy.position.copy(p.pos);
+                    dummy.updateMatrix();
+                    this.ions.k.setMatrixAt(i, dummy.matrix);
+                }
+                this.ions.k.instanceMatrix.needsUpdate = true;
+            },
+
+            easeInOutQuad: function (t) {
+                return (t < 0.5)
+                    ? 2 * t * t
+                    : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            },
+
+            limitSpeed: function (v, maxSpeed) {
+                const max2 = maxSpeed * maxSpeed;
+                if (v.lengthSq() > max2) v.setLength(maxSpeed);
+            },
+
+            applyBrownian: function (p) {
+                const cfg = this.fluxCfg;
+                // small random walk + mild damping
+                p.vel.x += (Math.random() - 0.5) * cfg.brownian;
+                p.vel.y += (Math.random() - 0.5) * cfg.brownian;
+                p.vel.z += (Math.random() - 0.5) * cfg.brownian;
+                p.vel.multiplyScalar(cfg.damping);
+                this.limitSpeed(p.vel, cfg.maxSpeed);
+            },
+
+            applyChannelAttraction: function (p, xLoc, fromReg, openFactor) {
+                if (p.mode !== 'free') return;
+                if (p.region !== fromReg) return;
+                if (openFactor < 0.02) return;
+
+                const cfg = this.fluxCfg;
+                // only apply on the correct side of the membrane, a bit away from the surface
+                if (fromReg === 'out' && p.pos.y < cfg.mouthY + 1.0) return;
+                if (fromReg === 'in' && p.pos.y > -cfg.mouthY - 1.0) return;
+
+                const dx = (xLoc - p.pos.x);
+                const dz = (0 - p.pos.z);
+                const d2 = dx * dx + dz * dz;
+                const r = cfg.attractRadius;
+                const r2 = r * r;
+                if (d2 > r2) return;
+
+                const d = Math.sqrt(d2) + 1e-6;
+                const falloff = 1 - (d / r);
+                const s = openFactor * falloff;
+
+                // pull in xz toward the channel axis
+                p.vel.x += (dx / d) * 0.020 * s;
+                p.vel.z += (dz / d) * 0.020 * s;
+
+                // pull toward the mouth plane (helps make "only nearby ions" visibly respond)
+                const entryY = (fromReg === 'out') ? cfg.mouthY : -cfg.mouthY;
+                p.vel.y += (entryY - p.pos.y) * 0.010 * s;
+
+                this.limitSpeed(p.vel, cfg.maxSpeed);
+            },
+
+            startPoreTransport: function (p, type, fromReg, toReg, xLoc) {
+                const cfg = this.fluxCfg;
+                p.mode = 'pore';
+                p.pore = {
+                    type,
+                    fromReg,
+                    toReg,
+                    t: 0,
+                    speed: cfg.poreSpeed + Math.random() * cfg.poreSpeedJitter,
+                    centerX: xLoc + (Math.random() - 0.5) * 0.8,
+                    centerZ: (Math.random() - 0.5) * 0.8,
+                    entryY: (fromReg === 'out') ? cfg.mouthY : -cfg.mouthY,
+                    exitY: (toReg === 'out') ? cfg.mouthY : -cfg.mouthY,
+                    swirlPhase: Math.random() * Math.PI * 2,
+                    swirlAmp: cfg.lateralWiggle * (0.5 + Math.random() * 0.6)
+                };
+                p.vel.set(0, 0, 0);
+            },
+
+            requestChannelFlux: function (type, fromReg, toReg, xLoc, openFactor, currentMag) {
+                const cfg = this.fluxCfg;
+                if (openFactor < 0.02) return;
+                if (currentMag < 2) return;
+
+                // visual flux: scaled by current magnitude but capped for performance/readability
+                const desired = Math.min(cfg.maxPerFrame, Math.floor(currentMag * 0.04 * openFactor));
+                if (desired <= 0) return;
+
+                const list = this.ionData[type];
+                const capR2 = cfg.captureRadius * cfg.captureRadius;
+
+                let moved = 0;
+                let attempts = 0;
+                while (moved < desired && attempts < 900) {
+                    attempts++;
+                    const idx = (Math.random() * list.length) | 0;
+                    const p = list[idx];
+                    if (p.mode !== 'free') continue;
+                    if (p.region !== fromReg) continue;
+
+                    // must be on the correct side (prevents "vacuuming" ions from the membrane plane)
+                    if (fromReg === 'out' && p.pos.y < cfg.mouthY + 1.0) continue;
+                    if (fromReg === 'in' && p.pos.y > -cfg.mouthY - 1.0) continue;
+
+                    const dx = p.pos.x - xLoc;
+                    const dz = p.pos.z;
+                    if (dx * dx + dz * dz > capR2) continue;
+
+                    this.startPoreTransport(p, type, fromReg, toReg, xLoc);
+                    moved++;
+                }
+            },
+
+            updatePoreMotion: function (p) {
+                const cfg = this.fluxCfg;
+                const pr = p.pore;
+                if (!pr) { p.mode = 'free'; return; }
+
+                pr.t = Math.min(1, pr.t + pr.speed);
+                const e = this.easeInOutQuad(pr.t);
+                const y = THREE.MathUtils.lerp(pr.entryY, pr.exitY, e);
+
+                // wiggle strongest mid-pore, fades at entrance/exit
+                const mid = 1 - Math.abs(2 * e - 1);
+                const ang = pr.swirlPhase + this.time * 3.0;
+                const amp = pr.swirlAmp * mid;
+
+                p.pos.x = pr.centerX + Math.cos(ang) * amp;
+                p.pos.z = pr.centerZ + Math.sin(ang) * amp;
+                p.pos.y = y;
+
+                if (pr.t >= 1) {
+                    // exit: scatter into the target compartment so it doesn't look like a single-file line
+                    p.mode = 'free';
+                    p.region = pr.toReg;
+
+                    p.pos.x = pr.centerX + (Math.random() - 0.5) * cfg.exitSpread;
+                    p.pos.z = (Math.random() - 0.5) * cfg.exitSpread;
+                    p.pos.y = (p.region === 'out') ? (cfg.mouthY + 1.3) : (-cfg.mouthY - 1.3);
+
+                    const vySign = (p.region === 'out') ? 1 : -1;
+                    p.vel.set(
+                        (Math.random() - 0.5) * cfg.exitSpeed,
+                        vySign * (0.8 + Math.random() * 0.8) * cfg.exitSpeed,
+                        (Math.random() - 0.5) * cfg.exitSpeed
+                    );
+                    this.limitSpeed(p.vel, cfg.maxSpeed);
+
+                    p.pore = null;
+                }
+            },
+
+
+            countIonsByRegion: function () {
+                const outIn = { na: { out: 0, in: 0 }, k: { out: 0, in: 0 } };
+                for (const p of this.ionData.na) outIn.na[p.region]++;
+                for (const p of this.ionData.k) outIn.k[p.region]++;
+                return outIn;
+            },
+
+            // Convert HH current density (µA/cm²) into signed particle flux (particles per HH step).
+            // Positive = influx (out -> in). Negative = efflux (in -> out).
+            addFluxFromCurrent: function (type, I_uAcm2, dt_ms) {
+                const m = this.fluxMap;
+                const dt_s = dt_ms * 1e-3;
+                const scale = (1e-6 * m.patchArea_cm2 * dt_s) / (m.e_C * m.ionsPerParticle);
+                const signedParticles = (-I_uAcm2) * scale;
+                this.pendingFlux[type] += signedParticles;
+                return signedParticles;
+            },
+
+            // Start pore transports to satisfy pendingFlux, limited per rendered frame.
+            // Returns how many were actually started (signed particles).
+            fulfillPendingFlux: function (type, xLoc, openFactor) {
+                const cfg = this.fluxCfg;
+                let p = this.pendingFlux[type];
+
+                // Integer moves we can attempt this rendered frame
+                let n = 0;
+                if (p >= 1) n = Math.min(Math.floor(p), cfg.maxPerFrame);
+                else if (p <= -1) n = -Math.min(Math.floor(-p), cfg.maxPerFrame);
+                if (n === 0) return 0;
+
+                // Require some openness so transport doesn't occur through a visually closed pore
+                if (openFactor < 0.02) return 0;
+
+                const fromReg = (n > 0) ? 'out' : 'in';
+                const toReg = (n > 0) ? 'in' : 'out';
+                const need = Math.abs(n);
+
+                const list = this.ionData[type];
+                const capR2 = cfg.captureRadius * cfg.captureRadius;
+
+                let moved = 0;
+                let attempts = 0;
+                while (moved < need && attempts < 4000) {
+                    attempts++;
+                    const idx = (Math.random() * list.length) | 0;
+                    const ion = list[idx];
+                    if (ion.mode !== 'free') continue;
+                    if (ion.region !== fromReg) continue;
+
+                    // Ensure it's actually on the right side and near the mouth region
+                    if (fromReg === 'out' && ion.pos.y < cfg.mouthY + 1.0) continue;
+                    if (fromReg === 'in' && ion.pos.y > -cfg.mouthY - 1.0) continue;
+
+                    const dx = ion.pos.x - xLoc;
+                    const dz = ion.pos.z;
+                    if (dx * dx + dz * dz > capR2) continue;
+
+                    this.startPoreTransport(ion, type, fromReg, toReg, xLoc);
+                    moved++;
+                }
+
+                const signedMoved = (n > 0) ? moved : -moved;
+                this.pendingFlux[type] -= signedMoved;
+                return signedMoved;
+            },
+
+            transportIon: function (type, fromReg, toReg, xRef, count) {
+                const list = this.ionData[type];
+                let moved = 0;
+                // Search list randomly to avoid always taking same ions
+                const startIdx = Math.floor(Math.random() * list.length);
+                for (let i = 0; i < list.length; i++) {
+                    if (moved >= count) break;
+                    const idx = (startIdx + i) % list.length;
+                    const p = list[idx];
+
+                    if (p.mode !== 'free') continue;
+
+                    if (p.region === fromReg) {
+                        const dx = p.pos.x - xRef;
+                        const dz = p.pos.z;
+                        if (dx * dx + dz * dz < 25) {
+                            // Teleport through pump
+                            p.region = toReg;
+                            p.pos.y = (toReg === 'out') ? 2.5 : -2.5;
+                            p.pos.x = xRef + (Math.random() - 0.5);
+                            p.pos.z = 0 + (Math.random() - 0.5);
+
+                            // Scatter so it doesn't look like a rigid line
+                            const cfg = this.fluxCfg;
+                            const vySign = (toReg === 'out') ? 1 : -1;
+                            p.vel.set(
+                                (Math.random() - 0.5) * cfg.exitSpeed,
+                                vySign * (0.8 + Math.random() * 0.8) * cfg.exitSpeed,
+                                (Math.random() - 0.5) * cfg.exitSpeed
+                            );
+                            this.limitSpeed(p.vel, cfg.maxSpeed);
+                            moved++;
+                        }
+                    }
+                }
+            }
+        };
+
+        /**
+         * 2D PLOT ENGINE
+         */
+        const PLOT = {
+            canvas: document.getElementById('plotCanvas'),
+            ctx: null,
+            data: [],
+            stimData: [],
+            inaData: [],  // Na flux p/ms (signed)
+            ikData: [],   // K flux p/ms (signed)
+            maxPoints: 1400,
+
+            init: function () {
+                this.ctx = this.canvas.getContext('2d');
+                this.resize();
+                window.addEventListener('resize', () => this.resize());
+                for (let i = 0; i < this.maxPoints; i++) {
+                    this.data.push(-65);
+                    this.stimData.push(0);
+                    this.inaData.push(0);
+                    this.ikData.push(0);
+                }
+            },
+
+            resize: function () {
+                const rect = this.canvas.parentElement.getBoundingClientRect();
+                this.canvas.width = rect.width * window.devicePixelRatio;
+                this.canvas.height = rect.height * window.devicePixelRatio;
+                this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+                this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            },
+
+            push: function (v, stim, ina, ik) {
+                this.data.push(v);
+                this.stimData.push(stim);
+                this.inaData.push(ina);
+                this.ikData.push(ik);
+                if (this.data.length > this.maxPoints) {
+                    this.data.shift();
+                    this.stimData.shift();
+                    this.inaData.shift();
+                    this.ikData.shift();
+                }
+            },
+
+            draw: function () {
+                const w = this.canvas.width / window.devicePixelRatio;
+                const h = this.canvas.height / window.devicePixelRatio;
+                const ctx = this.ctx;
+
+                ctx.clearRect(0, 0, w, h);
+
+                // Panels
+                const topH = h * 0.62;
+                const botH = h - topH;
+
+                // light grid
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let x = 0; x <= w; x += w / 10) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
+                for (let y = 0; y <= h; y += h / 6) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+                ctx.stroke();
+
+                const stepX = w / this.maxPoints;
+
+                // --- Top panel: Vm + stimulus ---
+                const vRange = 140;
+                const vMin = -90;
+                const mapYv = (val) => (topH - ((val - vMin) / vRange * topH * 0.8) - topH * 0.1);
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < this.stimData.length; i++) {
+                    const y = this.stimData[i] > 0 ? topH - 18 : topH - 5;
+                    if (i === 0) ctx.moveTo(0, y); else ctx.lineTo(i * stepX, y);
+                }
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.strokeStyle = '#00ff88';
+                ctx.lineWidth = 3;
+                for (let i = 0; i < this.data.length; i++) {
+                    if (i === 0) ctx.moveTo(0, mapYv(this.data[i]));
+                    else ctx.lineTo(i * stepX, mapYv(this.data[i]));
+                }
+                ctx.stroke();
+
+                // separator
+                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, topH);
+                ctx.lineTo(w, topH);
+                ctx.stroke();
+
+                // --- Bottom panel: particle flux (p/ms, signed) ---
+                // Dynamic scaling: map +/- Imax to panel bounds
+                let Imax = 1;
+                for (let i = 0; i < this.inaData.length; i++) {
+                    const a = Math.abs(this.inaData[i]);
+                    const b = Math.abs(this.ikData[i]);
+                    if (a > Imax) Imax = a;
+                    if (b > Imax) Imax = b;
+                }
+                Imax = Math.max(Imax, 30); // keep readable baseline
+
+                const y0 = topH + botH / 2;
+                const mapYi = (I) => y0 - (I / Imax) * (botH * 0.42);
+
+                // zero line
+                ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(0, y0);
+                ctx.lineTo(w, y0);
+                ctx.stroke();
+
+                // INa (gold)
+                ctx.beginPath();
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < this.inaData.length; i++) {
+                    const y = mapYi(this.inaData[i]);
+                    if (i === 0) ctx.moveTo(0, y); else ctx.lineTo(i * stepX, y);
+                }
+                ctx.stroke();
+
+                // IK (blue)
+                ctx.beginPath();
+                ctx.strokeStyle = '#3b82f6';
+                ctx.lineWidth = 2;
+                for (let i = 0; i < this.ikData.length; i++) {
+                    const y = mapYi(this.ikData[i]);
+                    if (i === 0) ctx.moveTo(0, y); else ctx.lineTo(i * stepX, y);
+                }
+                ctx.stroke();
+            }
+        };
+
+        // --- MAIN LOOP ---
+        VIS.init();
+        PLOT.init();
+
+        function loop() {
+            // Physics Steps (HH time integration)
+            const stepsPerFrame = 4;
+            let lastState = null;
+
+            for (let i = 0; i < stepsPerFrame; i++) {
+                const state = HH.step();
+                lastState = state;
+
+                // Convert ionic currents -> demanded particle flux (signed particles)
+                // pendingFlux is later fulfilled in VIS.animateIons.
+                const naStep = VIS.addFluxFromCurrent('na', state.INa, HH.dt);
+                const kStep = VIS.addFluxFromCurrent('k', state.IK, HH.dt);
+
+                // Plot every HH step so flux/voltage time-course stays aligned
+                PLOT.push(state.V, state.I_stim, naStep / HH.dt, (-kStep) / HH.dt);
+            }
+
+            // Updates
+            VIS.update();
+            PLOT.draw();
+
+            // Concentrations (derived from particle counts)
+            const counts = VIS.countIonsByRegion();
+            const b = VIS.baselineCounts;
+            if (b) {
+                const naOut_mM = (counts.na.out / b.na.out) * VIS.baselineConc_mM.na.out;
+                const naIn_mM = (counts.na.in / b.na.in) * VIS.baselineConc_mM.na.in;
+                const kIn_mM = (counts.k.in / b.k.in) * VIS.baselineConc_mM.k.in;
+                const kOut_mM = (counts.k.out / b.k.out) * VIS.baselineConc_mM.k.out;
+
+                document.getElementById('naConcDisp').innerText = `${naOut_mM.toFixed(1)} mM | ${naIn_mM.toFixed(1)} mM`;
+                document.getElementById('kConcDisp').innerText = `${kIn_mM.toFixed(1)} mM | ${kOut_mM.toFixed(1)} mM`;
+            }
+
+            // Flux (actual started pore transports this rendered frame)
+            const dtFrame_ms = stepsPerFrame * HH.dt;
+            const naIn = Math.max(0, VIS.lastMoved.na);
+            const naOut = Math.max(0, -VIS.lastMoved.na);
+            const kIn = Math.max(0, VIS.lastMoved.k);
+            const kOut = Math.max(0, -VIS.lastMoved.k);
+            document.getElementById('fluxDisp').innerText = `Na: ${ (naIn/dtFrame_ms).toFixed(2) }/${ (naOut/dtFrame_ms).toFixed(2) } p/ms | K: ${ (kOut/dtFrame_ms).toFixed(2) }/${ (kIn/dtFrame_ms).toFixed(2) } p/ms`;
+
+            // Core metrics
+            document.getElementById('vmDisp').innerText = HH.V.toFixed(1) + " mV";
+            document.getElementById('gNaDisp').innerText = (HH.g_Na * Math.pow(HH.m, 3) * HH.h).toFixed(1) + " mS";
+            document.getElementById('gKDisp').innerText = (HH.g_K * Math.pow(HH.n, 4)).toFixed(1) + " mS";
+
+            requestAnimationFrame(loop);
+        }
+        loop();
+
+        // Controls
+        document.getElementById('fireBtn').addEventListener('click', () => {
+            HH.trigger();
+        });
+
+        document.getElementById('stimCurrent').addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value);
+            HH.stim.cur = val;
+            document.getElementById('stimValDisp').innerText = val;
+        });
+
+    </script>
+</body>
+
+</html>

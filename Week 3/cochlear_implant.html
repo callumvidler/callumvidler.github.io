@@ -1,0 +1,2467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Bioinstrumentation – Week 3: Case Study (Cochlear)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #1a1a1e;
+            --bg-panel: #222226;
+            --bg-card: #2a2a2f;
+            --border: rgba(255,255,255,0.08);
+            --accent: #6aaa8e;
+            --accent-dim: #5a9a7e;
+            --success: #6aaa8e;
+            --warn: #cca855;
+            --error: #c96b5a;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --ch1: #c96b5a;
+            --ch2: #cca855;
+            --ch3: #a8a255;
+            --ch4: #6aaa8e;
+            --ch5: #5a9aba;
+            --ch6: #8a7cb8;
+            --ch7: #b87a9a;
+            --ch8: #5aafaf;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        header {
+            padding: 0.55rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .header-sub {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            margin-top: 1px;
+        }
+
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 42px);
+            position: relative;
+            z-index: 1;
+        }
+
+        .top-row {
+            display: flex;
+            gap: 0;
+            flex: 0 0 auto;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .plot-section {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .plot-section.three-d {
+            flex: 1;
+            min-width: 0;
+            border-top: none;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .controls-panel {
+            width: 460px;
+            flex-shrink: 0;
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 0.5rem;
+            align-content: start;
+            font-size: 0.9em;
+            background: var(--bg-deep);
+            border-left: 1px solid var(--border);
+        }
+
+        .plot-section.pipeline {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border-left: none;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .plot-header {
+            padding: 0.45rem 0.85rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            font-weight: 400;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+        }
+
+        .plot-header strong {
+            color: var(--text);
+            font-weight: 500;
+            font-size: 0.75rem;
+        }
+
+        .legend {
+            display: flex;
+            gap: 0.85rem;
+            font-size: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.65rem;
+            color: var(--text-dim);
+        }
+
+        .legend-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 1px;
+        }
+
+        .plot-canvas-wrap {
+            flex: 1;
+            position: relative;
+            min-height: 200px;
+        }
+
+        .plot-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #three-container {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+
+        #three-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .ctrl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.5rem 0.6rem;
+        }
+
+        .ctrl-section.wide {
+            grid-column: 1 / -1;
+        }
+
+        .ctrl-section h3 {
+            margin: 0 0 0.4rem 0;
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            padding-bottom: 0.3rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .step-item {
+            margin-bottom: 0.3rem;
+            padding: 0.3rem 0.45rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 2px;
+            border-left: 2px solid rgba(255,255,255,0.06);
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .step-item:last-child { margin-bottom: 0; }
+
+        .step-item.active {
+            border-left-color: var(--accent);
+            background: rgba(106, 170, 142, 0.06);
+        }
+
+        .step-item.complete {
+            border-left-color: var(--success);
+        }
+
+        .step-number {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.52rem;
+            color: var(--text-dim);
+        }
+
+        .step-title {
+            font-size: 0.68rem;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .step-desc {
+            display: none;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+        }
+
+        .toggle-row:last-child { margin-bottom: 0; }
+
+        .toggle-label {
+            font-size: 0.62rem;
+            color: var(--text-dim);
+        }
+
+        .toggle-switch {
+            width: 28px;
+            height: 15px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch.on {
+            background: var(--accent);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 11px;
+            height: 11px;
+            background: var(--bg-deep);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch.on::after {
+            transform: translateX(13px);
+            background: #fff;
+        }
+
+        .control-group {
+            margin-bottom: 0.45rem;
+        }
+
+        .control-group:last-child { margin-bottom: 0; }
+
+        .control-group label {
+            display: block;
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            margin-bottom: 0.15rem;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            accent-color: #ffffff;
+            height: 4px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.1rem;
+        }
+
+        .value-display {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6rem;
+            color: #fff;
+            font-weight: 400;
+        }
+
+        .btn {
+            background: var(--accent);
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 3px;
+            color: var(--bg-deep);
+            font-weight: 500;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-family: 'IBM Plex Sans', sans-serif;
+        }
+
+        .btn:hover { background: var(--accent-dim); }
+        .btn:active { background: var(--accent-dim); }
+
+        .btn.btn-record {
+            background: var(--error);
+            color: #fff;
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .btn.btn-record:hover { background: #b05a4a; }
+
+        .btn.btn-record.recording {
+            animation: pulse-record 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse-record {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(201, 107, 90, 0.25); }
+            50% { box-shadow: 0 0 0 5px rgba(201, 107, 90, 0); }
+        }
+
+        .btn.btn-ghost {
+            background: transparent;
+            color: var(--text-dim);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .btn.btn-ghost:hover {
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .btn-row .btn { flex: 1; text-align: center; }
+
+        .record-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #fff;
+        }
+
+        .recording .record-dot {
+            animation: blink 0.8s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.2; }
+        }
+
+        .electrode-legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.2rem;
+        }
+
+        .electrode-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+        }
+
+        .electrode-legend-item .elec-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 1px;
+            flex-shrink: 0;
+        }
+
+        .electrode-bar {
+            height: 3px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 1px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .electrode-bar-fill {
+            height: 100%;
+            border-radius: 1px;
+            transition: width 0.1s;
+            width: 0%;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 2px;
+            font-size: 0.6rem;
+            font-weight: 400;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .status-badge.idle { background: rgba(255,255,255,0.04); color: var(--text-dim); }
+        .status-badge.recording { background: rgba(201,107,90,0.12); color: var(--error); }
+        .status-badge.processing { background: rgba(106,170,142,0.12); color: var(--accent); }
+        .status-badge.stimulating { background: rgba(106,170,142,0.12); color: var(--success); }
+
+        .info-box {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            padding: 0.5rem 0.6rem;
+            background: rgba(255,255,255,0.02);
+            border-radius: 2px;
+            border-left: 2px solid var(--accent);
+        }
+
+        .playback-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .playback-progress {
+            flex: 1;
+            height: 3px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .playback-progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 1px;
+            width: 0%;
+            transition: width 0.05s linear;
+        }
+
+        .playback-time {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .live-waveform-wrap {
+            margin-top: 0.5rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 2px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            position: relative;
+            height: 0;
+            transition: height 0.2s ease;
+        }
+
+        .live-waveform-wrap.visible {
+            height: 50px;
+        }
+
+        .live-waveform-wrap canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .live-waveform-label {
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            font-size: 0.52rem;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--error);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            pointer-events: none;
+        }
+
+        .live-waveform-label .live-dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--error);
+            animation: blink 0.8s ease-in-out infinite;
+        }
+
+        .live-timer {
+            position: absolute;
+            top: 4px;
+            right: 8px;
+            font-size: 0.58rem;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-dim);
+            pointer-events: none;
+        }
+
+        .pipeline-body {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            min-height: 0;
+        }
+
+        .pipeline-input {
+            width: 120px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border);
+        }
+
+        .pipeline-input-label {
+            padding: 0.35rem 0.5rem;
+            font-size: 0.58rem;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-dim);
+            text-align: center;
+        }
+
+        .pipeline-input canvas {
+            flex: 1;
+            width: 100%;
+            display: block;
+        }
+
+        .pipeline-arrows {
+            width: 50px;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .pipeline-arrows svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .pipeline-channels {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            min-width: 0;
+        }
+
+        .channel-row {
+            display: flex;
+            align-items: stretch;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            height: 56px;
+            min-height: 56px;
+        }
+
+        .channel-label {
+            width: 70px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            border-right: 1px solid rgba(255,255,255,0.03);
+            font-size: 0.55rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .channel-label .ch-num {
+            font-weight: 500;
+            font-size: 0.62rem;
+            color: var(--text);
+        }
+
+        .channel-label .ch-freq {
+            color: var(--text-dim);
+        }
+
+        .ch-play-btn {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 2px;
+            color: var(--text-dim);
+            font-size: 0.5rem;
+            font-family: 'IBM Plex Mono', monospace;
+            padding: 1px 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+            line-height: 1.4;
+        }
+
+        .ch-play-btn:hover {
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+        }
+
+        .ch-play-btn.playing {
+            background: rgba(106, 170, 142, 0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .channel-plots {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0;
+            min-width: 0;
+        }
+
+        .channel-plot-cell {
+            position: relative;
+            border-right: 1px solid rgba(255,255,255,0.02);
+            overflow: hidden;
+        }
+
+        .channel-plot-cell canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .channel-stim-cell {
+            width: 40px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+
+        .channel-stim-bar {
+            width: 10px;
+            height: 100%;
+            background: rgba(255,255,255,0.03);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .channel-stim-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            border-radius: 2px;
+            transition: height 0.08s;
+        }
+
+        .channel-col-headers {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.52rem;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-dim);
+            background: var(--bg-card);
+        }
+
+        .channel-col-headers span {
+            text-align: center;
+            padding: 0.3rem 0;
+        }
+
+        .channel-col-headers .col-label { width: 70px; flex-shrink: 0; }
+        .channel-col-headers .col-plots { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; }
+        .channel-col-headers .col-stim { width: 40px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="../index.html" style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#a0a0a0;text-decoration:none;font-size:12px;font-weight:500;backdrop-filter:blur(8px);transition:all 0.15s;margin-right:12px;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='#a0a0a0'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+        <div>
+            <h1>BMEN90033: Bioinstrumentation</h1>
+            <div class="header-sub">Week 3: Case Study (Cochlear)</div>
+        </div>
+        <span class="status-badge idle" id="statusBadge">Idle</span>
+    </header>
+
+    <div class="main-layout">
+        <!-- Top row: 3D cochlea + controls -->
+        <div class="top-row">
+            <div class="plot-section three-d">
+                <div class="plot-header">
+                    <div><strong>3D Cochlea</strong></div>
+                    <div class="legend" id="cochleaLegend"></div>
+                </div>
+                <div id="three-container"></div>
+            </div>
+
+            <div class="controls-panel">
+                <!-- Audio Input -->
+                <div class="ctrl-section">
+                    <h3>Audio Input</h3>
+                    <button class="btn" id="micAccessBtn" style="width:100%; margin-bottom:0.4rem; display:flex; align-items:center; justify-content:center; gap:0.4rem; font-size:0.7rem; padding:0.4rem;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        Allow Mic Access
+                    </button>
+                    <button class="btn btn-record" id="recordBtn" disabled style="opacity:0.4; cursor:not-allowed; font-size:0.7rem; padding:0.4rem;">
+                        <span class="record-dot"></span>
+                        <span id="recordLabel">Hold to Record</span>
+                    </button>
+                    <div class="live-waveform-wrap" id="liveWaveformWrap">
+                        <canvas id="liveWaveformCanvas"></canvas>
+                        <div class="live-waveform-label"><span class="live-dot"></span> Recording</div>
+                        <span class="live-timer" id="liveTimer">0.0s</span>
+                    </div>
+                    <div class="playback-controls" id="playbackControls" style="display:none">
+                        <button class="btn btn-ghost" id="playBtn" style="padding:0.25rem 0.5rem; font-size:0.6rem;">Play</button>
+                        <div class="playback-progress">
+                            <div class="playback-progress-fill" id="playbackFill"></div>
+                        </div>
+                        <span class="playback-time" id="playbackTime">0.0 / 0.0s</span>
+                    </div>
+                </div>
+
+                <!-- Processing Steps -->
+                <div class="ctrl-section">
+                    <h3>Pipeline Steps</h3>
+                    <div class="step-item" id="step1">
+                        <div class="step-number">Step 1</div>
+                        <div class="step-title">Bandpass Filtering</div>
+                    </div>
+                    <div class="step-item" id="step2">
+                        <div class="step-number">Step 2</div>
+                        <div class="step-title">Rectification</div>
+                    </div>
+                    <div class="step-item" id="step3">
+                        <div class="step-number">Step 3</div>
+                        <div class="step-title">Envelope Extraction</div>
+                    </div>
+                    <div class="step-item" id="step4">
+                        <div class="step-number">Step 4</div>
+                        <div class="step-title">Electrode Stimulation</div>
+                    </div>
+                </div>
+
+                <!-- Parameters -->
+                <div class="ctrl-section">
+                    <h3>Parameters</h3>
+                    <div class="toggle-row" style="margin-bottom:0.5rem; padding-bottom:0.4rem; border-bottom:1px solid var(--border);">
+                        <span class="toggle-label" style="font-weight:600; color:#fff;">Cochlear Nucleus 8 preset</span>
+                        <div class="toggle-switch" id="cochlearPresetToggle"></div>
+                    </div>
+                    <div class="control-group">
+                        <label>Envelope Cutoff</label>
+                        <input type="range" id="envelopeCutoff" min="50" max="400" value="200" step="10">
+                        <div class="control-row"><span class="value-display" id="envelopeCutoffVal">200 Hz</span></div>
+                    </div>
+                    <div class="control-group">
+                        <label>Playback Speed</label>
+                        <input type="range" id="playbackSpeed" min="0.25" max="2" value="1" step="0.25">
+                        <div class="control-row"><span class="value-display" id="playbackSpeedVal">1x</span></div>
+                    </div>
+                    <div class="control-group">
+                        <label>Electrodes</label>
+                        <input type="range" id="numChannels" min="1" max="500" value="8" step="1">
+                        <div class="control-row"><span class="value-display" id="numChannelsVal">8</span></div>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Noise carrier</span>
+                        <div class="toggle-switch" id="noiseCarrierToggle"></div>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Log compression</span>
+                        <div class="toggle-switch" id="compressionToggle"></div>
+                    </div>
+                    <div class="toggle-row">
+                        <span class="toggle-label">Fine structure</span>
+                        <div class="toggle-switch" id="fineStructureToggle"></div>
+                    </div>
+                </div>
+
+                <!-- Frequency Range -->
+                <div class="ctrl-section">
+                    <h3>Frequency Range</h3>
+                    <div class="control-group">
+                        <label>Min Frequency</label>
+                        <input type="range" id="minFreq" min="20" max="4000" value="250" step="10">
+                        <div class="control-row"><span class="value-display" id="minFreqVal">250 Hz</span></div>
+                    </div>
+                    <div class="control-group">
+                        <label>Max Frequency</label>
+                        <input type="range" id="maxFreq" min="200" max="16000" value="8000" step="100">
+                        <div class="control-row"><span class="value-display" id="maxFreqVal">8000 Hz</span></div>
+                    </div>
+                    <div class="electrode-legend" id="electrodeLegend" style="margin-top:0.4rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signal Processing Pipeline (full width below) -->
+        <div class="plot-section pipeline">
+            <div class="plot-header">
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    <strong>Signal Processing Pipeline</strong>
+                    <button class="ch-play-btn" id="playAllBtn" style="font-size:0.6rem; padding:2px 10px;">Play All</button>
+                </div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--text)"></div>Input</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Bandpass</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--warn)"></div>Rectified</div>
+                    <div class="legend-item"><div class="legend-dot" style="background:var(--success)"></div>Envelope</div>
+                </div>
+            </div>
+            <div class="pipeline-body">
+                <div class="pipeline-input">
+                    <div class="pipeline-input-label">Input Signal</div>
+                    <canvas id="inputCanvas"></canvas>
+                </div>
+                <div class="pipeline-arrows" id="pipelineArrows">
+                    <svg id="arrowSvg" width="100%" height="100%"></svg>
+                </div>
+                <div class="pipeline-channels" id="pipelineChannels"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ─── Channel Config (dynamic) ───────────────────────────
+    // Generate N evenly-spaced hues for any electrode count
+    function generateColors(n) {
+        const colors = [];
+        for (let i = 0; i < n; i++) {
+            const hue = (i / n) * 300;
+            colors.push(`hsl(${hue}, 40%, 62%)`);
+        }
+        return colors;
+    }
+
+    function formatFreq(hz) {
+        if (hz >= 1000) return (hz / 1000).toFixed(hz % 1000 === 0 ? 0 : 1) + ' kHz';
+        return Math.round(hz) + ' Hz';
+    }
+
+    // Distribute N center frequencies logarithmically between min and max
+    function generateFreqs(n, minF, maxF) {
+        const freqs = [];
+        const logMin = Math.log(minF);
+        const logMax = Math.log(maxF);
+        for (let i = 0; i < n; i++) {
+            const t = n === 1 ? 0.5 : i / (n - 1);
+            freqs.push(Math.exp(logMin + t * (logMax - logMin)));
+        }
+        return freqs;
+    }
+
+    let activeChannelCount = 8;
+    let minFreqHz = 250;
+    let maxFreqHz = 8000;
+    let channelFreqs = generateFreqs(activeChannelCount, minFreqHz, maxFreqHz);
+    let channelColors = generateColors(activeChannelCount);
+    let channelLabels = channelFreqs.map(formatFreq);
+
+    function rebuildChannelConfig() {
+        channelFreqs = generateFreqs(activeChannelCount, minFreqHz, maxFreqHz);
+        channelColors = generateColors(activeChannelCount);
+        channelLabels = channelFreqs.map(formatFreq);
+    }
+
+    // ─── Toggle state ────────────────────────────────────────
+    let useNoiseCarrier = false;
+    let useCompression = false;
+    let useFineStructure = false;
+
+    const noiseCarrierToggle = document.getElementById('noiseCarrierToggle');
+    const compressionToggle = document.getElementById('compressionToggle');
+    const fineStructureToggle = document.getElementById('fineStructureToggle');
+    const cochlearPresetToggle = document.getElementById('cochlearPresetToggle');
+
+    noiseCarrierToggle.addEventListener('click', () => {
+        useNoiseCarrier = !useNoiseCarrier;
+        noiseCarrierToggle.classList.toggle('on', useNoiseCarrier);
+        // Fine structure and noise carrier are mutually exclusive carriers
+        if (useNoiseCarrier && useFineStructure) {
+            useFineStructure = false;
+            fineStructureToggle.classList.remove('on');
+        }
+        if (rawAudioBuffer) processAudio();
+    });
+    compressionToggle.addEventListener('click', () => {
+        useCompression = !useCompression;
+        compressionToggle.classList.toggle('on', useCompression);
+        if (rawAudioBuffer) processAudio();
+    });
+    fineStructureToggle.addEventListener('click', () => {
+        useFineStructure = !useFineStructure;
+        fineStructureToggle.classList.toggle('on', useFineStructure);
+        // Fine structure replaces the carrier, so disable noise carrier
+        if (useFineStructure && useNoiseCarrier) {
+            useNoiseCarrier = false;
+            noiseCarrierToggle.classList.remove('on');
+        }
+        if (rawAudioBuffer) processAudio();
+    });
+
+    // Cochlear Nucleus 8 preset — models the Cochlear Ltd Nucleus 8
+    // system with ACE strategy defaults:
+    //   22 electrodes, 188–7938 Hz range, 200 Hz envelope cutoff,
+    //   noise carrier (more realistic), log compression enabled
+    cochlearPresetToggle.addEventListener('click', () => {
+        const enabling = !cochlearPresetToggle.classList.contains('on');
+        cochlearPresetToggle.classList.toggle('on', enabling);
+
+        if (enabling) {
+            // Apply Nucleus 8 defaults
+            setSlider(numChannelsSlider, 22, numChannelsVal, '22');
+            activeChannelCount = 22;
+
+            setSlider(minFreqSlider, 188, minFreqVal, formatFreq(188));
+            minFreqHz = 188;
+
+            setSlider(maxFreqSlider, 7938, maxFreqVal, formatFreq(7938));
+            maxFreqHz = 7938;
+
+            setSlider(envelopeCutoffSlider, 200, envelopeCutoffVal, '200 Hz');
+
+            // Enable noise carrier + compression
+            useNoiseCarrier = true;
+            noiseCarrierToggle.classList.add('on');
+            useCompression = true;
+            compressionToggle.classList.add('on');
+        } else {
+            // Reset to defaults
+            setSlider(numChannelsSlider, 8, numChannelsVal, '8');
+            activeChannelCount = 8;
+
+            setSlider(minFreqSlider, 250, minFreqVal, formatFreq(250));
+            minFreqHz = 250;
+
+            setSlider(maxFreqSlider, 8000, maxFreqVal, formatFreq(8000));
+            maxFreqHz = 8000;
+
+            setSlider(envelopeCutoffSlider, 200, envelopeCutoffVal, '200 Hz');
+
+            useNoiseCarrier = false;
+            noiseCarrierToggle.classList.remove('on');
+            useCompression = false;
+            compressionToggle.classList.remove('on');
+        }
+
+        onChannelConfigChange();
+    });
+
+    function setSlider(slider, value, display, text) {
+        slider.value = value;
+        if (display) display.textContent = text;
+    }
+
+    // ─── State ───────────────────────────────────────────────
+    let audioCtx = null;
+    let rawAudioBuffer = null;
+    let channelEnvelopes = [];  // [channel][sample] normalized 0-1
+    let channelBandpass = [];
+    let channelRectified = [];
+    let channelVocoded = [];   // envelope-modulated carrier per channel
+    let isRecording = false;
+    let isPlaying = false;
+    let playbackPos = 0;
+    let playbackRaf = null;
+    let currentStep = -1;
+    const sampleRate = 44100;
+
+    // ─── DOM ─────────────────────────────────────────────────
+    const recordBtn = document.getElementById('recordBtn');
+    const recordLabel = document.getElementById('recordLabel');
+    const playbackControls = document.getElementById('playbackControls');
+    const playBtn = document.getElementById('playBtn');
+    const playbackFill = document.getElementById('playbackFill');
+    const playbackTime = document.getElementById('playbackTime');
+    const statusBadge = document.getElementById('statusBadge');
+
+    // Slider bindings
+    const envelopeCutoffSlider = document.getElementById('envelopeCutoff');
+    const envelopeCutoffVal = document.getElementById('envelopeCutoffVal');
+    const playbackSpeedSlider = document.getElementById('playbackSpeed');
+    const playbackSpeedVal = document.getElementById('playbackSpeedVal');
+    const numChannelsSlider = document.getElementById('numChannels');
+    const numChannelsVal = document.getElementById('numChannelsVal');
+
+    envelopeCutoffSlider.addEventListener('input', () => {
+        envelopeCutoffVal.textContent = envelopeCutoffSlider.value + ' Hz';
+        if (rawAudioBuffer) processAudio();
+    });
+    playbackSpeedSlider.addEventListener('input', () => {
+        playbackSpeedVal.textContent = playbackSpeedSlider.value + 'x';
+    });
+    const minFreqSlider = document.getElementById('minFreq');
+    const minFreqVal = document.getElementById('minFreqVal');
+    const maxFreqSlider = document.getElementById('maxFreq');
+    const maxFreqVal = document.getElementById('maxFreqVal');
+
+    function onChannelConfigChange() {
+        rebuildChannelConfig();
+        buildElectrodeLegend();
+        buildElectrodes();
+        buildFreqLabels();
+        if (rawAudioBuffer) processAudio();
+    }
+
+    numChannelsSlider.addEventListener('input', () => {
+        activeChannelCount = parseInt(numChannelsSlider.value);
+        numChannelsVal.textContent = activeChannelCount;
+        onChannelConfigChange();
+    });
+    minFreqSlider.addEventListener('input', () => {
+        minFreqHz = parseInt(minFreqSlider.value);
+        // Clamp: min must be below max
+        if (minFreqHz >= maxFreqHz) {
+            minFreqHz = maxFreqHz - 100;
+            minFreqSlider.value = minFreqHz;
+        }
+        minFreqVal.textContent = formatFreq(minFreqHz);
+        onChannelConfigChange();
+    });
+    maxFreqSlider.addEventListener('input', () => {
+        maxFreqHz = parseInt(maxFreqSlider.value);
+        if (maxFreqHz <= minFreqHz) {
+            maxFreqHz = minFreqHz + 100;
+            maxFreqSlider.value = maxFreqHz;
+        }
+        maxFreqVal.textContent = formatFreq(maxFreqHz);
+        onChannelConfigChange();
+    });
+
+    // ─── Electrode Legend ────────────────────────────────────
+    const electrodeLegend = document.getElementById('electrodeLegend');
+    function buildElectrodeLegend() {
+        electrodeLegend.innerHTML = '';
+        if (activeChannelCount > 30) {
+            electrodeLegend.innerHTML = `<span style="font-size:0.55rem;color:var(--text-dim);">${activeChannelCount} electrodes (${channelLabels[0]} – ${channelLabels[activeChannelCount-1]})</span>`;
+            return;
+        }
+        for (let i = 0; i < activeChannelCount; i++) {
+            const item = document.createElement('div');
+            item.className = 'electrode-legend-item';
+            item.innerHTML = `
+                <span class="elec-dot" style="background:${channelColors[i]}"></span>
+                <span>E${i+1} ${channelLabels[i]}</span>
+                <div class="electrode-bar"><div class="electrode-bar-fill" id="ebar${i}" style="background:${channelColors[i]}"></div></div>
+            `;
+            electrodeLegend.appendChild(item);
+        }
+    }
+    buildElectrodeLegend();
+
+    // ─── Status helpers ──────────────────────────────────────
+    function setStatus(status) {
+        statusBadge.className = 'status-badge ' + status;
+        statusBadge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    function setActiveStep(step) {
+        currentStep = step;
+        for (let i = 1; i <= 4; i++) {
+            const el = document.getElementById('step' + i);
+            el.classList.remove('active', 'complete');
+            if (i < step) el.classList.add('complete');
+            if (i === step) el.classList.add('active');
+        }
+    }
+
+    // ─── Mic Access ─────────────────────────────────────────
+    let micGranted = false;
+    const micAccessBtn = document.getElementById('micAccessBtn');
+
+    micAccessBtn.addEventListener('click', async () => {
+        try {
+            persistentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioCtx = audioCtx || new AudioContext({ sampleRate });
+            // Set up analyser (persistent)
+            liveSource = audioCtx.createMediaStreamSource(persistentStream);
+            liveAnalyser = audioCtx.createAnalyser();
+            liveAnalyser.fftSize = 2048;
+            liveSource.connect(liveAnalyser);
+
+            micGranted = true;
+            micAccessBtn.style.display = 'none';
+            recordBtn.disabled = false;
+            recordBtn.style.opacity = '';
+            recordBtn.style.cursor = '';
+        } catch (err) {
+            console.error('Mic access denied:', err);
+            micAccessBtn.textContent = 'Mic Access Denied — Click to Retry';
+        }
+    });
+
+    // ─── Recording (hold-to-record) ─────────────────────────
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let persistentStream = null;
+    let liveAnalyser = null;
+    let liveSource = null;
+    let liveRaf = null;
+    let recordStartTime = 0;
+    let autoStopTimer = null;
+
+    const liveWaveformWrap = document.getElementById('liveWaveformWrap');
+    const liveWaveformCanvas = document.getElementById('liveWaveformCanvas');
+    const liveWaveformCtx = liveWaveformCanvas.getContext('2d');
+    const liveTimer = document.getElementById('liveTimer');
+
+    async function startRecording() {
+        if (!micGranted || isRecording) return;
+        if (isPlaying) stopPlayback();
+
+        try {
+            // Re-acquire stream if it died
+            if (!persistentStream || !persistentStream.active) {
+                persistentStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                liveSource = audioCtx.createMediaStreamSource(persistentStream);
+                liveAnalyser = audioCtx.createAnalyser();
+                liveAnalyser.fftSize = 2048;
+                liveSource.connect(liveAnalyser);
+            }
+            const stream = persistentStream;
+
+            // Set up MediaRecorder on the persistent stream
+            mediaRecorder = new MediaRecorder(stream);
+            recordedChunks = [];
+
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                // Do NOT stop the stream tracks — keep them alive
+                cancelAnimationFrame(liveRaf);
+                liveWaveformWrap.classList.remove('visible');
+
+                if (recordedChunks.length === 0) return;
+                const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                const arrayBuf = await blob.arrayBuffer();
+                rawAudioBuffer = await audioCtx.decodeAudioData(arrayBuf);
+                processAudio();
+                playbackControls.style.display = 'flex';
+                setStatus('processing');
+                animateProcessingSteps();
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            recordStartTime = performance.now();
+            recordBtn.classList.add('recording');
+            recordLabel.textContent = 'Recording...';
+            setStatus('recording');
+
+            // Show live waveform
+            liveWaveformWrap.classList.add('visible');
+            drawLiveWaveform();
+
+            // Auto-stop after 5 seconds
+            autoStopTimer = setTimeout(() => {
+                if (isRecording) stopRecording();
+            }, 5000);
+
+        } catch (err) {
+            console.error('Recording error:', err);
+        }
+    }
+
+    function stopRecording() {
+        if (!isRecording) return;
+        isRecording = false;
+        if (autoStopTimer) { clearTimeout(autoStopTimer); autoStopTimer = null; }
+        mediaRecorder.stop();
+        recordBtn.classList.remove('recording');
+        recordLabel.textContent = 'Hold to Record';
+    }
+
+    function drawLiveWaveform() {
+        if (!isRecording) return;
+        liveRaf = requestAnimationFrame(drawLiveWaveform);
+
+        // Update timer
+        const elapsed = (performance.now() - recordStartTime) / 1000;
+        liveTimer.textContent = elapsed.toFixed(1) + 's / 5.0s';
+
+        // Resize canvas
+        const wrap = liveWaveformWrap;
+        const dpr = window.devicePixelRatio || 1;
+        const w = wrap.clientWidth;
+        const h = wrap.clientHeight;
+        if (liveWaveformCanvas.width !== w * dpr || liveWaveformCanvas.height !== h * dpr) {
+            liveWaveformCanvas.width = w * dpr;
+            liveWaveformCanvas.height = h * dpr;
+            liveWaveformCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        const ctx = liveWaveformCtx;
+        ctx.clearRect(0, 0, w, h);
+
+        if (!liveAnalyser) return;
+
+        const bufLen = liveAnalyser.fftSize;
+        const dataArray = new Float32Array(bufLen);
+        liveAnalyser.getFloatTimeDomainData(dataArray);
+
+        // Draw waveform
+        ctx.beginPath();
+        ctx.strokeStyle = '#c96b5a';
+        ctx.lineWidth = 1.5;
+
+        const sliceWidth = w / bufLen;
+        let x = 0;
+        for (let i = 0; i < bufLen; i++) {
+            const v = dataArray[i];
+            const y = (0.5 - v * 0.45) * h;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+            x += sliceWidth;
+        }
+        ctx.stroke();
+
+        // Center line
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(0, h / 2);
+        ctx.lineTo(w, h / 2);
+        ctx.stroke();
+    }
+
+    // Hold-to-record: mousedown/mouseup + touch support
+    recordBtn.addEventListener('mousedown', e => { e.preventDefault(); startRecording(); });
+    recordBtn.addEventListener('mouseup', e => { e.preventDefault(); stopRecording(); });
+    recordBtn.addEventListener('mouseleave', () => { if (isRecording) stopRecording(); });
+    recordBtn.addEventListener('touchstart', e => { e.preventDefault(); startRecording(); }, { passive: false });
+    recordBtn.addEventListener('touchend', e => { e.preventDefault(); stopRecording(); }, { passive: false });
+    recordBtn.addEventListener('touchcancel', () => { if (isRecording) stopRecording(); });
+    // Prevent click from doing anything (hold-only)
+    recordBtn.addEventListener('click', e => e.preventDefault());
+
+    // ─── Audio Processing (offline) ──────────────────────────
+    function processAudio() {
+        if (!rawAudioBuffer) return;
+        const raw = rawAudioBuffer.getChannelData(0);
+        const len = raw.length;
+        const sr = rawAudioBuffer.sampleRate;
+        const cutoff = parseFloat(envelopeCutoffSlider.value);
+
+        channelBandpass = [];
+        channelRectified = [];
+        channelEnvelopes = [];
+        channelVocoded = [];
+
+        // Frequency bands for active channels — each band spans
+        // from the geometric mean below to the geometric mean above
+        const bands = [];
+        for (let i = 0; i < activeChannelCount; i++) {
+            let lo, hi;
+            if (activeChannelCount === 1) {
+                lo = minFreqHz;
+                hi = maxFreqHz;
+            } else {
+                lo = i === 0 ? minFreqHz * 0.8 : Math.sqrt(channelFreqs[i - 1] * channelFreqs[i]);
+                hi = i === activeChannelCount - 1 ? Math.min(maxFreqHz * 1.2, sr / 2 - 1) : Math.sqrt(channelFreqs[i] * channelFreqs[i + 1]);
+            }
+            bands.push([lo, hi]);
+        }
+
+        for (let ch = 0; ch < activeChannelCount; ch++) {
+            // Step 1: Bandpass filter (biquad simulation)
+            const bp = biquadBandpass(raw, bands[ch][0], bands[ch][1], sr);
+            channelBandpass.push(bp);
+
+            // Step 2: Full-wave rectify
+            const rect = new Float32Array(len);
+            for (let i = 0; i < len; i++) rect[i] = Math.abs(bp[i]);
+            channelRectified.push(rect);
+
+            // Step 3: Low-pass filter for envelope
+            const env = biquadLowpass(rect, cutoff, sr);
+            channelEnvelopes.push(env);
+        }
+
+        // Normalize envelopes
+        let globalMax = 0;
+        for (let ch = 0; ch < activeChannelCount; ch++) {
+            for (let i = 0; i < channelEnvelopes[ch].length; i++) {
+                if (channelEnvelopes[ch][i] > globalMax) globalMax = channelEnvelopes[ch][i];
+            }
+        }
+        if (globalMax > 0) {
+            for (let ch = 0; ch < activeChannelCount; ch++) {
+                for (let i = 0; i < channelEnvelopes[ch].length; i++) {
+                    channelEnvelopes[ch][i] /= globalMax;
+                }
+            }
+        }
+
+        // Step 4: Generate vocoded signals — carrier modulated by envelope.
+        //
+        // Carrier modes:
+        //   Sine carrier     — clean tonal vocoder (default)
+        //   Noise carrier    — band-limited noise, more realistic CI percept
+        //   Fine structure   — uses the original bandpass signal's instantaneous
+        //                      waveform as the carrier, preserving temporal fine
+        //                      structure (TFS). This retains pitch, timbre and
+        //                      speaker identity cues that are lost with simple
+        //                      carriers. Newer CI strategies (FSP, FS4) partially
+        //                      do this for low-frequency channels.
+        //
+        // Log compression maps acoustic dynamic range (~60 dB) into the
+        // narrower electrical dynamic range (~20 dB) of a real implant.
+
+        for (let ch = 0; ch < activeChannelCount; ch++) {
+            const vocoded = new Float32Array(len);
+            const freq = channelFreqs[ch];
+            const env = channelEnvelopes[ch];
+            const bp = channelBandpass[ch];
+
+            // Fine structure carrier: normalize the bandpass signal to
+            // unit amplitude so only the envelope controls loudness.
+            let fsBuf;
+            if (useFineStructure) {
+                fsBuf = new Float32Array(len);
+                for (let i = 0; i < len; i++) {
+                    // Instantaneous amplitude from the rectified signal
+                    const inst = channelRectified[ch][i];
+                    // Divide out the amplitude to get the unit-amplitude
+                    // fine structure (with a small floor to avoid division by zero)
+                    fsBuf[i] = inst > 1e-6 ? bp[i] / inst : 0;
+                }
+            }
+
+            // Noise carrier: bandpass-filtered white noise
+            let noiseBuf;
+            if (useNoiseCarrier) {
+                const white = new Float32Array(len);
+                for (let i = 0; i < len; i++) white[i] = Math.random() * 2 - 1;
+                let lo, hi;
+                if (activeChannelCount === 1) {
+                    lo = minFreqHz; hi = maxFreqHz;
+                } else {
+                    lo = ch === 0 ? minFreqHz * 0.8 : Math.sqrt(channelFreqs[ch - 1] * channelFreqs[ch]);
+                    hi = ch === activeChannelCount - 1 ? Math.min(maxFreqHz * 1.2, sr / 2 - 1) : Math.sqrt(channelFreqs[ch] * channelFreqs[ch + 1]);
+                }
+                noiseBuf = biquadBandpass(white, lo, hi, sr);
+                let rms = 0;
+                for (let i = 0; i < len; i++) rms += noiseBuf[i] * noiseBuf[i];
+                rms = Math.sqrt(rms / len);
+                if (rms > 0) for (let i = 0; i < len; i++) noiseBuf[i] /= rms;
+            }
+
+            for (let i = 0; i < len; i++) {
+                let amplitude = env[i];
+
+                if (useCompression) {
+                    const mu = 255;
+                    amplitude = Math.log(1 + mu * amplitude) / Math.log(1 + mu);
+                }
+
+                let carrier;
+                if (useFineStructure) {
+                    carrier = fsBuf[i];
+                } else if (useNoiseCarrier) {
+                    carrier = noiseBuf[i];
+                } else {
+                    carrier = Math.sin(2 * Math.PI * freq * i / sr);
+                }
+
+                vocoded[i] = carrier * amplitude;
+            }
+            channelVocoded.push(vocoded);
+        }
+    }
+
+    // Biquad bandpass (2nd order IIR)
+    function biquadBandpass(input, fLow, fHigh, sr) {
+        // Chain highpass then lowpass
+        const hp = biquadHighpass(input, fLow, sr);
+        return biquadLowpass(hp, fHigh, sr);
+    }
+
+    function biquadLowpass(input, fc, sr) {
+        const len = input.length;
+        const out = new Float32Array(len);
+        const w0 = 2 * Math.PI * fc / sr;
+        const alpha = Math.sin(w0) / (2 * 0.707);
+        const cosw0 = Math.cos(w0);
+        const b0 = (1 - cosw0) / 2;
+        const b1 = 1 - cosw0;
+        const b2 = (1 - cosw0) / 2;
+        const a0 = 1 + alpha;
+        const a1 = -2 * cosw0;
+        const a2 = 1 - alpha;
+
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = 0; i < len; i++) {
+            const x0 = input[i];
+            out[i] = (b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+            x2 = x1; x1 = x0;
+            y2 = y1; y1 = out[i];
+        }
+        return out;
+    }
+
+    function biquadHighpass(input, fc, sr) {
+        const len = input.length;
+        const out = new Float32Array(len);
+        const w0 = 2 * Math.PI * fc / sr;
+        const alpha = Math.sin(w0) / (2 * 0.707);
+        const cosw0 = Math.cos(w0);
+        const b0 = (1 + cosw0) / 2;
+        const b1 = -(1 + cosw0);
+        const b2 = (1 + cosw0) / 2;
+        const a0 = 1 + alpha;
+        const a1 = -2 * cosw0;
+        const a2 = 1 - alpha;
+
+        let x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (let i = 0; i < len; i++) {
+            const x0 = input[i];
+            out[i] = (b0 * x0 + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2) / a0;
+            x2 = x1; x1 = x0;
+            y2 = y1; y1 = out[i];
+        }
+        return out;
+    }
+
+    // ─── Processing Animation ────────────────────────────────
+    async function animateProcessingSteps() {
+        for (let s = 1; s <= 4; s++) {
+            setActiveStep(s);
+            await sleep(600);
+        }
+        setStatus('stimulating');
+        startPlayback();
+    }
+
+    function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+    // ─── Playback ────────────────────────────────────────────
+    playBtn.addEventListener('click', () => {
+        if (isPlaying) {
+            stopPlayback();
+        } else {
+            playbackPos = 0;
+            startPlayback();
+        }
+    });
+
+    let audioSourceNode = null;
+
+    function startPlayback() {
+        if (!rawAudioBuffer || channelEnvelopes.length === 0) return;
+        if (!audioCtx) return;
+
+        // Resume audio context if suspended (browser autoplay policy)
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        isPlaying = true;
+        playBtn.textContent = 'Stop';
+        setStatus('stimulating');
+        setActiveStep(4);
+        const speed = parseFloat(playbackSpeedSlider.value);
+        const duration = rawAudioBuffer.duration;
+
+        // Play the actual audio
+        audioSourceNode = audioCtx.createBufferSource();
+        audioSourceNode.buffer = rawAudioBuffer;
+        audioSourceNode.playbackRate.value = speed;
+        audioSourceNode.connect(audioCtx.destination);
+        audioSourceNode.start();
+        audioSourceNode.onended = () => {
+            if (isPlaying) stopPlayback();
+        };
+
+        const startTime = performance.now();
+
+        function tick() {
+            const elapsed = (performance.now() - startTime) / 1000 * speed;
+            playbackPos = elapsed;
+            if (elapsed >= duration) {
+                stopPlayback();
+                return;
+            }
+
+            const frac = elapsed / duration;
+            playbackFill.style.width = (frac * 100) + '%';
+            playbackTime.textContent = elapsed.toFixed(1) + ' / ' + duration.toFixed(1) + 's';
+
+            // Update electrode bars and 3D
+            const sampleIdx = Math.floor(frac * channelEnvelopes[0].length);
+            for (let ch = 0; ch < activeChannelCount; ch++) {
+                const val = channelEnvelopes[ch][Math.min(sampleIdx, channelEnvelopes[ch].length - 1)];
+                const bar = document.getElementById('ebar' + ch);
+                if (bar) bar.style.width = (val * 100) + '%';
+                electrodeAmplitudes[ch] = val;
+            }
+
+            playbackRaf = requestAnimationFrame(tick);
+        }
+        playbackRaf = requestAnimationFrame(tick);
+    }
+
+    function stopPlayback() {
+        isPlaying = false;
+        if (playbackRaf) cancelAnimationFrame(playbackRaf);
+
+        // Stop audio playback
+        if (audioSourceNode) {
+            try { audioSourceNode.stop(); } catch(e) {}
+            audioSourceNode.disconnect();
+            audioSourceNode = null;
+        }
+
+        playBtn.textContent = 'Play';
+        setStatus('idle');
+        setActiveStep(-1);
+        playbackFill.style.width = '0%';
+        for (let ch = 0; ch < 8; ch++) {
+            const bar = document.getElementById('ebar' + ch);
+            if (bar) bar.style.width = '0%';
+            electrodeAmplitudes[ch] = 0;
+        }
+    }
+
+    // ─── Pipeline: per-channel DOM + canvas rendering ──────
+    const inputCanvas = document.getElementById('inputCanvas');
+    const inputCtx = inputCanvas.getContext('2d');
+    const pipelineChannelsDiv = document.getElementById('pipelineChannels');
+    const arrowSvg = document.getElementById('arrowSvg');
+    let channelCanvases = []; // [{bp, rect, env}] per channel
+    let channelStimFills = [];
+
+    let channelPlayBtns = [];
+
+    function buildChannelRows() {
+        pipelineChannelsDiv.innerHTML = '';
+        channelCanvases = [];
+        channelStimFills = [];
+        channelPlayBtns = [];
+
+        // Column headers
+        const headers = document.createElement('div');
+        headers.className = 'channel-col-headers';
+        headers.innerHTML = `
+            <span class="col-label">Elec</span>
+            <div class="col-plots"><span>Bandpass</span><span>Rectified</span><span>Envelope</span></div>
+            <span class="col-stim">Stim</span>
+        `;
+        pipelineChannelsDiv.appendChild(headers);
+
+        for (let ch = 0; ch < activeChannelCount; ch++) {
+            const row = document.createElement('div');
+            row.className = 'channel-row';
+
+            // Label with play button
+            const label = document.createElement('div');
+            label.className = 'channel-label';
+            const playBtn = document.createElement('button');
+            playBtn.className = 'ch-play-btn';
+            playBtn.textContent = '\u25B6';
+            playBtn.title = `Play electrode ${ch+1} (${channelLabels[ch]})`;
+            playBtn.dataset.ch = ch;
+            playBtn.addEventListener('click', () => playChannel(ch, playBtn));
+            label.innerHTML = `<span class="ch-num" style="color:${channelColors[ch]}">E${ch+1}</span><span class="ch-freq">${channelLabels[ch]}</span>`;
+            label.appendChild(playBtn);
+            row.appendChild(label);
+            channelPlayBtns.push(playBtn);
+
+            // 3 plot cells
+            const plots = document.createElement('div');
+            plots.className = 'channel-plots';
+            const canvasRefs = {};
+            for (const key of ['bp', 'rect', 'env']) {
+                const cell = document.createElement('div');
+                cell.className = 'channel-plot-cell';
+                const cvs = document.createElement('canvas');
+                cell.appendChild(cvs);
+                plots.appendChild(cell);
+                canvasRefs[key] = cvs;
+            }
+            row.appendChild(plots);
+
+            // Stim bar
+            const stimCell = document.createElement('div');
+            stimCell.className = 'channel-stim-cell';
+            stimCell.innerHTML = `<div class="channel-stim-bar"><div class="channel-stim-fill" style="background:${channelColors[ch]};height:0%"></div></div>`;
+            row.appendChild(stimCell);
+
+            pipelineChannelsDiv.appendChild(row);
+            channelCanvases.push(canvasRefs);
+            channelStimFills.push(stimCell.querySelector('.channel-stim-fill'));
+        }
+    }
+    buildChannelRows();
+
+    // ─── Channel / All Playback ──────────────────────────────
+    let channelSourceNode = null;
+    let activePlayBtn = null;
+    let chPlayRaf = null;
+    let chPlayStartTime = 0;
+    let chPlayDuration = 0;
+    let chPlayActiveChannels = []; // which channel indices to animate
+
+    let isChannelPlaying = false;
+
+    function stopChannelPlayback() {
+        if (channelSourceNode) {
+            try { channelSourceNode.stop(); } catch(e) {}
+            channelSourceNode.disconnect();
+            channelSourceNode = null;
+        }
+        if (chPlayRaf) { cancelAnimationFrame(chPlayRaf); chPlayRaf = null; }
+        // Reset electrode amplitudes for animated channels
+        for (let i = 0; i < electrodeAmplitudes.length; i++) electrodeAmplitudes[i] = 0;
+        chPlayActiveChannels = [];
+        isChannelPlaying = false;
+        playbackPos = 0;
+        if (activePlayBtn) {
+            activePlayBtn.classList.remove('playing');
+            activePlayBtn.textContent = '\u25B6';
+            activePlayBtn = null;
+        }
+        const playAllBtn = document.getElementById('playAllBtn');
+        if (playAllBtn) {
+            playAllBtn.classList.remove('playing');
+            playAllBtn.textContent = 'Play All';
+        }
+    }
+
+    function startElectrodeAnimation(channels, durationSec) {
+        chPlayActiveChannels = channels;
+        chPlayDuration = durationSec;
+        isChannelPlaying = true;
+        const speed = parseFloat(playbackSpeedSlider.value);
+        chPlayStartTime = performance.now();
+
+        function tick() {
+            const elapsed = (performance.now() - chPlayStartTime) / 1000 * speed;
+            if (elapsed >= chPlayDuration || !channelSourceNode) {
+                isChannelPlaying = false;
+                return;
+            }
+
+            const totalSamples = channelEnvelopes.length > 0 ? channelEnvelopes[0].length : 0;
+            if (totalSamples === 0) return;
+            const frac = elapsed / chPlayDuration;
+            const sampleIdx = Math.floor(frac * totalSamples);
+
+            // Update playbackPos so the pipeline view tracks along
+            playbackPos = elapsed;
+
+            // Update electrode bars in sidebar
+            for (const ch of chPlayActiveChannels) {
+                if (channelEnvelopes[ch]) {
+                    const val = channelEnvelopes[ch][Math.min(sampleIdx, channelEnvelopes[ch].length - 1)];
+                    electrodeAmplitudes[ch] = val;
+                    const bar = document.getElementById('ebar' + ch);
+                    if (bar) bar.style.width = (val * 100) + '%';
+                }
+            }
+
+            // Update stim fills in pipeline channel rows
+            for (const ch of chPlayActiveChannels) {
+                const fill = channelStimFills[ch];
+                if (fill && channelEnvelopes[ch]) {
+                    fill.style.height = (channelEnvelopes[ch][Math.min(sampleIdx, channelEnvelopes[ch].length - 1)] * 100) + '%';
+                }
+            }
+
+            chPlayRaf = requestAnimationFrame(tick);
+        }
+        chPlayRaf = requestAnimationFrame(tick);
+    }
+
+    function playFloat32Array(data, sr) {
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const buffer = audioCtx.createBuffer(1, data.length, sr);
+        buffer.getChannelData(0).set(data);
+
+        channelSourceNode = audioCtx.createBufferSource();
+        channelSourceNode.buffer = buffer;
+        const speed = parseFloat(playbackSpeedSlider.value);
+        channelSourceNode.playbackRate.value = speed;
+        channelSourceNode.connect(audioCtx.destination);
+        channelSourceNode.onended = () => stopChannelPlayback();
+        channelSourceNode.start();
+    }
+
+    function playChannel(ch, btn) {
+        if (activePlayBtn === btn) {
+            stopChannelPlayback();
+            return;
+        }
+        if (!channelVocoded[ch]) return;
+
+        stopChannelPlayback();
+        activePlayBtn = btn;
+        btn.classList.add('playing');
+        btn.textContent = '\u25A0';
+
+        const sr = rawAudioBuffer ? rawAudioBuffer.sampleRate : sampleRate;
+        const duration = channelVocoded[ch].length / sr;
+        playFloat32Array(channelVocoded[ch], sr);
+        startElectrodeAnimation([ch], duration);
+    }
+
+    // Play All — sum all bandpass channels into a combined output
+    document.getElementById('playAllBtn').addEventListener('click', () => {
+        const playAllBtn = document.getElementById('playAllBtn');
+        if (playAllBtn.classList.contains('playing')) {
+            stopChannelPlayback();
+            return;
+        }
+        if (!channelVocoded.length) return;
+
+        const len = channelVocoded[0].length;
+        const combined = new Float32Array(len);
+        for (let ch = 0; ch < activeChannelCount; ch++) {
+            const v = channelVocoded[ch];
+            if (!v) continue;
+            for (let i = 0; i < len; i++) combined[i] += v[i];
+        }
+        let peak = 0;
+        for (let i = 0; i < len; i++) {
+            const v = Math.abs(combined[i]);
+            if (v > peak) peak = v;
+        }
+        if (peak > 0) {
+            const scale = 0.9 / peak;
+            for (let i = 0; i < len; i++) combined[i] *= scale;
+        }
+
+        stopChannelPlayback();
+        playAllBtn.classList.add('playing');
+        playAllBtn.textContent = 'Stop';
+
+        const sr = rawAudioBuffer ? rawAudioBuffer.sampleRate : sampleRate;
+        const duration = len / sr;
+        playFloat32Array(combined, sr);
+        const allChannels = Array.from({ length: activeChannelCount }, (_, i) => i);
+        startElectrodeAnimation(allChannels, duration);
+    });
+
+    // Rebuild when config changes
+    const origOnChange = onChannelConfigChange;
+    // Patch onChannelConfigChange to also rebuild rows
+    const _origOnChannelConfigChange = onChannelConfigChange;
+    // We'll just call buildChannelRows from the existing onChannelConfigChange by redefining
+    // Actually let's add it differently — hook into buildElectrodeLegend call site
+    // Simplest: override
+    numChannelsSlider.removeEventListener && void 0; // no-op
+    // The onChannelConfigChange already calls buildElectrodeLegend etc.
+    // We just need to also call buildChannelRows. Let's monkey-patch:
+    const __origBuildElectrodeLegend = buildElectrodeLegend;
+    buildElectrodeLegend = function() {
+        __origBuildElectrodeLegend();
+        buildChannelRows();
+        updateCochleaLegend();
+    };
+
+    // Cochlea 3D legend (dynamic)
+    const cochleaLegendEl = document.getElementById('cochleaLegend');
+    function updateCochleaLegend() {
+        cochleaLegendEl.innerHTML = '';
+        // Show max 8 items, or abbreviate
+        const show = Math.min(activeChannelCount, 8);
+        for (let i = 0; i < show; i++) {
+            const idx = activeChannelCount <= 8 ? i : Math.floor(i / (show - 1) * (activeChannelCount - 1));
+            const item = document.createElement('div');
+            item.className = 'legend-item';
+            item.innerHTML = `<div class="legend-dot" style="background:${channelColors[idx]}"></div>${channelLabels[idx]}`;
+            cochleaLegendEl.appendChild(item);
+        }
+    }
+    updateCochleaLegend();
+
+    // Draw waveform helper on a small canvas
+    function drawSmallWaveform(canvas, data, startSample, endSample, color, filled) {
+        const dpr = window.devicePixelRatio || 1;
+        const w = canvas.parentElement.clientWidth;
+        const h = canvas.parentElement.clientHeight;
+        if (w === 0 || h === 0) return;
+        if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+            canvas.width = w * dpr;
+            canvas.height = h * dpr;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+
+        if (!data) return;
+
+        // Find max in window
+        let maxVal = 0;
+        const step = Math.max(1, Math.floor((endSample - startSample) / w));
+        for (let s = startSample; s < endSample; s += step) {
+            const v = Math.abs(data[Math.min(s, data.length - 1)]);
+            if (v > maxVal) maxVal = v;
+        }
+        if (maxVal === 0) maxVal = 1;
+
+        const mid = h / 2;
+        const amp = h * 0.4;
+
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        for (let px = 0; px < w; px++) {
+            const s = startSample + Math.floor(px / w * (endSample - startSample));
+            const val = data[Math.min(s, data.length - 1)] / maxVal;
+            const y = mid - val * amp;
+            if (px === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+        }
+
+        if (filled) {
+            ctx.lineTo(w, mid);
+            ctx.lineTo(0, mid);
+            ctx.closePath();
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            // Redraw stroke
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            for (let px = 0; px < w; px++) {
+                const s = startSample + Math.floor(px / w * (endSample - startSample));
+                const val = data[Math.min(s, data.length - 1)] / maxVal;
+                const y = mid - val * amp;
+                if (px === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y);
+            }
+        }
+        ctx.stroke();
+    }
+
+    // Draw input signal canvas
+    function drawInputCanvas(startSample, endSample) {
+        const dpr = window.devicePixelRatio || 1;
+        const w = inputCanvas.parentElement.clientWidth;
+        const h = inputCanvas.parentElement.clientHeight;
+        if (w === 0 || h === 0) return;
+        if (inputCanvas.width !== w * dpr || inputCanvas.height !== h * dpr) {
+            inputCanvas.width = w * dpr;
+            inputCanvas.height = h * dpr;
+        }
+        const ctx = inputCtx;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.clearRect(0, 0, w, h);
+
+        if (!rawAudioBuffer) {
+            ctx.fillStyle = '#a0a0a0';
+            ctx.font = '11px IBM Plex Sans, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.save();
+            ctx.translate(w / 2, h / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Record audio', 0, 0);
+            ctx.restore();
+            return;
+        }
+
+        const raw = rawAudioBuffer.getChannelData(0);
+        const totalSamples = raw.length;
+
+        // Draw full waveform vertically (time runs top to bottom)
+        let maxVal = 0;
+        const step = Math.max(1, Math.floor(totalSamples / h));
+        for (let s = 0; s < totalSamples; s += step) {
+            const v = Math.abs(raw[s]);
+            if (v > maxVal) maxVal = v;
+        }
+        if (maxVal === 0) maxVal = 1;
+
+        const mid = w / 2;
+        const amp = w * 0.4;
+
+        // Filled waveform
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(213, 212, 208, 0.08)';
+        ctx.moveTo(mid, 0);
+        for (let py = 0; py < h; py++) {
+            const s = Math.floor(py / h * totalSamples);
+            const val = Math.abs(raw[Math.min(s, totalSamples - 1)]) / maxVal;
+            ctx.lineTo(mid + val * amp, py);
+        }
+        ctx.lineTo(mid, h);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(mid, 0);
+        for (let py = 0; py < h; py++) {
+            const s = Math.floor(py / h * totalSamples);
+            const val = Math.abs(raw[Math.min(s, totalSamples - 1)]) / maxVal;
+            ctx.lineTo(mid - val * amp, py);
+        }
+        ctx.lineTo(mid, h);
+        ctx.closePath();
+        ctx.fill();
+
+        // Center line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(mid, 0);
+        ctx.lineTo(mid, h);
+        ctx.stroke();
+
+        // Playback position indicator
+        if (isPlaying || isChannelPlaying) {
+            const frac = playbackPos / rawAudioBuffer.duration;
+            const py = frac * h;
+            ctx.strokeStyle = '#c96b5a';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, py);
+            ctx.lineTo(w, py);
+            ctx.stroke();
+        }
+    }
+
+    // Draw SVG arrows from input to channels
+    function drawArrows() {
+        const inputRect = inputCanvas.parentElement.getBoundingClientRect();
+        const arrowRect = arrowSvg.parentElement.getBoundingClientRect();
+        const channelsRect = pipelineChannelsDiv.getBoundingClientRect();
+
+        arrowSvg.setAttribute('width', arrowRect.width);
+        arrowSvg.setAttribute('height', arrowRect.height);
+
+        let paths = '';
+        const x0 = 0;
+        const x1 = arrowRect.width;
+        const inputMidY = inputRect.height / 2 - (arrowRect.top - inputRect.top);
+
+        const rows = pipelineChannelsDiv.querySelectorAll('.channel-row');
+        rows.forEach((row, i) => {
+            const rowRect = row.getBoundingClientRect();
+            const targetY = rowRect.top + rowRect.height / 2 - arrowRect.top;
+            const color = channelColors[i] || '#6aaa8e';
+            paths += `<path d="M${x0},${inputMidY} C${x1*0.5},${inputMidY} ${x1*0.5},${targetY} ${x1},${targetY}" fill="none" stroke="${color}" stroke-width="1.2" opacity="0.5"/>`;
+            // Arrowhead
+            paths += `<polygon points="${x1},${targetY} ${x1-5},${targetY-3} ${x1-5},${targetY+3}" fill="${color}" opacity="0.5"/>`;
+        });
+
+        arrowSvg.innerHTML = paths;
+    }
+
+    function drawPipeline() {
+        if (!rawAudioBuffer || channelEnvelopes.length === 0) {
+            drawInputCanvas(0, 0);
+            return;
+        }
+
+        const totalSamples = rawAudioBuffer.getChannelData(0).length;
+        let centerSample = Math.floor(playbackPos / rawAudioBuffer.duration * totalSamples);
+        if (!isPlaying && !isChannelPlaying) centerSample = Math.floor(totalSamples / 2);
+        const windowSamples = Math.floor(sampleRate * 0.05);
+        const startSample = Math.max(0, centerSample - windowSamples);
+        const endSample = Math.min(totalSamples, centerSample + windowSamples);
+
+        drawInputCanvas(startSample, endSample);
+        drawArrows();
+
+        for (let ch = 0; ch < Math.min(activeChannelCount, channelCanvases.length); ch++) {
+            const refs = channelCanvases[ch];
+            drawSmallWaveform(refs.bp, channelBandpass[ch], startSample, endSample, channelColors[ch], false);
+            drawSmallWaveform(refs.rect, channelRectified[ch], startSample, endSample, '#cca855', false);
+            drawSmallWaveform(refs.env, channelEnvelopes[ch], startSample, endSample, '#6aaa8e', true);
+
+            // Update stim bar
+            const fill = channelStimFills[ch];
+            if (fill) {
+                const envVal = (isPlaying || isChannelPlaying) && channelEnvelopes[ch]
+                    ? channelEnvelopes[ch][Math.min(Math.floor(playbackPos / rawAudioBuffer.duration * totalSamples), channelEnvelopes[ch].length - 1)]
+                    : 0;
+                fill.style.height = (envVal * 100) + '%';
+            }
+        }
+    }
+
+    // ─── Three.js: 3D Cochlea ────────────────────────────────
+    const threeContainer = document.getElementById('three-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x222226);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    camera.position.set(3, 5, 9);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.1;
+    threeContainer.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.target.set(0, 1.2, 0);
+
+    // Lighting — warmer, more anatomical feel
+    scene.add(new THREE.AmbientLight(0x505060, 1.8));
+    const dirLight = new THREE.DirectionalLight(0xfff5e6, 1.4);
+    dirLight.position.set(5, 8, 5);
+    scene.add(dirLight);
+    const dirLight2 = new THREE.DirectionalLight(0x4fc3f7, 0.3);
+    dirLight2.position.set(-3, 2, -5);
+    scene.add(dirLight2);
+    // Subtle fill from below
+    const fillLight = new THREE.DirectionalLight(0xffeedd, 0.3);
+    fillLight.position.set(0, -3, 3);
+    scene.add(fillLight);
+
+    // ─── Build Cochlea Geometry ──────────────────────────────
+    // Realistic cochlea: snail-shell shape with 2.75 turns, tapering radius
+    const COCHLEA_TURNS = 2.75;
+    const COCHLEA_POINTS = 300;
+
+    function cochleaSpiral(t) {
+        // t goes from 0 (base) to 1 (apex)
+        const angle = t * COCHLEA_TURNS * Math.PI * 2;
+        // Logarithmic-style taper like a real cochlea
+        const radius = 2.8 * Math.pow(1 - t * 0.78, 1.15);
+        const x = Math.cos(angle) * radius;
+        const z = Math.sin(angle) * radius;
+        // Height rises steeply at first then levels off (conical envelope)
+        const y = t * 2.8 * Math.pow(t, 0.35);
+        return new THREE.Vector3(x, y, z);
+    }
+
+    // Scala tympani path (where electrode array goes) — offset from center
+    function scalaTympaniSpiral(t) {
+        const center = cochleaSpiral(t);
+        const angle = t * COCHLEA_TURNS * Math.PI * 2;
+        // Offset slightly inward and downward from center
+        const tubeR = 0.38 * (1 - t * 0.5);
+        const offsetX = Math.cos(angle + Math.PI * 0.3) * tubeR * 0.35;
+        const offsetZ = Math.sin(angle + Math.PI * 0.3) * tubeR * 0.35;
+        return new THREE.Vector3(center.x + offsetX, center.y - tubeR * 0.3, center.z + offsetZ);
+    }
+
+    // Create cochlea curve
+    const cochleaCurvePoints = [];
+    for (let i = 0; i <= COCHLEA_POINTS; i++) {
+        cochleaCurvePoints.push(cochleaSpiral(i / COCHLEA_POINTS));
+    }
+    const cochleaCurve = new THREE.CatmullRomCurve3(cochleaCurvePoints);
+
+    // ─── Bony outer shell ──────────────────────────────────
+    // Use varying radius along the spiral for realistic taper
+    class TaperingTube extends THREE.Curve {
+        constructor(baseCurve) { super(); this.baseCurve = baseCurve; }
+        getPoint(t) { return this.baseCurve.getPointAt(t); }
+    }
+    const shellPath = new TaperingTube(cochleaCurve);
+
+    // Custom tube with tapering radius
+    const shellFrames = cochleaCurve.computeFrenetFrames(200, false);
+    const shellPositions = [];
+    const shellIndices = [];
+    const shellNormals = [];
+    const shellUvs = [];
+    const segments = 200;
+    const radialSegs = 20;
+
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const P = cochleaCurve.getPointAt(t);
+        const N = shellFrames.normals[i];
+        const B = shellFrames.binormals[i];
+        // Radius tapers from base to apex
+        const r = 0.48 * Math.pow(1 - t * 0.55, 1.1);
+        for (let j = 0; j <= radialSegs; j++) {
+            const v = j / radialSegs * Math.PI * 2;
+            const sin = Math.sin(v);
+            const cos = Math.cos(v);
+            const nx = cos * N.x + sin * B.x;
+            const ny = cos * N.y + sin * B.y;
+            const nz = cos * N.z + sin * B.z;
+            shellPositions.push(P.x + r * nx, P.y + r * ny, P.z + r * nz);
+            shellNormals.push(nx, ny, nz);
+            shellUvs.push(t, j / radialSegs);
+        }
+    }
+    for (let i = 0; i < segments; i++) {
+        for (let j = 0; j < radialSegs; j++) {
+            const a = i * (radialSegs + 1) + j;
+            const b = a + radialSegs + 1;
+            shellIndices.push(a, b, a + 1, b, b + 1, a + 1);
+        }
+    }
+    const shellGeom = new THREE.BufferGeometry();
+    shellGeom.setAttribute('position', new THREE.Float32BufferAttribute(shellPositions, 3));
+    shellGeom.setAttribute('normal', new THREE.Float32BufferAttribute(shellNormals, 3));
+    shellGeom.setAttribute('uv', new THREE.Float32BufferAttribute(shellUvs, 2));
+    shellGeom.setIndex(shellIndices);
+
+    const cochleaMat = new THREE.MeshPhysicalMaterial({
+        color: 0xe8d4b8,
+        transparent: true,
+        opacity: 0.22,
+        roughness: 0.7,
+        metalness: 0.02,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        clearcoat: 0.1,
+    });
+    const cochleaMesh = new THREE.Mesh(shellGeom, cochleaMat);
+    scene.add(cochleaMesh);
+
+    // ─── Basilar membrane (ribbon inside the cochlea) ─────
+    const membranePositions = [];
+    const membraneIndices = [];
+    const membraneNormals2 = [];
+    for (let i = 0; i <= segments; i++) {
+        const t = i / segments;
+        const center = cochleaSpiral(t);
+        const angle = t * COCHLEA_TURNS * Math.PI * 2;
+        const r = 0.32 * Math.pow(1 - t * 0.55, 1.1);
+        // Membrane spans horizontally across the tube
+        const nx = -Math.sin(angle);
+        const nz = Math.cos(angle);
+        membranePositions.push(
+            center.x + nx * r * 0.7, center.y, center.z + nz * r * 0.7,
+            center.x - nx * r * 0.7, center.y, center.z - nz * r * 0.7
+        );
+        membraneNormals2.push(0, 1, 0, 0, 1, 0);
+    }
+    for (let i = 0; i < segments; i++) {
+        const a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+        membraneIndices.push(a, c, b, b, c, d);
+    }
+    const memGeom = new THREE.BufferGeometry();
+    memGeom.setAttribute('position', new THREE.Float32BufferAttribute(membranePositions, 3));
+    memGeom.setAttribute('normal', new THREE.Float32BufferAttribute(membraneNormals2, 3));
+    memGeom.setIndex(membraneIndices);
+    const membraneMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf0a0a0,
+        transparent: true,
+        opacity: 0.3,
+        roughness: 0.8,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+    });
+    scene.add(new THREE.Mesh(memGeom, membraneMat));
+
+    // ─── Base point reference ───────────────────────────────
+    const basePoint = cochleaSpiral(0);
+
+
+
+    // ─── Receiver/Stimulator housing (behind cochlea) ──────
+    // White, smooth, flexible-looking medical device
+    const receiverGroup = new THREE.Group();
+    const implantWhite = new THREE.MeshPhysicalMaterial({
+        color: 0xf0f0f0,
+        metalness: 0.0,
+        roughness: 0.35,
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.15,
+        sheen: 1.0,
+        sheenColor: new THREE.Color(0xeeeeee),
+    });
+    // Main body — smooth rounded capsule shape
+    const rxBodyGeom = new THREE.SphereGeometry(1.0, 32, 32);
+    rxBodyGeom.scale(1.0, 0.18, 0.85); // Flatten into a disc/capsule
+    const rxBody = new THREE.Mesh(rxBodyGeom, implantWhite);
+    receiverGroup.add(rxBody);
+    // Raised center bump (magnet area)
+    const bumpGeom = new THREE.SphereGeometry(0.38, 24, 24);
+    bumpGeom.scale(1.0, 0.4, 1.0);
+    const bumpMat = new THREE.MeshPhysicalMaterial({
+        color: 0xe8e8e8,
+        metalness: 0.0,
+        roughness: 0.25,
+        clearcoat: 0.8,
+        clearcoatRoughness: 0.1,
+    });
+    const bump = new THREE.Mesh(bumpGeom, bumpMat);
+    bump.position.y = 0.08;
+    receiverGroup.add(bump);
+    // Subtle edge ring
+    const edgeGeom = new THREE.TorusGeometry(0.95, 0.04, 8, 48);
+    const edgeMat = new THREE.MeshPhysicalMaterial({
+        color: 0xe0e0e0,
+        metalness: 0.05,
+        roughness: 0.3,
+        clearcoat: 0.5,
+    });
+    const edge = new THREE.Mesh(edgeGeom, edgeMat);
+    edge.rotation.x = Math.PI / 2;
+    receiverGroup.add(edge);
+    // Position behind and below cochlea
+    receiverGroup.position.set(basePoint.x - 2.5, basePoint.y - 1.5, basePoint.z - 2);
+    receiverGroup.rotation.y = 0.3;
+    scene.add(receiverGroup);
+
+    // ─── Electrode Array ─────────────────────────────────────
+    let electrodesMeshes = [];
+    let electrodePulseRings = [];
+    let electrodeAmplitudes = new Float32Array(50);
+    const electrodeMaterials = [];
+
+    // Wire / carrier materials — white flexible silicone look
+    const wireMat = new THREE.MeshPhysicalMaterial({
+        color: 0xe8e8e8,
+        metalness: 0.0,
+        roughness: 0.4,
+        clearcoat: 0.3,
+        clearcoatRoughness: 0.2,
+    });
+    const carrierMat = new THREE.MeshPhysicalMaterial({
+        color: 0xf0f0f0,
+        metalness: 0.0,
+        roughness: 0.35,
+        clearcoat: 0.4,
+        clearcoatRoughness: 0.15,
+    });
+
+    function buildElectrodes() {
+        // Remove old
+        electrodesMeshes.forEach(m => scene.remove(m));
+        electrodePulseRings.forEach(m => scene.remove(m));
+        electrodesMeshes = [];
+        electrodePulseRings = [];
+        electrodeMaterials.length = 0;
+
+        // Remove old wire/carrier
+        scene.children = scene.children.filter(c => c.userData.type !== 'wire');
+
+        // Map electrode frequency to cochlea position using Greenwood function.
+        const GW_A = 165.4, GW_a = 2.1, GW_k = 0.88;
+        function freqToT(f) {
+            const x = Math.log10((f / GW_A) + GW_k) / GW_a;
+            const xClamped = Math.max(0, Math.min(1, x));
+            return 0.03 + (1 - xClamped) * 0.92;
+        }
+
+        // Compute t positions for all electrodes
+        const electrodeTPositions = [];
+        for (let i = 0; i < activeChannelCount; i++) {
+            electrodeTPositions.push(freqToT(channelFreqs[i]));
+        }
+
+        // Wire/carrier spans from highest freq electrode to lowest freq electrode
+        const tPositionsSorted = [...electrodeTPositions].sort((a, b) => a - b);
+        const tWireMin = Math.max(0.02, tPositionsSorted[0] - 0.02);
+        const tWireMax = Math.min(0.98, tPositionsSorted[tPositionsSorted.length - 1] + 0.02);
+
+        // Build single continuous wire: receiver → approach → spiral carrier
+        // Start with approach points from the receiver, then smoothly merge into the spiral
+        const fullWirePoints = [];
+
+        // Receiver position
+        const rxPos = new THREE.Vector3(basePoint.x - 2.5, basePoint.y - 1.5, basePoint.z - 2);
+        fullWirePoints.push(rxPos);
+
+        // Intermediate approach points that curve toward the spiral entry
+        const entryPoint = cochleaSpiral(tWireMin);
+        // Get tangent at entry to guide the approach direction
+        const entryTangentPt = cochleaSpiral(tWireMin + 0.02);
+        const approachDir = new THREE.Vector3().subVectors(entryTangentPt, entryPoint).normalize();
+
+        // Approach control points — curve smoothly into the spiral tangent
+        const midApproach = new THREE.Vector3().lerpVectors(rxPos, entryPoint, 0.5);
+        midApproach.y += 0.3;
+        fullWirePoints.push(midApproach);
+
+        // Point just before entry, aligned with spiral tangent
+        const preEntry = entryPoint.clone().sub(approachDir.clone().multiplyScalar(0.4));
+        fullWirePoints.push(preEntry);
+
+        // Now add the spiral carrier points
+        for (let i = 0; i <= 80; i++) {
+            const t = tWireMin + (tWireMax - tWireMin) * (i / 80);
+            fullWirePoints.push(cochleaSpiral(t));
+        }
+
+        const fullWireCurve = new THREE.CatmullRomCurve3(fullWirePoints);
+        const fullWireGeom = new THREE.TubeGeometry(fullWireCurve, 120, 0.055, 8, false);
+        const fullWireMesh = new THREE.Mesh(fullWireGeom, carrierMat);
+        fullWireMesh.userData.type = 'wire';
+        scene.add(fullWireMesh);
+
+        for (let i = 0; i < activeChannelCount; i++) {
+            const t = electrodeTPositions[i];
+            const pos = cochleaSpiral(t);
+
+            // Get tangent direction for electrode orientation
+            const tNext = Math.min(1, t + 0.005);
+            const tPrev = Math.max(0, t - 0.005);
+            const posNext = cochleaSpiral(tNext);
+            const posPrev = cochleaSpiral(tPrev);
+            const tangent = new THREE.Vector3().subVectors(posNext, posPrev).normalize();
+
+            // Cylindrical electrode contact (like real platinum band electrodes)
+            const geom = new THREE.CylinderGeometry(0.08, 0.08, 0.12, 12);
+            const color = new THREE.Color(channelColors[i]);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xcccccc,
+                emissive: color,
+                emissiveIntensity: 0.3,
+                metalness: 0.9,
+                roughness: 0.15,
+            });
+            electrodeMaterials.push(mat);
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.copy(pos);
+            // Align cylinder along the spiral tangent
+            const up = new THREE.Vector3(0, 1, 0);
+            const quat = new THREE.Quaternion().setFromUnitVectors(up, tangent);
+            mesh.quaternion.copy(quat);
+            scene.add(mesh);
+            electrodesMeshes.push(mesh);
+
+            // Colored glow ring (stimulation indicator)
+            const ringGeom = new THREE.TorusGeometry(0.14, 0.03, 8, 24);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: color,
+                transparent: true,
+                opacity: 0,
+            });
+            const ring = new THREE.Mesh(ringGeom, ringMat);
+            ring.position.copy(pos);
+            ring.quaternion.copy(quat);
+            scene.add(ring);
+            electrodePulseRings.push(ring);
+        }
+    }
+    buildElectrodes();
+
+    // ─── Frequency labels in 3D ──────────────────────────────
+    // Using simple sprites for freq labels
+    function createTextSprite(text, color) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 48;
+        const ctx2 = canvas.getContext('2d');
+        ctx2.font = '600 20px Outfit, sans-serif';
+        ctx2.fillStyle = color;
+        ctx2.textAlign = 'center';
+        ctx2.fillText(text, 64, 30);
+
+        const tex = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+        const sprite = new THREE.Sprite(mat);
+        sprite.scale.set(0.8, 0.3, 1);
+        return sprite;
+    }
+
+    let freqLabels = [];
+    function buildFreqLabels() {
+        freqLabels.forEach(s => scene.remove(s));
+        freqLabels = [];
+        for (let i = 0; i < activeChannelCount; i++) {
+            const sprite = createTextSprite(channelLabels[i], channelColors[i]);
+            const pos = electrodesMeshes[i].position.clone();
+            pos.y += 0.35;
+            sprite.position.copy(pos);
+            sprite.userData.type = 'label';
+            scene.add(sprite);
+            freqLabels.push(sprite);
+        }
+    }
+    buildFreqLabels();
+
+    // ─── Resize handling ─────────────────────────────────────
+    function resizeThree() {
+        const w = threeContainer.clientWidth;
+        const h = threeContainer.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+    }
+
+    window.addEventListener('resize', () => {
+        resizeThree();
+    });
+
+    // ─── Render loop ─────────────────────────────────────────
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+
+        // Update electrode glow based on amplitudes
+        for (let i = 0; i < electrodesMeshes.length; i++) {
+            const amp = electrodeAmplitudes[i] || 0;
+            const mat = electrodeMaterials[i];
+            if (mat) {
+                mat.emissiveIntensity = 0.3 + amp * 3.0;
+                // Scale electrode slightly with amplitude
+                const s = 1 + amp * 0.5;
+                electrodesMeshes[i].scale.set(s, 1, s);
+            }
+
+            // Pulse ring (torus)
+            const ring = electrodePulseRings[i];
+            if (ring) {
+                ring.material.opacity = amp * 0.8;
+                const rs = 1 + amp * 2.5;
+                ring.scale.setScalar(rs);
+            }
+        }
+
+        renderer.render(scene, camera);
+        drawPipeline();
+    }
+
+    // Initial resize and start
+    requestAnimationFrame(() => {
+        resizeThree();
+        animate();
+    });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Bioinstrumentation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #1a1a1e;
+            --surface: #222226;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            --accent: #6aaa8e;
+            --text: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-tertiary: #707070;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 56px 24px 80px;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 56px;
+        }
+
+        .header h1 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .header p {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            font-weight: 400;
+        }
+
+        .header .note {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .week {
+            margin-bottom: 40px;
+        }
+
+        .week-label {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .week-label h2 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent);
+        }
+
+        .week-label span {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .topics {
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .topic {
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            background: var(--surface);
+            color: var(--text);
+            text-decoration: none;
+            transition: background 0.15s ease;
+        }
+
+        .topic:hover {
+            background: #2a2a2f;
+        }
+
+        .topic-number {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            width: 28px;
+            flex-shrink: 0;
+        }
+
+        .topic-title {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .topic-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: auto;
+            padding-left: 16px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 560px) {
+            body {
+                padding: 40px 16px 60px;
+            }
+
+            .header {
+                margin-bottom: 40px;
+            }
+
+            .topic-desc {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BMEN90033: Bioinstrumentation</h1>
+            <p>Semester 1, 2026</p>
+            <p class="note">Interactive examples for BMEN90033 Bioinstrumentation, built with JavaScript and HTML by Dr. Callum Vidler.</p>
+        </div>
+
+        <div class="week">
+            <div class="week-label">
+                <h2>Week 2</h2>
+                <span>Biopotentials</span>
+            </div>
+            <div class="topics">
+                <a href="Week 2/myelination.html" class="topic">
+                    <span class="topic-number">1</span>
+                    <span class="topic-title">Myelination</span>
+                </a>
+                <a href="Week 2/action_potential_dipole.html" class="topic">
+                    <span class="topic-number">2</span>
+                    <span class="topic-title">Action Potential Dipole</span>
+                </a>
+                <a href="Week 2/volume_conductor.html" class="topic">
+                    <span class="topic-number">3</span>
+                    <span class="topic-title">Volume Conductor</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="week">
+            <div class="week-label">
+                <h2>Week 3</h2>
+                <span>Diodes</span>
+            </div>
+            <div class="topics">
+                <a href="Week 3/electron_orbitals.html" class="topic">
+                    <span class="topic-number" style="width:auto;margin-right:8px">Preface</span>
+                    <span class="topic-title">Electron Cloud Model</span>
+                </a>
+                <a href="Week 3/semiconductor_bands.html" class="topic">
+                    <span class="topic-number">1</span>
+                    <span class="topic-title">Semiconductor Bands</span>
+                </a>
+                <a href="Week 3/semiconductor_doping.html" class="topic">
+                    <span class="topic-number">2</span>
+                    <span class="topic-title">Semiconductor Doping</span>
+                </a>
+                <a href="Week 3/pn_junction.html" class="topic">
+                    <span class="topic-number">3</span>
+                    <span class="topic-title">P-N Junction</span>
+                </a>
+                <a href="Week 3/led.html" class="topic">
+                    <span class="topic-number">4</span>
+                    <span class="topic-title">Light Emitting Diode</span>
+                </a>
+                <a href="Week 3/laser_diode.html" class="topic">
+                    <span class="topic-number">5</span>
+                    <span class="topic-title">Laser Diode</span>
+                </a>
+                <a href="Week 3/cochlear_implant.html" class="topic">
+                    <span class="topic-number">6</span>
+                    <span class="topic-title">Cochlear Implant</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

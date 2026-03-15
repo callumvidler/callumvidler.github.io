@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMEN90033 2026: LED Physics — Interactive Explainer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --bg-panel: rgba(16, 20, 28, 0.92);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-hover: rgba(255, 255, 255, 0.15);
+      --text: #e2e8f0;
+      --text-dim: #8892a4;
+      --text-muted: #505868;
+      --accent: #00ccff;
+      --p-color: #ff6b6b;
+      --n-color: #4ecdc4;
+      --photon-color: #ffd93d;
+      --depletion-color: rgba(255, 255, 255, 0.04);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Back button */
+    .back-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+
+    /* Layout */
+    .explainer {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 72px 24px 120px;
+    }
+
+    .title-block {
+      margin-bottom: 48px;
+    }
+    .title-block h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .title-block p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    /* Step navigation */
+    .step-nav {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 40px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid var(--border);
+    }
+    .step-tab {
+      flex: 1;
+      padding: 10px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .step-tab:hover { color: var(--text-dim); background: rgba(255, 255, 255, 0.03); }
+    .step-tab.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid var(--border-hover);
+    }
+    .step-num {
+      display: block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      letter-spacing: 0.5px;
+    }
+    .step-tab.active .step-num { color: var(--accent); }
+
+    /* Canvas area */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Description panel */
+    .step-description {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    .step-description h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .step-description p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+    .step-description .key-equation {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 14px;
+      background: rgba(0, 204, 255, 0.06);
+      border: 1px solid rgba(0, 204, 255, 0.15);
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    /* Controls */
+    .controls-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+    }
+    .control-group label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .control-group input[type=range] {
+      width: 140px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+    }
+    .control-group input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+    .control-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #fff;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    /* Material selector */
+    .material-selector {
+      display: flex;
+      gap: 4px;
+    }
+    .mat-btn {
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mat-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .mat-btn.active {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--border-hover);
+      color: #fff;
+    }
+
+    /* Legend */
+    .legend-bar {
+      display: flex;
+      gap: 20px;
+      padding: 12px 16px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Arrow navigation */
+    .nav-arrows {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 32px;
+    }
+    .nav-btn {
+      padding: 10px 28px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .nav-btn:disabled:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
+  </style>
+</head>
+
+<body>
+  <a class="back-btn" href="../index.html">← Back</a>
+
+  <div class="explainer">
+    <div class="title-block">
+      <h1>How an LED Emits Light</h1>
+      <p>Step through the physics of a light-emitting diode — from the unbiased p-n junction to photon emission. Adjust voltage and material to see how the semiconductor bandgap determines emission colour.</p>
+    </div>
+
+    <div class="step-nav">
+      <button class="step-tab active" data-step="0">
+        <span class="step-num">01</span>Unbiased Junction
+      </button>
+      <button class="step-tab" data-step="1">
+        <span class="step-num">02</span>Forward Bias
+      </button>
+      <button class="step-tab" data-step="2">
+        <span class="step-num">03</span>Recombination
+      </button>
+      <button class="step-tab" data-step="3">
+        <span class="step-num">04</span>Colour & Material
+      </button>
+    </div>
+
+    <div class="legend-bar">
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Holes (h⁺)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Electrons (e⁻)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b; opacity:0.4; border: 1px solid #ff6b6b"></div>Acceptor ions (−)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4; opacity:0.4; border: 1px solid #4ecdc4"></div>Donor ions (+)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Photons (γ)</div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="sim"></canvas>
+    </div>
+
+    <div id="desc" class="step-description">
+      <h2>Step 1 — The Unbiased Junction</h2>
+      <p>Loading…</p>
+    </div>
+
+    <div class="controls-row" id="controls">
+      <div class="control-group" id="voltage-control">
+        <label>Applied Voltage</label>
+        <input type="range" id="voltage" min="0" max="5" step="0.05" value="0">
+        <span class="control-value" id="voltage-val">0.00 V</span>
+      </div>
+      <div class="control-group" id="material-control" style="display:none">
+        <label>Material</label>
+        <div class="material-selector">
+          <button class="mat-btn active" data-mat="InGaN-blue">InGaN</button>
+          <button class="mat-btn" data-mat="AlGaInP-red">AlGaInP</button>
+          <button class="mat-btn" data-mat="GaAs-ir">GaAs</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-arrows">
+      <button class="nav-btn" id="prev-btn" disabled>← Previous</button>
+      <button class="nav-btn" id="next-btn">Next →</button>
+    </div>
+  </div>
+
+  <script>
+    // ─── Materials Database ───
+    const MATERIALS = {
+      'InGaN-blue': { name: 'InGaN', bandgap: 2.64, wavelength: 470, color: '#4488ff', photonColor: '#4488ff', threshold: 2.6, label: 'Blue (470 nm)' },
+      'AlGaInP-red': { name: 'AlGaInP', bandgap: 1.95, wavelength: 635, color: '#ff4444', photonColor: '#ff4444', threshold: 1.8, label: 'Red (635 nm)' },
+      'GaAs-ir': { name: 'GaAs', bandgap: 1.42, wavelength: 870, color: '#cc3366', photonColor: '#cc3366', threshold: 1.2, label: 'IR (870 nm)' }
+    };
+
+    // ─── State ───
+    let currentStep = 0;
+    let currentMaterial = 'InGaN-blue';
+    let appliedVoltage = 0;
+    let time = 0;
+
+    // ─── Particles ───
+    let holes = [];
+    let electrons = [];
+    let photons = [];
+    let recombinations = [];
+
+    // ─── Canvas setup ───
+    const canvas = document.getElementById('sim');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      W = rect.width;
+      H = rect.height;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ─── Step descriptions ───
+    const STEPS = [
+      {
+        title: 'Step 1 — The Unbiased Junction',
+        html: `The P-type region (left) contains mobile <span style="color:#ff6b6b">holes</span> and fixed negative acceptor ions. The N-type region (right) contains mobile <span style="color:#4ecdc4">electrons</span> and fixed positive donor ions.<br><br>At the junction, holes and electrons have diffused across and recombined, creating the <strong>depletion region</strong> — a zone stripped of free carriers. The remaining fixed ions generate a built-in electric field (N→P) that opposes further diffusion, establishing equilibrium.`
+      },
+      {
+        title: 'Step 2 — Forward Bias Applied',
+        html: `An external voltage pushes electrons from the N-side toward the junction and holes from the P-side toward the junction. The depletion region <strong>narrows</strong> as applied voltage increases.<br><br>Once the voltage exceeds the built-in potential (the threshold depends on the material), the barrier collapses and carriers flood across the junction. Use the slider to increase voltage and watch the depletion zone shrink.`
+      },
+      {
+        title: 'Step 3 — Recombination & Photon Emission',
+        html: `Electrons crossing into the P-side encounter majority <span style="color:#ff6b6b">holes</span>. When an electron drops from the conduction band into a hole in the valence band, it <strong>recombines</strong> and releases energy.<br><br>In a <em>direct bandgap</em> semiconductor (GaAs, GaN, InGaN), that energy is emitted as a <span style="color:#ffd93d">photon</span> rather than dissipated as heat. The photon wavelength — and therefore colour — is set by the bandgap energy.<br><br><span class="key-equation">E = hc / λ</span>`
+      },
+      {
+        title: 'Step 4 — What Determines the Colour',
+        html: `The semiconductor material's <strong>bandgap</strong> dictates the emission wavelength. Different alloys produce different colours:<br><br>• <strong>InGaN</strong> → blue/green (λ ≈ 450–530 nm, E<sub>g</sub> ≈ 2.4–2.8 eV)<br>• <strong>AlGaInP</strong> → red/amber (λ ≈ 590–650 nm, E<sub>g</sub> ≈ 1.8–2.1 eV)<br>• <strong>GaAs</strong> → infrared (λ ≈ 870 nm, E<sub>g</sub> ≈ 1.4 eV)<br><br>By tuning the alloy composition, you can continuously shift the bandgap — and therefore the colour. Switch materials below to see the emission change.`
+      }
+    ];
+
+    // ─── Particle generation ───
+    function initParticles() {
+      holes = [];
+      electrons = [];
+      photons = [];
+      recombinations = [];
+
+      const jx = W * 0.5;
+      const mat = MATERIALS[currentMaterial];
+      const depletionHalf = getDepletionHalf();
+
+      // P-side holes — fixed lattice vacancies in a staggered grid
+      // Each hole tracks: filled (electron sitting in it), reserved (electron en route)
+      const pLeft = 25;
+      const pRight = Math.max(pLeft + 40, jx - depletionHalf - 10);
+      const hSpacingX = 42;
+      const hSpacingY = 40;
+      for (let r = 0; ; r++) {
+        const y = 160 + r * hSpacingY;
+        if (y > H - 50) break;
+        for (let c = 0; ; c++) {
+          const x = pLeft + c * hSpacingX + (r % 2) * (hSpacingX * 0.5);
+          if (x > pRight) break;
+          holes.push({
+            x: x, y: y,
+            r: 7,
+            filled: false,    // electron is occupying this site
+            reserved: false,  // electron is en route to this site
+            neighbours: []    // indices of immediate left neighbours (built below)
+          });
+        }
+      }
+
+      // Build neighbour graph — each hole connects to its nearest left neighbours
+      // (within ~1.2x the grid spacing so only immediate neighbours link)
+      const maxNeighbourDist = Math.sqrt(hSpacingX * hSpacingX + hSpacingY * hSpacingY) * 1.2;
+      for (let i = 0; i < holes.length; i++) {
+        for (let j = 0; j < holes.length; j++) {
+          if (i === j) continue;
+          if (holes[j].x >= holes[i].x - 2) continue; // must be to the left
+          const dx = holes[i].x - holes[j].x;
+          const dy = Math.abs(holes[i].y - holes[j].y);
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d <= maxNeighbourDist) {
+            holes[i].neighbours.push(j);
+          }
+        }
+        // Sort neighbours: prefer closest first
+        holes[i].neighbours.sort((a, b) => {
+          const da = Math.hypot(holes[a].x - holes[i].x, holes[a].y - holes[i].y);
+          const db = Math.hypot(holes[b].x - holes[i].x, holes[b].y - holes[i].y);
+          return da - db;
+        });
+      }
+
+      // N-side electrons — free conduction-band carriers
+      const nLeft = Math.min(W - 60, jx + depletionHalf + 10);
+      const nRight = W - 20;
+      for (let i = 0; i < 20; i++) {
+        electrons.push(makeElectron(
+          nLeft + Math.random() * (nRight - nLeft),
+          160 + Math.random() * (H - 200)
+        ));
+      }
+    }
+
+    function makeElectron(x, y) {
+      return {
+        x: x, y: y,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
+        r: 5,
+        // State machine: 'free' → moving in N-side / crossing junction
+        //                'hopping' → travelling toward a target hole
+        //                'sitting' → occupying a hole, waiting to hop to next
+        state: 'free',
+        targetHole: null,   // index into holes[]
+        sittingIn: null,    // index of hole currently occupied
+        sitTimer: 0,        // frames remaining before hopping to next hole
+        firstHop: false     // true only for the initial conduction→valence band drop
+      };
+    }
+
+    function getDepletionHalf() {
+      const mat = MATERIALS[currentMaterial];
+      const maxDepl = W * 0.1;
+      const minDepl = 4;
+      if (currentStep === 0) return maxDepl;
+      const ratio = Math.min(appliedVoltage / mat.threshold, 1);
+      return maxDepl * (1 - ratio * 0.95);
+    }
+
+    function getThresholdExceeded() {
+      const mat = MATERIALS[currentMaterial];
+      return appliedVoltage >= mat.threshold;
+    }
+
+    // ─── Drawing helpers ───
+    function drawRegionLabels() {
+      const jx = W * 0.5;
+      ctx.font = '600 14px IBM Plex Sans';
+      ctx.fillStyle = 'rgba(255,107,107,0.5)';
+      ctx.textAlign = 'center';
+      ctx.fillText('P-type', jx * 0.5, 148);
+      ctx.fillStyle = 'rgba(78,205,196,0.5)';
+      ctx.fillText('N-type', jx + jx * 0.5, 148);
+    }
+
+    function drawJunction() {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+
+      // P-region background
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.04)';
+      ctx.fillRect(0, 0, jx - deplHalf, H);
+
+      // N-region background
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.04)';
+      ctx.fillRect(jx + deplHalf, 0, W - jx - deplHalf, H);
+
+      // Depletion region
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.fillRect(jx - deplHalf, 0, deplHalf * 2, H);
+
+      // Depletion borders
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(jx - deplHalf, 0);
+      ctx.lineTo(jx - deplHalf, H);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(jx + deplHalf, 0);
+      ctx.lineTo(jx + deplHalf, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Junction center line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(jx, 0);
+      ctx.lineTo(jx, H);
+      ctx.stroke();
+
+      // Depletion label
+      if (deplHalf > 20) {
+        ctx.font = '500 10px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Depletion', jx, H - 16);
+        ctx.fillText('Region', jx, H - 4);
+      }
+
+      // Fixed ions in depletion region
+      drawFixedIons(jx, deplHalf);
+    }
+
+    function drawFixedIons(jx, deplHalf) {
+      if (deplHalf < 8) return;
+      const spacing = 28;
+      const rows = Math.floor((H - 80) / spacing);
+      const colsPerSide = Math.max(1, Math.floor(deplHalf / spacing));
+
+      ctx.font = '700 10px IBM Plex Mono';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let r = 0; r < rows; r++) {
+        const y = 55 + r * spacing;
+        // Negative acceptor ions (P-side of depletion)
+        for (let c = 0; c < colsPerSide; c++) {
+          const x = jx - deplHalf + 14 + c * spacing;
+          if (x < jx - 4) {
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.25)';
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.6)';
+            ctx.fillText('−', x, y + 1);
+          }
+        }
+        // Positive donor ions (N-side of depletion)
+        for (let c = 0; c < colsPerSide; c++) {
+          const x = jx + 14 + c * spacing;
+          if (x < jx + deplHalf - 4) {
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.25)';
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
+            ctx.fillText('+', x, y + 1);
+          }
+        }
+      }
+    }
+
+    function drawEField() {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      if (deplHalf < 15) return;
+
+      const arrowY = H * 0.5;
+      const arrowLen = deplHalf * 1.2;
+
+      ctx.strokeStyle = 'rgba(255, 200, 50, 0.3)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(jx + arrowLen * 0.4, arrowY);
+      ctx.lineTo(jx - arrowLen * 0.4, arrowY);
+      ctx.stroke();
+
+      // Arrow head (pointing from N to P)
+      ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
+      ctx.beginPath();
+      ctx.moveTo(jx - arrowLen * 0.4, arrowY);
+      ctx.lineTo(jx - arrowLen * 0.4 + 8, arrowY - 5);
+      ctx.lineTo(jx - arrowLen * 0.4 + 8, arrowY + 5);
+      ctx.fill();
+
+      ctx.font = '500 10px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255, 200, 50, 0.35)';
+      ctx.textAlign = 'center';
+      ctx.fillText('E-field', jx, arrowY - 12);
+    }
+
+    function drawHoles() {
+      holes.forEach(h => {
+        if (h.filled) return; // Hole is occupied by an electron — invisible
+
+        // Draw as an open ring — an empty vacancy
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Dashed inner ring to suggest "empty"
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r - 3, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.25)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = '700 9px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.7)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', h.x, h.y + 0.5);
+      });
+    }
+
+    function drawElectrons() {
+      electrons.forEach(e => {
+        // Don't draw electrons that are sitting in a hole (the hole disappears,
+        // and the electron is "inside" — draw a subtle filled dot instead)
+        if (e.state === 'sitting') {
+          ctx.beginPath();
+          ctx.arc(e.x, e.y, 5, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(78, 205, 196, 0.35)';
+          ctx.fill();
+          ctx.font = '700 8px IBM Plex Mono';
+          ctx.fillStyle = 'rgba(78, 205, 196, 0.5)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('−', e.x, e.y + 0.5);
+          return;
+        }
+
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(78, 205, 196, 0.85)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(78, 205, 196, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.font = '700 8px IBM Plex Mono';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('−', e.x, e.y + 0.5);
+      });
+    }
+
+    function drawPhotons() {
+      const mat = MATERIALS[currentMaterial];
+      photons.forEach(p => {
+        const alpha = p.life > 0.7 ? 1 : p.life;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        // Glow
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 16);
+        grad.addColorStop(0, mat.photonColor + '66');
+        grad.addColorStop(1, mat.photonColor + '00');
+        ctx.fillStyle = grad;
+        ctx.fillRect(p.x - 16, p.y - 16, 32, 32);
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = mat.photonColor;
+        ctx.fill();
+
+        // Vertical wavy trail — sine wave oscillating horizontally along upward path
+        ctx.strokeStyle = mat.photonColor + '88';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < 24; i++) {
+          const dy = i * 1.5;  // trail extends downward (behind the photon)
+          const dx = Math.sin((i + time * 10 + p.phase) * 0.7) * 4;
+          if (i === 0) ctx.moveTo(p.x + dx, p.y + dy);
+          else ctx.lineTo(p.x + dx, p.y + dy);
+        }
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    function drawRecombinations() {
+      recombinations.forEach(r => {
+        const alpha = r.life;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const mat = MATERIALS[currentMaterial];
+
+        // Flash ring
+        const radius = (1 - r.life) * 25 + 5;
+        ctx.strokeStyle = mat.photonColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    function drawBatterySymbol() {
+      if (currentStep === 0) return;
+      const bx = W * 0.5;
+      const by = H - 50;
+
+      ctx.font = '500 11px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.textAlign = 'center';
+
+      if (appliedVoltage > 0) {
+        // Show + and - terminals
+        ctx.fillStyle = 'rgba(255,107,107,0.5)';
+        ctx.fillText('+ V', 30, H - 10);
+        ctx.fillStyle = 'rgba(78,205,196,0.5)';
+        ctx.fillText('− V', W - 30, H - 10);
+      }
+    }
+
+    function drawBandDiagram() {
+      const mat = MATERIALS[currentMaterial];
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      const exceeded = getThresholdExceeded();
+
+      // Band diagram spans the full width, sitting above the P/N regions
+      const margin = 30;
+      const bx = margin;
+      const bw = W - margin * 2;
+      const by = 42;
+      const bh = 90;
+
+      // Background
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Title
+      ctx.font = '500 9px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.textAlign = 'center';
+      ctx.fillText('Energy Band Diagram', bx + bw / 2, by + 12);
+
+      // Coordinates
+      const midX = bx + bw / 2;        // junction position
+      const bandgap = 24;              // pixel gap between Ec and Ev
+      const pCbY = by + 28;            // P-side conduction band (high energy)
+      const pVbY = pCbY + bandgap;     // P-side valence band
+
+      // Built-in potential drop: N-side bands are lower than P-side
+      // Under forward bias, the drop decreases (bands flatten)
+      const biasRatio = Math.min(appliedVoltage / mat.threshold, 1);
+      const maxDrop = 30;  // max pixel drop at zero bias
+      const drop = exceeded ? 1 : maxDrop * (1 - biasRatio);
+
+      const nCbY = pCbY + drop;        // N-side conduction band (lower energy)
+      const nVbY = nCbY + bandgap;     // N-side valence band
+
+      // Depletion zone edges in band diagram space
+      const dLeft = midX - deplHalf * (bw / W) * 1.5;
+      const dRight = midX + deplHalf * (bw / W) * 1.5;
+
+      // Draw conduction band (Ec)
+      ctx.strokeStyle = 'rgba(78, 205, 196, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(bx + 10, pCbY);
+      ctx.lineTo(dLeft, pCbY);
+      // Smooth transition through depletion region
+      ctx.bezierCurveTo(
+        midX - 5, pCbY,
+        midX + 5, nCbY,
+        dRight, nCbY
+      );
+      ctx.lineTo(bx + bw - 10, nCbY);
+      ctx.stroke();
+
+      // Draw valence band (Ev)
+      ctx.strokeStyle = 'rgba(255, 107, 107, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(bx + 10, pVbY);
+      ctx.lineTo(dLeft, pVbY);
+      ctx.bezierCurveTo(
+        midX - 5, pVbY,
+        midX + 5, nVbY,
+        dRight, nVbY
+      );
+      ctx.lineTo(bx + bw - 10, nVbY);
+      ctx.stroke();
+
+      // Fermi level (dashed)
+      const fermiY = pCbY + bandgap * 0.5 + drop * 0.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(bx + 10, fermiY);
+      ctx.lineTo(bx + bw - 10, fermiY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Labels
+      ctx.font = '500 8px IBM Plex Mono';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
+      ctx.fillText('Ec', bx + 2, pCbY - 3);
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.6)';
+      ctx.fillText('Ev', bx + 2, pVbY + 10);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.fillText('Ef', bx + 2, fermiY - 3);
+
+      // P and N labels
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.35)';
+      ctx.fillText('P', bx + bw * 0.2, by + bh - 6);
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.35)';
+      ctx.fillText('N', bx + bw * 0.8, by + bh - 6);
+
+      // Bandgap annotation (right side)
+      const bgX = bx + bw - 30;
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bgX, nCbY);
+      ctx.lineTo(bgX, nVbY);
+      ctx.stroke();
+      // Arrowheads
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.beginPath();
+      ctx.moveTo(bgX - 3, nCbY + 4); ctx.lineTo(bgX + 3, nCbY + 4); ctx.lineTo(bgX, nCbY); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(bgX - 3, nVbY - 4); ctx.lineTo(bgX + 3, nVbY - 4); ctx.lineTo(bgX, nVbY); ctx.fill();
+
+      ctx.font = '400 7px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.textAlign = 'left';
+      ctx.fillText('Eg=' + mat.bandgap.toFixed(2) + 'eV', bgX + 5, (nCbY + nVbY) / 2 + 3);
+
+      // Show electron dropping into valence band when current flows
+      if (exceeded && currentStep >= 2) {
+        const arrowX = midX + 10;
+        ctx.strokeStyle = mat.photonColor + '66';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(arrowX, nCbY);
+        ctx.lineTo(arrowX, nVbY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Arrow head
+        ctx.fillStyle = mat.photonColor + '66';
+        ctx.beginPath();
+        ctx.moveTo(arrowX - 3, nVbY - 5);
+        ctx.lineTo(arrowX + 3, nVbY - 5);
+        ctx.lineTo(arrowX, nVbY);
+        ctx.fill();
+        // Photon label
+        ctx.font = '500 7px IBM Plex Mono';
+        ctx.fillStyle = mat.photonColor + '88';
+        ctx.textAlign = 'left';
+        ctx.fillText('hν', arrowX + 5, (nCbY + nVbY) / 2 + 2);
+      }
+    }
+
+    // ─── Hole availability check (not filled AND not reserved) ───
+    function isHoleAvailable(i) {
+      return !holes[i].filled && !holes[i].reserved;
+    }
+
+    // Find the rightmost available entry hole (closest to junction).
+    // Only considers the rightmost column of holes (the entry points).
+    function findEntryHole(x, y) {
+      let best = -1, bestScore = Infinity;
+      for (let i = 0; i < holes.length; i++) {
+        if (!isHoleAvailable(i)) continue;
+        if (holes[i].x >= x) continue;
+        const dy = Math.abs(holes[i].y - y);
+        // Prefer rightmost + same row
+        const score = (x - holes[i].x) + dy * 0.5;
+        if (score < bestScore) { bestScore = score; best = i; }
+      }
+      return best;
+    }
+
+    // From a given hole, find the best available immediate left neighbour.
+    function findNeighbourLeft(holeIndex) {
+      const h = holes[holeIndex];
+      for (let i = 0; i < h.neighbours.length; i++) {
+        const ni = h.neighbours[i];
+        if (isHoleAvailable(ni)) return ni;
+      }
+      return -1; // all immediate neighbours occupied or reserved
+    }
+
+    // ─── Physics Update ───
+    const HOP_SPEED = 3.0;       // pixels per frame while hopping
+    const SIT_DURATION = 6;      // frames to sit in a hole before hopping (~0.2s)
+    let spawnTimer = 0;
+
+    function resetElectron(e) {
+      e.dead = true;
+      // Release any reservation
+      if (e.targetHole !== null && holes[e.targetHole]) {
+        holes[e.targetHole].reserved = false;
+      }
+      if (e.sittingIn !== null && holes[e.sittingIn]) {
+        holes[e.sittingIn].filled = false;
+      }
+    }
+
+    function updateParticles(dt) {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      const exceeded = getThresholdExceeded();
+      const mat = MATERIALS[currentMaterial];
+
+      const jiggle = 0.4;
+      const driftStrength = exceeded ? 0.6 : 0;
+
+      // Inject new electrons from the right edge when current is flowing
+      if (exceeded && currentStep >= 2) {
+        spawnTimer++;
+        if (spawnTimer >= 12) {
+          spawnTimer = 0;
+          electrons.push(makeElectron(
+            W + 5,
+            160 + Math.random() * (H - 200)
+          ));
+        }
+      }
+
+      electrons.forEach(e => {
+        if (e.dead) return;
+
+        if (e.state === 'free') {
+          // Thermal jiggle
+          e.vx += (Math.random() - 0.5) * jiggle;
+          e.vy += (Math.random() - 0.5) * jiggle;
+
+          // Forward bias drift leftward
+          if (currentStep >= 1 && appliedVoltage > 0) {
+            e.vx -= driftStrength * 0.08;
+          }
+
+          e.vx *= 0.96;
+          e.vy *= 0.96;
+          e.x += e.vx;
+          e.y += e.vy;
+
+          // Barrier: can't cross depletion unless threshold exceeded
+          if (!exceeded) {
+            if (e.x < jx + deplHalf + e.r) {
+              e.x = jx + deplHalf + e.r;
+              e.vx *= -0.8;
+            }
+          }
+
+          // Wall bounce (right, top, bottom)
+          if (e.x > W - e.r) { e.x = W - e.r; e.vx *= -0.8; }
+          if (e.y < 155 + e.r) { e.y = 155 + e.r; e.vy *= -0.8; }
+          if (e.y > H - e.r - 25) { e.y = H - e.r - 25; e.vy *= -0.8; }
+
+          // If electron has crossed into P-side, find an available entry hole
+          if (exceeded && currentStep >= 2 && e.x < jx) {
+            const hi = findEntryHole(e.x, e.y);
+            if (hi >= 0) {
+              holes[hi].reserved = true; // claim it
+              e.state = 'hopping';
+              e.targetHole = hi;
+              e.firstHop = true;
+              e.vx = 0; e.vy = 0;
+            } else {
+              // No available holes — wait at junction
+              e.x = jx - 2;
+              e.vx = 0;
+              e.vy *= 0.9;
+            }
+          }
+
+        } else if (e.state === 'hopping') {
+          const h = holes[e.targetHole];
+
+          const dx = h.x - e.x;
+          const dy = h.y - e.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < 3) {
+            // Arrived — snap into hole
+            e.x = h.x;
+            e.y = h.y;
+            h.reserved = false;
+            h.filled = true;
+            e.state = 'sitting';
+            e.sittingIn = e.targetHole;
+            e.targetHole = null;
+            e.sitTimer = SIT_DURATION + Math.floor(Math.random() * 4);
+
+            // Photon only on first hop (conduction→valence band drop)
+            if (e.firstHop && currentStep >= 2) {
+              photons.push({
+                x: h.x, y: h.y,
+                vx: 0,
+                vy: -0.5 - Math.random() * 0.4,
+                phase: Math.random() * Math.PI * 2,
+                life: 1.0
+              });
+              recombinations.push({ x: h.x, y: h.y, life: 1.0 });
+              e.firstHop = false;
+            }
+          } else {
+            // Smooth movement toward hole
+            e.x += (dx / dist) * HOP_SPEED;
+            e.y += (dy / dist) * HOP_SPEED;
+          }
+
+        } else if (e.state === 'sitting') {
+          if (e.sitTimer > 0) {
+            e.sitTimer--;
+          } else {
+            const prevHole = e.sittingIn;
+
+            // No left neighbours at all → leftmost hole, disappear
+            if (holes[prevHole].neighbours.length === 0) {
+              holes[prevHole].filled = false;
+              resetElectron(e);
+              return;
+            }
+
+            // Find an available immediate left neighbour
+            const nextHi = findNeighbourLeft(prevHole);
+
+            if (nextHi >= 0) {
+              // Reserve next hole, vacate current
+              holes[nextHi].reserved = true;
+              holes[prevHole].filled = false;
+              e.state = 'hopping';
+              e.targetHole = nextHi;
+              e.sittingIn = null;
+            }
+            // Otherwise: all immediate neighbours occupied — keep waiting
+          }
+        }
+      });
+
+      // Remove dead electrons
+      for (let i = electrons.length - 1; i >= 0; i--) {
+        if (electrons[i].dead) electrons.splice(i, 1);
+      }
+
+      // Update photons — jiggle horizontally as they rise
+      for (let i = photons.length - 1; i >= 0; i--) {
+        const p = photons[i];
+        p.vx = Math.sin(time * 12 + p.phase) * 0.4; // oscillating horizontal jiggle
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= 0.006;
+        if (p.life <= 0 || p.y < -10 || p.x < -10 || p.x > W + 10) {
+          photons.splice(i, 1);
+        }
+      }
+
+      // Update recombination flashes
+      for (let i = recombinations.length - 1; i >= 0; i--) {
+        recombinations[i].life -= 0.02;
+        if (recombinations[i].life <= 0) recombinations.splice(i, 1);
+      }
+    }
+
+    // ─── Main draw ───
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      drawJunction();
+      drawRegionLabels();
+      drawEField();
+      drawHoles();
+      drawElectrons();
+      if (currentStep >= 2) {
+        drawPhotons();
+        drawRecombinations();
+      }
+      drawBatterySymbol();
+      drawBandDiagram();
+
+      // Status text
+      const mat = MATERIALS[currentMaterial];
+      if (currentStep >= 1) {
+        ctx.font = '500 11px IBM Plex Mono';
+        ctx.textAlign = 'left';
+        const exceeded = getThresholdExceeded();
+        ctx.fillStyle = exceeded ? 'rgba(0, 255, 136, 0.5)' : 'rgba(255, 255, 255, 0.25)';
+        const statusText = exceeded ?
+          'Threshold exceeded — current flowing' :
+          `Threshold: ${mat.threshold.toFixed(1)} V`;
+        ctx.fillText(statusText, 16, H - 10);
+      }
+    }
+
+    // ─── Animation loop (throttled to ~30fps for slower, clearer motion) ───
+    let lastFrame = 0;
+    function loop(timestamp) {
+      requestAnimationFrame(loop);
+      if (timestamp - lastFrame < 33) return; // ~30fps
+      lastFrame = timestamp;
+      time += 0.01;
+      updateParticles(0.01);
+      draw();
+    }
+
+    // ─── UI Wiring ───
+    function setStep(step) {
+      currentStep = step;
+
+      // Update tabs
+      document.querySelectorAll('.step-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === step);
+      });
+
+      // Update description
+      const desc = document.getElementById('desc');
+      desc.querySelector('h2').textContent = STEPS[step].title;
+      desc.querySelector('p').innerHTML = STEPS[step].html;
+
+      // Show/hide controls
+      const voltCtrl = document.getElementById('voltage-control');
+      const matCtrl = document.getElementById('material-control');
+      voltCtrl.style.display = step >= 1 ? 'flex' : 'none';
+      matCtrl.style.display = step === 3 ? 'flex' : 'none';
+
+      // Reset voltage for step 0
+      if (step === 0) {
+        appliedVoltage = 0;
+        document.getElementById('voltage').value = 0;
+        document.getElementById('voltage-val').textContent = '0.00 V';
+      }
+
+      // Auto-set voltage for step 2+ if it's below threshold
+      if (step >= 2) {
+        const mat = MATERIALS[currentMaterial];
+        if (appliedVoltage < mat.threshold) {
+          appliedVoltage = mat.threshold + 0.3;
+          document.getElementById('voltage').value = appliedVoltage;
+          document.getElementById('voltage-val').textContent = appliedVoltage.toFixed(2) + ' V';
+        }
+      }
+
+      // Nav buttons
+      document.getElementById('prev-btn').disabled = step === 0;
+      document.getElementById('next-btn').disabled = step === 3;
+
+      initParticles();
+    }
+
+    // Tab clicks
+    document.querySelectorAll('.step-tab').forEach(tab => {
+      tab.addEventListener('click', () => setStep(parseInt(tab.dataset.step)));
+    });
+
+    // Voltage slider
+    document.getElementById('voltage').addEventListener('input', e => {
+      appliedVoltage = parseFloat(e.target.value);
+      document.getElementById('voltage-val').textContent = appliedVoltage.toFixed(2) + ' V';
+    });
+
+    // Material buttons
+    document.querySelectorAll('.mat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMaterial = btn.dataset.mat;
+        document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update voltage threshold display
+        const mat = MATERIALS[currentMaterial];
+        if (appliedVoltage < mat.threshold && currentStep >= 2) {
+          appliedVoltage = mat.threshold + 0.3;
+          document.getElementById('voltage').value = appliedVoltage;
+          document.getElementById('voltage-val').textContent = appliedVoltage.toFixed(2) + ' V';
+        }
+      });
+    });
+
+    // Nav buttons
+    document.getElementById('prev-btn').addEventListener('click', () => {
+      if (currentStep > 0) setStep(currentStep - 1);
+    });
+    document.getElementById('next-btn').addEventListener('click', () => {
+      if (currentStep < 3) setStep(currentStep + 1);
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' && currentStep < 3) setStep(currentStep + 1);
+      if (e.key === 'ArrowLeft' && currentStep > 0) setStep(currentStep - 1);
+    });
+
+    // Init
+    setStep(0);
+    requestAnimationFrame(loop);
+  </script>
+</body>
+
+</html>

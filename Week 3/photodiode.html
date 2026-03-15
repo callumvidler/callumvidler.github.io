@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMEN90033 2026: Photodiode Physics — Interactive Explainer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --bg-panel: rgba(16, 20, 28, 0.92);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-hover: rgba(255, 255, 255, 0.15);
+      --text: #e2e8f0;
+      --text-dim: #8892a4;
+      --text-muted: #505868;
+      --accent: #00ccff;
+      --p-color: #ff6b6b;
+      --n-color: #4ecdc4;
+      --photon-color: #ffd93d;
+      --depletion-color: rgba(255, 255, 255, 0.04);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Back button */
+    .back-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+
+    /* Layout */
+    .explainer {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 72px 24px 120px;
+    }
+
+    .title-block {
+      margin-bottom: 48px;
+    }
+    .title-block h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .title-block p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    /* Step navigation */
+    .step-nav {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 40px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid var(--border);
+    }
+    .step-tab {
+      flex: 1;
+      padding: 10px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .step-tab:hover { color: var(--text-dim); background: rgba(255, 255, 255, 0.03); }
+    .step-tab.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid var(--border-hover);
+    }
+    .step-num {
+      display: block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      letter-spacing: 0.5px;
+    }
+    .step-tab.active .step-num { color: var(--accent); }
+
+    /* Canvas area */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: 520px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Description panel */
+    .step-description {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    .step-description h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .step-description p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+    .step-description .key-equation {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 14px;
+      background: rgba(0, 204, 255, 0.06);
+      border: 1px solid rgba(0, 204, 255, 0.15);
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    /* Controls */
+    .controls-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+    }
+    .control-group label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .control-group input[type=range] {
+      width: 140px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+    }
+    .control-group input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+    .control-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #fff;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    /* Material selector */
+    .material-selector {
+      display: flex;
+      gap: 4px;
+    }
+    .mat-btn {
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .mat-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .mat-btn.active {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: var(--border-hover);
+      color: #fff;
+    }
+
+    /* Legend */
+    .legend-bar {
+      display: flex;
+      gap: 20px;
+      padding: 12px 16px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Arrow navigation */
+    .nav-arrows {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 32px;
+    }
+    .nav-btn {
+      padding: 10px 28px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .nav-btn:disabled:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
+  </style>
+</head>
+
+<body>
+  <a class="back-btn" href="../index.html">&larr; Back</a>
+
+  <div class="explainer">
+    <div class="title-block">
+      <h1>How a Photodiode Detects Light</h1>
+      <p>Step through the physics of a photodiode &mdash; from the unbiased p-n junction to photocurrent generation. Adjust reverse bias voltage and light intensity to see how incident photons create measurable current.</p>
+    </div>
+
+    <div class="step-nav">
+      <button class="step-tab active" data-step="0">
+        <span class="step-num">01</span>Unbiased Junction
+      </button>
+      <button class="step-tab" data-step="1">
+        <span class="step-num">02</span>Reverse Bias
+      </button>
+      <button class="step-tab" data-step="2">
+        <span class="step-num">03</span>Photon Absorption
+      </button>
+      <button class="step-tab" data-step="3">
+        <span class="step-num">04</span>Spectral Response
+      </button>
+    </div>
+
+    <div class="legend-bar">
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Holes (h&plus;)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Electrons (e&minus;)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b; opacity:0.4; border: 1px solid #ff6b6b"></div>Acceptor ions (&minus;)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4; opacity:0.4; border: 1px solid #4ecdc4"></div>Donor ions (+)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ffd93d"></div>Incoming Photons (&gamma;)</div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="sim"></canvas>
+    </div>
+
+    <div id="desc" class="step-description">
+      <h2>Step 1 &mdash; The Unbiased Junction</h2>
+      <p>Loading&hellip;</p>
+    </div>
+
+    <div class="controls-row" id="controls">
+      <div class="control-group" id="voltage-control" style="display:none">
+        <label>Reverse Bias</label>
+        <input type="range" id="voltage" min="0" max="20" step="0.5" value="0">
+        <span class="control-value" id="voltage-val">0.0 V</span>
+      </div>
+      <div class="control-group" id="light-control" style="display:none">
+        <label>Light Intensity</label>
+        <input type="range" id="light" min="0" max="100" step="1" value="50">
+        <span class="control-value" id="light-val">50%</span>
+      </div>
+      <div class="control-group" id="material-control" style="display:none">
+        <label>Material</label>
+        <div class="material-selector">
+          <button class="mat-btn active" data-mat="Si">Si</button>
+          <button class="mat-btn" data-mat="InGaAs">InGaAs</button>
+          <button class="mat-btn" data-mat="GaP">GaP</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-arrows">
+      <button class="nav-btn" id="prev-btn" disabled>&larr; Previous</button>
+      <button class="nav-btn" id="next-btn">Next &rarr;</button>
+    </div>
+  </div>
+
+  <script>
+    // ─── Materials Database ───
+    const MATERIALS = {
+      'Si': { name: 'Silicon', bandgap: 1.12, cutoffWavelength: 1100, color: '#66aaff', photonColor: '#ffd93d', label: 'Silicon (1100 nm cutoff)', peakWavelength: 900 },
+      'InGaAs': { name: 'InGaAs', bandgap: 0.75, cutoffWavelength: 1700, color: '#ff8844', photonColor: '#ff6644', label: 'InGaAs (1700 nm cutoff)', peakWavelength: 1550 },
+      'GaP': { name: 'GaP', bandgap: 2.26, cutoffWavelength: 550, color: '#44dd66', photonColor: '#44dd66', label: 'GaP (550 nm cutoff)', peakWavelength: 440 }
+    };
+
+    // ─── State ───
+    let currentStep = 0;
+    let currentMaterial = 'Si';
+    let reverseVoltage = 0;
+    let lightIntensity = 50;
+    let time = 0;
+
+    // ─── Particles ───
+    let holes = [];
+    let electrons = [];
+    let incomingPhotons = [];
+    let absorptions = [];
+    let generatedPairs = [];
+
+    // ─── Canvas setup ───
+    const canvas = document.getElementById('sim');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      W = rect.width;
+      H = rect.height;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ─── Step descriptions ───
+    const STEPS = [
+      {
+        title: 'Step 1 — The Unbiased Junction',
+        html: `A photodiode is a p-n junction diode optimised for light detection. The P-type region (left) contains mobile <span style="color:#ff6b6b">holes</span> and fixed negative acceptor ions. The N-type region (right) contains mobile <span style="color:#4ecdc4">electrons</span> and fixed positive donor ions.<br><br>At the junction, carrier diffusion and recombination create the <strong>depletion region</strong> — a zone with a strong built-in electric field (N→P). This field is the key to photodetection: any carriers generated here will be swept to opposite sides.`
+      },
+      {
+        title: 'Step 2 — Reverse Bias Applied',
+        html: `Unlike an LED (forward biased), a photodiode operates under <strong>reverse bias</strong> — the external voltage reinforces the built-in field and <em>widens</em> the depletion region.<br><br>A wider depletion region means a larger volume where photon-generated carriers can be efficiently collected. It also reduces junction capacitance, improving high-speed response. Use the slider to increase reverse bias and watch the depletion zone expand.<br><br><span class="key-equation">W<sub>dep</sub> ∝ √(V<sub>bi</sub> + V<sub>R</sub>)</span>`
+      },
+      {
+        title: 'Step 3 — Photon Absorption & Carrier Generation',
+        html: `When a photon with energy <strong>E ≥ E<sub>g</sub></strong> enters the depletion region, it is absorbed by the semiconductor lattice. The photon's energy promotes a valence-band electron into the conduction band, creating an <strong>electron-hole pair</strong>.<br><br>The built-in electric field (enhanced by reverse bias) immediately sweeps the <span style="color:#4ecdc4">electron</span> toward the N-side and the <span style="color:#ff6b6b">hole</span> toward the P-side. This separation of charge carriers produces a measurable <strong>photocurrent</strong> — proportional to incident light intensity.<br><br><span class="key-equation">I<sub>ph</sub> = q · η · Φ</span>`
+      },
+      {
+        title: 'Step 4 — Spectral Response & Material Choice',
+        html: `A photodiode can only detect photons with energy above the material's <strong>bandgap</strong>. This sets a <strong>cutoff wavelength</strong> — longer wavelengths (lower energy) pass through undetected:<br><br>• <strong>GaP</strong> → UV/blue only (λ<sub>c</sub> ≈ 550 nm, E<sub>g</sub> = 2.26 eV)<br>• <strong>Silicon</strong> → visible + near-IR (λ<sub>c</sub> ≈ 1100 nm, E<sub>g</sub> = 1.12 eV)<br>• <strong>InGaAs</strong> → near-IR telecom (λ<sub>c</sub> ≈ 1700 nm, E<sub>g</sub> = 0.75 eV)<br><br>The responsivity R (A/W) peaks near but below the cutoff wavelength. Switch materials below to see how the spectral window and detection efficiency change.<br><br><span class="key-equation">λ<sub>cutoff</sub> = hc / E<sub>g</sub> ≈ 1240 / E<sub>g</sub>(eV) nm</span>`
+      }
+    ];
+
+    // ─── Particle generation ───
+    function initParticles() {
+      holes = [];
+      electrons = [];
+      incomingPhotons = [];
+      absorptions = [];
+      generatedPairs = [];
+
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+
+      // P-side holes
+      const pLeft = 25;
+      const pRight = Math.max(pLeft + 40, jx - deplHalf - 15);
+      const spacing = 40;
+      for (let r = 0; ; r++) {
+        const y = 160 + r * spacing;
+        if (y > H - 50) break;
+        for (let c = 0; ; c++) {
+          const x = pLeft + c * spacing + (r % 2) * (spacing * 0.5);
+          if (x > pRight) break;
+          holes.push({
+            x, y, baseX: x, baseY: y, r: 7,
+            vx: 0, vy: 0
+          });
+        }
+      }
+
+      // N-side electrons
+      const nLeft = Math.min(W - 60, jx + deplHalf + 15);
+      const nRight = W - 20;
+      for (let i = 0; i < 20; i++) {
+        electrons.push({
+          x: nLeft + Math.random() * (nRight - nLeft),
+          y: 160 + Math.random() * (H - 210),
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          r: 5,
+          type: 'bulk'
+        });
+      }
+    }
+
+    function getDepletionHalf() {
+      const baseDepl = W * 0.08;
+      // Reverse bias widens depletion region
+      const biasExtra = reverseVoltage * W * 0.008;
+      return Math.min(baseDepl + biasExtra, W * 0.22);
+    }
+
+    // ─── Drawing helpers ───
+    function drawRegionLabels() {
+      const jx = W * 0.5;
+      ctx.font = '600 14px IBM Plex Sans';
+      ctx.fillStyle = 'rgba(255,107,107,0.5)';
+      ctx.textAlign = 'center';
+      ctx.fillText('P-type', jx * 0.5, 148);
+      ctx.fillStyle = 'rgba(78,205,196,0.5)';
+      ctx.fillText('N-type', jx + jx * 0.5, 148);
+    }
+
+    function drawJunction() {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+
+      // P-region background
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.04)';
+      ctx.fillRect(0, 0, jx - deplHalf, H);
+
+      // N-region background
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.04)';
+      ctx.fillRect(jx + deplHalf, 0, W - jx - deplHalf, H);
+
+      // Depletion region
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.fillRect(jx - deplHalf, 0, deplHalf * 2, H);
+
+      // Depletion borders
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(jx - deplHalf, 0);
+      ctx.lineTo(jx - deplHalf, H);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(jx + deplHalf, 0);
+      ctx.lineTo(jx + deplHalf, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Junction center line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(jx, 0);
+      ctx.lineTo(jx, H);
+      ctx.stroke();
+
+      // Depletion label
+      if (deplHalf > 20) {
+        ctx.font = '500 10px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Depletion', jx, H - 16);
+        ctx.fillText('Region', jx, H - 4);
+      }
+
+      // Fixed ions in depletion region
+      drawFixedIons(jx, deplHalf);
+    }
+
+    function drawFixedIons(jx, deplHalf) {
+      if (deplHalf < 8) return;
+      const spacing = 28;
+      const rows = Math.floor((H - 80) / spacing);
+      const colsPerSide = Math.max(1, Math.floor(deplHalf / spacing));
+
+      ctx.font = '700 10px IBM Plex Mono';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let r = 0; r < rows; r++) {
+        const y = 55 + r * spacing;
+        // Negative acceptor ions (P-side of depletion)
+        for (let c = 0; c < colsPerSide; c++) {
+          const x = jx - deplHalf + 14 + c * spacing;
+          if (x < jx - 4) {
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.25)';
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.6)';
+            ctx.fillText('−', x, y + 1);
+          }
+        }
+        // Positive donor ions (N-side of depletion)
+        for (let c = 0; c < colsPerSide; c++) {
+          const x = jx + 14 + c * spacing;
+          if (x < jx + deplHalf - 4) {
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.25)';
+            ctx.beginPath();
+            ctx.arc(x, y, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
+            ctx.fillText('+', x, y + 1);
+          }
+        }
+      }
+    }
+
+    function drawEField() {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      if (deplHalf < 15) return;
+
+      const arrowY = H * 0.5;
+      const arrowLen = deplHalf * 1.2;
+
+      // E-field strength increases with reverse bias
+      const alpha = Math.min(0.3 + reverseVoltage * 0.02, 0.6);
+
+      ctx.strokeStyle = `rgba(255, 200, 50, ${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(jx + arrowLen * 0.4, arrowY);
+      ctx.lineTo(jx - arrowLen * 0.4, arrowY);
+      ctx.stroke();
+
+      // Arrow head (pointing from N to P — field direction)
+      ctx.fillStyle = `rgba(255, 200, 50, ${alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(jx - arrowLen * 0.4, arrowY);
+      ctx.lineTo(jx - arrowLen * 0.4 + 8, arrowY - 5);
+      ctx.lineTo(jx - arrowLen * 0.4 + 8, arrowY + 5);
+      ctx.fill();
+
+      ctx.font = '500 10px IBM Plex Mono';
+      ctx.fillStyle = `rgba(255, 200, 50, ${alpha + 0.05})`;
+      ctx.textAlign = 'center';
+      ctx.fillText('E-field', jx, arrowY - 12);
+    }
+
+    function drawHoles() {
+      holes.forEach(h => {
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.08)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r - 3, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.25)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = '700 9px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.7)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', h.x, h.y + 0.5);
+      });
+    }
+
+    function drawElectrons() {
+      electrons.forEach(e => {
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+        ctx.fillStyle = e.type === 'generated' ? 'rgba(78, 205, 196, 1)' : 'rgba(78, 205, 196, 0.85)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(78, 205, 196, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.font = '700 8px IBM Plex Mono';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('−', e.x, e.y + 0.5);
+      });
+    }
+
+    function drawIncomingPhotons() {
+      if (currentStep < 2) return;
+      const mat = MATERIALS[currentMaterial];
+
+      incomingPhotons.forEach(p => {
+        const alpha = Math.min(p.life, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        // Glow
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 14);
+        grad.addColorStop(0, mat.photonColor + '66');
+        grad.addColorStop(1, mat.photonColor + '00');
+        ctx.fillStyle = grad;
+        ctx.fillRect(p.x - 14, p.y - 14, 28, 28);
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = mat.photonColor;
+        ctx.fill();
+
+        // Wavy trail behind the photon (travelling downward)
+        ctx.strokeStyle = mat.photonColor + '88';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < 20; i++) {
+          const dy = -i * 1.5;
+          const dx = Math.sin((i + time * 10 + p.phase) * 0.7) * 4;
+          if (i === 0) ctx.moveTo(p.x + dx, p.y + dy);
+          else ctx.lineTo(p.x + dx, p.y + dy);
+        }
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    function drawAbsorptions() {
+      absorptions.forEach(a => {
+        const alpha = a.life;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        const mat = MATERIALS[currentMaterial];
+
+        // Flash ring
+        const radius = (1 - a.life) * 25 + 5;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner glow
+        const grad = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, radius);
+        grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+        grad.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      });
+    }
+
+    function drawGeneratedPairs() {
+      generatedPairs.forEach(p => {
+        const alpha = Math.max(0, p.life);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        // Generated hole (moving left toward P-side)
+        ctx.beginPath();
+        ctx.arc(p.holeX, p.holeY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.9)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.font = '700 8px IBM Plex Mono';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', p.holeX, p.holeY + 0.5);
+
+        // Generated electron (moving right toward N-side)
+        ctx.beginPath();
+        ctx.arc(p.elecX, p.elecY, 5, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(78, 205, 196, 1)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(78, 205, 196, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.font = '700 8px IBM Plex Mono';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('−', p.elecX, p.elecY + 0.5);
+
+        ctx.restore();
+      });
+    }
+
+    function drawBatterySymbol() {
+      if (currentStep === 0) return;
+      if (reverseVoltage > 0) {
+        ctx.font = '500 11px IBM Plex Mono';
+        // Reverse bias: negative on P-side, positive on N-side
+        ctx.fillStyle = 'rgba(78,205,196,0.5)';
+        ctx.textAlign = 'center';
+        ctx.fillText('+ V', W - 30, H - 10);
+        ctx.fillStyle = 'rgba(255,107,107,0.5)';
+        ctx.fillText('− V', 30, H - 10);
+      }
+    }
+
+    function drawLightSource() {
+      if (currentStep < 2) return;
+
+      // Draw light arrows from top
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      const intensity = lightIntensity / 100;
+
+      ctx.save();
+      ctx.globalAlpha = 0.15 + intensity * 0.25;
+
+      // Light cone from top
+      const coneLeft = jx - deplHalf * 1.5;
+      const coneRight = jx + deplHalf * 1.5;
+      const grad = ctx.createLinearGradient(0, 0, 0, 140);
+      grad.addColorStop(0, MATERIALS[currentMaterial].photonColor + '44');
+      grad.addColorStop(1, MATERIALS[currentMaterial].photonColor + '00');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(coneLeft, 0);
+      ctx.lineTo(coneRight, 0);
+      ctx.lineTo(jx + deplHalf * 0.8, 140);
+      ctx.lineTo(jx - deplHalf * 0.8, 140);
+      ctx.fill();
+
+      // "hν" label
+      ctx.font = '600 12px IBM Plex Mono';
+      ctx.fillStyle = MATERIALS[currentMaterial].photonColor;
+      ctx.globalAlpha = 0.6;
+      ctx.textAlign = 'center';
+      ctx.fillText('hν ↓', jx, 18);
+
+      ctx.restore();
+    }
+
+    function drawBandDiagram() {
+      const mat = MATERIALS[currentMaterial];
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+
+      const margin = 30;
+      const bx = margin;
+      const bw = W - margin * 2;
+      const by = 42;
+      const bh = 90;
+
+      // Background
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      // Title
+      ctx.font = '500 9px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.textAlign = 'center';
+      ctx.fillText('Energy Band Diagram', bx + bw / 2, by + 12);
+
+      // Coordinates
+      const midX = bx + bw / 2;
+      const bandgap = 24;
+      const pCbY = by + 32;
+      const pVbY = pCbY + bandgap;
+
+      // Reverse bias: N-side bands drop FURTHER (opposite of forward bias)
+      const biasDrop = reverseVoltage * 1.2;
+      const drop = Math.min(30 + biasDrop, 50);
+
+      const nCbY = pCbY + drop;
+      const nVbY = nCbY + bandgap;
+
+      const dLeft = midX - deplHalf * (bw / W) * 1.5;
+      const dRight = midX + deplHalf * (bw / W) * 1.5;
+
+      // Draw conduction band (Ec)
+      ctx.strokeStyle = 'rgba(78, 205, 196, 0.7)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(bx + 10, pCbY);
+      ctx.lineTo(dLeft, pCbY);
+      ctx.bezierCurveTo(midX - 5, pCbY, midX + 5, nCbY, dRight, nCbY);
+      ctx.lineTo(bx + bw - 10, nCbY);
+      ctx.stroke();
+
+      // Draw valence band (Ev)
+      ctx.strokeStyle = 'rgba(255, 107, 107, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(bx + 10, pVbY);
+      ctx.lineTo(dLeft, pVbY);
+      ctx.bezierCurveTo(midX - 5, pVbY, midX + 5, nVbY, dRight, nVbY);
+      ctx.lineTo(bx + bw - 10, nVbY);
+      ctx.stroke();
+
+      // Fermi level (dashed)
+      const fermiY = pCbY + bandgap * 0.5 + drop * 0.5;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(bx + 10, fermiY);
+      ctx.lineTo(bx + bw - 10, fermiY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Labels
+      ctx.font = '500 8px IBM Plex Mono';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
+      ctx.fillText('Ec', bx + 2, pCbY - 3);
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.6)';
+      ctx.fillText('Ev', bx + 2, pVbY + 10);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.fillText('Ef', bx + 2, fermiY - 3);
+
+      // P and N labels
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.35)';
+      ctx.fillText('P', bx + bw * 0.2, by + bh - 6);
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.35)';
+      ctx.fillText('N', bx + bw * 0.8, by + bh - 6);
+
+      // Bandgap annotation
+      const bgX = bx + bw - 30;
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(bgX, nCbY);
+      ctx.lineTo(bgX, nVbY);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.beginPath();
+      ctx.moveTo(bgX - 3, nCbY + 4); ctx.lineTo(bgX + 3, nCbY + 4); ctx.lineTo(bgX, nCbY); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(bgX - 3, nVbY - 4); ctx.lineTo(bgX + 3, nVbY - 4); ctx.lineTo(bgX, nVbY); ctx.fill();
+
+      ctx.font = '400 7px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.textAlign = 'left';
+      ctx.fillText('Eg=' + mat.bandgap.toFixed(2) + 'eV', bgX + 5, (nCbY + nVbY) / 2 + 3);
+
+      // Show photon absorption arrow (valence → conduction) when light is hitting
+      if (currentStep >= 2 && lightIntensity > 0) {
+        const arrowX = midX;
+        // Upward arrow — electron promoted from valence to conduction band
+        const midBandCb = (pCbY + nCbY) / 2;
+        const midBandVb = (pVbY + nVbY) / 2;
+        ctx.strokeStyle = mat.photonColor + '66';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(arrowX, midBandVb);
+        ctx.lineTo(arrowX, midBandCb);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Arrow head pointing UP
+        ctx.fillStyle = mat.photonColor + '66';
+        ctx.beginPath();
+        ctx.moveTo(arrowX - 3, midBandCb + 5);
+        ctx.lineTo(arrowX + 3, midBandCb + 5);
+        ctx.lineTo(arrowX, midBandCb);
+        ctx.fill();
+        // Photon label
+        ctx.font = '500 7px IBM Plex Mono';
+        ctx.fillStyle = mat.photonColor + '88';
+        ctx.textAlign = 'left';
+        ctx.fillText('hν↑', arrowX + 5, (midBandCb + midBandVb) / 2 + 2);
+      }
+    }
+
+    function drawCurrentIndicator() {
+      if (currentStep < 2 || lightIntensity === 0) return;
+
+      const currentMag = lightIntensity / 100;
+      const alpha = 0.3 + currentMag * 0.4;
+
+      ctx.font = '500 11px IBM Plex Mono';
+      ctx.textAlign = 'right';
+      ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+      const currentUA = (currentMag * 50).toFixed(1);
+      ctx.fillText(`I_ph ≈ ${currentUA} µA`, W - 16, H - 10);
+    }
+
+    // ─── Physics Update ───
+    let photonSpawnTimer = 0;
+
+    function updateParticles(dt) {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      const jiggle = 0.3;
+
+      // Update bulk holes — thermal jiggle around base positions
+      holes.forEach(h => {
+        h.vx += (Math.random() - 0.5) * jiggle * 0.5;
+        h.vy += (Math.random() - 0.5) * jiggle * 0.5;
+        // Spring back to base position
+        h.vx += (h.baseX - h.x) * 0.05;
+        h.vy += (h.baseY - h.y) * 0.05;
+        h.vx *= 0.9;
+        h.vy *= 0.9;
+        h.x += h.vx;
+        h.y += h.vy;
+      });
+
+      // Update bulk electrons — thermal jiggle, confined to N-side
+      electrons.forEach(e => {
+        if (e.type !== 'bulk') return;
+        e.vx += (Math.random() - 0.5) * jiggle;
+        e.vy += (Math.random() - 0.5) * jiggle;
+        e.vx *= 0.96;
+        e.vy *= 0.96;
+        e.x += e.vx;
+        e.y += e.vy;
+
+        // Confined to N-side (barrier from reverse bias)
+        if (e.x < jx + deplHalf + e.r) {
+          e.x = jx + deplHalf + e.r;
+          e.vx *= -0.8;
+        }
+        if (e.x > W - e.r) { e.x = W - e.r; e.vx *= -0.8; }
+        if (e.y < 155 + e.r) { e.y = 155 + e.r; e.vy *= -0.8; }
+        if (e.y > H - e.r - 25) { e.y = H - e.r - 25; e.vy *= -0.8; }
+      });
+
+      // Spawn incoming photons from above (only in step 2+)
+      if (currentStep >= 2 && lightIntensity > 0) {
+        photonSpawnTimer++;
+        const spawnRate = Math.max(3, 30 - lightIntensity * 0.27);
+        if (photonSpawnTimer >= spawnRate) {
+          photonSpawnTimer = 0;
+          const spread = deplHalf * 1.5;
+          incomingPhotons.push({
+            x: jx + (Math.random() - 0.5) * spread * 2,
+            y: -10,
+            vy: 1.5 + Math.random() * 0.8,
+            vx: (Math.random() - 0.5) * 0.3,
+            phase: Math.random() * Math.PI * 2,
+            life: 1.0,
+            absorbed: false
+          });
+        }
+      }
+
+      // Update incoming photons
+      for (let i = incomingPhotons.length - 1; i >= 0; i--) {
+        const p = incomingPhotons[i];
+        p.x += p.vx;
+        p.y += p.vy;
+
+        // Check if photon enters depletion region
+        if (!p.absorbed && p.y > 155 && p.y < H - 50) {
+          if (p.x > jx - deplHalf && p.x < jx + deplHalf) {
+            // Absorbed — create electron-hole pair
+            p.absorbed = true;
+            p.life = 0; // remove photon
+
+            absorptions.push({ x: p.x, y: p.y, life: 1.0 });
+
+            // Create a generated pair that will separate
+            generatedPairs.push({
+              x: p.x, y: p.y,
+              holeX: p.x, holeY: p.y,
+              elecX: p.x, elecY: p.y,
+              holeVx: -1.5 - Math.random() * 1.0, // hole → P-side (left)
+              elecVx: 1.5 + Math.random() * 1.0,  // electron → N-side (right)
+              holeVy: (Math.random() - 0.5) * 0.5,
+              elecVy: (Math.random() - 0.5) * 0.5,
+              life: 1.0
+            });
+          }
+        }
+
+        // Remove if off screen or absorbed
+        if (p.y > H + 10 || p.life <= 0) {
+          incomingPhotons.splice(i, 1);
+        }
+      }
+
+      // Update generated pairs — separate and fade
+      for (let i = generatedPairs.length - 1; i >= 0; i--) {
+        const p = generatedPairs[i];
+
+        // Sweep speed depends on reverse bias (stronger field = faster sweep)
+        const sweepBoost = 1 + reverseVoltage * 0.1;
+
+        p.holeX += p.holeVx * sweepBoost;
+        p.holeY += p.holeVy;
+        p.elecX += p.elecVx * sweepBoost;
+        p.elecY += p.elecVy;
+
+        // Fade out as they reach the edges
+        if (p.holeX < 20 || p.elecX > W - 20) {
+          p.life -= 0.03;
+        }
+
+        if (p.life <= 0 || p.holeX < -20 || p.elecX > W + 20) {
+          generatedPairs.splice(i, 1);
+        }
+      }
+
+      // Update absorption flashes
+      for (let i = absorptions.length - 1; i >= 0; i--) {
+        absorptions[i].life -= 0.025;
+        if (absorptions[i].life <= 0) absorptions.splice(i, 1);
+      }
+    }
+
+    // ─── Main draw ───
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      drawJunction();
+      drawRegionLabels();
+      drawEField();
+      drawLightSource();
+      drawHoles();
+      drawElectrons();
+      drawIncomingPhotons();
+      drawAbsorptions();
+      drawGeneratedPairs();
+      drawBatterySymbol();
+      drawBandDiagram();
+      drawCurrentIndicator();
+
+      // Status text
+      if (currentStep >= 1) {
+        ctx.font = '500 11px IBM Plex Mono';
+        ctx.textAlign = 'left';
+        const mat = MATERIALS[currentMaterial];
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        const statusText = reverseVoltage > 0
+          ? `Reverse bias: ${reverseVoltage.toFixed(1)} V — depletion widened`
+          : `No bias applied`;
+        ctx.fillText(statusText, 16, H - 10);
+      }
+    }
+
+    // ─── Animation loop (~30fps) ───
+    let lastFrame = 0;
+    function loop(timestamp) {
+      requestAnimationFrame(loop);
+      if (timestamp - lastFrame < 33) return;
+      lastFrame = timestamp;
+      time += 0.01;
+      updateParticles(0.01);
+      draw();
+    }
+
+    // ─── UI Wiring ───
+    function setStep(step) {
+      currentStep = step;
+
+      document.querySelectorAll('.step-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === step);
+      });
+
+      const desc = document.getElementById('desc');
+      desc.querySelector('h2').textContent = STEPS[step].title;
+      desc.querySelector('p').innerHTML = STEPS[step].html;
+
+      // Show/hide controls
+      const voltCtrl = document.getElementById('voltage-control');
+      const lightCtrl = document.getElementById('light-control');
+      const matCtrl = document.getElementById('material-control');
+      voltCtrl.style.display = step >= 1 ? 'flex' : 'none';
+      lightCtrl.style.display = step >= 2 ? 'flex' : 'none';
+      matCtrl.style.display = step === 3 ? 'flex' : 'none';
+
+      // Reset voltage for step 0
+      if (step === 0) {
+        reverseVoltage = 0;
+        document.getElementById('voltage').value = 0;
+        document.getElementById('voltage-val').textContent = '0.0 V';
+      }
+
+      // Auto-set some reverse bias for step 2+
+      if (step >= 2 && reverseVoltage < 5) {
+        reverseVoltage = 5;
+        document.getElementById('voltage').value = 5;
+        document.getElementById('voltage-val').textContent = '5.0 V';
+      }
+
+      // Nav buttons
+      document.getElementById('prev-btn').disabled = step === 0;
+      document.getElementById('next-btn').disabled = step === 3;
+
+      initParticles();
+    }
+
+    // Tab clicks
+    document.querySelectorAll('.step-tab').forEach(tab => {
+      tab.addEventListener('click', () => setStep(parseInt(tab.dataset.step)));
+    });
+
+    // Voltage slider
+    document.getElementById('voltage').addEventListener('input', e => {
+      reverseVoltage = parseFloat(e.target.value);
+      document.getElementById('voltage-val').textContent = reverseVoltage.toFixed(1) + ' V';
+    });
+
+    // Light intensity slider
+    document.getElementById('light').addEventListener('input', e => {
+      lightIntensity = parseInt(e.target.value);
+      document.getElementById('light-val').textContent = lightIntensity + '%';
+    });
+
+    // Material buttons
+    document.querySelectorAll('.mat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMaterial = btn.dataset.mat;
+        document.querySelectorAll('.mat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // Nav buttons
+    document.getElementById('prev-btn').addEventListener('click', () => {
+      if (currentStep > 0) setStep(currentStep - 1);
+    });
+    document.getElementById('next-btn').addEventListener('click', () => {
+      if (currentStep < 3) setStep(currentStep + 1);
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' && currentStep < 3) setStep(currentStep + 1);
+      if (e.key === 'ArrowLeft' && currentStep > 0) setStep(currentStep - 1);
+    });
+
+    // Init
+    setStep(0);
+    requestAnimationFrame(loop);
+  </script>
+</body>
+
+</html>

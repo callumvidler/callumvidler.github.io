@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>BMEN90033 2026: Semiconductor Doping — 3D Silicon Lattice</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111; color: #ccc;
+      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+    }
+    #container { width: 100vw; height: 100vh; position: relative; }
+    .panel {
+      position: absolute; z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px; line-height: 1.6;
+    }
+    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+    .panel h3 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
+    .panel p  { font-size: 11px; color: #666; margin-top: 6px; }
+    #info { top: 16px; left: 16px; max-width: 310px; }
+    .legend { display: flex; align-items: center; gap: 8px; margin: 3px 0; color: #aaa; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    #diagram-panel {
+      top: 16px; right: 16px; width: 340px; height: 300px;
+      resize: both; overflow: hidden; min-width: 250px; min-height: 200px;
+    }
+    canvas#diagramCanvas {
+      background: rgba(0, 0, 0, 0.5); border-radius: 6px;
+      display: block; width: 100%; height: calc(100% - 28px);
+    }
+    #controls {
+      position: absolute; bottom: 16px; left: 16px; z-index: 10;
+      background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px;
+    }
+    #controls label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 5px 0; color: #999; gap: 10px;
+    }
+    #controls input[type=range] {
+      width: 120px; -webkit-appearance: none;
+      background: rgba(255,255,255,0.1); height: 3px; border-radius: 2px; outline: none;
+    }
+    #controls input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: #fff; cursor: pointer;
+    }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    button.ctrl-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      color: #bbb; padding: 5px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 11px; font-weight: 500; transition: all 0.15s;
+    }
+    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    button.ctrl-btn.active {
+      background: rgba(255,200,50,0.15); border-color: rgba(255,200,50,0.4); color: #ffc832;
+    }
+    .mode-btn { padding: 6px 16px; font-size: 12px; font-weight: 600; }
+    #status-panel {
+      position: absolute; bottom: 16px; right: 16px; z-index: 10;
+      background: rgba(20,20,20,0.85); backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08); font-size: 12px; min-width: 220px;
+    }
+    #status-panel .val {
+      font-family: 'SF Mono','Fira Code','Consolas',monospace;
+      font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;
+    }
+    #status-panel .stat-row {
+      display: flex; justify-content: space-between; color: #888; margin: 3px 0; font-size: 11px;
+    }
+    #status-panel .stat-val {
+      font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 600; color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="../index.html" id="back-btn" style="position:fixed;top:16px;left:16px;z-index:1000;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;background:rgba(20,20,20,0.8);border:1px solid rgba(255,255,255,0.1);color:#ccc;text-decoration:none;font-size:12px;font-weight:500;backdrop-filter:blur(8px);transition:all 0.15s;" onmouseover="this.style.background='rgba(40,40,40,0.9)';this.style.color='#fff'" onmouseout="this.style.background='rgba(20,20,20,0.8)';this.style.color='#ccc'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+  <div id="container">
+    <div id="info" class="panel" style="top:52px">
+      <h2>Semiconductor Doping — 3D Diamond Cubic Lattice</h2>
+      <div class="legend"><div class="dot" style="background:#44aa66"></div> Silicon atom (4 tetrahedral bonds)</div>
+      <div class="legend"><div class="dot" style="background:#ee5555"></div> Phosphorus donor (5 valence e⁻)</div>
+      <div class="legend"><div class="dot" style="background:#5588dd"></div> Boron acceptor (3 valence e⁻)</div>
+      <div class="legend"><div class="dot" style="background:#88bbff"></div> Shared bond electron pair</div>
+      <div class="legend"><div class="dot" style="background:#ffcc44"></div> Free electron (carrier)</div>
+      <div class="legend"><div class="dot" style="background:#ff66aa; border: 1px dashed #ff66aa; background:transparent"></div> Hole (empty bond site)</div>
+      <p id="descText">Pure silicon forms a diamond cubic lattice. Each Si atom
+        forms 4 tetrahedral covalent bonds with its neighbours, sharing a pair
+        of electrons per bond. All valence electrons are locked in bonds at
+        low temperature.</p>
+    </div>
+
+    <div id="diagram-panel" class="panel">
+      <h3 id="diagramTitle">Band Diagram — Pure Silicon</h3>
+      <canvas id="diagramCanvas" width="600" height="300"></canvas>
+    </div>
+
+    <div id="controls" class="panel">
+      <h3 style="margin-bottom:8px; color:#fff;">Doping Type</h3>
+      <div class="btn-row">
+        <button class="ctrl-btn mode-btn active" id="btnPure">Pure Si</button>
+        <button class="ctrl-btn mode-btn" id="btnNtype" style="color:#ee5555">N-type (P)</button>
+        <button class="ctrl-btn mode-btn" id="btnPtype" style="color:#5588dd">P-type (B)</button>
+      </div>
+      <label style="margin-top:10px">Lattice size <input type="range" id="sizeSlider" min="1" max="4" step="1" value="2">
+        <span id="sizeValue">2×2×2</span>
+      </label>
+      <label>Dopant fraction <input type="range" id="dopantSlider" min="0" max="90" step="1" value="4">
+        <span id="dopantCountValue">4%</span>
+      </label>
+      <label>Voltage bias <input type="range" id="voltageSlider" min="0" max="100" step="1" value="0">
+        <span id="voltageValue">0.0 V</span>
+      </label>
+      <label>Temperature <input type="range" id="tempSlider" min="0" max="100" step="1" value="30">
+        <span id="tempValue">300 K</span>
+      </label>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="resetBtn">Reset</button>
+        <button class="ctrl-btn" id="pauseBtn">Pause</button>
+      </div>
+    </div>
+
+    <div id="status-panel">
+      <div class="val" id="materialName">Pure Silicon (Si)</div>
+      <div class="stat-row"><span>Dopant</span><span class="stat-val" id="dopantVal">None</span></div>
+      <div class="stat-row"><span>Carrier type</span><span class="stat-val" id="carrierVal">Intrinsic (few)</span></div>
+      <div class="stat-row"><span>Atoms</span><span class="stat-val" id="atomCountVal">0</span></div>
+      <div class="stat-row"><span>Bonds</span><span class="stat-val" id="bondCountVal">0</span></div>
+      <div class="stat-row"><span>Free electrons</span><span class="stat-val" id="freeElecVal">0</span></div>
+      <div class="stat-row"><span>Holes</span><span class="stat-val" id="holeVal">0</span></div>
+      <div class="stat-row"><span>Conductivity</span><span class="stat-val" id="condVal">Very Low</span></div>
+      <div class="stat-row"><span>Applied voltage</span><span class="stat-val" id="voltReadout">0.0 V</span></div>
+      <div class="stat-row"><span>Temperature</span><span class="stat-val" id="tempReadout">300 K</span></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ─── Scene ───
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.FogExp2(0x111111, 0.003);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 800);
+    camera.position.set(20, 18, 35);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.getElementById('container').appendChild(renderer.domElement);
+
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.enableDamping = true;
+    orbitControls.dampingFactor = 0.08;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(20, 30, 25);
+    scene.add(dirLight);
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.2).translateX(-15).translateY(10).translateZ(-10));
+
+    const grid = new THREE.GridHelper(100, 50, 0x222222, 0x181818);
+    grid.position.y = -20;
+    scene.add(grid);
+
+    // ─── Constants ───
+    const A = 8;                    // lattice constant (visual units)
+    const NN_DIST = A * Math.sqrt(3) / 4; // nearest-neighbour distance ≈ 3.46
+    const ATOM_RADIUS = 0.7;
+    const BOND_ELEC_RADIUS = 0.18;
+    const FREE_ELEC_RADIUS = 0.35;
+    const SI_COLOR = new THREE.Color(0x44aa66);
+    const P_COLOR = new THREE.Color(0xee5555);
+    const B_COLOR = new THREE.Color(0x5588dd);
+
+    // ─── State ───
+    let currentMode = 'pure';
+    let latticeSize = 2;
+    let voltage = 0;
+    let temperature = 30;
+    let dopantFraction = 4; // percentage
+    let paused = false;
+    const clock = new THREE.Clock();
+
+    // ─── Data ───
+    let atomPositions = [];    // THREE.Vector3[]
+    let atomTypes = [];        // 'Si' | 'P' | 'B'
+    let bondPairs = [];        // { a1, a2, slot0: bool, slot1: bool }
+    let dopantIndices = [];    // indices into atomPositions that are dopants
+    let bondsForAtomMap = [];  // [atomIdx] → [bondIdx, ...]
+
+    // ─── Scene groups ───
+    const latticeGroup = new THREE.Group();
+    scene.add(latticeGroup);
+    const carrierGroup = new THREE.Group();
+    scene.add(carrierGroup);
+    const plateGroup = new THREE.Group();
+    scene.add(plateGroup);
+
+    // ─── Meshes ───
+    let atomInstanced = null;
+    let bondLinesMesh = null;
+    let bondElecInstanced = null;
+    let holeMeshes = [];         // individual torus meshes for each hole
+    let freeElectrons = [];      // { mesh, trail, trailPos, ... }
+    let hoppingAnims = [];       // { mesh, fromPos, toPos, progress, ... }
+    let permanentHoles = [];     // sorted by x: [{bondIdx, slotIdx, pos}]
+    let pTypeHopElectrons = [];  // electrons hopping between static holes
+
+    // Shared geometries
+    const atomGeo = new THREE.SphereGeometry(ATOM_RADIUS, 16, 16);
+    const bondElecGeo = new THREE.SphereGeometry(BOND_ELEC_RADIUS, 8, 8);
+    const freeElecGeo = new THREE.SphereGeometry(FREE_ELEC_RADIUS, 12, 12);
+    const holeGeo = new THREE.TorusGeometry(0.3, 0.08, 8, 16);
+    const dummy = new THREE.Object3D();
+    const dummyColor = new THREE.Color();
+
+    // ══════════════════════════════════════════
+    //  DIAMOND CUBIC LATTICE GENERATOR
+    // ══════════════════════════════════════════
+    const BASIS = [
+      [0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
+      [0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75],
+    ];
+
+    function generateLattice(N) {
+      const positions = [];
+      for (let nx = 0; nx < N; nx++) {
+        for (let ny = 0; ny < N; ny++) {
+          for (let nz = 0; nz < N; nz++) {
+            for (const b of BASIS) {
+              positions.push(new THREE.Vector3(
+                (nx + b[0]) * A,
+                (ny + b[1]) * A,
+                (nz + b[2]) * A,
+              ));
+            }
+          }
+        }
+      }
+      // Centre the lattice
+      const cx = (N * A) / 2;
+      for (const p of positions) {
+        p.x -= cx; p.y -= cx; p.z -= cx;
+      }
+      return positions;
+    }
+
+    function findBonds(positions) {
+      const tolerance = NN_DIST * 1.05;
+      const tol2 = tolerance * tolerance;
+      const bonds = [];
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          const d2 = positions[i].distanceToSquared(positions[j]);
+          if (d2 < tol2) {
+            bonds.push({ a1: i, a2: j, slot0: true, slot1: true });
+          }
+        }
+      }
+      return bonds;
+    }
+
+    function buildBondMap(bonds, numAtoms) {
+      const map = new Array(numAtoms);
+      for (let i = 0; i < numAtoms; i++) map[i] = [];
+      for (let bi = 0; bi < bonds.length; bi++) {
+        map[bonds[bi].a1].push(bi);
+        map[bonds[bi].a2].push(bi);
+      }
+      return map;
+    }
+
+    function chooseDopants(positions, count) {
+      const candidates = positions.map((_, i) => i);
+      const numDopants = Math.min(count, candidates.length);
+      if (numDopants === 0) return [];
+
+      // Farthest-point sampling for even spatial distribution
+      const selected = [];
+      const startIdx = Math.floor(Math.random() * candidates.length);
+      selected.push(candidates[startIdx]);
+      const minDist = new Float32Array(candidates.length).fill(Infinity);
+
+      for (let n = 1; n < numDopants; n++) {
+        const lastPos = positions[selected[selected.length - 1]];
+        for (let i = 0; i < candidates.length; i++) {
+          if (selected.includes(candidates[i])) continue;
+          const d = positions[candidates[i]].distanceToSquared(lastPos);
+          if (d < minDist[i]) minDist[i] = d;
+        }
+        let bestIdx = -1, bestDist = -1;
+        for (let i = 0; i < candidates.length; i++) {
+          if (selected.includes(candidates[i])) continue;
+          if (minDist[i] > bestDist) {
+            bestDist = minDist[i];
+            bestIdx = i;
+          }
+        }
+        if (bestIdx >= 0) selected.push(candidates[bestIdx]);
+      }
+      return selected;
+    }
+
+    // ══════════════════════════════════════════
+    //  BUILD SCENE
+    // ══════════════════════════════════════════
+    function clearAll() {
+      while (latticeGroup.children.length) {
+        const c = latticeGroup.children[0];
+        latticeGroup.remove(c);
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) { if (c.dispose) c.dispose(); else c.material.dispose(); }
+      }
+      while (carrierGroup.children.length) {
+        const c = carrierGroup.children[0];
+        carrierGroup.remove(c);
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) c.material.dispose();
+      }
+      while (plateGroup.children.length) {
+        const c = plateGroup.children[0];
+        plateGroup.remove(c);
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) c.material.dispose();
+      }
+      atomInstanced = null;
+      bondLinesMesh = null;
+      bondElecInstanced = null;
+      holeMeshes = [];
+      freeElectrons = [];
+      hoppingAnims = [];
+      permanentHoles = [];
+      pTypeHopElectrons = [];
+    }
+
+    function buildScene(mode, N) {
+      clearAll();
+
+      // 1. Generate lattice
+      atomPositions = generateLattice(N);
+      bondPairs = findBonds(atomPositions);
+      bondsForAtomMap = buildBondMap(bondPairs, atomPositions.length);
+
+      // 2. Assign atom types
+      const numDopants = Math.max(1, Math.round(atomPositions.length * dopantFraction / 100));
+      if (mode === 'pure') {
+        atomTypes = atomPositions.map(() => 'Si');
+        dopantIndices = [];
+      } else {
+        dopantIndices = chooseDopants(atomPositions, numDopants);
+        atomTypes = atomPositions.map((_, i) =>
+          dopantIndices.includes(i) ? (mode === 'ntype' ? 'P' : 'B') : 'Si'
+        );
+      }
+
+      // 3. Create instanced atoms
+      const atomMat = new THREE.MeshPhongMaterial({
+        vertexColors: false, transparent: true, opacity: 0.85,
+      });
+      atomInstanced = new THREE.InstancedMesh(atomGeo, atomMat, atomPositions.length);
+      atomInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      // Per-instance color
+      const colorAttr = new Float32Array(atomPositions.length * 3);
+      for (let i = 0; i < atomPositions.length; i++) {
+        dummy.position.copy(atomPositions[i]);
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        atomInstanced.setMatrixAt(i, dummy.matrix);
+        let c;
+        if (atomTypes[i] === 'P') c = P_COLOR;
+        else if (atomTypes[i] === 'B') c = B_COLOR;
+        else c = SI_COLOR;
+        atomInstanced.setColorAt(i, c);
+      }
+      atomInstanced.instanceColor.needsUpdate = true;
+      atomInstanced.instanceMatrix.needsUpdate = true;
+      latticeGroup.add(atomInstanced);
+
+      // 4. Bond lines
+      const bondVerts = [];
+      for (const b of bondPairs) {
+        const p1 = atomPositions[b.a1];
+        const p2 = atomPositions[b.a2];
+        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+        const s = p1.clone().add(dir.clone().multiplyScalar(ATOM_RADIUS));
+        const e = p2.clone().sub(dir.clone().multiplyScalar(ATOM_RADIUS));
+        bondVerts.push(s.x, s.y, s.z, e.x, e.y, e.z);
+      }
+      const bondGeo = new THREE.BufferGeometry();
+      bondGeo.setAttribute('position', new THREE.Float32BufferAttribute(bondVerts, 3));
+      const bondMat = new THREE.LineBasicMaterial({
+        color: 0x88bbff, transparent: true, opacity: 0.2,
+      });
+      bondLinesMesh = new THREE.LineSegments(bondGeo, bondMat);
+      latticeGroup.add(bondLinesMesh);
+
+      // 5. Bond electrons (InstancedMesh — 2 per bond)
+      const totalSlots = bondPairs.length * 2;
+      const elecMat = new THREE.MeshPhongMaterial({
+        color: 0x88bbff, emissive: 0x223344, emissiveIntensity: 0.4,
+        transparent: true, opacity: 0.85,
+      });
+      bondElecInstanced = new THREE.InstancedMesh(bondElecGeo, elecMat, totalSlots);
+      bondElecInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      latticeGroup.add(bondElecInstanced);
+
+      // 6. P-type: remove one electron from one bond per dopant
+      if (mode === 'ptype') {
+        for (const di of dopantIndices) {
+          const connBonds = bondsForAtomMap[di];
+          // Find a bond that's fully occupied
+          for (const bi of connBonds) {
+            if (bondPairs[bi].slot0 && bondPairs[bi].slot1) {
+              bondPairs[bi].slot1 = false; // create hole
+              break;
+            }
+          }
+        }
+      }
+
+      // Store permanent hole positions for p-type (sorted by x for hopping order)
+      if (mode === 'ptype') {
+        permanentHoles = bondsWithHoles().map(h => ({
+          bondIdx: h.bondIdx, slotIdx: h.slotIdx,
+          pos: bondMid(h.bondIdx),
+        }));
+        permanentHoles.sort((a, b) => a.pos.x - b.pos.x);
+      } else {
+        permanentHoles = [];
+      }
+
+      // 7. N-type: create free electrons for each dopant
+      if (mode === 'ntype') {
+        for (const di of dopantIndices) {
+          createFreeElectron(atomPositions[di].clone(), di);
+        }
+      }
+
+      // 8. Voltage plates
+      buildPlates(N);
+
+      // Update camera target
+      orbitControls.target.set(0, 0, 0);
+    }
+
+    // ─── Free electron ───
+    function createFreeElectron(pos, homeAtomIdx) {
+      const mat = new THREE.MeshPhongMaterial({
+        color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.5,
+        transparent: true, opacity: 0.9,
+      });
+      const mesh = new THREE.Mesh(freeElecGeo, mat);
+      mesh.position.copy(pos);
+      carrierGroup.add(mesh);
+      // Glow
+      mesh.add(new THREE.Mesh(
+        new THREE.SphereGeometry(0.6, 8, 8),
+        new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.12, depthWrite: false })
+      ));
+      // Trail
+      const TLEN = 50;
+      const tp = new Float32Array(TLEN * 3);
+      for (let i = 0; i < TLEN * 3; i += 3) {
+        tp[i] = pos.x; tp[i + 1] = pos.y; tp[i + 2] = pos.z;
+      }
+      const tGeo = new THREE.BufferGeometry();
+      tGeo.setAttribute('position', new THREE.BufferAttribute(tp, 3));
+      const trail = new THREE.Line(tGeo,
+        new THREE.LineBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.3 })
+      );
+      carrierGroup.add(trail);
+
+      // Pick starting bond for hopping
+      const nearBonds = bondsForAtomMap[homeAtomIdx] || [];
+      const startBond = nearBonds.length > 0 ? nearBonds[0] : 0;
+      const b = bondPairs[startBond] || bondPairs[0];
+      const hopFrom = homeAtomIdx;
+      const hopTo = b ? (b.a1 === homeAtomIdx ? b.a2 : b.a1) : 0;
+
+      freeElectrons.push({
+        mesh, trail, trailPos: tp, trailTimer: 0,
+        homeAtomIdx,
+        bound: currentMode === 'ntype',
+        orbitPhase: Math.random() * Math.PI * 2,
+        orbitRadius: 1.6,
+        currentBondIdx: startBond,
+        hopProgress: 0,
+        hopFrom, hopTo,
+        isThermal: false,
+        lifetime: Infinity,
+        platePhase: null, // 'exiting' | 'entering' | null
+        plateFrom: null,  // Vector3 for plate transition animation
+        plateTo: null,    // Vector3 for plate transition animation
+        plateProgress: 0,
+        reentryAtom: -1,  // atom index for re-entry
+      });
+    }
+
+    // ─── Voltage plates ───
+    let leftPlate, rightPlate, leftLabel, rightLabel, fieldArrows = [], fieldLabel;
+    let voltageLabel, voltageLabelCtx, voltageLabelTex;
+
+    function buildPlates(N) {
+      const extent = (N * A) / 2;
+      const px = extent + 4;
+      const ph = extent * 2 + 4;
+
+      const pm = new THREE.MeshPhongMaterial({
+        color: 0x555555, transparent: true, opacity: 0.0,
+        emissive: 0x333333, emissiveIntensity: 0,
+      });
+      leftPlate = new THREE.Mesh(new THREE.BoxGeometry(0.4, ph, ph), pm.clone());
+      leftPlate.position.set(-px, 0, 0);
+      plateGroup.add(leftPlate);
+      rightPlate = new THREE.Mesh(new THREE.BoxGeometry(0.4, ph, ph), pm.clone());
+      rightPlate.position.set(px, 0, 0);
+      plateGroup.add(rightPlate);
+
+      const s = N / 2; // scale factor relative to default 2×2×2
+
+      leftLabel = makeSprite('\u2212', '#6699ff', 56);
+      leftLabel.position.set(-px, ph / 2 + 1.5 * s, 0);
+      leftLabel.scale.set(4 * s, 2 * s, 1); leftLabel.visible = false;
+      plateGroup.add(leftLabel);
+      rightLabel = makeSprite('+', '#ff4444', 56);
+      rightLabel.position.set(px, ph / 2 + 1.5 * s, 0);
+      rightLabel.scale.set(4 * s, 2 * s, 1); rightLabel.visible = false;
+      plateGroup.add(rightLabel);
+
+      // Voltage readout label above + plate
+      const vlCv = document.createElement('canvas');
+      vlCv.width = 256; vlCv.height = 64;
+      voltageLabelCtx = vlCv.getContext('2d');
+      voltageLabelTex = new THREE.CanvasTexture(vlCv);
+      voltageLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: voltageLabelTex, transparent: true }));
+      voltageLabel.position.set(px, ph / 2 + 4 * s, 0);
+      voltageLabel.scale.set(5 * s, 1.2 * s, 1);
+      voltageLabel.visible = false;
+      plateGroup.add(voltageLabel);
+
+      // E-field arrows (from + right to − left)
+      fieldArrows = [];
+      const step = Math.max(A, extent * 0.6);
+      const arrowLen = Math.max(3, extent * 0.5);
+      const headLen = 0.4 * s + 0.2;
+      const headW = 0.3 * s + 0.1;
+      for (let y = -extent; y <= extent; y += step) {
+        for (let z = -extent; z <= extent; z += step) {
+          const arr = new THREE.ArrowHelper(
+            new THREE.Vector3(-1, 0, 0),
+            new THREE.Vector3(px - 2, y, z),
+            arrowLen, 0xffcc44, headLen, headW
+          );
+          arr.visible = false;
+          arr.line.material.transparent = true;
+          arr.cone.material.transparent = true;
+          plateGroup.add(arr);
+          fieldArrows.push(arr);
+        }
+      }
+
+      fieldLabel = makeSprite('\u2190 E', '#ffcc44', 24);
+      fieldLabel.position.set(px - 2, extent + 3 * s, 0);
+      fieldLabel.scale.set(3 * s, 0.8 * s, 1);
+      fieldLabel.visible = false;
+      plateGroup.add(fieldLabel);
+    }
+
+    function makeSprite(text, color, fontSize) {
+      const cv = document.createElement('canvas');
+      cv.width = 256; cv.height = 64;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 32);
+      const tex = new THREE.CanvasTexture(cv);
+      const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+      s.scale.set(4, 1, 1);
+      return s;
+    }
+
+    // ─── Helpers ───
+    function bondsWithHoles() {
+      const res = [];
+      for (let i = 0; i < bondPairs.length; i++) {
+        if (!bondPairs[i].slot0) res.push({ bondIdx: i, slotIdx: 0 });
+        if (!bondPairs[i].slot1) res.push({ bondIdx: i, slotIdx: 1 });
+      }
+      return res;
+    }
+
+    function findDonorNeighbour(bondIdx) {
+      const bond = bondPairs[bondIdx];
+      const candidates = [];
+      for (const ai of [bond.a1, bond.a2]) {
+        for (const bi of bondsForAtomMap[ai]) {
+          if (bi === bondIdx) continue;
+          if (bondPairs[bi].slot0 && bondPairs[bi].slot1) {
+            candidates.push({ bondIdx: bi, sharedAtom: ai });
+          }
+        }
+      }
+      if (candidates.length === 0) return null;
+      if (voltage > 5) {
+        // Prefer donor from −x side so electron hops toward +x, hole moves toward −x
+        candidates.sort((a, b) => {
+          const midA = atomPositions[bondPairs[a.bondIdx].a1].x + atomPositions[bondPairs[a.bondIdx].a2].x;
+          const midB = atomPositions[bondPairs[b.bondIdx].a1].x + atomPositions[bondPairs[b.bondIdx].a2].x;
+          return midA - midB;
+        });
+        if (candidates.length > 1 && Math.random() < 0.2) return candidates[1];
+        return candidates[0];
+      }
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    function bondMid(bi) {
+      return atomPositions[bondPairs[bi].a1].clone()
+        .add(atomPositions[bondPairs[bi].a2]).multiplyScalar(0.5);
+    }
+
+    // ─── Timers ───
+    let holeHopTimer = 0;
+    let thermalExciteTimer = 0;
+
+    // ─── Build initial ───
+    buildScene(currentMode, latticeSize);
+
+    // ══════════════════════════════════════════
+    //  BAND DIAGRAM
+    // ══════════════════════════════════════════
+    const diagCanvas = document.getElementById('diagramCanvas');
+    const diagCtx = diagCanvas.getContext('2d');
+    function resizeDiag() {
+      const rect = diagCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (diagCanvas.width !== w || diagCanvas.height !== h) {
+        diagCanvas.width = w; diagCanvas.height = h;
+      }
+    }
+    new ResizeObserver(resizeDiag).observe(diagCanvas);
+    resizeDiag();
+
+    function drawBandDiagram() {
+      resizeDiag();
+      const dpr = window.devicePixelRatio || 1;
+      const rect = diagCanvas.getBoundingClientRect();
+      const W = Math.round(rect.width), H = Math.round(rect.height);
+      diagCtx.save(); diagCtx.scale(dpr, dpr);
+      diagCtx.fillStyle = 'rgba(0,0,0,0.9)';
+      diagCtx.fillRect(0, 0, W, H);
+
+      const pad = 35, topY = 30, botY = H - 15;
+      const midH = botY - topY;
+      const left = pad + 5, right = W - 15;
+      const bandW = right - left, cx = (left + right) / 2;
+
+      // Energy axis
+      diagCtx.strokeStyle = 'rgba(255,255,255,0.2)'; diagCtx.lineWidth = 1;
+      diagCtx.beginPath(); diagCtx.moveTo(pad - 5, topY - 5); diagCtx.lineTo(pad - 5, botY); diagCtx.stroke();
+      diagCtx.beginPath();
+      diagCtx.moveTo(pad - 5, topY - 5); diagCtx.lineTo(pad - 8, topY + 3);
+      diagCtx.moveTo(pad - 5, topY - 5); diagCtx.lineTo(pad - 2, topY + 3); diagCtx.stroke();
+      diagCtx.fillStyle = '#666'; diagCtx.font = '10px sans-serif';
+      diagCtx.save(); diagCtx.translate(10, (topY + botY) / 2); diagCtx.rotate(-Math.PI / 2);
+      diagCtx.textAlign = 'center'; diagCtx.fillText('Energy (E)', 0, 0); diagCtx.restore();
+
+      const cbTop = topY + midH * 0.1, cbBot = topY + midH * 0.35;
+      const vbTop = topY + midH * 0.6, vbBot = botY;
+      let fermiY = (cbBot + vbTop) / 2;
+      if (currentMode === 'ntype') fermiY = cbBot + (vbTop - cbBot) * 0.25;
+      else if (currentMode === 'ptype') fermiY = cbBot + (vbTop - cbBot) * 0.75;
+
+      // Conduction band
+      diagCtx.fillStyle = 'rgba(255,136,68,0.15)';
+      diagCtx.fillRect(left, cbTop, bandW, cbBot - cbTop);
+      diagCtx.strokeStyle = 'rgba(255,136,68,0.5)'; diagCtx.lineWidth = 1.5;
+      diagCtx.strokeRect(left, cbTop, bandW, cbBot - cbTop);
+      // Valence band
+      diagCtx.fillStyle = 'rgba(68,136,255,0.2)';
+      diagCtx.fillRect(left, vbTop, bandW, vbBot - vbTop);
+      diagCtx.strokeStyle = 'rgba(68,136,255,0.5)'; diagCtx.lineWidth = 1.5;
+      diagCtx.strokeRect(left, vbTop, bandW, vbBot - vbTop);
+
+      // Band gap bracket
+      diagCtx.setLineDash([3, 3]); diagCtx.strokeStyle = 'rgba(255,255,255,0.1)'; diagCtx.lineWidth = 0.5;
+      diagCtx.beginPath(); diagCtx.moveTo(left, cbBot); diagCtx.lineTo(right, cbBot); diagCtx.stroke();
+      diagCtx.beginPath(); diagCtx.moveTo(left, vbTop); diagCtx.lineTo(right, vbTop); diagCtx.stroke();
+      diagCtx.setLineDash([]);
+      const bx = right + 2;
+      diagCtx.strokeStyle = 'rgba(255,255,255,0.25)'; diagCtx.lineWidth = 1;
+      diagCtx.beginPath(); diagCtx.moveTo(bx, cbBot); diagCtx.lineTo(bx + 3, cbBot);
+      diagCtx.lineTo(bx + 3, vbTop); diagCtx.lineTo(bx, vbTop); diagCtx.stroke();
+      diagCtx.fillStyle = '#888'; diagCtx.font = '9px sans-serif'; diagCtx.textAlign = 'left';
+      diagCtx.fillText('1.1eV', bx + 5, (cbBot + vbTop) / 2 + 3);
+
+      // Fermi level
+      diagCtx.setLineDash([5, 3]); diagCtx.strokeStyle = 'rgba(255,200,50,0.6)'; diagCtx.lineWidth = 1.5;
+      diagCtx.beginPath(); diagCtx.moveTo(left, fermiY); diagCtx.lineTo(right, fermiY); diagCtx.stroke();
+      diagCtx.setLineDash([]);
+      diagCtx.fillStyle = '#ffc832'; diagCtx.font = '10px sans-serif'; diagCtx.textAlign = 'left';
+      diagCtx.fillText('E_F', left - 18, fermiY + 3);
+
+      // Mode-specific details
+      if (currentMode === 'ntype') {
+        const donorY = cbBot + (vbTop - cbBot) * 0.15;
+        diagCtx.setLineDash([2, 2]); diagCtx.strokeStyle = 'rgba(238,85,85,0.7)'; diagCtx.lineWidth = 1.5;
+        diagCtx.beginPath(); diagCtx.moveTo(left + 10, donorY); diagCtx.lineTo(right - 10, donorY); diagCtx.stroke();
+        diagCtx.setLineDash([]);
+        diagCtx.fillStyle = '#ee5555'; diagCtx.font = '9px sans-serif'; diagCtx.textAlign = 'center';
+        diagCtx.fillText('Donor level (P)', cx, donorY - 5);
+        diagCtx.strokeStyle = 'rgba(255,204,68,0.5)'; diagCtx.lineWidth = 1; diagCtx.setLineDash([2, 2]);
+        for (let a = 0; a < 3; a++) {
+          const ax = cx - 20 + a * 20;
+          diagCtx.beginPath(); diagCtx.moveTo(ax, donorY - 2); diagCtx.lineTo(ax, cbBot + 2); diagCtx.stroke();
+          diagCtx.beginPath(); diagCtx.moveTo(ax, cbBot + 2); diagCtx.lineTo(ax - 2, cbBot + 6);
+          diagCtx.moveTo(ax, cbBot + 2); diagCtx.lineTo(ax + 2, cbBot + 6); diagCtx.stroke();
+        }
+        diagCtx.setLineDash([]);
+        diagCtx.fillStyle = 'rgba(255,204,68,0.9)';
+        for (let d = 0; d < 4; d++) {
+          const ex = left + 15 + d * (bandW - 30) / 3;
+          diagCtx.beginPath(); diagCtx.arc(ex, cbTop + (cbBot - cbTop) * 0.5, 3.5, 0, Math.PI * 2); diagCtx.fill();
+        }
+      } else if (currentMode === 'ptype') {
+        const acceptorY = cbBot + (vbTop - cbBot) * 0.85;
+        diagCtx.setLineDash([2, 2]); diagCtx.strokeStyle = 'rgba(85,136,221,0.7)'; diagCtx.lineWidth = 1.5;
+        diagCtx.beginPath(); diagCtx.moveTo(left + 10, acceptorY); diagCtx.lineTo(right - 10, acceptorY); diagCtx.stroke();
+        diagCtx.setLineDash([]);
+        diagCtx.fillStyle = '#5588dd'; diagCtx.font = '9px sans-serif'; diagCtx.textAlign = 'center';
+        diagCtx.fillText('Acceptor level (B)', cx, acceptorY + 12);
+        diagCtx.strokeStyle = 'rgba(255,102,170,0.5)'; diagCtx.lineWidth = 1; diagCtx.setLineDash([2, 2]);
+        for (let a = 0; a < 3; a++) {
+          const ax = cx - 20 + a * 20;
+          diagCtx.beginPath(); diagCtx.moveTo(ax, vbTop - 2); diagCtx.lineTo(ax, acceptorY + 2); diagCtx.stroke();
+          diagCtx.beginPath(); diagCtx.moveTo(ax, acceptorY + 2); diagCtx.lineTo(ax - 2, acceptorY + 6);
+          diagCtx.moveTo(ax, acceptorY + 2); diagCtx.lineTo(ax + 2, acceptorY + 6); diagCtx.stroke();
+        }
+        diagCtx.setLineDash([]);
+        diagCtx.strokeStyle = 'rgba(255,102,170,0.8)'; diagCtx.lineWidth = 1.5;
+        for (let d = 0; d < 4; d++) {
+          const ex = left + 15 + d * (bandW - 30) / 3;
+          diagCtx.beginPath(); diagCtx.arc(ex, vbTop + (vbBot - vbTop) * 0.3, 3.5, 0, Math.PI * 2); diagCtx.stroke();
+        }
+      } else {
+        const tempNorm = temperature / 100;
+        const numTh = Math.floor(tempNorm * tempNorm * 4);
+        diagCtx.fillStyle = 'rgba(255,204,68,0.7)';
+        for (let d = 0; d < numTh; d++) {
+          const ex = left + 15 + d * (bandW - 30) / Math.max(numTh, 1);
+          diagCtx.beginPath(); diagCtx.arc(ex, cbTop + (cbBot - cbTop) * 0.6, 3, 0, Math.PI * 2); diagCtx.fill();
+        }
+        diagCtx.strokeStyle = 'rgba(255,102,170,0.6)'; diagCtx.lineWidth = 1.5;
+        for (let d = 0; d < numTh; d++) {
+          const ex = left + 15 + d * (bandW - 30) / Math.max(numTh, 1);
+          diagCtx.beginPath(); diagCtx.arc(ex, vbTop + (vbBot - vbTop) * 0.3, 3, 0, Math.PI * 2); diagCtx.stroke();
+        }
+      }
+      // Valence electrons
+      diagCtx.fillStyle = 'rgba(68,136,255,0.6)';
+      for (let d = 0; d < 6; d++) {
+        const ex = left + 12 + d * (bandW - 24) / 5;
+        diagCtx.beginPath(); diagCtx.arc(ex, vbTop + (vbBot - vbTop) * 0.6, 2.5, 0, Math.PI * 2); diagCtx.fill();
+      }
+      // Labels
+      const mc = { pure: '#44aa66', ntype: '#ee5555', ptype: '#5588dd' };
+      const ml = { pure: 'Pure Silicon', ntype: 'N-type (Phosphorus)', ptype: 'P-type (Boron)' };
+      diagCtx.fillStyle = mc[currentMode]; diagCtx.font = 'bold 11px sans-serif'; diagCtx.textAlign = 'center';
+      diagCtx.fillText(ml[currentMode], cx, topY - 8);
+      diagCtx.fillStyle = '#ff8844'; diagCtx.font = '9px sans-serif';
+      diagCtx.fillText('Conduction Band', cx, cbTop + 10);
+      diagCtx.fillStyle = '#4488ff'; diagCtx.fillText('Valence Band', cx, vbBot - 6);
+      diagCtx.restore();
+    }
+
+    // ══════════════════════════════════════════
+    //  ANIMATION
+    // ══════════════════════════════════════════
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      orbitControls.update();
+      const t = clock.getElapsedTime();
+      const tempNorm = temperature / 100;
+      const voltNorm = voltage / 100;
+      const extent = (latticeSize * A) / 2;
+      const plateX = extent + 4;
+
+      if (!paused) {
+        // ── Update bond electron positions ──
+        for (let bi = 0; bi < bondPairs.length; bi++) {
+          const b = bondPairs[bi];
+          const p1 = atomPositions[b.a1];
+          const p2 = atomPositions[b.a2];
+          const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+          const mid = p1.clone().add(p2).multiplyScalar(0.5);
+          // Perpendicular offset for the two slots
+          const perp = new THREE.Vector3();
+          if (Math.abs(dir.y) < 0.9) perp.crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize().multiplyScalar(0.2);
+          else perp.crossVectors(dir, new THREE.Vector3(1, 0, 0)).normalize().multiplyScalar(0.2);
+
+          for (let s = 0; s < 2; s++) {
+            const idx = bi * 2 + s;
+            const occupied = s === 0 ? b.slot0 : b.slot1;
+            const offset = perp.clone().multiplyScalar(s === 0 ? -1 : 1);
+            if (occupied) {
+              const osc = Math.sin(t * 1.5 + bi * 0.7 + s * Math.PI) * 0.15;
+              const pos = p1.clone().lerp(p2, 0.5 + osc).add(offset);
+              dummy.position.copy(pos);
+              dummy.scale.setScalar(1);
+            } else {
+              dummy.position.set(0, -9999, 0); // hide off-screen
+              dummy.scale.setScalar(0);
+            }
+            dummy.updateMatrix();
+            bondElecInstanced.setMatrixAt(idx, dummy.matrix);
+          }
+        }
+        bondElecInstanced.instanceMatrix.needsUpdate = true;
+
+        // ── Manage hole meshes ──
+        const holes = bondsWithHoles();
+        // Remove extra hole meshes
+        while (holeMeshes.length > holes.length) {
+          const hm = holeMeshes.pop();
+          carrierGroup.remove(hm);
+          hm.geometry.dispose(); hm.material.dispose();
+        }
+        // Add missing hole meshes
+        while (holeMeshes.length < holes.length) {
+          const hm = new THREE.Mesh(holeGeo,
+            new THREE.MeshPhongMaterial({
+              color: 0xff66aa, emissive: 0xff66aa, emissiveIntensity: 0.3,
+              transparent: true, opacity: 0.7, side: THREE.DoubleSide,
+            })
+          );
+          // Glow
+          hm.add(new THREE.Mesh(
+            new THREE.SphereGeometry(0.4, 8, 8),
+            new THREE.MeshBasicMaterial({ color: 0xff66aa, transparent: true, opacity: 0.1, depthWrite: false })
+          ));
+          carrierGroup.add(hm);
+          holeMeshes.push(hm);
+        }
+        // Position hole meshes
+        for (let i = 0; i < holes.length; i++) {
+          const mid = bondMid(holes[i].bondIdx);
+          holeMeshes[i].position.copy(mid);
+          holeMeshes[i].rotation.x = t * 2 + i;
+          holeMeshes[i].rotation.y = t * 1.5;
+          const pulse = 0.6 + Math.sin(t * 3 + i) * 0.15;
+          holeMeshes[i].material.opacity = pulse;
+        }
+
+        // ══════════════════════════════════════
+        //  P-TYPE: electrons hop between static holes
+        // ══════════════════════════════════════
+        if (currentMode === 'ptype' && permanentHoles.length > 0) {
+          const hopSpeed = 2.5 + voltNorm * 6.0 + tempNorm * 2.0;
+
+          // Advance in-flight hop electrons
+          for (let i = pTypeHopElectrons.length - 1; i >= 0; i--) {
+            const he = pTypeHopElectrons[i];
+            he.progress += dt * hopSpeed;
+            if (he.progress >= 1.0) {
+              he.currentStep++;
+              he.progress = 0;
+              if (he.currentStep < permanentHoles.length) {
+                // Hop to next hole
+                he.fromPos = permanentHoles[he.currentStep - 1].pos.clone();
+                he.toPos = permanentHoles[he.currentStep].pos.clone();
+              } else if (he.currentStep === permanentHoles.length) {
+                // Exit hop: toward + plate
+                he.fromPos = permanentHoles[permanentHoles.length - 1].pos.clone();
+                he.toPos = new THREE.Vector3(plateX - 1, he.fromPos.y, he.fromPos.z);
+              } else {
+                // Past exit — remove electron
+                carrierGroup.remove(he.mesh);
+                he.mesh.children.forEach(c => { if (c.geometry) c.geometry.dispose(); if (c.material) c.material.dispose(); });
+                he.mesh.geometry.dispose(); he.mesh.material.dispose();
+                pTypeHopElectrons.splice(i, 1);
+                continue;
+              }
+            }
+            // Animate position with arc
+            const p = Math.min(he.progress, 1.0);
+            const eased = p * p * (3 - 2 * p);
+            he.mesh.position.lerpVectors(he.fromPos, he.toPos, eased);
+            const dir = new THREE.Vector3().subVectors(he.toPos, he.fromPos);
+            const up = new THREE.Vector3(0, 1, 0);
+            const side = new THREE.Vector3().crossVectors(dir, up).normalize();
+            he.mesh.position.addScaledVector(side, Math.sin(p * Math.PI) * 0.8);
+            he.mesh.position.y += Math.sin(p * Math.PI) * 0.5;
+            he.mesh.scale.setScalar(1 + Math.sin(p * Math.PI * 3) * 0.15);
+          }
+
+          // Spawn new hop electrons from − plate (more at higher voltage)
+          const baseHopRate = 0.15 + tempNorm * 0.5;
+          const voltageHopBoost = voltNorm * 5.0;
+          const hopInterval = Math.max(0.15, 1.0 / (baseHopRate + voltageHopBoost));
+          const maxElectrons = Math.max(2, Math.floor(3 + voltNorm * 12));
+          holeHopTimer += dt;
+          if (voltNorm > 0.05 && holeHopTimer > hopInterval && pTypeHopElectrons.length < maxElectrons) {
+            holeHopTimer = 0;
+            const firstHole = permanentHoles[0];
+            // Spread entry evenly across the − plate area
+            const plateH = extent + 2;
+            const entryY = (Math.random() * 2 - 1) * plateH;
+            const entryZ = (Math.random() * 2 - 1) * plateH;
+            const fromPos = new THREE.Vector3(-plateX + 1, entryY, entryZ);
+            const toPos = firstHole.pos.clone();
+            const mat = new THREE.MeshPhongMaterial({
+              color: 0xffcc44, emissive: 0xffcc44,
+              emissiveIntensity: 0.6, transparent: true, opacity: 0.95,
+            });
+            const mesh = new THREE.Mesh(freeElecGeo, mat);
+            mesh.position.copy(fromPos);
+            mesh.add(new THREE.Mesh(
+              new THREE.SphereGeometry(0.5, 8, 8),
+              new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.15, depthWrite: false })
+            ));
+            carrierGroup.add(mesh);
+            pTypeHopElectrons.push({
+              mesh, fromPos, toPos, progress: 0, currentStep: 0,
+            });
+          }
+        }
+
+        // ══════════════════════════════════════
+        //  N-TYPE FREE ELECTRONS
+        // ══════════════════════════════════════
+        for (const ee of freeElectrons) {
+          const homePos = atomPositions[ee.homeAtomIdx];
+          if (ee.bound) {
+            ee.orbitPhase += dt * 2.0;
+            ee.orbitRadius = Math.min(ee.orbitRadius + dt * 1.2, 1.6);
+            const r = ee.orbitRadius;
+            ee.mesh.position.set(
+              homePos.x + Math.cos(ee.orbitPhase) * r,
+              homePos.y + Math.sin(ee.orbitPhase) * r * 0.7,
+              homePos.z + Math.sin(ee.orbitPhase * 0.6) * r * 0.5
+            );
+            if (tempNorm > 0.15 || voltNorm > 0.05) {
+              // Unbind faster under voltage so electron flow is visible quickly
+              const shrinkRate = voltNorm > 0.05 ? 4.0 : 0.8;
+              ee.orbitRadius = Math.max(ee.orbitRadius - dt * shrinkRate, 0);
+              if (ee.orbitRadius < 0.1) {
+                ee.bound = false;
+                const nb = bondsForAtomMap[ee.homeAtomIdx];
+                if (nb.length > 0) {
+                  ee.currentBondIdx = nb[0];
+                  ee.hopProgress = 0;
+                  ee.hopFrom = ee.homeAtomIdx;
+                  const b2 = bondPairs[ee.currentBondIdx];
+                  ee.hopTo = b2.a1 === ee.homeAtomIdx ? b2.a2 : b2.a1;
+                }
+              }
+            }
+          } else if (ee.platePhase === 'exiting') {
+            // Animate electron moving from last lattice atom toward + plate
+            const plateSpeed = 0.8 + voltNorm * 1.5;
+            ee.plateProgress += dt * plateSpeed;
+            const p = Math.min(ee.plateProgress, 1.0);
+            const eased = p * p * (3 - 2 * p);
+            ee.mesh.position.lerpVectors(ee.plateFrom, ee.plateTo, eased);
+            if (ee.plateProgress >= 1.0) {
+              // Enter from − plate, spread evenly across plate area
+              const leftAtoms = atomPositions
+                .map((ap, ai) => ({ p: ap, i: ai }))
+                .filter(a => a.p.x < -extent + A * 0.8);
+              if (leftAtoms.length > 0) {
+                const pick = leftAtoms[Math.floor(Math.random() * leftAtoms.length)];
+                const plateH = extent + 2;
+                const entryY = (Math.random() * 2 - 1) * plateH;
+                const entryZ = (Math.random() * 2 - 1) * plateH;
+                ee.platePhase = 'entering';
+                ee.plateProgress = 0;
+                ee.plateFrom = new THREE.Vector3(-plateX + 1, entryY, entryZ);
+                ee.plateTo = pick.p.clone();
+                ee.reentryAtom = pick.i;
+                ee.mesh.position.copy(ee.plateFrom);
+                // Reset trail
+                for (let ti = 0; ti < ee.trailPos.length; ti += 3) {
+                  ee.trailPos[ti] = ee.plateFrom.x;
+                  ee.trailPos[ti + 1] = ee.plateFrom.y;
+                  ee.trailPos[ti + 2] = ee.plateFrom.z;
+                }
+              } else {
+                ee.platePhase = null;
+              }
+            }
+          } else if (ee.platePhase === 'entering') {
+            // Animate electron moving from − plate into lattice
+            const plateSpeed = 0.8 + voltNorm * 1.5;
+            ee.plateProgress += dt * plateSpeed;
+            const p = Math.min(ee.plateProgress, 1.0);
+            const eased = p * p * (3 - 2 * p);
+            ee.mesh.position.lerpVectors(ee.plateFrom, ee.plateTo, eased);
+            if (ee.plateProgress >= 1.0) {
+              // Resume normal bond hopping from the entry atom
+              ee.platePhase = null;
+              ee.hopProgress = 0;
+              ee.hopFrom = ee.reentryAtom;
+              const rBonds = bondsForAtomMap[ee.reentryAtom];
+              if (rBonds.length > 0) {
+                ee.currentBondIdx = rBonds[0];
+                const nb2 = bondPairs[ee.currentBondIdx];
+                ee.hopTo = nb2.a1 === ee.reentryAtom ? nb2.a2 : nb2.a1;
+              }
+            }
+          } else {
+            // Hop through lattice bond-by-bond
+            const speed = 0.5 + voltNorm * 5.0 + tempNorm * 0.5;
+            ee.hopProgress += dt * speed;
+            if (ee.currentBondIdx >= 0 && ee.currentBondIdx < bondPairs.length) {
+              const fromPos = atomPositions[ee.hopFrom];
+              const toPos = atomPositions[ee.hopTo];
+              const p = ee.hopProgress;
+              const eased = p * p * (3 - 2 * p);
+              ee.mesh.position.lerpVectors(fromPos, toPos, eased);
+              // Arc above the bond
+              const bondDir = new THREE.Vector3().subVectors(toPos, fromPos);
+              const up = new THREE.Vector3(0, 1, 0);
+              const side = new THREE.Vector3().crossVectors(bondDir, up).normalize();
+              ee.mesh.position.addScaledVector(side, Math.sin(p * Math.PI) * 0.6);
+              ee.mesh.position.y += Math.sin(p * Math.PI) * 0.4;
+
+              if (p >= 1.0) {
+                ee.hopProgress = 0;
+                const arrived = ee.hopTo;
+                const next = bondsForAtomMap[arrived].filter(bi => bi !== ee.currentBondIdx);
+                if (next.length > 0) {
+                  if (voltNorm > 0.05) {
+                    // Bias toward +x (positive plate)
+                    next.sort((a, b2) => {
+                      const mA = atomPositions[bondPairs[a].a1].x + atomPositions[bondPairs[a].a2].x;
+                      const mB = atomPositions[bondPairs[b2].a1].x + atomPositions[bondPairs[b2].a2].x;
+                      return mB - mA;
+                    });
+                    ee.currentBondIdx = next[0];
+                  } else {
+                    ee.currentBondIdx = next[Math.floor(Math.random() * next.length)];
+                  }
+                } else {
+                  ee.currentBondIdx = bondsForAtomMap[arrived][0] || 0;
+                }
+                ee.hopFrom = arrived;
+                const nb = bondPairs[ee.currentBondIdx];
+                ee.hopTo = nb.a1 === arrived ? nb.a2 : nb.a1;
+
+                // Edge wrapping: start exit animation toward + plate
+                if (voltNorm > 0.05 && atomPositions[arrived].x > extent - A * 0.3) {
+                  ee.platePhase = 'exiting';
+                  ee.plateProgress = 0;
+                  ee.plateFrom = atomPositions[arrived].clone();
+                  ee.plateTo = new THREE.Vector3(plateX - 1, atomPositions[arrived].y, atomPositions[arrived].z);
+                }
+              }
+            }
+          }
+          // Pulse
+          const pulse = 1 + Math.sin(t * 4 + ee.orbitPhase) * 0.12;
+          ee.mesh.scale.setScalar(pulse);
+          // Trail
+          ee.trailTimer += dt;
+          if (ee.trailTimer > 0.03) {
+            ee.trailTimer = 0;
+            const tp = ee.trailPos;
+            for (let i = tp.length - 3; i >= 3; i -= 3) {
+              tp[i] = tp[i - 3]; tp[i + 1] = tp[i - 2]; tp[i + 2] = tp[i - 1];
+            }
+            tp[0] = ee.mesh.position.x; tp[1] = ee.mesh.position.y; tp[2] = ee.mesh.position.z;
+            ee.trail.geometry.attributes.position.needsUpdate = true;
+          }
+          ee.trail.material.opacity = ee.bound ? 0.15 : 0.2 + voltNorm * 0.4;
+        }
+
+        // ══════════════════════════════════════
+        //  THERMAL EXCITATION (Pure Si)
+        // ══════════════════════════════════════
+        if (currentMode === 'pure' && tempNorm > 0.25) {
+          thermalExciteTimer += dt;
+          const exciteInterval = Math.max(0.5, 6 - tempNorm * 5);
+          if (thermalExciteTimer > exciteInterval) {
+            thermalExciteTimer = 0;
+            const fullBonds = bondPairs
+              .map((b, i) => ({ b, i }))
+              .filter(x => x.b.slot0 && x.b.slot1);
+            const currentHoleCount = bondsWithHoles().length;
+            if (fullBonds.length > 0 && currentHoleCount < Math.max(3, atomPositions.length * 0.02)) {
+              const pick = fullBonds[Math.floor(Math.random() * fullBonds.length)];
+              pick.b.slot1 = false;
+              // Create free electron
+              const mid = bondMid(pick.i);
+              const nearAtom = pick.b.a1;
+              createFreeElectron(mid, nearAtom);
+              const ee = freeElectrons[freeElectrons.length - 1];
+              ee.bound = false;
+              ee.orbitRadius = 0;
+              ee.isThermal = true;
+              ee.lifetime = 3 + Math.random() * 4;
+            }
+          }
+        }
+
+        // Thermal recombination — always runs so carriers recombine when temp drops
+        for (let i = freeElectrons.length - 1; i >= 0; i--) {
+          const ee = freeElectrons[i];
+          if (ee.isThermal) {
+            // Accelerate recombination when temperature drops below excitation threshold
+            const recomRate = tempNorm <= 0.25 ? 4.0 : 1.0;
+            ee.lifetime -= dt * recomRate;
+            if (ee.lifetime <= 0) {
+              const holes2 = bondsWithHoles();
+              if (holes2.length > 0) {
+                const h = holes2[Math.floor(Math.random() * holes2.length)];
+                if (h.slotIdx === 0) bondPairs[h.bondIdx].slot0 = true;
+                else bondPairs[h.bondIdx].slot1 = true;
+              }
+              carrierGroup.remove(ee.mesh);
+              carrierGroup.remove(ee.trail);
+              freeElectrons.splice(i, 1);
+            }
+          }
+        }
+
+        // N-type: re-bind free electrons when temperature and voltage are both low
+        if (currentMode === 'ntype' && tempNorm < 0.15 && voltNorm < 0.05) {
+          for (const ee of freeElectrons) {
+            if (!ee.bound && !ee.isThermal) {
+              ee.bound = true;
+              ee.orbitRadius = 0.1;
+            }
+          }
+        }
+      }
+
+      // ── Voltage plates ──
+      const pa = Math.min(voltage / 30, 1);
+      leftPlate.material.opacity = pa * 0.5;
+      leftPlate.material.color.setHex(0x4488ff);
+      leftPlate.material.emissive.setHex(0x112266);
+      leftPlate.material.emissiveIntensity = pa * 0.6;
+      rightPlate.material.opacity = pa * 0.5;
+      rightPlate.material.color.setHex(0xff4444);
+      rightPlate.material.emissive.setHex(0x661111);
+      rightPlate.material.emissiveIntensity = pa * 0.6;
+      leftLabel.visible = voltage > 5;
+      rightLabel.visible = voltage > 5;
+      for (const a of fieldArrows) {
+        a.visible = voltage > 5;
+        const alpha = Math.min(voltage / 50, 0.8);
+        a.line.material.opacity = alpha;
+        a.cone.material.opacity = alpha;
+      }
+      if (fieldLabel) fieldLabel.visible = voltage > 5;
+
+      // Voltage readout sprite
+      if (voltageLabel) {
+        voltageLabel.visible = voltage > 5;
+        if (voltage > 5 && voltageLabelCtx) {
+          const cv = voltageLabelCtx.canvas;
+          voltageLabelCtx.clearRect(0, 0, cv.width, cv.height);
+          voltageLabelCtx.fillStyle = '#ff4444';
+          voltageLabelCtx.font = 'bold 36px "Inter", sans-serif';
+          voltageLabelCtx.textAlign = 'center';
+          voltageLabelCtx.textBaseline = 'middle';
+          voltageLabelCtx.fillText('+' + (voltage / 100 * 5).toFixed(1) + ' V', cv.width / 2, cv.height / 2);
+          voltageLabelTex.needsUpdate = true;
+        }
+      }
+
+      // ── UI ──
+      const T = Math.round(temperature * 10);
+      const V = (voltage / 100 * 5).toFixed(1);
+      document.getElementById('voltReadout').textContent = V + ' V';
+      document.getElementById('tempReadout').textContent = T + ' K';
+      document.getElementById('atomCountVal').textContent = atomPositions.length.toString();
+      document.getElementById('bondCountVal').textContent = bondPairs.length.toString();
+
+      const nFree = freeElectrons.filter(e => !e.bound).length;
+      const nHoles = bondsWithHoles().length;
+      document.getElementById('freeElecVal').textContent = nFree.toString();
+      document.getElementById('holeVal').textContent = nHoles.toString();
+
+      if (currentMode === 'pure') {
+        document.getElementById('materialName').textContent = 'Pure Silicon (Si)';
+        document.getElementById('materialName').style.color = '#44aa66';
+        document.getElementById('dopantVal').textContent = 'None';
+        document.getElementById('carrierVal').textContent = nFree > 0 ? 'Intrinsic (thermal)' : 'Intrinsic (few)';
+        document.getElementById('condVal').textContent = nFree > 1 ? 'Very Low' : 'Negligible';
+      } else if (currentMode === 'ntype') {
+        document.getElementById('materialName').textContent = 'N-type Silicon (Si:P)';
+        document.getElementById('materialName').style.color = '#ee5555';
+        document.getElementById('dopantVal').textContent = 'Phosphorus (Group V)';
+        document.getElementById('carrierVal').textContent = 'Electrons (majority)';
+        document.getElementById('condVal').textContent = voltage > 10 ? 'High' : 'Moderate';
+      } else {
+        document.getElementById('materialName').textContent = 'P-type Silicon (Si:B)';
+        document.getElementById('materialName').style.color = '#5588dd';
+        document.getElementById('dopantVal').textContent = 'Boron (Group III)';
+        document.getElementById('carrierVal').textContent = 'Holes (majority)';
+        document.getElementById('condVal').textContent = voltage > 10 ? 'High' : 'Moderate';
+      }
+
+      drawBandDiagram();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ─── Mode switching ───
+    function setMode(mode) {
+      currentMode = mode;
+      holeHopTimer = 0;
+      thermalExciteTimer = 0;
+      hoppingAnims = [];
+      pTypeHopElectrons = [];
+      buildScene(mode, latticeSize);
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      if (mode === 'pure') document.getElementById('btnPure').classList.add('active');
+      else if (mode === 'ntype') document.getElementById('btnNtype').classList.add('active');
+      else document.getElementById('btnPtype').classList.add('active');
+      const desc = {
+        pure: 'Pure silicon forms a diamond cubic lattice. Each Si atom forms 4 tetrahedral covalent bonds with its neighbours, sharing a pair of electrons per bond. All valence electrons are locked in bonds at low temperature. Raise temperature to see thermal excitation.',
+        ntype: 'Phosphorus (Group V) replaces Si atoms. Its 5th valence electron orbits the dopant loosely. At room temperature it detaches and hops bond-to-bond through the 3D lattice. Apply voltage: electrons are attracted toward the red (+) plate. The battery pushes new electrons out of the blue (\u2212) plate, sustaining current.',
+        ptype: 'Boron (Group III) has only 3 valence electrons — one bond is incomplete (a hole). Under voltage, the battery pushes electrons from the blue (\u2212) plate into the lattice, filling nearby holes. At the red (+) plate, electrons are pulled out, creating new holes. Holes appear to flow from red (+) toward blue (\u2212).',
+      };
+      document.getElementById('descText').textContent = desc[mode];
+      const titles = { pure: 'Band Diagram — Pure Silicon', ntype: 'Band Diagram — N-type (P)', ptype: 'Band Diagram — P-type (B)' };
+      document.getElementById('diagramTitle').textContent = titles[mode];
+    }
+
+    document.getElementById('btnPure').addEventListener('click', () => setMode('pure'));
+    document.getElementById('btnNtype').addEventListener('click', () => setMode('ntype'));
+    document.getElementById('btnPtype').addEventListener('click', () => setMode('ptype'));
+
+    document.getElementById('sizeSlider').addEventListener('input', e => {
+      latticeSize = parseInt(e.target.value);
+      document.getElementById('sizeValue').textContent = `${latticeSize}\u00d7${latticeSize}\u00d7${latticeSize}`;
+      buildScene(currentMode, latticeSize);
+    });
+
+    document.getElementById('dopantSlider').addEventListener('input', e => {
+      dopantFraction = parseInt(e.target.value);
+      document.getElementById('dopantCountValue').textContent = dopantFraction + '%';
+      buildScene(currentMode, latticeSize);
+    });
+
+    document.getElementById('voltageSlider').addEventListener('input', e => {
+      voltage = parseFloat(e.target.value);
+      document.getElementById('voltageValue').textContent = (voltage / 100 * 5).toFixed(1) + ' V';
+    });
+    document.getElementById('tempSlider').addEventListener('input', e => {
+      temperature = parseFloat(e.target.value);
+      document.getElementById('tempValue').textContent = Math.round(temperature * 10) + ' K';
+    });
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      voltage = 0; temperature = 30; dopantFraction = 4;
+      document.getElementById('voltageSlider').value = 0;
+      document.getElementById('voltageValue').textContent = '0.0 V';
+      document.getElementById('tempSlider').value = 30;
+      document.getElementById('tempValue').textContent = '300 K';
+      document.getElementById('dopantSlider').value = 4;
+      document.getElementById('dopantCountValue').textContent = '4%';
+      paused = false;
+      document.getElementById('pauseBtn').textContent = 'Pause';
+      setMode(currentMode);
+    });
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      paused = !paused;
+      document.getElementById('pauseBtn').textContent = paused ? 'Play' : 'Pause';
+    });
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+
+</html>

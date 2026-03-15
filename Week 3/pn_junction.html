@@ -1,0 +1,2212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>BMEN90033 2026: P-N Junction — 3D Visualisation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111; color: #ccc;
+      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+    }
+    #container { width: 100vw; height: 100vh; position: relative; }
+    .panel {
+      position: absolute; z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px; line-height: 1.6;
+    }
+    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+    .panel h3 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
+    .panel p  { font-size: 11px; color: #666; margin-top: 6px; }
+    #info { top: 16px; left: 16px; max-width: 310px; }
+    .legend { display: flex; align-items: center; gap: 8px; margin: 3px 0; color: #aaa; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    #diagram-panel {
+      top: 16px; right: 16px; width: 340px; height: 300px;
+      resize: both; overflow: hidden; min-width: 250px; min-height: 200px;
+    }
+    canvas#bandCanvas {
+      background: rgba(0, 0, 0, 0.5); border-radius: 6px;
+      display: block; width: 100%; height: calc(100% - 28px);
+    }
+    #controls {
+      position: absolute; bottom: 16px; left: 16px; z-index: 10;
+      background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px;
+    }
+    #controls label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 5px 0; color: #999; gap: 10px;
+    }
+    #controls input[type=range] {
+      width: 160px; -webkit-appearance: none;
+      background: rgba(255,255,255,0.1); height: 3px; border-radius: 2px; outline: none;
+    }
+    #controls input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: #fff; cursor: pointer;
+    }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    button.ctrl-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      color: #bbb; padding: 5px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 11px; font-weight: 500; transition: all 0.15s;
+    }
+    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    button.ctrl-btn.active {
+      background: rgba(255,200,50,0.15); border-color: rgba(255,200,50,0.4); color: #ffc832;
+    }
+    #status-panel {
+      position: absolute; bottom: 16px; right: 16px; z-index: 10;
+      background: rgba(20,20,20,0.85); backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08); font-size: 12px; min-width: 220px;
+    }
+    #status-panel .val {
+      font-family: 'SF Mono','Fira Code','Consolas',monospace;
+      font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;
+    }
+    #status-panel .stat-row {
+      display: flex; justify-content: space-between; color: #888; margin: 3px 0; font-size: 11px;
+    }
+    #status-panel .stat-val {
+      font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 600; color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="../index.html" id="back-btn" style="position:fixed;top:16px;left:16px;z-index:1000;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;background:rgba(20,20,20,0.8);border:1px solid rgba(255,255,255,0.1);color:#ccc;text-decoration:none;font-size:12px;font-weight:500;backdrop-filter:blur(8px);transition:all 0.15s;" onmouseover="this.style.background='rgba(40,40,40,0.9)';this.style.color='#fff'" onmouseout="this.style.background='rgba(20,20,20,0.8)';this.style.color='#ccc'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+  <div id="container">
+    <div id="info" class="panel" style="top:52px">
+      <h2>P-N Junction — 3D Visualisation</h2>
+      <div class="legend"><div class="dot" style="background:#44aa66"></div> Silicon atom</div>
+      <div class="legend"><div class="dot" style="background:#ee5555"></div> Donor ion (P⁺)</div>
+      <div class="legend"><div class="dot" style="background:#5588dd"></div> Acceptor ion (B⁻)</div>
+      <div class="legend"><div class="dot" style="background:#ffcc44"></div> Free electron</div>
+      <div class="legend"><div class="dot" style="background:transparent; border:1px dashed #ff66aa"></div> Hole (vacancy)</div>
+      <div class="legend"><div class="dot" style="background:#556677; border:1px solid #999"></div> External battery + wires</div>
+      <div class="legend"><div style="display:flex;gap:1px;align-items:center;"><div style="width:8px;height:3px;background:#ee5555;border-radius:1px"></div><div style="width:8px;height:3px;background:#5588dd;border-radius:1px"></div></div> Electric field (red +, blue −)</div>
+      <p id="descText">When P-type and N-type semiconductors are brought together, majority carriers
+        from each side diffuse across the junction. Electrons and holes near the boundary
+        recombine, exposing fixed ions and creating a carrier-free depletion region...</p>
+      <p style="color:#555; font-size:10px; margin-top:4px;">Drag to rotate · Scroll to zoom</p>
+    </div>
+
+    <div id="diagram-panel" class="panel">
+      <h3 id="diagramTitle">Energy Band Diagram — Equilibrium</h3>
+      <canvas id="bandCanvas" width="600" height="300"></canvas>
+    </div>
+
+    <div id="controls" class="panel">
+      <h3 style="margin-bottom:8px; color:#fff;">Bias Voltage</h3>
+      <label>V<sub>bias</sub>
+        <input type="range" id="biasSlider" min="-200" max="200" step="1" value="0">
+        <span id="biasValue">0.00 V</span>
+      </label>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="resetBtn">Reset</button>
+        <button class="ctrl-btn" id="pauseBtn">Pause</button>
+      </div>
+    </div>
+
+    <div id="status-panel">
+      <div class="val" id="junctionName">P-N Junction (Si)</div>
+      <div class="stat-row"><span>Bias</span><span class="stat-val" id="biasReadout">0.00 V</span></div>
+      <div class="stat-row"><span>Built-in V₀</span><span class="stat-val" id="v0Readout">0.70 V</span></div>
+      <div class="stat-row"><span>Depletion width</span><span class="stat-val" id="depletionReadout">W₀</span></div>
+      <div class="stat-row"><span>Current</span><span class="stat-val" id="currentReadout">~0 A</span></div>
+      <div class="stat-row"><span>State</span><span class="stat-val" id="stateReadout" style="color:#66bb6a">Equilibrium</span></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ═══════════════════════════════════════
+    //  SCENE SETUP
+    // ═══════════════════════════════════════
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.FogExp2(0x111111, 0.003);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 800);
+    camera.position.set(25, 20, 40);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.getElementById('container').appendChild(renderer.domElement);
+
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.enableDamping = true;
+    orbitControls.dampingFactor = 0.08;
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(20, 30, 25);
+    scene.add(dirLight);
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.2).translateX(-15).translateY(10).translateZ(-10));
+
+    const grid = new THREE.GridHelper(100, 50, 0x222222, 0x181818);
+    grid.position.y = -20;
+    scene.add(grid);
+
+    // ═══════════════════════════════════════
+    //  CONSTANTS
+    // ═══════════════════════════════════════
+    const A = 8;
+    const NN_DIST = A * Math.sqrt(3) / 4;
+    const ATOM_RADIUS = 0.7;
+    const BOND_ELEC_RADIUS = 0.18;
+    const FREE_ELEC_RADIUS = 0.35;
+    const HOLE_RADIUS = 0.3;
+    const SI_COLOR = new THREE.Color(0x44aa66);
+    const P_COLOR = new THREE.Color(0xee5555);
+    const B_COLOR = new THREE.Color(0x5588dd);
+
+    // Physics
+    const V0 = 0.7;
+    const V_BREAKDOWN = -1.5;
+    const LATTICE_N = 2;
+    const W0 = A * 0.8;
+    const I0 = 1e-12;
+    const q_kT = 38.68;
+    const MAX_CARRIERS = 100;
+    const MAX_CARRIERS_AVALANCHE = 200;
+
+    // Forward bias turn-on threshold (Si ~0.5–0.7V)
+    const V_TURN_ON = 0.5;
+
+    // Lattice full extent (used by multiple systems)
+    const FULL_EXTENT = LATTICE_N * A;  // 16
+
+    // Hole grid constants
+    const HOLE_GRID_SPACING = 2.5;
+
+    // ═══════════════════════════════════════
+    //  STATE
+    // ═══════════════════════════════════════
+    let biasVoltage = 0;
+    let paused = false;
+    let formationPhase = true;
+    let formationTime = 0;
+    const FORMATION_DURATION = 10.0; // seconds for depletion region to form
+    const clock = new THREE.Clock();
+
+    // ═══════════════════════════════════════
+    //  PHYSICS FUNCTIONS
+    // ═══════════════════════════════════════
+    function depletionHalfWidth(V) {
+      if (V >= V0) return 0;
+      if (V >= 0) return W0 * Math.sqrt(Math.max(0, 1 - V / V0));
+      return W0 * Math.sqrt(1 + Math.abs(V) / V0);
+    }
+
+    function currentMagnitude(V) {
+      if (V <= V_BREAKDOWN) return 1e-3;
+      const I = I0 * (Math.exp(q_kT * V) - 1);
+      return Math.min(Math.abs(I), 1e-3);
+    }
+
+    function junctionState(V) {
+      if (V <= V_BREAKDOWN) return 'Breakdown';
+      if (V < -0.01) return 'Reverse Bias';
+      if (V >= V_TURN_ON) return 'Forward Bias';
+      if (V > 0.01) return 'Forward Bias (sub-threshold)';
+      return 'Equilibrium';
+    }
+
+    function carrierCap() {
+      return biasVoltage <= V_BREAKDOWN ? MAX_CARRIERS_AVALANCHE : MAX_CARRIERS;
+    }
+
+    // ═══════════════════════════════════════
+    //  UI WIRING
+    // ═══════════════════════════════════════
+    const biasSlider = document.getElementById('biasSlider');
+    const biasValueSpan = document.getElementById('biasValue');
+    const biasReadout = document.getElementById('biasReadout');
+    const v0Readout = document.getElementById('v0Readout');
+    const depletionReadout = document.getElementById('depletionReadout');
+    const currentReadout = document.getElementById('currentReadout');
+    const stateReadout = document.getElementById('stateReadout');
+    const diagramTitle = document.getElementById('diagramTitle');
+    const descText = document.getElementById('descText');
+
+    biasSlider.addEventListener('input', () => {
+      if (formationPhase) return; // locked during formation
+      biasVoltage = parseInt(biasSlider.value) / 100;
+      biasValueSpan.textContent = biasVoltage.toFixed(2) + ' V';
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      biasVoltage = 0;
+      biasSlider.value = 0;
+      biasValueSpan.textContent = '0.00 V';
+      paused = false;
+      document.getElementById('pauseBtn').textContent = 'Pause';
+      camera.position.set(25, 20, 40);
+      orbitControls.target.set(0, 0, 0);
+      // Restart formation animation
+      formationPhase = true;
+      formationTime = 0;
+      biasSlider.disabled = true;
+      biasSlider.style.opacity = '0.4';
+      descText.textContent = 'When P-type and N-type semiconductors are brought together, majority carriers from each side diffuse across the junction. Electrons and holes near the boundary recombine, exposing fixed ions and creating a carrier-free depletion region...';
+      resetCarriers();
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      paused = !paused;
+      document.getElementById('pauseBtn').textContent = paused ? 'Play' : 'Pause';
+    });
+
+    function updateStatusPanel() {
+      if (formationPhase) {
+        const progress = Math.min(1, formationTime / FORMATION_DURATION);
+        const pct = (progress * 100).toFixed(0);
+        biasReadout.textContent = '0.00 V';
+        v0Readout.textContent = (V0 * progress).toFixed(2) + ' V';
+        depletionReadout.textContent = (2 * formationDepletionWidth() / W0).toFixed(2) + ' W\u2080';
+        currentReadout.textContent = '~0 A';
+        let phaseText = 'Diffusion';
+        if (progress > 0.5) phaseText = 'E-field building';
+        if (progress > 0.85) phaseText = 'Equilibrium forming';
+        stateReadout.textContent = phaseText + ' ' + pct + '%';
+        stateReadout.style.color = '#ffc832';
+        diagramTitle.textContent = 'Energy Band Diagram \u2014 Junction Forming';
+        return;
+      }
+      const V = biasVoltage;
+      biasReadout.textContent = V.toFixed(2) + ' V';
+      v0Readout.textContent = V0.toFixed(2) + ' V';
+      const W = depletionHalfWidth(V);
+      depletionReadout.textContent = (2 * W / W0).toFixed(2) + ' W\u2080';
+      const I = currentMagnitude(V);
+      if (I < 1e-9) currentReadout.textContent = '~0 A';
+      else if (I < 1e-6) currentReadout.textContent = (I * 1e6).toFixed(1) + ' \u00B5A';
+      else currentReadout.textContent = (I * 1e3).toFixed(2) + ' mA';
+
+      const state = junctionState(V);
+      stateReadout.textContent = state;
+      if (state === 'Breakdown') stateReadout.style.color = '#ef5350';
+      else if (state === 'Forward Bias') stateReadout.style.color = '#4fc3f7';
+      else if (state === 'Forward Bias (sub-threshold)') stateReadout.style.color = '#7aa8c8';
+      else if (state === 'Reverse Bias') stateReadout.style.color = '#ffb74d';
+      else stateReadout.style.color = '#66bb6a';
+
+      diagramTitle.textContent = 'Energy Band Diagram \u2014 ' + state;
+      updateDescription();
+    }
+
+    function updateDescription() {
+      const state = junctionState(biasVoltage);
+      if (state === 'Equilibrium') {
+        descText.textContent = 'At equilibrium, carrier diffusion across the junction is balanced by the built-in electric field. The depletion region contains no mobile carriers \u2014 only fixed donor and acceptor ions.';
+      } else if (state === 'Forward Bias (sub-threshold)') {
+        descText.textContent = 'The applied forward bias is reducing the built-in potential barrier and narrowing the depletion region, but the voltage has not yet reached the turn-on threshold (~' + V_TURN_ON.toFixed(1) + ' V for Si). Negligible current flows.';
+      } else if (state === 'Forward Bias') {
+        descText.textContent = 'Forward bias has overcome the built-in potential barrier. Electrons from the N-side conduction band cross into the P-side where they recombine with holes. Current flows through the junction.';
+      } else if (state === 'Reverse Bias') {
+        descText.textContent = 'Reverse bias: the positive terminal pulls free electrons out of the N-side through the right wire, while the negative terminal pushes electrons into the P-side through the left wire. These electrons hop through holes in the P-side, filling them. Once all holes are filled, electrons pile up at the P-side face — the negative charge buildup opposes further flow and current stops.';
+      } else {
+        descText.textContent = 'Avalanche breakdown! Spontaneous ionisation occurs everywhere — the intense field rips electrons from lattice atoms, leaving holes behind. Electrons from the negative wire terminal hop to fill these holes, but each ionisation event creates new holes elsewhere. Freed electrons are swept out through the N-side wire. The chain reaction sustains massive reverse current.';
+      }
+    }
+
+    // ═══════════════════════════════════════
+    //  LATTICE DATA
+    // ═══════════════════════════════════════
+    let atomPositions = [];
+    let atomTypes = [];
+    let bondPairs = [];
+    let bondsForAtomMap = [];
+
+    const latticeGroup = new THREE.Group();
+    scene.add(latticeGroup);
+    const carrierGroup = new THREE.Group();
+    scene.add(carrierGroup);
+
+    // Shared geometries
+    const atomGeo = new THREE.SphereGeometry(ATOM_RADIUS, 16, 16);
+    const bondElecGeo = new THREE.SphereGeometry(BOND_ELEC_RADIUS, 8, 8);
+    const freeElecGeo = new THREE.SphereGeometry(FREE_ELEC_RADIUS, 12, 12);
+    const holeGeo = new THREE.TorusGeometry(HOLE_RADIUS, 0.08, 8, 16);
+    const glowGeo = new THREE.SphereGeometry(0.6, 8, 8);
+    const flashGeo = new THREE.SphereGeometry(0.5, 8, 8);
+    const dummy = new THREE.Object3D();
+
+    // ═══════════════════════════════════════
+    //  DIAMOND CUBIC LATTICE GENERATOR
+    // ═══════════════════════════════════════
+    const BASIS = [
+      [0, 0, 0], [0.5, 0.5, 0], [0.5, 0, 0.5], [0, 0.5, 0.5],
+      [0.25, 0.25, 0.25], [0.75, 0.75, 0.25], [0.75, 0.25, 0.75], [0.25, 0.75, 0.75],
+    ];
+
+    function findBonds(positions) {
+      const tolerance = NN_DIST * 1.05;
+      const tol2 = tolerance * tolerance;
+      const bonds = [];
+      for (let i = 0; i < positions.length; i++) {
+        for (let j = i + 1; j < positions.length; j++) {
+          const d2 = positions[i].distanceToSquared(positions[j]);
+          if (d2 < tol2) {
+            bonds.push({ a1: i, a2: j });
+          }
+        }
+      }
+      return bonds;
+    }
+
+    function buildBondMap(bonds, numAtoms) {
+      const map = new Array(numAtoms);
+      for (let i = 0; i < numAtoms; i++) map[i] = [];
+      for (let bi = 0; bi < bonds.length; bi++) {
+        map[bonds[bi].a1].push(bi);
+        map[bonds[bi].a2].push(bi);
+      }
+      return map;
+    }
+
+    function generatePNLattice() {
+      const N = LATTICE_N;
+      const posP = [];
+      const posN = [];
+
+      for (let nx = 0; nx < N; nx++) {
+        for (let ny = 0; ny < N; ny++) {
+          for (let nz = 0; nz < N; nz++) {
+            for (const b of BASIS) {
+              posP.push(new THREE.Vector3(
+                (nx + b[0]) * A - N * A,
+                (ny + b[1]) * A - (N * A) / 2,
+                (nz + b[2]) * A - (N * A) / 2,
+              ));
+              posN.push(new THREE.Vector3(
+                (nx + b[0]) * A,
+                (ny + b[1]) * A - (N * A) / 2,
+                (nz + b[2]) * A - (N * A) / 2,
+              ));
+            }
+          }
+        }
+      }
+
+      const pCount = posP.length;
+      atomPositions = [...posP, ...posN];
+      atomTypes = atomPositions.map(() => 'Si');
+
+      const dopantFraction = 0.06;
+      const margin = A * 0.6;
+      const pInterior = [];
+      const nInterior = [];
+
+      for (let i = 0; i < pCount; i++) {
+        const p = atomPositions[i];
+        if (Math.abs(p.y) < (N * A) / 2 - margin && Math.abs(p.z) < (N * A) / 2 - margin) {
+          pInterior.push(i);
+        }
+      }
+      for (let i = pCount; i < atomPositions.length; i++) {
+        const p = atomPositions[i];
+        if (Math.abs(p.y) < (N * A) / 2 - margin && Math.abs(p.z) < (N * A) / 2 - margin) {
+          nInterior.push(i);
+        }
+      }
+
+      const shuffle = (arr) => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      };
+      shuffle(pInterior);
+      shuffle(nInterior);
+
+      const numPDopants = Math.max(2, Math.floor(pCount * dopantFraction));
+      const numNDopants = Math.max(2, Math.floor(pCount * dopantFraction));
+
+      for (let i = 0; i < Math.min(numPDopants, pInterior.length); i++) {
+        atomTypes[pInterior[i]] = 'B';
+      }
+      for (let i = 0; i < Math.min(numNDopants, nInterior.length); i++) {
+        atomTypes[nInterior[i]] = 'P';
+      }
+
+      bondPairs = findBonds(atomPositions);
+      bondsForAtomMap = buildBondMap(bondPairs, atomPositions.length);
+    }
+
+    // ═══════════════════════════════════════
+    //  LATTICE VISUALS
+    // ═══════════════════════════════════════
+    let atomInstanced = null;
+    let bondLinesMesh = null;
+    let bondElecInstanced = null;
+    let junctionPlane = null;
+    let depletionBox = null;
+
+    // Potential barrier visuals (built once, updated each frame)
+    const barrierGroup = new THREE.Group();
+    scene.add(barrierGroup);
+    let fieldArrows = [];
+    let minusCharges = [];
+    let plusCharges = [];
+    let minusLabel = null;
+    let plusLabel = null;
+    let eFieldLabel = null;
+
+    function buildLatticeVisuals() {
+      while (latticeGroup.children.length) {
+        const c = latticeGroup.children[0];
+        latticeGroup.remove(c);
+        if (c.geometry && c.geometry !== atomGeo && c.geometry !== bondElecGeo && c.geometry !== holeGeo) {
+          c.geometry.dispose();
+        }
+        if (c.material) c.material.dispose();
+      }
+
+      // 1. Instanced atoms
+      const atomMat = new THREE.MeshPhongMaterial({
+        vertexColors: false, transparent: true, opacity: 0.85,
+      });
+      atomInstanced = new THREE.InstancedMesh(atomGeo, atomMat, atomPositions.length);
+      atomInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+      for (let i = 0; i < atomPositions.length; i++) {
+        dummy.position.copy(atomPositions[i]);
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        atomInstanced.setMatrixAt(i, dummy.matrix);
+        let c;
+        if (atomTypes[i] === 'P') c = P_COLOR;
+        else if (atomTypes[i] === 'B') c = B_COLOR;
+        else c = SI_COLOR;
+        atomInstanced.setColorAt(i, c);
+      }
+      atomInstanced.instanceColor.needsUpdate = true;
+      atomInstanced.instanceMatrix.needsUpdate = true;
+      latticeGroup.add(atomInstanced);
+
+      // 2. Bond lines
+      const bondVerts = [];
+      for (const b of bondPairs) {
+        const p1 = atomPositions[b.a1];
+        const p2 = atomPositions[b.a2];
+        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+        const s = p1.clone().add(dir.clone().multiplyScalar(ATOM_RADIUS));
+        const e = p2.clone().sub(dir.clone().multiplyScalar(ATOM_RADIUS));
+        bondVerts.push(s.x, s.y, s.z, e.x, e.y, e.z);
+      }
+      const bondGeo = new THREE.BufferGeometry();
+      bondGeo.setAttribute('position', new THREE.Float32BufferAttribute(bondVerts, 3));
+      bondLinesMesh = new THREE.LineSegments(bondGeo,
+        new THREE.LineBasicMaterial({ color: 0x88bbff, transparent: true, opacity: 0.2 })
+      );
+      latticeGroup.add(bondLinesMesh);
+
+      // 3. Bond electrons
+      const totalSlots = bondPairs.length * 2;
+      bondElecInstanced = new THREE.InstancedMesh(bondElecGeo,
+        new THREE.MeshPhongMaterial({
+          color: 0x88bbff, emissive: 0x223344, emissiveIntensity: 0.4,
+          transparent: true, opacity: 0.85,
+        }), totalSlots);
+      bondElecInstanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      updateBondElectrons();
+      latticeGroup.add(bondElecInstanced);
+
+      // 4. Junction plane at x=0
+      const extent = LATTICE_N * A;
+      const planeMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.03, side: THREE.DoubleSide,
+      });
+      junctionPlane = new THREE.Mesh(new THREE.PlaneGeometry(extent, extent), planeMat);
+      junctionPlane.rotation.y = Math.PI / 2;
+      latticeGroup.add(junctionPlane);
+
+      // 5. Depletion region box
+      const depMat = new THREE.MeshBasicMaterial({
+        color: 0xffcc44, transparent: true, opacity: 0.05, side: THREE.DoubleSide,
+      });
+      depletionBox = new THREE.Mesh(new THREE.BoxGeometry(1, extent, extent), depMat);
+      latticeGroup.add(depletionBox);
+
+      // 6. P-type bounding box (left side)
+      const pBoxGeo = new THREE.BoxGeometry(LATTICE_N * A, extent, extent);
+      const pBoxMat = new THREE.MeshBasicMaterial({
+        color: 0x5588dd, wireframe: true, transparent: true, opacity: 0.15,
+      });
+      const pBox = new THREE.Mesh(pBoxGeo, pBoxMat);
+      pBox.position.set(-LATTICE_N * A / 2, 0, 0);
+      latticeGroup.add(pBox);
+
+      // 7. N-type bounding box (right side)
+      const nBoxGeo = new THREE.BoxGeometry(LATTICE_N * A, extent, extent);
+      const nBoxMat = new THREE.MeshBasicMaterial({
+        color: 0xee5555, wireframe: true, transparent: true, opacity: 0.15,
+      });
+      const nBox = new THREE.Mesh(nBoxGeo, nBoxMat);
+      nBox.position.set(LATTICE_N * A / 2, 0, 0);
+      latticeGroup.add(nBox);
+
+      // 8. Labels as sprites
+      const pLabel = makeTextSprite('P-type', '#5588dd');
+      pLabel.position.set(-LATTICE_N * A / 2, extent / 2 + 2, 0);
+      latticeGroup.add(pLabel);
+
+      const nLabel = makeTextSprite('N-type', '#ee5555');
+      nLabel.position.set(LATTICE_N * A / 2, extent / 2 + 2, 0);
+      latticeGroup.add(nLabel);
+    }
+
+    // Electric field line system
+    let fieldLineGroup = new THREE.Group();
+    scene.add(fieldLineGroup);
+    let fieldLineMeshes = [];
+    let fieldLineArrowheads = [];
+    let fieldLineAnimOffset = 0;   // animated dash offset
+
+    // Store curves so arrowheads can animate along them
+    let fieldLineCurves = [];
+
+    function buildFieldLines(W, fieldIntensity) {
+      // Remove old field lines
+      while (fieldLineGroup.children.length) {
+        const c = fieldLineGroup.children[0];
+        fieldLineGroup.remove(c);
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) {
+          if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+          else c.material.dispose();
+        }
+      }
+      fieldLineMeshes = [];
+      fieldLineArrowheads = [];
+      fieldLineCurves = [];
+
+      if (W < 0.5) return;
+
+      // Charge positions: + on N-side (+x), - on P-side (-x)
+      const halfSep = W * 0.7;
+      const posQ = new THREE.Vector3(halfSep, 0, 0);
+      const negQ = new THREE.Vector3(-halfSep, 0, 0);
+
+      const redColor = new THREE.Color(0xee5555);
+      const blueColor = new THREE.Color(0x5588dd);
+      const tubeRadius = 0.06 * (1 + fieldIntensity * 0.4);
+      const baseOpacity = Math.min(0.92, 0.5 + fieldIntensity * 0.3);
+      const segments = 40;
+
+      // Analytic symmetric field lines: parametric arcs from + to -
+      // Each line is defined by its max perpendicular height and azimuthal angle
+      // This guarantees perfect symmetry: every line starts at + and ends at -
+      const arcHeights = [0, W * 0.25, W * 0.5, W * 0.75, W * 1.05, W * 1.35, W * 1.7, W * 2.1];
+      const numAzBase = Math.min(8, Math.max(6, Math.round(5 + fieldIntensity)));
+
+      // How far lines extend past charges (small overshoot for realism)
+      const overshoot = W * 0.15;
+
+      for (const h of arcHeights) {
+        const nAz = h === 0 ? 1 : numAzBase;
+        for (let ai = 0; ai < nAz; ai++) {
+          const az = (ai / nAz) * 2 * Math.PI;
+
+          const pts = [];
+          for (let s = 0; s <= segments; s++) {
+            const t = s / segments;
+            // x: linear from + charge to - charge, with slight overshoot at ends
+            const xSpan = halfSep + overshoot;
+            const x = xSpan * (1 - 2 * t);
+            // Perpendicular displacement: dipole-like profile
+            // sin^0.7 gives a broader, flatter arc than sin (more realistic)
+            const perp = h * Math.pow(Math.sin(Math.PI * t), 0.7);
+            const y = perp * Math.cos(az);
+            const z = perp * Math.sin(az);
+            pts.push(new THREE.Vector3(x, y, z));
+          }
+
+          const curve = new THREE.CatmullRomCurve3(pts);
+          const tubeGeo = new THREE.TubeGeometry(curve, segments, tubeRadius, 6, false);
+
+          // Vertex colour: red near +x (positive), blue near -x (negative)
+          const posAttr = tubeGeo.attributes.position;
+          const colors = new Float32Array(posAttr.count * 3);
+          const xMin = -(halfSep + overshoot);
+          const xMax = halfSep + overshoot;
+          for (let i = 0; i < posAttr.count; i++) {
+            const px = posAttr.getX(i);
+            const frac = Math.max(0, Math.min(1, (px - xMin) / (xMax - xMin)));
+            // frac 1 = +x (red), frac 0 = -x (blue)
+            const col = new THREE.Color().lerpColors(blueColor, redColor, frac);
+            colors[i * 3] = col.r;
+            colors[i * 3 + 1] = col.g;
+            colors[i * 3 + 2] = col.b;
+          }
+          tubeGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+          const tubeMat = new THREE.MeshStandardMaterial({
+            vertexColors: true,
+            transparent: true,
+            opacity: baseOpacity,
+            emissive: new THREE.Color(0x331111),
+            emissiveIntensity: 0.3 + fieldIntensity * 0.5,
+            roughness: 0.35,
+            metalness: 0.05,
+          });
+          const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
+          fieldLineGroup.add(tubeMesh);
+          fieldLineMeshes.push(tubeMesh);
+          fieldLineCurves.push(curve);
+
+          // Place arrowheads along each line (2 for arcs, 1 for straight)
+          const arrowCount = h > 0 ? 2 : 1;
+          const coneSize = 0.14 * (1 + fieldIntensity * 0.25);
+
+          for (let ai2 = 0; ai2 < arrowCount; ai2++) {
+            const t = (ai2 + 1) / (arrowCount + 1);
+            const pt = curve.getPointAt(t);
+            const tan = curve.getTangentAt(t).normalize();
+
+            const coneGeo = new THREE.ConeGeometry(coneSize, coneSize * 2.8, 8);
+            // Colour arrowhead based on x position
+            const cf = Math.max(0, Math.min(1, (pt.x - xMin) / (xMax - xMin)));
+            const arrowCol = new THREE.Color().lerpColors(blueColor, redColor, cf);
+
+            const coneMat = new THREE.MeshStandardMaterial({
+              color: arrowCol,
+              emissive: arrowCol.clone().multiplyScalar(0.3),
+              transparent: true,
+              opacity: Math.min(0.95, 0.5 + fieldIntensity * 0.4),
+              roughness: 0.3,
+            });
+            const cone = new THREE.Mesh(coneGeo, coneMat);
+            cone.position.copy(pt);
+
+            // Orient cone along tangent (ConeGeometry points +y by default)
+            const up = new THREE.Vector3(0, 1, 0);
+            const quat = new THREE.Quaternion().setFromUnitVectors(up, tan);
+            cone.setRotationFromQuaternion(quat);
+
+            cone.userData.curveIndex = fieldLineCurves.length - 1;
+            cone.userData.baseT = t;
+            fieldLineGroup.add(cone);
+            fieldLineArrowheads.push(cone);
+          }
+        }
+      }
+    }
+
+    let prevFieldW = -1;
+    let prevFieldIntensity = -1;
+
+    function buildBarrierVisuals() {
+      // Clear previous
+      while (barrierGroup.children.length) {
+        const c = barrierGroup.children[0];
+        barrierGroup.remove(c);
+        if (c.geometry) c.geometry.dispose();
+        if (c.material) { if (c.material.map) c.material.map.dispose(); c.material.dispose(); }
+      }
+      fieldArrows = [];
+      minusCharges = [];
+      plusCharges = [];
+
+      const extent = LATTICE_N * A;
+      const spacing = A * 0.9;
+
+      // Fixed charge symbols in depletion region
+      const rows = 3;
+      for (let iy = 0; iy < rows; iy++) {
+        for (let iz = 0; iz < rows; iz++) {
+          const y = (iy - (rows - 1) / 2) * spacing;
+          const z = (iz - (rows - 1) / 2) * spacing;
+
+          const minusSprite = makeChargeSprite('\u2212', '#5588dd');
+          minusSprite.position.set(-W0 * 0.5, y, z);
+          minusSprite.scale.set(1.5, 1.5, 1);
+          barrierGroup.add(minusSprite);
+          minusCharges.push(minusSprite);
+
+          const plusSprite = makeChargeSprite('+', '#ee5555');
+          plusSprite.position.set(W0 * 0.5, y, z);
+          plusSprite.scale.set(1.5, 1.5, 1);
+          barrierGroup.add(plusSprite);
+          plusCharges.push(plusSprite);
+        }
+      }
+
+      // "−" label
+      minusLabel = makeTextSprite('\u2212  (Acceptor ions)', '#5588dd');
+      minusLabel.position.set(-W0 * 0.5, -extent / 2 - 2.5, 0);
+      minusLabel.scale.set(10, 2.5, 1);
+      barrierGroup.add(minusLabel);
+
+      // "+" label
+      plusLabel = makeTextSprite('+  (Donor ions)', '#ee5555');
+      plusLabel.position.set(W0 * 0.5, -extent / 2 - 2.5, 0);
+      plusLabel.scale.set(10, 2.5, 1);
+      barrierGroup.add(plusLabel);
+
+      // E-field label
+      eFieldLabel = makeTextSprite('\u2190 E-field', '#ffc832');
+      eFieldLabel.position.set(0, extent / 2 + 2, extent / 2 + 2);
+      eFieldLabel.scale.set(8, 2, 1);
+      barrierGroup.add(eFieldLabel);
+
+      // Build initial field lines
+      prevFieldW = -1;
+      prevFieldIntensity = -1;
+    }
+
+    function makeChargeSprite(text, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      // Circle background
+      ctx.beginPath();
+      ctx.arc(32, 32, 28, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fill();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Text
+      ctx.font = "bold 40px 'Inter','Helvetica Neue',sans-serif";
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 32, 30);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+      return new THREE.Sprite(mat);
+    }
+
+    function updateBarrierVisuals() {
+      const W = formationPhase ? formationDepletionWidth() : depletionHalfWidth(biasVoltage);
+      const extent = LATTICE_N * A;
+      const visible = W > 0.3;
+      const V = biasVoltage;
+      const isBreakdown = !formationPhase && V <= V_BREAKDOWN;
+
+      // Field intensity: 0 at equilibrium, scales up with reverse bias
+      // 0 = equilibrium, ~1 = moderate reverse, 2+ = near/at breakdown
+      let fieldIntensity = 0;
+      if (!formationPhase) {
+        if (V < 0) {
+          fieldIntensity = Math.abs(V) / Math.abs(V_BREAKDOWN);
+          if (isBreakdown) fieldIntensity = 1.0 + Math.abs(V - V_BREAKDOWN) * 2;
+        } else if (V < V_TURN_ON) {
+          fieldIntensity = 0;  // equilibrium / sub-threshold
+        } else {
+          fieldIntensity = Math.max(0, 0.3 - (V - V_TURN_ON) * 0.5); // weakens with forward bias
+        }
+      } else {
+        // Field lines only appear after ~25% (once enough ions are exposed)
+        const fp = formationTime / FORMATION_DURATION;
+        fieldIntensity = fp < 0.25 ? 0 : Math.min(1, (fp - 0.25) / 0.75) * 0.3;
+      }
+
+      // Rebuild field lines when W or intensity changes significantly
+      const quantW = Math.round(W * 4) / 4;
+      const quantI = Math.round(fieldIntensity * 4) / 4;
+      if (quantW !== prevFieldW || quantI !== prevFieldIntensity) {
+        buildFieldLines(W, fieldIntensity);
+        prevFieldW = quantW;
+        prevFieldIntensity = quantI;
+      }
+
+      // Animate field line arrowheads: slide along their curves
+      const time = clock.getElapsedTime();
+      const animSpeed = 0.3 + fieldIntensity * 1.5;
+      for (const cone of fieldLineArrowheads) {
+        const ci = cone.userData.curveIndex;
+        const baseT = cone.userData.baseT;
+        if (ci === undefined || !fieldLineCurves[ci]) continue;
+        const curve = fieldLineCurves[ci];
+        // Oscillate ±0.15 around baseT along curve
+        const osc = Math.sin(time * animSpeed + baseT * 6.28) * 0.15;
+        const t = Math.max(0.02, Math.min(0.98, baseT + osc));
+        const pt = curve.getPointAt(t);
+        const tan = curve.getTangentAt(t).normalize();
+        cone.position.copy(pt);
+        const up = new THREE.Vector3(0, 1, 0);
+        const quat = new THREE.Quaternion().setFromUnitVectors(up, tan);
+        cone.setRotationFromQuaternion(quat);
+      }
+
+      // Pulsing glow on field lines during breakdown
+      if (isBreakdown) {
+        const pulse = 0.6 + 0.4 * Math.sin(time * 8);
+        for (const mesh of fieldLineMeshes) {
+          mesh.material.opacity = pulse;
+          mesh.material.emissiveIntensity = 0.5 + pulse * 0.8;
+        }
+        for (const cone of fieldLineArrowheads) {
+          cone.material.opacity = pulse;
+          cone.material.emissiveIntensity = 0.3 + pulse * 0.5;
+        }
+      }
+
+      // Update charge positions
+      for (const s of minusCharges) {
+        s.visible = visible;
+        s.position.x = -W * 0.5;
+      }
+      for (const s of plusCharges) {
+        s.visible = visible;
+        s.position.x = W * 0.5;
+      }
+
+      // Update label positions
+      if (minusLabel) {
+        minusLabel.visible = visible;
+        minusLabel.position.x = -W * 0.5;
+      }
+      if (plusLabel) {
+        plusLabel.visible = visible;
+        plusLabel.position.x = W * 0.5;
+      }
+      if (eFieldLabel) {
+        eFieldLabel.visible = visible;
+        // Update E-field label text color based on intensity
+        if (fieldIntensity > 1.0) {
+          eFieldLabel.material.color.setHex(0xff4444);
+        } else {
+          eFieldLabel.material.color.setHex(0xffffff);
+        }
+      }
+
+      // Hide field lines when depletion zone is too small
+      fieldLineGroup.visible = visible;
+
+      // Fade opacity based on formation
+      const opacity = formationPhase ? Math.min(1, formationTime / FORMATION_DURATION) : 1;
+      barrierGroup.children.forEach(c => {
+        if (c.material && c.material.opacity !== undefined) {
+          c.material.opacity = opacity;
+        }
+      });
+    }
+
+    function makeTextSprite(text, color) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.font = "bold 40px 'Inter','Helvetica Neue',sans-serif";
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 32);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(8, 2, 1);
+      return sprite;
+    }
+
+    function updateBondElectrons() {
+      for (let bi = 0; bi < bondPairs.length; bi++) {
+        const b = bondPairs[bi];
+        const p1 = atomPositions[b.a1];
+        const p2 = atomPositions[b.a2];
+        const mid = new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5);
+        const dir = new THREE.Vector3().subVectors(p2, p1).normalize();
+        const offset = 0.3;
+
+        dummy.position.copy(mid).add(dir.clone().multiplyScalar(-offset));
+        dummy.scale.setScalar(1);
+        dummy.updateMatrix();
+        bondElecInstanced.setMatrixAt(bi * 2, dummy.matrix);
+
+        dummy.position.copy(mid).add(dir.clone().multiplyScalar(offset));
+        dummy.updateMatrix();
+        bondElecInstanced.setMatrixAt(bi * 2 + 1, dummy.matrix);
+      }
+      bondElecInstanced.instanceMatrix.needsUpdate = true;
+    }
+
+    function updateDepletionBox() {
+      const W = formationPhase ? formationDepletionWidth() : depletionHalfWidth(biasVoltage);
+      const fullWidth = 2 * W;
+      depletionBox.scale.x = Math.max(fullWidth, 0.01);
+      depletionBox.position.x = 0;
+
+      if (biasVoltage <= V_BREAKDOWN) {
+        const pulse = 0.05 + 0.03 * Math.sin(clock.getElapsedTime() * 4);
+        depletionBox.material.opacity = pulse;
+        depletionBox.material.color.setHex(0xff6644);
+      } else {
+        depletionBox.material.opacity = 0.05;
+        depletionBox.material.color.setHex(0xffcc44);
+      }
+    }
+
+    // ═══════════════════════════════════════
+    //  MOBILE CARRIERS
+    // ═══════════════════════════════════════
+    let electrons = [];
+    let holes = [];
+    let recombFlashes = [];
+
+    function spawnElectron(x, y, z) {
+      if (electrons.length + holes.length >= carrierCap()) return;
+      const mat = new THREE.MeshPhongMaterial({
+        color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.5,
+        transparent: true, opacity: 0.9,
+      });
+      const mesh = new THREE.Mesh(freeElecGeo, mat);
+      mesh.position.set(x, y, z);
+      carrierGroup.add(mesh);
+      mesh.add(new THREE.Mesh(
+        glowGeo,
+        new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.12, depthWrite: false })
+      ));
+      electrons.push({
+        mesh,
+        vx: (Math.random() - 0.5) * 2,
+        vy: (Math.random() - 0.5) * 2,
+        vz: (Math.random() - 0.5) * 2,
+      });
+    }
+
+    function snapToGrid(val) {
+      return Math.round(val / HOLE_GRID_SPACING) * HOLE_GRID_SPACING;
+    }
+
+    function spawnHole(x, y, z) {
+      if (electrons.length + holes.length >= carrierCap()) return;
+      const gx = snapToGrid(x);
+      const gy = snapToGrid(y);
+      const gz = snapToGrid(z);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xff66aa, wireframe: true, transparent: true, opacity: 0.8,
+      });
+      const mesh = new THREE.Mesh(holeGeo, mat);
+      mesh.position.set(gx, gy, gz);
+      mesh.rotation.x = Math.random() * Math.PI;
+      mesh.rotation.y = Math.random() * Math.PI;
+      carrierGroup.add(mesh);
+      holes.push({ mesh, gridX: gx, gridY: gy, gridZ: gz });
+    }
+
+    function removeElectron(idx) {
+      const e = electrons[idx];
+      carrierGroup.remove(e.mesh);
+      e.mesh.material?.dispose();
+      e.mesh.children.forEach(c => c.material?.dispose());
+      electrons.splice(idx, 1);
+    }
+
+    function removeHole(idx) {
+      const h = holes[idx];
+      carrierGroup.remove(h.mesh);
+      h.mesh.material?.dispose();
+      holes.splice(idx, 1);
+    }
+
+    function initCarriers() {
+      const N = LATTICE_N;
+      const extent = N * A;
+      const count = 30;
+
+      if (formationPhase) {
+        // At t=0 the two materials have just been joined.
+        // N-side has free electrons spread across it, concentrated near junction
+        // P-side has holes spread across it, concentrated near junction
+        // Electrons will naturally diffuse toward P-side and recombine with holes.
+
+        // N-side electrons: most near the junction so they visibly cross over
+        for (let i = 0; i < 20; i++) {
+          // Cluster near junction (x = 0 to ~W0*2)
+          const x = Math.random() * W0 * 2.5;
+          const y = (Math.random() - 0.5) * extent;
+          const z = (Math.random() - 0.5) * extent;
+          spawnElectron(x, y, z);
+        }
+        // Some electrons further into N-side
+        for (let i = 0; i < 15; i++) {
+          const x = W0 * 2 + Math.random() * (extent - W0 * 2);
+          const y = (Math.random() - 0.5) * extent;
+          const z = (Math.random() - 0.5) * extent;
+          spawnElectron(x, y, z);
+        }
+
+        // P-side holes: clustered near junction so electrons can find them
+        for (let i = 0; i < 20; i++) {
+          // Near junction (x = 0 to -W0*2.5)
+          const x = -Math.random() * W0 * 2.5;
+          const y = (Math.random() - 0.5) * extent;
+          const z = (Math.random() - 0.5) * extent;
+          spawnHole(x, y, z);
+        }
+        // Some holes further into P-side
+        for (let i = 0; i < 15; i++) {
+          const x = -(W0 * 2 + Math.random() * (extent - W0 * 2));
+          const y = (Math.random() - 0.5) * extent;
+          const z = (Math.random() - 0.5) * extent;
+          spawnHole(x, y, z);
+        }
+      } else {
+        // Normal equilibrium init — carriers outside depletion zone
+        const W = depletionHalfWidth(0);
+        for (let i = 0; i < count; i++) {
+          const x = W + Math.random() * (extent - W);
+          const y = (Math.random() - 0.5) * extent;
+          const z = (Math.random() - 0.5) * extent;
+          spawnElectron(x, y, z);
+        }
+        for (let i = 0; i < count; i++) {
+          const x = -W - Math.random() * (extent - W);
+          const y = (Math.random() - 0.5) * extent;
+          const z = (Math.random() - 0.5) * extent;
+          spawnHole(x, y, z);
+        }
+      }
+    }
+
+    function resetCarriers() {
+      while (electrons.length) removeElectron(electrons.length - 1);
+      while (holes.length) removeHole(holes.length - 1);
+      while (conductingElecs.length) removeConductingElectron(conductingElecs.length - 1);
+      pendingLeftWireSpawns = 0;
+      pendingRightWireExits = 0;
+      // Clear stuck electrons at P-side wire endpoint
+      for (const m of stuckElectrons) {
+        batteryGroup.remove(m);
+        m.material?.dispose();
+      }
+      stuckElectrons = [];
+      // Wire electrons are cleaned up in updateWireElectrons when flow stops
+      while (recombFlashes.length) {
+        carrierGroup.remove(recombFlashes[0].mesh);
+        recombFlashes[0].mesh.material?.dispose();
+        recombFlashes.shift();
+      }
+      prevDepletionW = W0;
+      initCarriers();
+    }
+
+    // ═══════════════════════════════════════
+    //  DEPLETION FORMATION ANIMATION
+    // ═══════════════════════════════════════
+    function formationDepletionWidth() {
+      // Depletion zone grows from 0 to W0 over FORMATION_DURATION
+      const t = Math.min(formationTime / FORMATION_DURATION, 1);
+      // Slow start (no depletion yet), then accelerates as recombination
+      // exposes ions, then decelerates as E-field opposes further diffusion
+      // Cubic ease-in-out gives a natural S-curve
+      const eased = t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      return W0 * eased;
+    }
+
+    function updateFormation(dt) {
+      if (!formationPhase) return;
+      formationTime += dt;
+
+      const W = formationDepletionWidth();
+      const extent = LATTICE_N * A;
+
+      // Formation progress: 0 → 1
+      const progress = Math.min(formationTime / FORMATION_DURATION, 1);
+
+      // ── Phase description updates ──
+      if (progress < 0.15) {
+        descText.textContent = 'The P-type and N-type materials have just been joined. Free electrons on the N-side (right) see an abundance of holes on the P-side (left) and begin diffusing across the junction...';
+      } else if (progress < 0.5) {
+        descText.textContent = 'Electrons are diffusing into the P-side and recombining with holes (filling vacancies). Each recombination exposes a fixed ion — positive donor ions on the N-side, negative acceptor ions on the P-side.';
+      } else if (progress < 0.85) {
+        descText.textContent = 'The exposed fixed ions create a growing electric field (E) pointing from N → P. This field opposes further electron diffusion. The depletion region — emptied of mobile carriers — is widening.';
+      } else {
+        descText.textContent = 'The built-in electric field now balances the diffusion tendency. No more net carrier movement occurs. The depletion region has reached its equilibrium width.';
+      }
+
+      // ── Early phase: electrons diffuse toward P-side (attracted to holes) ──
+      // Diffusion drive weakens as the E-field builds up
+      const diffusionStrength = Math.max(0, 1 - progress * 1.5); // strong early, fades by ~67%
+
+      for (const e of electrons) {
+        const ex = e.mesh.position.x;
+
+        // Diffusion: electrons near the junction drift toward P-side (−x)
+        if (diffusionStrength > 0 && ex < W0 * 3 && ex > -W) {
+          e.vx -= diffusionStrength * 4 * dt;
+        }
+
+        // Built-in E-field repulsion: grows with progress
+        // Pushes electrons in the depletion zone back toward N-side (+x)
+        const fieldStrength = progress * 8;
+        if (ex > -W && ex < W) {
+          e.vx += fieldStrength * dt;
+        }
+
+        // Electrons that made it deep into P-side get pushed back by growing field
+        if (ex < -W) {
+          e.vx += fieldStrength * 0.5 * dt;
+        }
+      }
+
+      // ── Remove holes that end up inside the depletion zone or on N-side ──
+      // (they've been "filled" by the growing depletion region)
+      for (let i = holes.length - 1; i >= 0; i--) {
+        const hx = holes[i].gridX;
+        if (hx > -W && hx < W) {
+          // Hole inside depletion zone — remove with a small flash
+          spawnFlash(holes[i].gridX, holes[i].gridY, holes[i].gridZ);
+          removeHole(i);
+        } else if (hx > 0) {
+          // Hole drifted to N-side — shouldn't exist there
+          removeHole(i);
+        }
+      }
+
+      // Check if formation is complete
+      if (formationTime >= FORMATION_DURATION) {
+        formationPhase = false;
+        biasSlider.disabled = false;
+        biasSlider.style.opacity = '1';
+        descText.textContent = 'At equilibrium, carrier diffusion across the junction is balanced by the built-in electric field. The depletion region contains no mobile carriers — only fixed donor and acceptor ions.';
+      }
+    }
+
+    // ═══════════════════════════════════════
+    //  CONDUCTING ELECTRONS (hop through holes)
+    // ═══════════════════════════════════════
+    // Under forward bias, free electrons from N-side cross into P-side,
+    // get captured by the nearest hole, then hop hole-to-hole leftward
+    // through the valence band until they exit out the left wire.
+    let conductingElecs = [];
+    let pendingLeftWireSpawns = 0;     // queued left-wire electrons from P-side exits
+    let pendingRightWireExits = 0;    // queued right-wire electrons from N-side exits (reverse/breakdown)
+    const CONDUCT_HOP_DURATION = 0.13; // seconds per hop between holes
+    const CONDUCT_PAUSE = 0.04;        // brief pause at each hole before next hop
+
+    function spawnConductingElectron(startHoleIdx, hopDir, fillMode) {
+      const hole = holes[startHoleIdx];
+      if (!hole) return;
+      const mat = new THREE.MeshPhongMaterial({
+        color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.6,
+        transparent: true, opacity: 0.9,
+      });
+      const mesh = new THREE.Mesh(freeElecGeo, mat);
+
+      // hopDirection: -1 = hop leftward (forward bias),
+      //               +1 = hop rightward (reverse/breakdown, toward N-side)
+      const dir = hopDir !== undefined ? hopDir : -1;
+
+      if (fillMode) {
+        // fillMode: electron travels from the P-side wire entry to the target hole,
+        // then fills it (both consumed). Animate as a single hop.
+        const extent = LATTICE_N * A;
+        const entryX = -extent + 0.5;
+        mesh.position.set(entryX, hole.gridY, hole.gridZ);
+        carrierGroup.add(mesh);
+        conductingElecs.push({
+          mesh,
+          currentHoleIdx: -1, // not sitting at a hole yet
+          targetHoleIdx: startHoleIdx,
+          progress: 0,
+          pause: 0,
+          fromPos: { x: entryX, y: hole.gridY, z: hole.gridZ },
+          toPos: { x: hole.gridX, y: hole.gridY, z: hole.gridZ },
+          hopsRemaining: 0,
+          hopDirection: dir,
+          fillMode: true,
+        });
+      } else {
+        mesh.position.set(hole.gridX, hole.gridY, hole.gridZ);
+        carrierGroup.add(mesh);
+        // hopsRemaining: during formation, electron hops 2-4 times before recombining
+        const hops = formationPhase ? 2 + Math.floor(Math.random() * 3) : Infinity;
+        conductingElecs.push({
+          mesh,
+          currentHoleIdx: startHoleIdx,
+          targetHoleIdx: null,
+          progress: 0,
+          pause: CONDUCT_PAUSE,
+          fromPos: { x: hole.gridX, y: hole.gridY, z: hole.gridZ },
+          toPos: null,
+          hopsRemaining: hops,
+          hopDirection: dir,
+          fillMode: false,
+        });
+      }
+    }
+
+    function removeConductingElectron(idx) {
+      const ce = conductingElecs[idx];
+      carrierGroup.remove(ce.mesh);
+      ce.mesh.material?.dispose();
+      conductingElecs.splice(idx, 1);
+    }
+
+    function findNextHoleInDir(currentHole, direction) {
+      // Find nearest hole in the given direction within a reasonable distance
+      // direction: -1 = leftward (forward bias), +1 = rightward (breakdown)
+      const maxJump = HOLE_GRID_SPACING * 3;
+      let bestIdx = -1;
+      let bestScore = Infinity;
+
+      for (let i = 0; i < holes.length; i++) {
+        const h = holes[i];
+        const dx = (h.gridX - currentHole.gridX) * direction; // positive = correct direction
+        if (dx <= 0) continue; // must be in the target direction
+        const dy = currentHole.gridY - h.gridY;
+        const dz = currentHole.gridZ - h.gridZ;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist > maxJump) continue;
+        const score = dx + Math.sqrt(dy * dy + dz * dz) * 2;
+        if (score < bestScore) {
+          bestScore = score;
+          bestIdx = i;
+        }
+      }
+      return bestIdx;
+    }
+
+    function findNextHoleLeft(currentHole) {
+      return findNextHoleInDir(currentHole, -1);
+    }
+
+    function updateConductingElectrons(dt) {
+      if (paused) return;
+
+      // During formation, electrons hop slower so the process is visible
+      const hopDur = formationPhase ? CONDUCT_HOP_DURATION * 2.5 : CONDUCT_HOP_DURATION;
+      const hopPause = formationPhase ? CONDUCT_PAUSE * 2 : CONDUCT_PAUSE;
+
+      for (let i = conductingElecs.length - 1; i >= 0; i--) {
+        const ce = conductingElecs[i];
+
+        if (ce.targetHoleIdx !== null) {
+          // Animating hop to next hole
+          // fillMode hops are slower so the travel is visible
+          const thisDur = ce.fillMode ? hopDur * 3 : hopDur;
+          ce.progress += dt / thisDur;
+          if (ce.progress >= 1) {
+            const th = holes[ce.targetHoleIdx];
+
+            // fillMode: electron arrived at the hole — fill it (both consumed)
+            if (ce.fillMode && th) {
+              spawnFlash(th.gridX, th.gridY, th.gridZ);
+              const holeIdx = ce.targetHoleIdx;
+              removeConductingElectron(i);
+              if (holeIdx >= 0 && holeIdx < holes.length) removeHole(holeIdx);
+              continue;
+            }
+
+            // Normal hop: arrived at target hole
+            if (th) {
+              ce.mesh.position.set(th.gridX, th.gridY, th.gridZ);
+              ce.currentHoleIdx = ce.targetHoleIdx;
+              ce.fromPos = { x: th.gridX, y: th.gridY, z: th.gridZ };
+            }
+            ce.targetHoleIdx = null;
+            ce.toPos = null;
+            ce.progress = 0;
+            ce.pause = hopPause;
+          } else {
+            // Lerp between holes
+            const t = ce.progress;
+            ce.mesh.position.set(
+              ce.fromPos.x + (ce.toPos.x - ce.fromPos.x) * t,
+              ce.fromPos.y + (ce.toPos.y - ce.fromPos.y) * t,
+              ce.fromPos.z + (ce.toPos.z - ce.fromPos.z) * t,
+            );
+          }
+        } else {
+          // Sitting at a hole — brief pause then pick next
+          ce.pause -= dt;
+          if (ce.pause > 0) continue;
+
+          const cur = holes[ce.currentHoleIdx];
+          if (!cur) { removeConductingElectron(i); continue; }
+
+          // During formation: electron hops a few times then recombines
+          if (ce.hopsRemaining !== undefined && ce.hopsRemaining <= 0) {
+            // Out of hops — recombine at current hole (electron fills it)
+            const holeIdx = ce.currentHoleIdx;
+            spawnFlash(cur.gridX, cur.gridY, cur.gridZ);
+            removeConductingElectron(i);
+            if (holeIdx >= 0 && holeIdx < holes.length) removeHole(holeIdx);
+            continue;
+          }
+
+          const dir = ce.hopDirection || -1;
+
+          // Check boundary exit based on hop direction
+          if (dir < 0 && cur.gridX <= -FULL_EXTENT + HOLE_GRID_SPACING * 1.5) {
+            // Reached left boundary — exit through left wire
+            removeConductingElectron(i);
+            pendingLeftWireSpawns++;
+            continue;
+          }
+          if (dir > 0 && cur.gridX >= FULL_EXTENT - HOLE_GRID_SPACING * 1.5) {
+            // Reached right boundary — exit through right wire (breakdown)
+            removeConductingElectron(i);
+            pendingRightWireExits++;
+            continue;
+          }
+
+          const nextIdx = findNextHoleInDir(cur, dir);
+          if (nextIdx < 0) {
+            // No reachable hole in this direction — exit through wire
+            removeConductingElectron(i);
+            if (dir < 0) pendingLeftWireSpawns++;
+            else pendingRightWireExits++;
+            continue;
+          }
+
+          const nh = holes[nextIdx];
+          ce.targetHoleIdx = nextIdx;
+          ce.toPos = { x: nh.gridX, y: nh.gridY, z: nh.gridZ };
+          ce.fromPos = { x: cur.gridX, y: cur.gridY, z: cur.gridZ };
+          ce.progress = 0;
+          if (ce.hopsRemaining !== undefined && ce.hopsRemaining !== Infinity) {
+            ce.hopsRemaining--;
+          }
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════
+    //  CARRIER MOVEMENT
+    // ═══════════════════════════════════════
+    function updateCarriers(dt) {
+      if (paused) return;
+
+      const N = LATTICE_N;
+      const extent = N * A;
+      const W = formationPhase ? formationDepletionWidth() : depletionHalfWidth(biasVoltage);
+      const isBreakdown = !formationPhase && biasVoltage <= V_BREAKDOWN;
+      const isForward = !formationPhase && biasVoltage >= V_TURN_ON;
+      const isReverse = !formationPhase && biasVoltage < -0.01;
+      // Drift strength scales with how far above turn-on we are
+      const driftX = isForward ? (biasVoltage - V_TURN_ON) * 6 : 0;
+      const yLimit = extent / 2;
+      const zLimit = extent / 2;
+
+      for (let i = electrons.length - 1; i >= 0; i--) {
+        const e = electrons[i];
+        e.vx += (Math.random() - 0.5) * 4 * dt;
+        e.vy += (Math.random() - 0.5) * 4 * dt;
+        e.vz += (Math.random() - 0.5) * 4 * dt;
+
+        if (isForward) {
+          // Electrons drift from N-side toward P-side (negative x)
+          e.vx -= driftX * dt;
+        }
+
+        // In reverse bias, ALL electrons are attracted toward the positive
+        // terminal (right side). N-side electrons get pulled out quickly.
+        if (isReverse || isBreakdown) {
+          const fieldStrength = isBreakdown ? 15 + Math.abs(biasVoltage) * 5 : 8 + Math.abs(biasVoltage) * 4;
+          e.vx += fieldStrength * dt;
+        }
+
+        e.vx *= 0.98; e.vy *= 0.98; e.vz *= 0.98;
+
+        e.mesh.position.x += e.vx * dt;
+        e.mesh.position.y += e.vy * dt;
+        e.mesh.position.z += e.vz * dt;
+
+        if (Math.abs(e.mesh.position.y) > yLimit) e.vy *= -1;
+        if (Math.abs(e.mesh.position.z) > zLimit) e.vz *= -1;
+        e.mesh.position.y = THREE.MathUtils.clamp(e.mesh.position.y, -yLimit, yLimit);
+        e.mesh.position.z = THREE.MathUtils.clamp(e.mesh.position.z, -zLimit, zLimit);
+
+        // Electron exits N-side right boundary → into right wire
+        if (e.mesh.position.x > extent) {
+          if (isReverse || isBreakdown) {
+            // Electron exits into the right wire toward battery
+            removeElectron(i);
+            pendingRightWireExits++;
+            continue;
+          }
+          e.mesh.position.x = extent;
+          e.vx *= -0.5;
+        }
+
+        if (!isForward && !isBreakdown && !isReverse && Math.abs(e.mesh.position.x) < W) {
+          e.mesh.position.x = W + 0.1;
+          e.vx = Math.abs(e.vx);
+        }
+      }
+
+      // Holes are now updated via updateHoleHops() — no velocity-based movement
+    }
+
+    // ═══════════════════════════════════════
+    //  RECOMBINATION & GENERATION
+    // ═══════════════════════════════════════
+    function spawnFlash(x, y, z) {
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(flashGeo, mat);
+      mesh.position.set(x, y, z);
+      carrierGroup.add(mesh);
+      recombFlashes.push({ mesh, life: 0.3 });
+    }
+
+    function findNearestHole(pos) {
+      let bestIdx = -1;
+      let bestDist = Infinity;
+      for (let i = 0; i < holes.length; i++) {
+        const d = pos.distanceTo(holes[i].mesh.position);
+        if (d < bestDist) { bestDist = d; bestIdx = i; }
+      }
+      return bestIdx;
+    }
+
+    function checkRecombination() {
+      if (paused) return;
+      const isForward = !formationPhase && biasVoltage >= V_TURN_ON;
+      const threshold = 1.8;
+
+      for (let ei = electrons.length - 1; ei >= 0; ei--) {
+        const ep = electrons[ei].mesh.position;
+
+        if (isForward && ep.x <= 0) {
+          // Forward bias: electron entered P-side → capture to nearest hole
+          const hi = findNearestHole(ep);
+          if (hi >= 0) {
+            spawnFlash(holes[hi].mesh.position.x, holes[hi].mesh.position.y, holes[hi].mesh.position.z);
+            removeElectron(ei);
+            spawnConductingElectron(hi);
+          }
+          continue;
+        }
+
+        if (formationPhase && ep.x <= 0) {
+          // Formation: electron has crossed into P-side
+          // Capture to nearest hole and hop hole-to-hole (same as forward bias)
+          const hi = findNearestHole(ep);
+          if (hi >= 0 && ep.distanceTo(holes[hi].mesh.position) < threshold * 2) {
+            spawnFlash(holes[hi].mesh.position.x, holes[hi].mesh.position.y, holes[hi].mesh.position.z);
+            removeElectron(ei);
+            spawnConductingElectron(hi);
+          }
+        }
+      }
+    }
+
+    function updateFlashes(dt) {
+      for (let i = recombFlashes.length - 1; i >= 0; i--) {
+        const f = recombFlashes[i];
+        f.life -= dt;
+        f.mesh.material.opacity = Math.max(0, f.life / 0.3) * 0.8;
+        f.mesh.scale.setScalar(1 + (0.3 - f.life) * 3);
+        if (f.life <= 0) {
+          carrierGroup.remove(f.mesh);
+          f.mesh.material.dispose();
+          recombFlashes.splice(i, 1);
+        }
+      }
+    }
+
+    function thermalGeneration(dt) {
+      if (paused) return;
+      // Under reverse bias the field sweeps everything out — skip thermal gen
+      if (!formationPhase && biasVoltage < -0.01) return;
+      const W = depletionHalfWidth(biasVoltage);
+      const extent = LATTICE_N * A;
+      const rate = 0.5 * dt;
+      if (Math.random() < rate && W > 0.5) {
+        const x = (Math.random() - 0.5) * 2 * W;
+        const y = (Math.random() - 0.5) * extent;
+        const z = (Math.random() - 0.5) * extent;
+        // Thermally generated electron sweeps to N-side
+        spawnElectron(Math.abs(x) + 0.5, y, z);
+        // Holes are permanent lattice features — not created by thermal generation
+      }
+    }
+
+    function replenishCarriers() {
+      if (paused) return;
+      // Under reverse bias electrons are being pulled out — don't replenish
+      if (!formationPhase && biasVoltage < -0.01) return;
+      const extent = LATTICE_N * A;
+      const W = depletionHalfWidth(biasVoltage);
+      const targetCount = 30;
+
+      // Replenish free electrons on N-side
+      if (electrons.length < targetCount) {
+        const x = W + Math.random() * (extent - W);
+        const y = (Math.random() - 0.5) * extent;
+        const z = (Math.random() - 0.5) * extent;
+        spawnElectron(x, y, z);
+      }
+      // Holes are permanent lattice features — not replenished
+    }
+
+    // ═══════════════════════════════════════
+    //  AVALANCHE BREAKDOWN
+    // ═══════════════════════════════════════
+    // The intense E-field ionises atoms in the depletion zone and N-type
+    // region, ripping electrons free. Each freed electron leaves a hole
+    // behind and gets swept out through the N-side wire. Electrons from
+    // the negative wire terminal enter the P-side, hop to fill holes.
+    // When a hole is filled a new ionisation event creates another hole
+    // elsewhere — the chain reaction sustains massive reverse current.
+
+    let avalancheTimer = 0;
+
+    function avalancheGeneration(dt) {
+      if (paused) return;
+      if (biasVoltage > V_BREAKDOWN) { avalancheTimer = 0; return; }
+
+      const W = depletionHalfWidth(biasVoltage);
+      const extent = LATTICE_N * A;
+      const cap = carrierCap();
+      const severity = 1 + Math.abs(biasVoltage - V_BREAKDOWN) * 3;
+
+      // ── Rate of ionization events scales with severity ──
+      const ionRate = (1.5 + severity * 2) * dt;
+      avalancheTimer += ionRate;
+
+      while (avalancheTimer >= 1 && electrons.length + holes.length < cap) {
+        avalancheTimer -= 1;
+
+        // ── Ionisation: E-field rips electron off lattice atom ──
+        // Occurs spontaneously everywhere — depletion zone, N-type, and P-type
+        // The intense field accelerates carriers to energies that knock
+        // valence electrons free wherever they are in the crystal
+        let ripX, ripY, ripZ;
+        ripX = (Math.random() - 0.5) * 2 * extent; // anywhere across the junction
+        ripY = (Math.random() - 0.5) * extent;
+        ripZ = (Math.random() - 0.5) * extent;
+
+        // Flash at ionisation site
+        spawnFlash(ripX, ripY, ripZ);
+
+        // Hole left behind where the electron was ripped from
+        spawnHole(ripX, ripY, ripZ);
+
+        // Freed electron gets swept toward +x by the E-field
+        // and exits through the N-side into the right wire
+        spawnElectron(ripX + 0.5, ripY, ripZ);
+        const newE = electrons[electrons.length - 1];
+        if (newE) {
+          newE.vx = 5 + severity * 3;
+          newE.mesh.material.emissiveIntensity = 1.0;
+        }
+      }
+
+      // ── Accelerate free electrons in/near the depletion zone toward N-side ──
+      for (const e of electrons) {
+        const ex = e.mesh.position.x;
+        if (ex > -W && ex < extent) {
+          e.vx += 12 * severity * dt;
+          e.mesh.material.emissiveIntensity = 0.9;
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════
+    //  2D BAND DIAGRAM
+    // ═══════════════════════════════════════
+    const bandCanvas = document.getElementById('bandCanvas');
+    const bandCtx = bandCanvas.getContext('2d');
+
+    function drawBandDiagram() {
+      const rect = bandCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      bandCanvas.width = rect.width * dpr;
+      bandCanvas.height = rect.height * dpr;
+      bandCtx.scale(dpr, dpr);
+
+      const w = rect.width;
+      const h = rect.height;
+      const V = biasVoltage;
+      const W = formationPhase ? formationDepletionWidth() : depletionHalfWidth(V);
+      const Wnorm = W / (W0 * 2);
+
+      bandCtx.clearRect(0, 0, w, h);
+
+      const pad = 20;
+      const plotW = w - 2 * pad;
+      const plotH = h - 2 * pad;
+      const midX = pad + plotW / 2;
+
+      const depW = Math.min(plotW * 0.6, plotW * Wnorm * 1.5);
+      const depL = midX - depW / 2;
+      const depR = midX + depW / 2;
+
+      // Depletion region shading
+      bandCtx.fillStyle = 'rgba(255, 200, 50, 0.05)';
+      bandCtx.fillRect(depL, pad, depW, plotH);
+      bandCtx.setLineDash([4, 4]);
+      bandCtx.strokeStyle = 'rgba(255, 200, 50, 0.3)';
+      bandCtx.beginPath();
+      bandCtx.moveTo(depL, pad); bandCtx.lineTo(depL, h - pad);
+      bandCtx.moveTo(depR, pad); bandCtx.lineTo(depR, h - pad);
+      bandCtx.stroke();
+      bandCtx.setLineDash([]);
+
+      // Energy levels
+      const Eg = plotH * 0.25;
+      let barrier;
+      if (formationPhase) {
+        // During formation, bands gradually bend from flat to equilibrium
+        const t = Math.min(formationTime / FORMATION_DURATION, 1);
+        const eased = 1 - (1 - t) * (1 - t);
+        barrier = eased; // 0 (flat) to 1 (full equilibrium bending)
+      } else {
+        barrier = Math.max(0, Math.min(3, (V0 - V) / V0));
+      }
+      const bandBend = Math.min(plotH * 0.4, plotH * 0.35 * barrier);
+
+      const EcP = pad + plotH * 0.25;
+      const EvP = EcP + Eg;
+      const EfP = EvP - Eg * 0.15;
+
+      const EcN = EcP + bandBend;
+      const EvN = EcN + Eg;
+      const EfN = EcN + Eg * 0.15;
+
+      // Conduction band (Ec)
+      bandCtx.strokeStyle = '#4fc3f7';
+      bandCtx.lineWidth = 2;
+      bandCtx.beginPath();
+      bandCtx.moveTo(pad, EcP);
+      bandCtx.lineTo(depL, EcP);
+      bandCtx.quadraticCurveTo(midX, EcP, midX, (EcP + EcN) / 2);
+      bandCtx.quadraticCurveTo(midX, EcN, depR, EcN);
+      bandCtx.lineTo(w - pad, EcN);
+      bandCtx.stroke();
+
+      // Valence band (Ev)
+      bandCtx.strokeStyle = '#ff6688';
+      bandCtx.beginPath();
+      bandCtx.moveTo(pad, EvP);
+      bandCtx.lineTo(depL, EvP);
+      bandCtx.quadraticCurveTo(midX, EvP, midX, (EvP + EvN) / 2);
+      bandCtx.quadraticCurveTo(midX, EvN, depR, EvN);
+      bandCtx.lineTo(w - pad, EvN);
+      bandCtx.stroke();
+
+      // Fermi level(s)
+      bandCtx.lineWidth = 1;
+      if (V > 0.01) {
+        // Forward bias: quasi-Fermi levels split
+        bandCtx.setLineDash([3, 4]);
+        bandCtx.strokeStyle = '#4fc3f7';
+        bandCtx.beginPath();
+        bandCtx.moveTo(midX, EfN);
+        bandCtx.lineTo(w - pad, EfN);
+        bandCtx.stroke();
+        bandCtx.strokeStyle = '#ff6688';
+        bandCtx.beginPath();
+        bandCtx.moveTo(pad, EfP);
+        bandCtx.lineTo(midX, EfP);
+        bandCtx.stroke();
+        bandCtx.setLineDash([]);
+      } else {
+        const Ef = (EfP + EfN) / 2;
+        bandCtx.setLineDash([6, 4]);
+        bandCtx.strokeStyle = '#66bb6a';
+        bandCtx.beginPath();
+        bandCtx.moveTo(pad, Ef);
+        bandCtx.lineTo(w - pad, Ef);
+        bandCtx.stroke();
+        bandCtx.setLineDash([]);
+      }
+
+      // Built-in potential arrow
+      if (bandBend > 5) {
+        const arrowX = midX + depW / 2 + 12;
+        const arrowTop = EcP;
+        const arrowBot = EcN;
+        bandCtx.strokeStyle = '#ffc832';
+        bandCtx.lineWidth = 1;
+        bandCtx.beginPath();
+        bandCtx.moveTo(arrowX, arrowTop + 5);
+        bandCtx.lineTo(arrowX, arrowBot - 5);
+        bandCtx.stroke();
+        bandCtx.fillStyle = '#ffc832';
+        bandCtx.beginPath();
+        bandCtx.moveTo(arrowX - 3, arrowTop + 8);
+        bandCtx.lineTo(arrowX + 3, arrowTop + 8);
+        bandCtx.lineTo(arrowX, arrowTop + 2);
+        bandCtx.fill();
+        bandCtx.beginPath();
+        bandCtx.moveTo(arrowX - 3, arrowBot - 8);
+        bandCtx.lineTo(arrowX + 3, arrowBot - 8);
+        bandCtx.lineTo(arrowX, arrowBot - 2);
+        bandCtx.fill();
+        bandCtx.font = "11px 'SF Mono','Fira Code',monospace";
+        bandCtx.fillStyle = '#ffc832';
+        const barrierV = Math.max(0, V0 - V).toFixed(2);
+        bandCtx.fillText('q\u00B7' + barrierV + 'V', arrowX + 4, (arrowTop + arrowBot) / 2 + 4);
+      }
+
+      // Labels
+      bandCtx.font = "10px 'SF Mono','Fira Code',monospace";
+      bandCtx.fillStyle = '#4fc3f7';
+      bandCtx.fillText('Ec', w - pad + 4, EcN + 4);
+      bandCtx.fillStyle = '#ff6688';
+      bandCtx.fillText('Ev', w - pad + 4, EvN + 4);
+      bandCtx.fillStyle = '#5588dd';
+      bandCtx.fillText('P-type', pad, h - pad + 14);
+      bandCtx.fillStyle = '#ee5555';
+      bandCtx.fillText('N-type', w - pad - 40, h - pad + 14);
+
+      // Breakdown annotation
+      if (V <= V_BREAKDOWN) {
+        bandCtx.fillStyle = '#ef5350';
+        bandCtx.font = "bold 11px 'SF Mono','Fira Code',monospace";
+        bandCtx.fillText('High E-field', midX - 30, pad + plotH / 2);
+      }
+
+      // Depletion label
+      bandCtx.fillStyle = '#666';
+      bandCtx.font = "9px 'SF Mono','Fira Code',monospace";
+      bandCtx.fillText('Depletion', midX - 22, h - pad + 14);
+    }
+
+    // ═══════════════════════════════════════
+    //  BATTERY + EXTERNAL CIRCUIT
+    // ═══════════════════════════════════════
+    const batteryGroup = new THREE.Group();
+    scene.add(batteryGroup);
+
+    // Layout geometry
+    // P-type box: x [-16, 0], y [-8, 8]   N-type box: x [0, 16], y [-8, 8]
+    const WIRE_X_LEFT = -FULL_EXTENT;            // -16  left face of P-type
+    const WIRE_X_RIGHT = FULL_EXTENT;            //  16  right face of N-type
+    const BATT_Y = 18;                           // battery centre height
+    const WIRE_FACE_Y = 0;                       // centre of box faces
+
+    // Battery body — horizontal cylinder
+    const battBodyGeo = new THREE.CylinderGeometry(1.8, 1.8, 8, 24);
+    const battBodyMat = new THREE.MeshPhongMaterial({ color: 0x556677, transparent: true, opacity: 0.85 });
+    const battBody = new THREE.Mesh(battBodyGeo, battBodyMat);
+    battBody.rotation.z = Math.PI / 2;
+    battBody.position.set(0, BATT_Y, 0);
+    batteryGroup.add(battBody);
+
+    // Terminal caps
+    const termGeo = new THREE.CylinderGeometry(1.9, 1.9, 0.4, 24);
+    const posTermMat = new THREE.MeshPhongMaterial({ color: 0xcc4444 });
+    const posTerm = new THREE.Mesh(termGeo, posTermMat);
+    posTerm.rotation.z = Math.PI / 2;
+    posTerm.position.set(4.2, BATT_Y, 0);
+    batteryGroup.add(posTerm);
+
+    const negTermMat = new THREE.MeshPhongMaterial({ color: 0x4466aa });
+    const negTerm = new THREE.Mesh(termGeo, negTermMat);
+    negTerm.rotation.z = Math.PI / 2;
+    negTerm.position.set(-4.2, BATT_Y, 0);
+    batteryGroup.add(negTerm);
+
+    // Labels
+    let posLabel = null;
+    let negLabel = null;
+    let voltLabel = null;
+
+    function makeBatteryLabel(text, color, fontSize) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.font = `bold ${fontSize || 60}px 'Inter','Helvetica Neue',sans-serif`;
+      ctx.fillStyle = color;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 128, 64);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+      return new THREE.Sprite(mat);
+    }
+
+    function cleanLabel(lbl) {
+      if (!lbl) return;
+      batteryGroup.remove(lbl);
+      lbl.material.map?.dispose();
+      lbl.material.dispose();
+    }
+
+    function buildBatteryLabels() {
+      cleanLabel(posLabel); posLabel = null;
+      cleanLabel(negLabel); negLabel = null;
+      cleanLabel(voltLabel); voltLabel = null;
+
+      const V = biasVoltage;
+      const isForwardBias = V > 0.01;
+
+      if (Math.abs(V) < 0.005) {
+        voltLabel = makeBatteryLabel('0.00 V', '#888888', 36);
+        voltLabel.position.set(0, BATT_Y + 3, 0);
+        voltLabel.scale.set(6, 3, 1);
+        batteryGroup.add(voltLabel);
+        battBodyMat.opacity = 0.3;
+        posTermMat.color.setHex(0x556677);
+        negTermMat.color.setHex(0x556677);
+        return;
+      }
+
+      battBodyMat.opacity = 0.85;
+      posTermMat.color.setHex(0xcc4444);
+      negTermMat.color.setHex(0x4466aa);
+
+      if (isForwardBias) {
+        // Forward: + on P-side (left terminal), − on N-side (right terminal)
+        posTerm.position.x = -4.2;
+        negTerm.position.x = 4.2;
+        posLabel = makeBatteryLabel('+', '#ff6666');
+        posLabel.position.set(-4.2, BATT_Y + 2.8, 0);
+        posLabel.scale.set(3, 1.5, 1);
+        negLabel = makeBatteryLabel('\u2212', '#6699dd');
+        negLabel.position.set(4.2, BATT_Y + 2.8, 0);
+        negLabel.scale.set(3, 1.5, 1);
+      } else {
+        // Reverse: + on N-side (right terminal), − on P-side (left terminal)
+        posTerm.position.x = 4.2;
+        negTerm.position.x = -4.2;
+        posLabel = makeBatteryLabel('+', '#ff6666');
+        posLabel.position.set(4.2, BATT_Y + 2.8, 0);
+        posLabel.scale.set(3, 1.5, 1);
+        negLabel = makeBatteryLabel('\u2212', '#6699dd');
+        negLabel.position.set(-4.2, BATT_Y + 2.8, 0);
+        negLabel.scale.set(3, 1.5, 1);
+      }
+
+      batteryGroup.add(posLabel);
+      batteryGroup.add(negLabel);
+
+      voltLabel = makeBatteryLabel(Math.abs(V).toFixed(2) + ' V', '#ffffff', 36);
+      voltLabel.position.set(0, BATT_Y + 3, 0);
+      voltLabel.scale.set(6, 3, 1);
+      batteryGroup.add(voltLabel);
+    }
+
+    // ── Wires ────────────────────────────────────
+    // Left wire:  battery left terminal → out to left face of P-box → down to face centre
+    // Right wire: battery right terminal → out to right face of N-box → down to face centre
+    const wireMat = new THREE.MeshPhongMaterial({ color: 0x999999, transparent: true, opacity: 0.6 });
+    let leftWireMesh = null;
+    let rightWireMesh = null;
+
+    function buildWires() {
+      if (leftWireMesh) { batteryGroup.remove(leftWireMesh); leftWireMesh.geometry.dispose(); }
+      if (rightWireMesh) { batteryGroup.remove(rightWireMesh); rightWireMesh.geometry.dispose(); }
+
+      // Left wire: (-4.2, BATT_Y) → (WIRE_X_LEFT, BATT_Y) → (WIRE_X_LEFT, WIRE_FACE_Y)
+      const leftCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-4.2, BATT_Y, 0),
+        new THREE.Vector3(WIRE_X_LEFT, BATT_Y, 0),
+        new THREE.Vector3(WIRE_X_LEFT, WIRE_FACE_Y, 0),
+      ]);
+      leftWireMesh = new THREE.Mesh(
+        new THREE.TubeGeometry(leftCurve, 32, 0.2, 8, false), wireMat);
+      batteryGroup.add(leftWireMesh);
+
+      // Right wire: (4.2, BATT_Y) → (WIRE_X_RIGHT, BATT_Y) → (WIRE_X_RIGHT, WIRE_FACE_Y)
+      const rightCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(4.2, BATT_Y, 0),
+        new THREE.Vector3(WIRE_X_RIGHT, BATT_Y, 0),
+        new THREE.Vector3(WIRE_X_RIGHT, WIRE_FACE_Y, 0),
+      ]);
+      rightWireMesh = new THREE.Mesh(
+        new THREE.TubeGeometry(rightCurve, 32, 0.2, 8, false), wireMat);
+      batteryGroup.add(rightWireMesh);
+    }
+
+    // ── Wire electron flow (event-driven) ─────────
+    // Electrons travel one-way along each wire, spawned by actual carrier events:
+    //   Right wire: spawned periodically under forward bias (battery− → N-side face)
+    //   Left wire:  spawned when a conducting electron exits the P-side left face
+    // t = 0 → battery terminal, t = 1 → lattice face
+    const wireElecGeo = new THREE.SphereGeometry(0.3, 10, 10);
+    const wireElecMat = new THREE.MeshPhongMaterial({
+      color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.5,
+      transparent: true, opacity: 0.9,
+    });
+    let wireElectrons = [];
+    let stuckElectrons = [];  // electrons piled up at P-side face (no holes left)
+    let rightWireSpawnTimer = 0;
+
+    function spawnWireElectron(path, startT, dir) {
+      const mesh = new THREE.Mesh(wireElecGeo, wireElecMat.clone());
+      mesh.position.copy(wirePosition(path, startT));
+      batteryGroup.add(mesh);
+      wireElectrons.push({ mesh, path, t: startT, dir });
+    }
+
+    function wirePosition(path, t) {
+      const ct = THREE.MathUtils.clamp(t, 0, 1);
+      let battX, faceX;
+      if (path === 'left') {
+        battX = -4.2;
+        faceX = WIRE_X_LEFT;   // -16
+      } else {
+        battX = 4.2;
+        faceX = WIRE_X_RIGHT;  // +16
+      }
+      const horizLen = Math.abs(faceX - battX);
+      const vertLen = BATT_Y - WIRE_FACE_Y;
+      const totalLen = horizLen + vertLen;
+      const dist = ct * totalLen;
+
+      if (dist <= horizLen) {
+        const frac = dist / horizLen;
+        return new THREE.Vector3(battX + (faceX - battX) * frac, BATT_Y, 0);
+      } else {
+        const frac = (dist - horizLen) / vertLen;
+        return new THREE.Vector3(faceX, BATT_Y - frac * vertLen, 0);
+      }
+    }
+
+    let leftWireSpawnTimer = 0;
+
+    function updateWireElectrons(dt) {
+      const V = biasVoltage;
+      const forwardFlowing = !formationPhase && V >= V_TURN_ON;
+      const isReverse = !formationPhase && V < -0.01;
+      const isBreakdown = !formationPhase && V <= V_BREAKDOWN;
+      const isFlowing = forwardFlowing || isReverse;
+
+      let speed;
+      if (forwardFlowing) {
+        speed = 0.4 + (V - V_TURN_ON) * 3;
+      } else if (isBreakdown) {
+        speed = 1.5 + Math.abs(V - V_BREAKDOWN) * 4;
+      } else if (isReverse) {
+        speed = 0.8 + Math.abs(V) * 1.5;
+      } else {
+        speed = 0;
+      }
+
+      // ── Forward bias: battery− → N-side (right wire, t 0→1) ──
+      if (forwardFlowing) {
+        rightWireSpawnTimer -= dt;
+        if (rightWireSpawnTimer <= 0) {
+          spawnWireElectron('right', 0, +1);
+          rightWireSpawnTimer = Math.max(0.15, 0.6 / (1 + (V - V_TURN_ON) * 5));
+        }
+      }
+
+      // ── Forward bias: P-side exits → left wire toward battery (t 1→0) ──
+      while (forwardFlowing && pendingLeftWireSpawns > 0) {
+        spawnWireElectron('left', 1, -1);
+        pendingLeftWireSpawns--;
+      }
+
+      // ── Reverse / breakdown: battery− → P-side (left wire, t 0→1) ──
+      // Electrons flow quickly to fill holes, then pile up at the P-side
+      // face once all holes are filled (negative charge buildup).
+      // Cap the stuck electrons so they don't grow forever.
+      const MAX_STUCK = 15;
+      if (isReverse && (holes.length > 0 || stuckElectrons.length < MAX_STUCK)) {
+        leftWireSpawnTimer -= dt;
+        // Fast rate while holes remain, slow trickle after to build up cluster
+        const interval = holes.length > 0
+          ? (isBreakdown ? 0.06 : Math.max(0.1, 0.3 / (1 + Math.abs(V) * 2)))
+          : (isBreakdown ? 0.15 : 0.6);
+        if (leftWireSpawnTimer <= 0) {
+          spawnWireElectron('left', 0, +1);   // battery → P-side face
+          leftWireSpawnTimer = interval;
+        }
+      }
+
+      // ── Reverse / breakdown: N-side exits → right wire toward battery (t 1→0) ──
+      while (isReverse && pendingRightWireExits > 0) {
+        spawnWireElectron('right', 1, -1);   // N-side face → battery
+        pendingRightWireExits--;
+      }
+
+      // ── Reset timers when not in the relevant mode ──
+      if (!forwardFlowing) rightWireSpawnTimer = 0;
+      if (!isReverse) leftWireSpawnTimer = 0;
+
+      // ── Move wire electrons; handle arrivals ──
+      for (let i = wireElectrons.length - 1; i >= 0; i--) {
+        const we = wireElectrons[i];
+        we.t += we.dir * speed * dt;
+
+        if (we.t > 1.01 || we.t < -0.01) {
+          const extent = LATTICE_N * A;
+
+          if (we.path === 'right' && we.t > 1.01) {
+            // Forward: electron arrived at N-side face → inject into lattice
+            const y = (Math.random() - 0.5) * extent;
+            const z = (Math.random() - 0.5) * extent;
+            spawnElectron(extent - 0.5, y, z);
+          }
+
+          if (we.path === 'left' && we.t > 1.01) {
+            // Reverse/breakdown: electron arrived at P-side face from wire
+            const isBreakdownNow = biasVoltage <= V_BREAKDOWN;
+            if (holes.length > 0) {
+              // Find nearest hole to the P-side entry point
+              const entryPos = new THREE.Vector3(-extent + 0.5, 0, 0);
+              let bestIdx = 0, bestDist = Infinity;
+              for (let hi = 0; hi < holes.length; hi++) {
+                const d = holes[hi].mesh.position.distanceTo(entryPos);
+                if (d < bestDist) { bestDist = d; bestIdx = hi; }
+              }
+              // Electron hops to nearest hole and fills it (both consumed)
+              // During breakdown, ionisation keeps creating new holes so
+              // the cycle continues; during normal reverse bias, holes
+              // eventually run out and current stops.
+              spawnConductingElectron(bestIdx, +1, true);
+            } else {
+              // No holes left — electron piles up at the wire endpoint
+              // showing the negative charge buildup that blocks further flow
+              const stuckMesh = new THREE.Mesh(wireElecGeo, wireElecMat.clone());
+              const endPos = wirePosition('left', 1);
+              stuckMesh.position.set(
+                endPos.x + (Math.random() - 0.5) * 1.5,
+                endPos.y + (Math.random() - 0.5) * 1.5,
+                (Math.random() - 0.5) * 1.0,
+              );
+              batteryGroup.add(stuckMesh);
+              stuckElectrons.push(stuckMesh);
+            }
+          }
+
+          // Right wire t < 0 or left wire t < 0: electron reached battery (consumed)
+          batteryGroup.remove(we.mesh);
+          we.mesh.material?.dispose();
+          wireElectrons.splice(i, 1);
+          continue;
+        }
+
+        we.mesh.position.copy(wirePosition(we.path, we.t));
+      }
+
+      // Clear stale wire electrons when not flowing at all
+      if (!isFlowing && wireElectrons.length > 0) {
+        for (let i = wireElectrons.length - 1; i >= 0; i--) {
+          batteryGroup.remove(wireElectrons[i].mesh);
+          wireElectrons[i].mesh.material?.dispose();
+        }
+        wireElectrons = [];
+      }
+
+      // Clear stuck electrons when no longer in reverse bias
+      if (!isReverse && stuckElectrons.length > 0) {
+        for (const m of stuckElectrons) {
+          batteryGroup.remove(m);
+          m.material?.dispose();
+        }
+        stuckElectrons = [];
+      }
+    }
+
+    let prevBiasForBattery = null;
+
+    function updateBattery() {
+      const V = biasVoltage;
+      if (prevBiasForBattery === null || Math.abs(V - prevBiasForBattery) > 0.005) {
+        buildBatteryLabels();
+        prevBiasForBattery = V;
+      }
+    }
+
+    // ── Hole replenishment near depletion edge ───
+    // As forward bias increases, depletion zone shrinks — new holes appear
+    // in the newly un-depleted P-side region near the junction.
+    let prevDepletionW = W0;
+
+    function replenishHolesNearJunction() {
+      if (formationPhase || paused) return;
+      const W = depletionHalfWidth(biasVoltage);
+      const extent = LATTICE_N * A;
+
+      if (W < prevDepletionW - 0.3) {
+        // Depletion zone has shrunk — spawn holes in newly available strip
+        // The P-side depletion was from -prevW to 0, now it's -W to 0
+        // So the strip from -prevW to -W is newly un-depleted
+        const count = Math.max(1, Math.round((prevDepletionW - W) / HOLE_GRID_SPACING * 2));
+        for (let i = 0; i < count; i++) {
+          const x = -W - Math.random() * (prevDepletionW - W);
+          const y = (Math.random() - 0.5) * extent;
+          const z = (Math.random() - 0.5) * extent;
+          spawnHole(x, y, z);
+        }
+      }
+
+      if (W > prevDepletionW + 0.3) {
+        // Depletion zone has grown (reverse bias) — remove holes inside it
+        for (let i = holes.length - 1; i >= 0; i--) {
+          if (holes[i].gridX > -W) {
+            removeHole(i);
+          }
+        }
+      }
+
+      prevDepletionW = W;
+    }
+
+    // Build initial battery
+    buildWires();
+    buildBatteryLabels();
+
+    // ═══════════════════════════════════════
+    //  INIT & RENDER LOOP
+    // ═══════════════════════════════════════
+    generatePNLattice();
+    buildLatticeVisuals();
+    buildBarrierVisuals();
+    biasSlider.disabled = true;
+    biasSlider.style.opacity = '0.4';
+    initCarriers();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      orbitControls.update();
+      updateFormation(dt);
+      updateDepletionBox();
+      updateBarrierVisuals();
+      updateCarriers(dt);
+      updateConductingElectrons(dt);
+      checkRecombination();
+      thermalGeneration(dt);
+      replenishCarriers();
+      replenishHolesNearJunction();
+      avalancheGeneration(dt);
+      updateFlashes(dt);
+      updateBattery();
+      updateWireElectrons(dt);
+      updateStatusPanel();
+      drawBandDiagram();
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+
+</html>

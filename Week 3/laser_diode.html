@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMEN90033 2026: Laser Diode — Interactive Explainer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e14;
+      --bg-panel: rgba(16, 20, 28, 0.92);
+      --border: rgba(255, 255, 255, 0.07);
+      --border-hover: rgba(255, 255, 255, 0.15);
+      --text: #e2e8f0;
+      --text-dim: #8892a4;
+      --text-muted: #505868;
+      --accent: #00ccff;
+      --p-color: #ff6b6b;
+      --n-color: #4ecdc4;
+      --photon-color: #ff3333;
+      --laser-color: #ff2222;
+      --depletion-color: rgba(255, 255, 255, 0.04);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Back button */
+    .back-btn {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 4px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+
+    /* Layout */
+    .explainer {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 72px 24px 120px;
+    }
+
+    .title-block {
+      margin-bottom: 48px;
+    }
+    .title-block h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .title-block p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      max-width: 600px;
+    }
+
+    /* Step navigation */
+    .step-nav {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 40px;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid var(--border);
+    }
+    .step-tab {
+      flex: 1;
+      padding: 10px 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: all 0.2s;
+      text-align: center;
+      line-height: 1.3;
+    }
+    .step-tab:hover { color: var(--text-dim); background: rgba(255, 255, 255, 0.03); }
+    .step-tab.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border: 1px solid var(--border-hover);
+    }
+    .step-num {
+      display: block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+      letter-spacing: 0.5px;
+    }
+    .step-tab.active .step-num { color: var(--accent); }
+
+    /* Canvas area */
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: 420px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Description panel */
+    .step-description {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    .step-description h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 10px;
+    }
+    .step-description p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+    .step-description .key-equation {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 14px;
+      background: rgba(0, 204, 255, 0.06);
+      border: 1px solid rgba(0, 204, 255, 0.15);
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      color: var(--accent);
+    }
+
+    /* Controls */
+    .controls-row {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+    }
+    .control-group label {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .control-group input[type=range] {
+      width: 140px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 3px;
+      border-radius: 2px;
+      outline: none;
+    }
+    .control-group input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      cursor: pointer;
+    }
+    .control-value {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: #fff;
+      min-width: 48px;
+      text-align: right;
+    }
+
+    /* Legend */
+    .legend-bar {
+      display: flex;
+      gap: 20px;
+      padding: 12px 16px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Arrow navigation */
+    .nav-arrows {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 32px;
+    }
+    .nav-btn {
+      padding: 10px 28px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .nav-btn:disabled:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
+  </style>
+</head>
+
+<body>
+  <a class="back-btn" href="../index.html">← Back</a>
+
+  <div class="explainer">
+    <div class="title-block">
+      <h1>Laser Diode Physics</h1>
+      <p>Step through the physics of a semiconductor laser diode — from the unbiased PN junction through population inversion to coherent stimulated emission in a Fabry-Perot cavity.</p>
+    </div>
+
+    <div class="step-nav">
+      <button class="step-tab active" data-step="0">
+        <span class="step-num">01</span>Unbiased Junction
+      </button>
+      <button class="step-tab" data-step="1">
+        <span class="step-num">02</span>Carrier Injection
+      </button>
+      <button class="step-tab" data-step="2">
+        <span class="step-num">03</span>Population Inversion
+      </button>
+      <button class="step-tab" data-step="3">
+        <span class="step-num">04</span>Stimulated Emission
+      </button>
+      <button class="step-tab" data-step="4">
+        <span class="step-num">05</span>Optical Cavity
+      </button>
+      <button class="step-tab" data-step="5">
+        <span class="step-num">06</span>Coherent Output
+      </button>
+    </div>
+
+    <div class="legend-bar">
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b"></div>Holes (h⁺)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4"></div>Electrons (e⁻)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6b6b; opacity:0.4; border: 1px solid #ff6b6b"></div>Acceptor ions (−)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#4ecdc4; opacity:0.4; border: 1px solid #4ecdc4"></div>Donor ions (+)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff3333"></div>Photons (γ)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:transparent; border: 2px solid #aaa"></div>Mirror facets</div>
+    </div>
+
+    <div class="canvas-container">
+      <canvas id="sim"></canvas>
+    </div>
+
+    <div id="desc" class="step-description">
+      <h2>Step 1 — The Unbiased Junction</h2>
+      <p>Loading…</p>
+    </div>
+
+    <div class="controls-row" id="controls">
+      <div class="control-group" id="current-control">
+        <label>Injection Current</label>
+        <input type="range" id="current" min="0" max="100" step="1" value="0">
+        <span class="control-value" id="current-val">0 mA</span>
+      </div>
+    </div>
+
+    <div class="nav-arrows">
+      <button class="nav-btn" id="prev-btn" disabled>← Previous</button>
+      <button class="nav-btn" id="next-btn">Next →</button>
+    </div>
+  </div>
+
+  <script>
+    // ─── Physical Constants & Parameters ───
+    const BANDGAP = 1.42;           // eV (GaAs)
+    const BUILTIN_V = 1.2;          // V built-in potential
+    const THRESHOLD_CURRENT = 40;   // mA — lasing threshold
+    const CAVITY_LENGTH_NM = 300;   // μm typical
+    const FACET_REFLECTIVITY = 0.32; // ~32% for cleaved GaAs (n≈3.5)
+    const WAVELENGTH = 870;          // nm (GaAs)
+
+    // ─── State ───
+    let currentStep = 0;
+    let injectionCurrent = 0;
+    let time = 0;
+
+    // ─── Particles ───
+    let holes = [];
+    let electrons = [];
+    let photons = [];
+    let recombinations = [];
+
+    // ─── Canvas setup ───
+    const canvas = document.getElementById('sim');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+
+    function resize() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      W = rect.width;
+      H = rect.height;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initParticles();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // ─── Step descriptions ───
+    const STEPS = [
+      {
+        title: 'Step 1 — The Unbiased Junction',
+        html: `A laser diode is a forward-biased PN junction engineered so that <strong>stimulated emission</strong> dominates over spontaneous emission. At thermal equilibrium (no applied voltage), the Fermi levels of the p-type and n-type regions align, creating a <strong>built-in potential</strong> across the depletion region.<br><br>The conduction band on the n-side sits lower in energy than on the p-side (relative to vacuum), establishing a potential barrier that prevents majority carrier flow. <span style="color:#4ecdc4">Electrons</span> populate the conduction band on the n-side; <span style="color:#ff6b6b">holes</span> populate the valence band on the p-side.`
+      },
+      {
+        title: 'Step 2 — Forward Bias & Carrier Injection',
+        html: `When a forward voltage V ≈ E<sub>g</sub>/e (typically ~1.5–3 V depending on material) is applied, the barrier height is reduced. <span style="color:#4ecdc4">Electrons</span> from the n-side and <span style="color:#ff6b6b">holes</span> from the p-side are <strong>injected into the active region</strong>.<br><br>In a laser diode, the active region is deliberately thin — often a <strong>quantum well</strong> (~5–10 nm) — to confine carriers spatially and achieve high carrier density. This confinement is essential for reaching the population inversion needed for lasing.<br><br>Use the current slider to increase injection and watch carriers flood into the active region.<br><br><span class="key-equation">J = J₀(e<sup>eV/kT</sup> − 1)</span>`
+      },
+      {
+        title: 'Step 3 — Population Inversion',
+        html: `At low injection current, most recombination is <strong>spontaneous</strong> — the junction acts as an LED. As current increases, the quasi-Fermi level for electrons (E<sub>Fc</sub>) rises into the conduction band and the quasi-Fermi level for holes (E<sub>Fv</sub>) drops into the valence band.<br><br>When <strong>E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub></strong>, you achieve <strong>population inversion</strong>: more electrons occupy the upper state than the lower state for a range of photon energies. This is the <strong>Bernard-Duraffourg condition</strong> and it defines the threshold for net stimulated emission gain.<br><br>Watch the band diagram — as current increases past threshold (~${THRESHOLD_CURRENT} mA), the quasi-Fermi levels split apart and population inversion is achieved.<br><br><span class="key-equation">E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub>  (Bernard-Duraffourg)</span>`
+      },
+      {
+        title: 'Step 4 — Stimulated Emission & Optical Gain',
+        html: `A photon with energy ℏω ≈ E<sub>g</sub> passing through the inverted active region has a higher probability of <strong>stimulating</strong> an electron-hole recombination (producing a coherent copy of itself) than of being absorbed. The medium now has <strong>positive optical gain</strong>.<br><br>The gain coefficient g(ω) depends on the joint density of states, the Fermi occupation factors, and the matrix element for the transition. Each stimulated photon has the <strong>same phase, frequency, polarisation, and direction</strong> as the triggering photon — this is the origin of coherence.<br><br>Increase current above threshold to see stimulated emission chains — one photon triggers the emission of another, creating amplification.`
+      },
+      {
+        title: 'Step 5 — The Fabry-Pérot Optical Cavity',
+        html: `The cleaved crystal facets of the semiconductor (refractive index n ≈ 3.5) act as <strong>~32% reflectors</strong>, forming a <strong>Fabry-Pérot resonator</strong>. Photons bounce back and forth between the mirrors, making multiple passes through the gain medium.<br><br>Lasing occurs when the <strong>round-trip gain equals the round-trip loss</strong> (mirror loss + internal absorption + scattering):<br><br><span class="key-equation">Γ · g<sub>th</sub> = α<sub>i</sub> + (1/2L) · ln(1/R₁R₂)</span><br><br>where Γ is the optical confinement factor, α<sub>i</sub> is internal loss, L is cavity length (~300 μm), and R₁, R₂ are facet reflectivities (~0.32). Only modes satisfying the resonance condition 2nL = mλ are supported.`
+      },
+      {
+        title: 'Step 6 — Coherent Output Above Threshold',
+        html: `Above threshold, stimulated photons dominate. The output is:<br><br>• <strong>Spatially coherent</strong> — single transverse mode from the waveguide<br>• <strong>Temporally coherent</strong> — narrow linewidth set by the cavity modes<br>• <strong>Linearly related to current</strong> — optical power P scales as P = η(I − I<sub>th</sub>) above threshold<br><br>Below threshold, the device emits incoherent spontaneous emission (LED-like). At threshold, stimulated emission clamps the carrier density and the slope efficiency η<sub>d</sub> ≈ (ℏω/e) · (α<sub>m</sub>/(α<sub>m</sub> + α<sub>i</sub>)) determines how efficiently current converts to light.<br><br>The L-I (light vs current) characteristic shows the sharp kink at threshold — the hallmark of laser action.<br><br><span class="key-equation">P = η<sub>d</sub> · (I − I<sub>th</sub>)  for I > I<sub>th</sub></span>`
+      }
+    ];
+
+    // ─── Particle generation ───
+    function initParticles() {
+      holes = [];
+      electrons = [];
+      photons = [];
+      recombinations = [];
+
+      const jx = W * 0.5;
+
+      // P-side holes
+      const pLeft = 30;
+      const pRight = jx - 40;
+      const hSpacingX = 38;
+      const hSpacingY = 36;
+      for (let r = 0; ; r++) {
+        const y = 60 + r * hSpacingY;
+        if (y > H - 50) break;
+        for (let c = 0; ; c++) {
+          const x = pLeft + c * hSpacingX + (r % 2) * (hSpacingX * 0.5);
+          if (x > pRight) break;
+          holes.push({ x, y, r: 6, baseX: x, baseY: y });
+        }
+      }
+
+      // N-side electrons
+      const nLeft = jx + 40;
+      const nRight = W - 30;
+      for (let i = 0; i < 18; i++) {
+        electrons.push(makeElectron(
+          nLeft + Math.random() * (nRight - nLeft),
+          60 + Math.random() * (H - 120),
+          'n-side'
+        ));
+      }
+    }
+
+    function makeElectron(x, y, region) {
+      return {
+        x, y,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        r: 5,
+        region: region || 'n-side'
+      };
+    }
+
+    function makePhoton(x, y, vx) {
+      return {
+        x, y,
+        vx: vx || (Math.random() > 0.5 ? 1 : -1) * (1.5 + Math.random() * 0.5),
+        vy: 0,
+        life: 1.0,
+        phase: Math.random() * Math.PI * 2,
+        stimulated: false,
+        bounces: 0
+      };
+    }
+
+    // ─── Geometry helpers ───
+    function getDepletionHalf() {
+      const maxDepl = W * 0.08;
+      if (currentStep === 0) return maxDepl;
+      const ratio = Math.min(injectionCurrent / 20, 1);
+      return maxDepl * (1 - ratio * 0.85);
+    }
+
+    function getActiveRegionBounds() {
+      const jx = W * 0.5;
+      const halfWidth = 20;
+      return { left: jx - halfWidth, right: jx + halfWidth, top: 50, bottom: H - 50 };
+    }
+
+    function isAboveThreshold() {
+      return injectionCurrent >= THRESHOLD_CURRENT;
+    }
+
+    // ─── Drawing helpers ───
+    function drawRegionLabels() {
+      const jx = W * 0.5;
+      ctx.font = '600 14px IBM Plex Sans';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(255,107,107,0.5)';
+      ctx.fillText('P-type', jx * 0.4, 28);
+      ctx.fillStyle = 'rgba(78,205,196,0.5)';
+      ctx.fillText('N-type', jx + jx * 0.6, 28);
+    }
+
+    function drawJunction() {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      const active = getActiveRegionBounds();
+
+      // P-region background
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.03)';
+      ctx.fillRect(0, 0, jx - deplHalf, H);
+
+      // N-region background
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.03)';
+      ctx.fillRect(jx + deplHalf, 0, W - jx - deplHalf, H);
+
+      // Depletion region
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+      ctx.fillRect(jx - deplHalf, 0, deplHalf * 2, H);
+
+      // Active region highlight (quantum well)
+      if (currentStep >= 1) {
+        ctx.fillStyle = 'rgba(255, 200, 50, 0.04)';
+        ctx.fillRect(active.left, active.top, active.right - active.left, active.bottom - active.top);
+
+        ctx.strokeStyle = 'rgba(255, 200, 50, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(active.left, active.top, active.right - active.left, active.bottom - active.top);
+        ctx.setLineDash([]);
+
+        ctx.font = '500 9px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255,200,50,0.4)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Active Region', jx, active.top - 6);
+        ctx.fillText('(Quantum Well)', jx, active.top + 10);
+      }
+
+      // Depletion borders
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(jx - deplHalf, 0);
+      ctx.lineTo(jx - deplHalf, H);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(jx + deplHalf, 0);
+      ctx.lineTo(jx + deplHalf, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Junction center line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(jx, 0);
+      ctx.lineTo(jx, H);
+      ctx.stroke();
+
+      // Depletion label
+      if (deplHalf > 15) {
+        ctx.font = '500 9px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Depletion', jx, H - 12);
+      }
+
+      // Fixed ions in depletion
+      drawFixedIons(jx, deplHalf);
+    }
+
+    function drawFixedIons(jx, deplHalf) {
+      if (deplHalf < 8) return;
+      const spacing = 26;
+      const rows = Math.floor((H - 80) / spacing);
+      const colsPerSide = Math.max(1, Math.floor(deplHalf / spacing));
+
+      ctx.font = '700 9px IBM Plex Mono';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (let r = 0; r < rows; r++) {
+        const y = 55 + r * spacing;
+        for (let c = 0; c < colsPerSide; c++) {
+          const x = jx - deplHalf + 12 + c * spacing;
+          if (x < jx - 4) {
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.2)';
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 107, 107, 0.5)';
+            ctx.fillText('−', x, y + 1);
+          }
+        }
+        for (let c = 0; c < colsPerSide; c++) {
+          const x = jx + 12 + c * spacing;
+          if (x < jx + deplHalf - 4) {
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.2)';
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(78, 205, 196, 0.5)';
+            ctx.fillText('+', x, y + 1);
+          }
+        }
+      }
+    }
+
+    function drawMirrors() {
+      if (currentStep < 4) return;
+
+      const mirrorWidth = 6;
+      const active = getActiveRegionBounds();
+      const mirrorTop = active.top - 10;
+      const mirrorBottom = active.bottom + 10;
+
+      // Left mirror (fully reflective representation)
+      ctx.fillStyle = 'rgba(200, 200, 200, 0.25)';
+      ctx.fillRect(active.left - mirrorWidth - 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(active.left - mirrorWidth - 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
+
+      // Hatching for left mirror
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.lineWidth = 0.5;
+      for (let y = mirrorTop; y < mirrorBottom; y += 8) {
+        ctx.beginPath();
+        ctx.moveTo(active.left - mirrorWidth - 20, y);
+        ctx.lineTo(active.left - 20, y + 6);
+        ctx.stroke();
+      }
+
+      // Right mirror (partially transmitting — output coupler)
+      ctx.fillStyle = 'rgba(200, 200, 200, 0.15)';
+      ctx.fillRect(active.right + 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(active.right + 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
+      ctx.setLineDash([]);
+
+      // Labels
+      ctx.font = '500 9px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.textAlign = 'center';
+      ctx.fillText('R₁ ≈ 32%', active.left - mirrorWidth / 2 - 20, mirrorTop - 8);
+      ctx.fillText('R₂ ≈ 32%', active.right + mirrorWidth / 2 + 20, mirrorTop - 8);
+      ctx.fillText('(cleaved facet)', active.left - mirrorWidth / 2 - 20, mirrorTop - 20);
+      ctx.fillText('(output coupler)', active.right + mirrorWidth / 2 + 20, mirrorTop - 20);
+    }
+
+    function drawHoles() {
+      holes.forEach(h => {
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.06)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.5)';
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.arc(h.x, h.y, h.r - 2.5, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.2)';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = '700 8px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.6)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', h.x, h.y + 0.5);
+      });
+    }
+
+    function drawElectrons() {
+      electrons.forEach(e => {
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(78, 205, 196, 0.8)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(78, 205, 196, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.font = '700 8px IBM Plex Mono';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('−', e.x, e.y + 0.5);
+      });
+    }
+
+    function drawPhotons() {
+      const pColor = '#ff3333';
+      photons.forEach(p => {
+        const alpha = Math.min(p.life, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        // Glow
+        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 14);
+        grad.addColorStop(0, pColor + '55');
+        grad.addColorStop(1, pColor + '00');
+        ctx.fillStyle = grad;
+        ctx.fillRect(p.x - 14, p.y - 14, 28, 28);
+
+        // Core
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = p.stimulated ? '#ff4444' : '#ff6666';
+        ctx.fill();
+
+        // Wave trail
+        ctx.strokeStyle = pColor + '66';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const dir = p.vx >= 0 ? -1 : 1;
+        for (let i = 0; i < 18; i++) {
+          const dx = dir * i * 1.8;
+          const dy = Math.sin((i + time * 8 + p.phase) * 0.8) * 3.5;
+          if (i === 0) ctx.moveTo(p.x + dx, p.y + dy);
+          else ctx.lineTo(p.x + dx, p.y + dy);
+        }
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    function drawRecombinations() {
+      recombinations.forEach(r => {
+        ctx.save();
+        ctx.globalAlpha = r.life;
+
+        const radius = (1 - r.life) * 20 + 4;
+        ctx.strokeStyle = '#ff3333';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+      });
+    }
+
+    function drawBandDiagram() {
+      const bw = 220;
+      const bh = 140;
+      const bx = W - bw - 16;
+      const by = 44;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = '500 9px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.textAlign = 'center';
+      ctx.fillText('Energy Band Diagram', bx + bw / 2, by + 14);
+
+      const midX = bx + bw / 2;
+      const cbBase = by + 38;
+      const vbBase = by + bh - 30;
+
+      // Band bending based on bias
+      const biasRatio = currentStep === 0 ? 0 : Math.min(injectionCurrent / 30, 1);
+      const bendAmount = (1 - biasRatio) * 22;
+
+      // Conduction band
+      ctx.strokeStyle = 'rgba(78, 205, 196, 0.6)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(bx + 15, cbBase);
+      ctx.lineTo(midX - 10, cbBase);
+      ctx.quadraticCurveTo(midX, cbBase + bendAmount, midX + 10, cbBase + bendAmount);
+      ctx.lineTo(bx + bw - 15, cbBase + bendAmount);
+      ctx.stroke();
+
+      // Valence band
+      ctx.strokeStyle = 'rgba(255, 107, 107, 0.6)';
+      ctx.beginPath();
+      ctx.moveTo(bx + 15, vbBase);
+      ctx.lineTo(midX - 10, vbBase);
+      ctx.quadraticCurveTo(midX, vbBase + bendAmount, midX + 10, vbBase + bendAmount);
+      ctx.lineTo(bx + bw - 15, vbBase + bendAmount);
+      ctx.stroke();
+
+      // Quasi-Fermi levels (steps 2+)
+      if (currentStep >= 2 && injectionCurrent > 5) {
+        const fermiSplit = Math.min(injectionCurrent / 100, 1) * 30;
+        const eFcY = cbBase + bendAmount / 2 + 8 - fermiSplit * 0.4;
+        const eFvY = vbBase + bendAmount / 2 - 8 + fermiSplit * 0.4;
+
+        // E_Fc
+        ctx.strokeStyle = 'rgba(78, 205, 196, 0.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([6, 3]);
+        ctx.beginPath();
+        ctx.moveTo(bx + 15, eFcY);
+        ctx.lineTo(bx + bw - 15, eFcY);
+        ctx.stroke();
+
+        // E_Fv
+        ctx.strokeStyle = 'rgba(255, 107, 107, 0.4)';
+        ctx.beginPath();
+        ctx.moveTo(bx + 15, eFvY);
+        ctx.lineTo(bx + bw - 15, eFvY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Labels
+        ctx.font = '400 8px IBM Plex Mono';
+        ctx.textAlign = 'right';
+        ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
+        ctx.fillText('E_Fc', bx + bw - 5, eFcY - 3);
+        ctx.fillStyle = 'rgba(255, 107, 107, 0.6)';
+        ctx.fillText('E_Fv', bx + bw - 5, eFvY + 10);
+
+        // Population inversion indicator
+        if (isAboveThreshold()) {
+          ctx.font = '600 8px IBM Plex Mono';
+          ctx.fillStyle = 'rgba(255, 200, 50, 0.7)';
+          ctx.textAlign = 'center';
+          ctx.fillText('POPULATION INVERSION', bx + bw / 2, by + bh - 8);
+        }
+      }
+
+      // Band labels
+      ctx.font = '400 8px IBM Plex Mono';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.5)';
+      ctx.fillText('Ec', bx + 5, cbBase + 3);
+      ctx.fillStyle = 'rgba(255, 107, 107, 0.5)';
+      ctx.fillText('Ev', bx + 5, vbBase + 3);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.textAlign = 'center';
+      ctx.fillText('Eg=' + BANDGAP.toFixed(2) + ' eV', midX, vbBase + 18);
+
+      // P and N labels
+      ctx.font = '500 9px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,107,107,0.4)';
+      ctx.textAlign = 'left';
+      ctx.fillText('P', bx + 15, by + 26);
+      ctx.fillStyle = 'rgba(78,205,196,0.4)';
+      ctx.textAlign = 'right';
+      ctx.fillText('N', bx + bw - 15, by + 26);
+    }
+
+    function drawLICurve() {
+      if (currentStep < 5) return;
+
+      const cw = 180;
+      const ch = 120;
+      const cx = 16;
+      const cy = H - ch - 16;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(cx, cy, cw, ch, 6);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.font = '500 9px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.textAlign = 'center';
+      ctx.fillText('L-I Characteristic', cx + cw / 2, cy + 14);
+
+      const plotLeft = cx + 30;
+      const plotRight = cx + cw - 12;
+      const plotTop = cy + 24;
+      const plotBottom = cy + ch - 18;
+      const plotW = plotRight - plotLeft;
+      const plotH = plotBottom - plotTop;
+
+      // Axes
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(plotLeft, plotTop);
+      ctx.lineTo(plotLeft, plotBottom);
+      ctx.lineTo(plotRight, plotBottom);
+      ctx.stroke();
+
+      // Axis labels
+      ctx.font = '400 8px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.textAlign = 'center';
+      ctx.fillText('Current (mA)', plotLeft + plotW / 2, plotBottom + 12);
+      ctx.save();
+      ctx.translate(cx + 10, plotTop + plotH / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('Power', 0, 0);
+      ctx.restore();
+
+      // Threshold line
+      const threshX = plotLeft + (THRESHOLD_CURRENT / 100) * plotW;
+      ctx.strokeStyle = 'rgba(255, 200, 50, 0.3)';
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(threshX, plotTop);
+      ctx.lineTo(threshX, plotBottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = '400 7px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,200,50,0.4)';
+      ctx.textAlign = 'center';
+      ctx.fillText('I_th', threshX, plotBottom + 12);
+
+      // L-I curve
+      ctx.strokeStyle = '#ff3333';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = 0; i <= 100; i++) {
+        const x = plotLeft + (i / 100) * plotW;
+        let power;
+        if (i < THRESHOLD_CURRENT) {
+          // Below threshold: very small spontaneous emission
+          power = 0.02 * i / THRESHOLD_CURRENT;
+        } else {
+          // Above threshold: linear with slope efficiency
+          power = 0.02 + (i - THRESHOLD_CURRENT) / (100 - THRESHOLD_CURRENT) * 0.95;
+        }
+        const y = plotBottom - power * plotH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Current marker
+      const markerX = plotLeft + (injectionCurrent / 100) * plotW;
+      let markerPower;
+      if (injectionCurrent < THRESHOLD_CURRENT) {
+        markerPower = 0.02 * injectionCurrent / THRESHOLD_CURRENT;
+      } else {
+        markerPower = 0.02 + (injectionCurrent - THRESHOLD_CURRENT) / (100 - THRESHOLD_CURRENT) * 0.95;
+      }
+      const markerY = plotBottom - markerPower * plotH;
+
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Labels for regions
+      ctx.font = '400 7px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.textAlign = 'center';
+      if (threshX - plotLeft > 30) {
+        ctx.fillText('LED', plotLeft + (threshX - plotLeft) / 2, plotTop + 10);
+      }
+      ctx.fillText('LASER', (threshX + plotRight) / 2, plotTop + 10);
+    }
+
+    function drawEField() {
+      const jx = W * 0.5;
+      const deplHalf = getDepletionHalf();
+      if (deplHalf < 12) return;
+
+      const arrowY = H * 0.5;
+      const arrowLen = deplHalf * 1.1;
+
+      ctx.strokeStyle = 'rgba(255, 200, 50, 0.25)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(jx + arrowLen * 0.4, arrowY);
+      ctx.lineTo(jx - arrowLen * 0.4, arrowY);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255, 200, 50, 0.25)';
+      ctx.beginPath();
+      ctx.moveTo(jx - arrowLen * 0.4, arrowY);
+      ctx.lineTo(jx - arrowLen * 0.4 + 7, arrowY - 4);
+      ctx.lineTo(jx - arrowLen * 0.4 + 7, arrowY + 4);
+      ctx.fill();
+
+      ctx.font = '500 9px IBM Plex Mono';
+      ctx.fillStyle = 'rgba(255, 200, 50, 0.3)';
+      ctx.textAlign = 'center';
+      ctx.fillText('E-field', jx, arrowY - 10);
+    }
+
+    function drawCurrentLabel() {
+      if (currentStep === 0) return;
+      ctx.font = '500 11px IBM Plex Mono';
+      ctx.textAlign = 'center';
+
+      if (injectionCurrent > 0) {
+        ctx.fillStyle = 'rgba(255,107,107,0.4)';
+        ctx.fillText('+ V', 24, H - 8);
+        ctx.fillStyle = 'rgba(78,205,196,0.4)';
+        ctx.fillText('− V', W - 24, H - 8);
+      }
+
+      // Status
+      const statusX = W * 0.5;
+      const statusY = H - 8;
+      ctx.font = '600 10px IBM Plex Mono';
+      if (isAboveThreshold()) {
+        ctx.fillStyle = 'rgba(255, 50, 50, 0.6)';
+        ctx.fillText('LASING', statusX, statusY);
+      } else if (injectionCurrent > 5) {
+        ctx.fillStyle = 'rgba(255, 200, 50, 0.4)';
+        ctx.fillText('LED MODE (spontaneous)', statusX, statusY);
+      }
+    }
+
+    // ─── Physics Update ───
+    let spawnTimer = 0;
+    let photonSpawnTimer = 0;
+
+    function updateParticles() {
+      const jx = W * 0.5;
+      const active = getActiveRegionBounds();
+      const aboveThresh = isAboveThreshold();
+
+      // Electron thermal motion and drift
+      electrons.forEach(e => {
+        e.vx += (Math.random() - 0.5) * 0.3;
+        e.vy += (Math.random() - 0.5) * 0.3;
+
+        // Forward bias drift
+        if (currentStep >= 1 && injectionCurrent > 0) {
+          const drift = Math.min(injectionCurrent / 100, 1) * 0.12;
+          e.vx -= drift;
+        }
+
+        // Damping
+        e.vx *= 0.94;
+        e.vy *= 0.94;
+        e.x += e.vx;
+        e.y += e.vy;
+
+        // Boundary
+        if (e.y < 50) { e.y = 50; e.vy *= -1; }
+        if (e.y > H - 50) { e.y = H - 50; e.vy *= -1; }
+        if (e.x > W + 10) { e.x = W + 10; e.vx *= -1; }
+        if (e.x < -10) e.dead = true;
+
+        // N-side containment when no bias
+        if (currentStep === 0 && e.x < jx + 20) {
+          e.vx += 0.3;
+        }
+      });
+
+      // Hole jiggle
+      holes.forEach(h => {
+        h.x = h.baseX + Math.sin(time * 2 + h.baseY) * 1.5;
+        h.y = h.baseY + Math.cos(time * 1.8 + h.baseX) * 1;
+      });
+
+      // Recombination in active region
+      if (currentStep >= 2 && injectionCurrent > 5) {
+        electrons.forEach(e => {
+          if (e.dead) return;
+          if (e.x > active.left - 30 && e.x < active.right + 30 &&
+              e.y > active.top && e.y < active.bottom) {
+            // Check for nearby holes (conceptual — recombination)
+            if (Math.random() < (aboveThresh ? 0.03 : 0.008)) {
+              e.dead = true;
+              recombinations.push({ x: e.x, y: e.y, life: 1.0 });
+
+              if (aboveThresh && currentStep >= 3) {
+                // Stimulated emission: coherent photon along cavity axis
+                photons.push(makePhoton(e.x, e.y, 2.5));
+                // Sometimes emit a second (stimulated copy)
+                if (Math.random() < 0.4) {
+                  photons.push(makePhoton(e.x, e.y, -2.5));
+                }
+              } else {
+                // Spontaneous: random direction
+                const angle = Math.random() * Math.PI * 2;
+                const p = makePhoton(e.x, e.y, Math.cos(angle) * 1.5);
+                p.vy = Math.sin(angle) * 1.5;
+                photons.push(p);
+              }
+            }
+          }
+        });
+      }
+
+      // Inject new electrons from right
+      if (currentStep >= 1 && injectionCurrent > 5) {
+        spawnTimer++;
+        const spawnRate = Math.max(4, 25 - injectionCurrent * 0.2);
+        if (spawnTimer >= spawnRate) {
+          spawnTimer = 0;
+          electrons.push(makeElectron(
+            W + 5,
+            60 + Math.random() * (H - 120),
+            'n-side'
+          ));
+        }
+      }
+
+      // Photon physics
+      photons.forEach(p => {
+        p.x += p.vx;
+        p.y += (p.vy || 0);
+
+        // Cavity mirrors (step 4+)
+        if (currentStep >= 4) {
+          const mirrorLeft = active.left - 26;
+          const mirrorRight = active.right + 26;
+
+          // Reflect off mirrors
+          if (p.x <= mirrorLeft && p.vx < 0) {
+            if (Math.random() < FACET_REFLECTIVITY) {
+              p.vx *= -1;
+              p.x = mirrorLeft + 2;
+              p.bounces++;
+              p.stimulated = true;
+            } else {
+              p.dead = true; // Escaped through mirror
+            }
+          }
+          if (p.x >= mirrorRight && p.vx > 0) {
+            if (Math.random() < FACET_REFLECTIVITY) {
+              p.vx *= -1;
+              p.x = mirrorRight - 2;
+              p.bounces++;
+              p.stimulated = true;
+            } else {
+              // Output photon — escaped as laser beam
+              if (aboveThresh) {
+                p.vx = 4; // Fast exit
+                p.stimulated = true;
+              } else {
+                p.dead = true;
+              }
+            }
+          }
+
+          // Stimulated emission: photons in cavity trigger more emission
+          if (aboveThresh && p.x > active.left && p.x < active.right && p.bounces > 0) {
+            if (Math.random() < 0.01) {
+              const newP = makePhoton(p.x, p.y, p.vx > 0 ? 2.5 : -2.5);
+              newP.stimulated = true;
+              newP.phase = p.phase; // Same phase = coherent
+              photons.push(newP);
+            }
+          }
+        }
+
+        p.life -= 0.003;
+        if (p.x < -20 || p.x > W + 40 || p.y < -20 || p.y > H + 20) {
+          p.life = 0;
+        }
+      });
+
+      // Laser beam output (step 5+)
+      if (currentStep >= 5 && aboveThresh) {
+        photonSpawnTimer++;
+        if (photonSpawnTimer >= 3) {
+          photonSpawnTimer = 0;
+          const active = getActiveRegionBounds();
+          const beamY = (active.top + active.bottom) / 2 + (Math.random() - 0.5) * 8;
+          const p = makePhoton(active.right + 30, beamY, 4);
+          p.stimulated = true;
+          p.life = 1.5;
+          photons.push(p);
+        }
+      }
+
+      // Decay recombinations
+      recombinations.forEach(r => { r.life -= 0.03; });
+
+      // Clean up dead particles
+      electrons = electrons.filter(e => !e.dead);
+      photons = photons.filter(p => p.life > 0);
+      recombinations = recombinations.filter(r => r.life > 0);
+
+      // Cap particle counts
+      if (electrons.length > 60) electrons.splice(0, electrons.length - 60);
+      if (photons.length > 80) photons.splice(0, photons.length - 80);
+    }
+
+    // ─── Render loop ───
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      time += 0.016;
+
+      drawJunction();
+      drawRegionLabels();
+      drawEField();
+      drawMirrors();
+      drawHoles();
+      drawElectrons();
+      drawPhotons();
+      drawRecombinations();
+      drawBandDiagram();
+      drawLICurve();
+      drawCurrentLabel();
+
+      // Laser beam visualization (above threshold, step 5+)
+      if (currentStep >= 5 && isAboveThreshold()) {
+        const active = getActiveRegionBounds();
+        const beamY = (active.top + active.bottom) / 2;
+        const beamRight = active.right + 30;
+
+        // Coherent beam exiting right facet
+        const grad = ctx.createLinearGradient(beamRight, 0, W, 0);
+        grad.addColorStop(0, 'rgba(255, 50, 50, 0.3)');
+        grad.addColorStop(0.5, 'rgba(255, 50, 50, 0.15)');
+        grad.addColorStop(1, 'rgba(255, 50, 50, 0)');
+        ctx.fillStyle = grad;
+
+        const beamWidth = 4 + Math.sin(time * 3) * 0.5;
+        ctx.fillRect(beamRight, beamY - beamWidth, W - beamRight, beamWidth * 2);
+
+        // Beam label
+        ctx.font = '600 10px IBM Plex Mono';
+        ctx.fillStyle = 'rgba(255, 50, 50, 0.5)';
+        ctx.textAlign = 'left';
+        ctx.fillText('λ = ' + WAVELENGTH + ' nm', beamRight + 10, beamY - 12);
+        ctx.fillText('Coherent Output', beamRight + 10, beamY + 20);
+      }
+
+      updateParticles();
+      requestAnimationFrame(draw);
+    }
+
+    // ─── UI ───
+    function setStep(step) {
+      currentStep = step;
+      document.querySelectorAll('.step-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === step);
+      });
+      document.getElementById('desc').innerHTML =
+        `<h2>${STEPS[step].title}</h2><p>${STEPS[step].html}</p>`;
+
+      // Update nav buttons
+      document.getElementById('prev-btn').disabled = step === 0;
+      document.getElementById('next-btn').disabled = step === STEPS.length - 1;
+
+      // Reset current for early steps
+      if (step === 0) {
+        injectionCurrent = 0;
+        document.getElementById('current').value = 0;
+        document.getElementById('current-val').textContent = '0 mA';
+      }
+
+      initParticles();
+    }
+
+    document.querySelectorAll('.step-tab').forEach(tab => {
+      tab.addEventListener('click', () => setStep(parseInt(tab.dataset.step)));
+    });
+
+    document.getElementById('prev-btn').addEventListener('click', () => {
+      if (currentStep > 0) setStep(currentStep - 1);
+    });
+    document.getElementById('next-btn').addEventListener('click', () => {
+      if (currentStep < STEPS.length - 1) setStep(currentStep + 1);
+    });
+
+    document.getElementById('current').addEventListener('input', (e) => {
+      injectionCurrent = parseFloat(e.target.value);
+      document.getElementById('current-val').textContent = injectionCurrent.toFixed(0) + ' mA';
+    });
+
+    // Init
+    setStep(0);
+    draw();
+  </script>
+</body>
+
+</html>

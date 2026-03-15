@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>BMEN90033 2026: Electron Orbitals — 3D Visualisation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #111;
+      color: #ccc;
+      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+    }
+
+    #container { width: 100vw; height: 100vh; position: relative; }
+
+    .panel {
+      position: absolute; z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px; line-height: 1.6;
+    }
+    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+    .panel h3 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
+    .panel p  { font-size: 11px; color: #666; margin-top: 6px; }
+
+    #info { top: 52px; left: 16px; max-width: 300px; }
+    #info .config { font-family: 'SF Mono','Fira Code','Consolas',monospace; font-size: 12px; color: #aaa; margin: 4px 0; }
+    #info .state-desc { font-size: 11px; color: #777; margin-top: 6px; }
+
+    #controls {
+      bottom: 16px; left: 16px; max-width: 260px;
+    }
+    #controls label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 5px 0; color: #999; gap: 10px;
+    }
+    #controls input[type=range] {
+      width: 120px; -webkit-appearance: none;
+      background: rgba(255,255,255,0.1); height: 3px; border-radius: 2px; outline: none;
+    }
+    #controls input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: #fff; cursor: pointer;
+    }
+    #controls input[type=range]:disabled {
+      opacity: 0.3; cursor: not-allowed;
+    }
+    #controls input[type=range]:disabled::-webkit-slider-thumb {
+      cursor: not-allowed;
+    }
+
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    button.ctrl-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      color: #bbb; padding: 5px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 11px; font-weight: 500; transition: all 0.15s;
+    }
+    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    button.ctrl-btn.active {
+      background: rgba(255,200,50,0.15); border-color: rgba(255,200,50,0.4); color: #ffc832;
+    }
+
+    .checkbox-row {
+      display: flex; align-items: center; gap: 6px; margin: 4px 0; color: #999; font-size: 11px;
+    }
+    .checkbox-row input[type=checkbox] {
+      accent-color: #ffc832; width: 13px; height: 13px; cursor: pointer;
+    }
+
+    .section-label {
+      font-size: 11px; font-weight: 500; color: #777; margin-top: 10px; margin-bottom: 4px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    #readout {
+      bottom: 16px; right: 16px; min-width: 180px;
+    }
+    #readout .stat-row {
+      display: flex; justify-content: space-between; color: #888; margin: 3px 0; font-size: 11px;
+    }
+    #readout .stat-val {
+      font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 600; color: #ccc;
+    }
+
+    #wavefunction-panel {
+      top: 52px; right: 16px; width: 260px;
+    }
+    #radial-plot {
+      width: 224px; height: 120px; margin-top: 8px;
+      background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);
+    }
+    .legend-row {
+      display: flex; align-items: center; gap: 6px; font-size: 10px; color: #888; margin-top: 4px;
+    }
+    .legend-swatch {
+      width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+    }
+
+    #loading {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      z-index: 100; background: rgba(17,17,17,0.7);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px;
+    }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: #ffc832; border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-text {
+      font-size: 13px; color: #999; font-weight: 500;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="../index.html" id="back-btn" style="position:fixed;top:16px;left:16px;z-index:1000;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;background:rgba(20,20,20,0.8);border:1px solid rgba(255,255,255,0.1);color:#ccc;text-decoration:none;font-size:12px;font-weight:500;backdrop-filter:blur(8px);transition:all 0.15s;" onmouseover="this.style.background='rgba(40,40,40,0.9)';this.style.color='#fff'" onmouseout="this.style.background='rgba(20,20,20,0.8)';this.style.color='#ccc'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+
+  <div id="container">
+
+    <!-- Info Panel (top-left) -->
+    <div id="info" class="panel">
+      <h2 id="element-name">Hydrogen</h2>
+      <div id="electron-config" class="config">1s<sup>1</sup></div>
+      <p id="state-desc" class="state-desc">Ground state — single electron in 1s orbital</p>
+    </div>
+
+    <!-- Controls Panel (bottom-left) -->
+    <div id="controls" class="panel">
+      <h3 style="margin-bottom:8px; color:#fff;">Element</h3>
+      <div class="btn-row">
+        <button class="ctrl-btn active" id="btn-hydrogen">Hydrogen</button>
+        <button class="ctrl-btn" id="btn-carbon">Carbon</button>
+      </div>
+
+      <div class="section-label">Orbitals</div>
+      <div id="orbital-checkboxes">
+        <!-- Orbital checkboxes will be populated by JS -->
+      </div>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="btn-show-all">Show All</button>
+        <button class="ctrl-btn" id="btn-isolate">Isolate</button>
+      </div>
+
+      <div class="section-label">Energy State</div>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="btn-excite">Excite ↑</button>
+        <button class="ctrl-btn" id="btn-deexcite">De-excite ↓</button>
+      </div>
+
+      <div class="section-label">Visualisation</div>
+      <div class="checkbox-row"><input type="checkbox" id="toggle-points" checked><label for="toggle-points">Points</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="toggle-isosurface"><label for="toggle-isosurface">Isosurface</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="toggle-wireframe"><label for="toggle-wireframe">Wireframe</label></div>
+
+      <div class="section-label">Cross-section</div>
+      <div class="checkbox-row"><input type="checkbox" id="toggle-crosssection"><label for="toggle-crosssection">Enable</label></div>
+      <label>Clip <input type="range" id="crosssection-slider" min="0" max="100" value="50" disabled></label>
+
+      <div class="section-label">Wave Function</div>
+      <div class="checkbox-row"><input type="checkbox" id="toggle-wavefunction"><label for="toggle-wavefunction">Show ψ sign</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="toggle-flow"><label for="toggle-flow">Probability current flow</label></div>
+
+      <div class="section-label">Point Density</div>
+      <label>Density <input type="range" id="density-slider" min="25000" max="1000000" value="50000" step="5000">
+        <span id="density-value">50000</span>
+      </label>
+
+      <div class="btn-row" style="margin-top:10px;">
+        <button class="ctrl-btn" id="btn-reset">Reset</button>
+      </div>
+    </div>
+
+    <!-- Readout Panel (bottom-right) -->
+    <div id="readout" class="panel">
+      <h2>Quantum Numbers</h2>
+      <div class="stat-row"><span>n (principal)</span><span class="stat-val" id="readout-n">1</span></div>
+      <div class="stat-row"><span>l (angular)</span><span class="stat-val" id="readout-l">0</span></div>
+      <div class="stat-row"><span>m (magnetic)</span><span class="stat-val" id="readout-m">0</span></div>
+      <div class="stat-row"><span>Energy</span><span class="stat-val" id="readout-energy">-13.6 eV</span></div>
+      <div class="stat-row"><span>Z<sub>eff</sub></span><span class="stat-val" id="readout-zeff">1.00</span></div>
+    </div>
+
+    <!-- Wave Function Panel (top-right) -->
+    <div id="wavefunction-panel" class="panel" style="display:none;">
+      <h2>Wave Function ψ</h2>
+      <canvas id="radial-plot" width="224" height="120"></canvas>
+      <div class="legend-row"><div class="legend-swatch" style="background:#ff6644;"></div> R(r) radial</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#44aaff;"></div> r²|R(r)|² probability</div>
+      <div class="legend-row" style="margin-top:6px;"><div class="legend-swatch" style="background:#ff4444;"></div> ψ &gt; 0 (positive lobe)</div>
+      <div class="legend-row"><div class="legend-swatch" style="background:#4488ff;"></div> ψ &lt; 0 (negative lobe)</div>
+      <p id="flow-desc" style="margin-top:6px;"></p>
+    </div>
+
+  </div>
+
+  <!-- Loading Overlay -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div id="loading-text">Initialising orbital renderer…</div>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ============================================================
+// 1. PHYSICS MATH
+// ============================================================
+
+const a0 = 1.0;
+
+const factCache = [1, 1];
+function factorial(n) {
+  if (n < 0) return 1;
+  if (factCache[n] !== undefined) return factCache[n];
+  factCache[n] = n * factorial(n - 1);
+  return factCache[n];
+}
+
+function assocLaguerre(n, alpha, x) {
+  if (n === 0) return 1;
+  if (n === 1) return 1 + alpha - x;
+  let Lkm1 = 1, Lk = 1 + alpha - x;
+  for (let k = 1; k < n; k++) {
+    const Lkp1 = ((2 * k + 1 + alpha - x) * Lk - (k + alpha) * Lkm1) / (k + 1);
+    Lkm1 = Lk; Lk = Lkp1;
+  }
+  return Lk;
+}
+
+function assocLegendre(l, m, x) {
+  const am = Math.abs(m);
+  let Pmm = 1.0;
+  if (am > 0) {
+    const somx2 = Math.sqrt(1.0 - x * x);
+    let fact = 1.0;
+    for (let i = 1; i <= am; i++) { Pmm *= -fact * somx2; fact += 2.0; }
+  }
+  if (l === am) { return m < 0 ? Pmm * Math.pow(-1, am) * factorial(l - am) / factorial(l + am) : Pmm; }
+  let Pmm1 = x * (2 * am + 1) * Pmm;
+  if (l === am + 1) { return m < 0 ? Pmm1 * Math.pow(-1, am) * factorial(l - am) / factorial(l + am) : Pmm1; }
+  let Pll = 0;
+  for (let ll = am + 2; ll <= l; ll++) {
+    Pll = (x * (2 * ll - 1) * Pmm1 - (ll + am - 1) * Pmm) / (ll - am);
+    Pmm = Pmm1; Pmm1 = Pll;
+  }
+  return m < 0 ? Pll * Math.pow(-1, am) * factorial(l - am) / factorial(l + am) : Pll;
+}
+
+function realSphericalHarmonic(l, m, theta, phi) {
+  const am = Math.abs(m);
+  const norm = Math.sqrt((2 * l + 1) / (4 * Math.PI) * factorial(l - am) / factorial(l + am));
+  const P = assocLegendre(l, am, Math.cos(theta));
+  if (m > 0) return Math.SQRT2 * norm * P * Math.cos(m * phi);
+  if (m === 0) return norm * P;
+  return Math.SQRT2 * norm * P * Math.sin(am * phi);
+}
+
+function radialWavefunction(n, l, r, Z) {
+  const rho = 2 * Z * r / (n * a0);
+  const N = Math.sqrt(Math.pow(2 * Z / (n * a0), 3) * factorial(n - l - 1) / (2 * n * factorial(n + l)));
+  return N * Math.pow(rho, l) * Math.exp(-rho / 2) * assocLaguerre(n - l - 1, 2 * l + 1, rho);
+}
+
+function psi(n, l, m, r, theta, phi, Z) {
+  const R = radialWavefunction(n, l, r, Z);
+  const Y = realSphericalHarmonic(l, m, theta, phi);
+  return R * Y;
+}
+
+function psiSquared(n, l, m, r, theta, phi, Z) {
+  const val = psi(n, l, m, r, theta, phi, Z);
+  return val * val;
+}
+
+// ============================================================
+// 2. ELEMENT CONFIGURATIONS & SAMPLING
+// ============================================================
+
+const ORBITAL_DEFS = {
+  '1s':  { n: 1, l: 0, m: 0,  label: '1s',   color: '#00ccff' },
+  '2s':  { n: 2, l: 0, m: 0,  label: '2s',   color: '#00ff88' },
+  '2px': { n: 2, l: 1, m: 1,  label: '2p_x', color: '#ff6666' },
+  '2py': { n: 2, l: 1, m: -1, label: '2p_y', color: '#6688ff' },
+  '2pz': { n: 2, l: 1, m: 0,  label: '2p_z', color: '#cc66ff' },
+  '3s':  { n: 3, l: 0, m: 0,  label: '3s',   color: '#ffcc00' },
+  '3px': { n: 3, l: 1, m: 1,  label: '3p_x', color: '#ff9944' },
+  '3py': { n: 3, l: 1, m: -1, label: '3p_y', color: '#44bbff' },
+  '3pz': { n: 3, l: 1, m: 0,  label: '3p_z', color: '#bb66ff' },
+  '3dz2':  { n: 3, l: 2, m: 0,  label: '3d_z\u00B2',  color: '#ff66aa' },
+  '3dxz':  { n: 3, l: 2, m: 1,  label: '3d_xz',  color: '#66ffaa' },
+  '3dyz':  { n: 3, l: 2, m: -1, label: '3d_yz',  color: '#aa66ff' },
+  '3dxy':  { n: 3, l: 2, m: 2,  label: '3d_xy',  color: '#ffaa66' },
+  '3dx2y2':{ n: 3, l: 2, m: -2, label: '3d_x\u00B2-y\u00B2', color: '#66aaff' },
+};
+
+const CARBON_ZEFF = { '1s': 5.7, '2s': 3.25, '2p': 3.25 };
+
+const ELEMENTS = {
+  hydrogen: {
+    name: 'Hydrogen (H)', symbol: 'H', Z: 1,
+    groundState: [{ key: '1s', electrons: 1, Zeff: 1.0 }],
+    excitationSequence: ['1s', '2s', '2pz', '3s', '3pz', '3dz2']
+  },
+  carbon: {
+    name: 'Carbon (C)', symbol: 'C', Z: 6,
+    groundState: [
+      { key: '1s', electrons: 2, Zeff: 5.7 },
+      { key: '2s', electrons: 2, Zeff: 3.25 },
+      { key: '2px', electrons: 1, Zeff: 3.25 },
+      { key: '2py', electrons: 1, Zeff: 3.25 },
+    ],
+    excitationSequence: ['2py', '3s', '3pz', '3dz2']
+  }
+};
+
+function computeMaxDensity(n, l, m, Z, rMax) {
+  let maxVal = 0;
+  for (let ir = 1; ir <= 200; ir++) {
+    const r = (ir / 200) * rMax;
+    for (let it = 0; it <= 50; it++) {
+      const theta = (it / 50) * Math.PI;
+      for (let ip = 0; ip < 8; ip++) {
+        const phi = (ip / 8) * 2 * Math.PI;
+        const val = psiSquared(n, l, m, r, theta, phi, Z) * r * r;
+        if (val > maxVal) maxVal = val;
+      }
+    }
+  }
+  return maxVal * 1.05;
+}
+
+function sampleOrbital(n, l, m, Z, numPoints) {
+  const rMax = 4 * n * n * a0 / Z;
+  const maxDensity = computeMaxDensity(n, l, m, Z, rMax);
+  const positions = new Float32Array(numPoints * 3);
+  const densities = new Float32Array(numPoints);
+  const signs = new Float32Array(numPoints);
+  let accepted = 0;
+  while (accepted < numPoints) {
+    const r = Math.random() * rMax;
+    const theta = Math.acos(2 * Math.random() - 1);
+    const phi = Math.random() * 2 * Math.PI;
+    const density = psiSquared(n, l, m, r, theta, phi, Z) * r * r;
+    if (Math.random() * maxDensity < density) {
+      const i = accepted * 3;
+      positions[i]     = r * Math.sin(theta) * Math.cos(phi);
+      positions[i + 1] = r * Math.sin(theta) * Math.sin(phi);
+      positions[i + 2] = r * Math.cos(theta);
+      densities[accepted] = density / maxDensity;
+      signs[accepted] = psi(n, l, m, r, theta, phi, Z) >= 0 ? 1.0 : -1.0;
+      accepted++;
+    }
+  }
+  return { positions, densities, signs };
+}
+
+// ============================================================
+// 3. THREE.JS SCENE SETUP
+// ============================================================
+
+const container = document.getElementById('container');
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 0, 15);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.localClippingEnabled = true;
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.5;
+controls.addEventListener('start', () => { controls.autoRotate = false; });
+
+// Nucleus
+const nucleusGeo = new THREE.SphereGeometry(0.15, 16, 16);
+const nucleusMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat);
+scene.add(nucleus);
+
+// Ambient light for isosurfaces
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(5, 5, 5);
+scene.add(dirLight);
+
+// Clipping plane
+const clipPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ============================================================
+// 4. STATE MANAGEMENT
+// ============================================================
+
+const state = {
+  element: 'hydrogen',
+  config: [],
+  pointsPerOrbital: 50000,
+  showPoints: true,
+  showIsosurface: false,
+  isosurfaceWireframe: false,
+  crossSectionEnabled: false,
+  crossSectionZ: 0,
+  excitationLevel: 0,
+  visibleOrbitals: new Set(),
+  showWavefunction: false,
+  showFlow: false,
+};
+
+// Scene objects keyed by orbital key
+const orbitalPointClouds = {};
+const orbitalIsosurfaces = {};
+const isosurfaceCache = {};
+const flowArrowGroups = {}; // probability current flow arrows per orbital
+
+// ============================================================
+// 5. MARCHING CUBES
+// ============================================================
+
+const MC_EDGE_TABLE = [
+  0x0, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
+  0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
+  0x190, 0x99, 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
+  0x99c, 0x895, 0xb9f, 0xa96, 0xd9a, 0xc93, 0xf99, 0xe90,
+  0x230, 0x339, 0x33, 0x13a, 0x636, 0x73f, 0x435, 0x53c,
+  0xa3c, 0xb35, 0x83f, 0x936, 0xe3a, 0xf33, 0xc39, 0xd30,
+  0x3a0, 0x2a9, 0x1a3, 0xaa, 0x7a6, 0x6af, 0x5a5, 0x4ac,
+  0xbac, 0xaa5, 0x9af, 0x8a6, 0xfaa, 0xea3, 0xda9, 0xca0,
+  0x460, 0x569, 0x663, 0x76a, 0x66, 0x16f, 0x265, 0x36c,
+  0xc6c, 0xd65, 0xe6f, 0xf66, 0x86a, 0x963, 0xa69, 0xb60,
+  0x5f0, 0x4f9, 0x7f3, 0x6fa, 0x1f6, 0xff, 0x3f5, 0x2fc,
+  0xdfc, 0xcf5, 0xfff, 0xef6, 0x9fa, 0x8f3, 0xbf9, 0xaf0,
+  0x650, 0x759, 0x453, 0x55a, 0x256, 0x35f, 0x55, 0x15c,
+  0xe5c, 0xf55, 0xc5f, 0xd56, 0xa5a, 0xb53, 0x859, 0x950,
+  0x7c0, 0x6c9, 0x5c3, 0x4ca, 0x3c6, 0x2cf, 0x1c5, 0xcc,
+  0xfcc, 0xec5, 0xdcf, 0xcc6, 0xbca, 0xac3, 0x9c9, 0x8c0,
+  0x8c0, 0x9c9, 0xac3, 0xbca, 0xcc6, 0xdcf, 0xec5, 0xfcc,
+  0xcc, 0x1c5, 0x2cf, 0x3c6, 0x4ca, 0x5c3, 0x6c9, 0x7c0,
+  0x950, 0x859, 0xb53, 0xa5a, 0xd56, 0xc5f, 0xf55, 0xe5c,
+  0x15c, 0x55, 0x35f, 0x256, 0x55a, 0x453, 0x759, 0x650,
+  0xaf0, 0xbf9, 0x8f3, 0x9fa, 0xef6, 0xfff, 0xcf5, 0xdfc,
+  0x2fc, 0x3f5, 0xff, 0x1f6, 0x6fa, 0x7f3, 0x4f9, 0x5f0,
+  0xb60, 0xa69, 0x963, 0x86a, 0xf66, 0xe6f, 0xd65, 0xc6c,
+  0x36c, 0x265, 0x16f, 0x66, 0x76a, 0x663, 0x569, 0x460,
+  0xca0, 0xda9, 0xea3, 0xfaa, 0x8a6, 0x9af, 0xaa5, 0xbac,
+  0x4ac, 0x5a5, 0x6af, 0x7a6, 0xaa, 0x1a3, 0x2a9, 0x3a0,
+  0xd30, 0xc39, 0xf33, 0xe3a, 0x936, 0x83f, 0xb35, 0xa3c,
+  0x53c, 0x435, 0x73f, 0x636, 0x13a, 0x33, 0x339, 0x230,
+  0xe90, 0xf99, 0xc93, 0xd9a, 0xa96, 0xb9f, 0x895, 0x99c,
+  0x69c, 0x795, 0x49f, 0x596, 0x29a, 0x393, 0x99, 0x190,
+  0xf00, 0xe09, 0xd03, 0xc0a, 0xb06, 0xa0f, 0x905, 0x80c,
+  0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0
+];
+
+const MC_TRI_TABLE = [
+  [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,8,3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,1,9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,8,3,9,8,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,2,10,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,8,3,1,2,10,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [9,2,10,0,2,9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [2,8,3,2,10,8,10,9,8,-1,-1,-1,-1,-1,-1,-1],
+  [3,11,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,11,2,8,11,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,9,0,2,3,11,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,11,2,1,9,11,9,8,11,-1,-1,-1,-1,-1,-1,-1],
+  [3,10,1,11,10,3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,10,1,0,8,10,8,11,10,-1,-1,-1,-1,-1,-1,-1],
+  [3,9,0,3,11,9,11,10,9,-1,-1,-1,-1,-1,-1,-1],
+  [9,8,10,10,8,11,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,7,8,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,3,0,7,3,4,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,1,9,8,4,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,1,9,4,7,1,7,3,1,-1,-1,-1,-1,-1,-1,-1],
+  [1,2,10,8,4,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [3,4,7,3,0,4,1,2,10,-1,-1,-1,-1,-1,-1,-1],
+  [9,2,10,9,0,2,8,4,7,-1,-1,-1,-1,-1,-1,-1],
+  [2,10,9,2,9,7,2,7,3,7,9,4,-1,-1,-1,-1],
+  [8,4,7,3,11,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [11,4,7,11,2,4,2,0,4,-1,-1,-1,-1,-1,-1,-1],
+  [9,0,1,8,4,7,2,3,11,-1,-1,-1,-1,-1,-1,-1],
+  [4,7,11,9,4,11,9,11,2,9,2,1,-1,-1,-1,-1],
+  [3,10,1,3,11,10,7,8,4,-1,-1,-1,-1,-1,-1,-1],
+  [1,11,10,1,4,11,1,0,4,7,11,4,-1,-1,-1,-1],
+  [4,7,8,9,0,11,9,11,10,11,0,3,-1,-1,-1,-1],
+  [4,7,11,4,11,9,9,11,10,-1,-1,-1,-1,-1,-1,-1],
+  [9,5,4,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [9,5,4,0,8,3,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,5,4,1,5,0,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [8,5,4,8,3,5,3,1,5,-1,-1,-1,-1,-1,-1,-1],
+  [1,2,10,9,5,4,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [3,0,8,1,2,10,4,9,5,-1,-1,-1,-1,-1,-1,-1],
+  [5,2,10,5,4,2,4,0,2,-1,-1,-1,-1,-1,-1,-1],
+  [2,10,5,3,2,5,3,5,4,3,4,8,-1,-1,-1,-1],
+  [9,5,4,2,3,11,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,11,2,0,8,11,4,9,5,-1,-1,-1,-1,-1,-1,-1],
+  [0,5,4,0,1,5,2,3,11,-1,-1,-1,-1,-1,-1,-1],
+  [2,1,5,2,5,8,2,8,11,4,8,5,-1,-1,-1,-1],
+  [10,3,11,10,1,3,9,5,4,-1,-1,-1,-1,-1,-1,-1],
+  [4,9,5,0,8,1,8,10,1,8,11,10,-1,-1,-1,-1],
+  [5,4,0,5,0,11,5,11,10,11,0,3,-1,-1,-1,-1],
+  [5,4,8,5,8,10,10,8,11,-1,-1,-1,-1,-1,-1,-1],
+  [9,7,8,5,7,9,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [9,3,0,9,5,3,5,7,3,-1,-1,-1,-1,-1,-1,-1],
+  [0,7,8,0,1,7,1,5,7,-1,-1,-1,-1,-1,-1,-1],
+  [1,5,3,3,5,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [9,7,8,9,5,7,10,1,2,-1,-1,-1,-1,-1,-1,-1],
+  [10,1,2,9,5,0,5,3,0,5,7,3,-1,-1,-1,-1],
+  [8,0,2,8,2,5,8,5,7,10,5,2,-1,-1,-1,-1],
+  [2,10,5,2,5,3,3,5,7,-1,-1,-1,-1,-1,-1,-1],
+  [7,9,5,7,8,9,3,11,2,-1,-1,-1,-1,-1,-1,-1],
+  [9,5,7,9,7,2,9,2,0,2,7,11,-1,-1,-1,-1],
+  [2,3,11,0,1,8,1,7,8,1,5,7,-1,-1,-1,-1],
+  [11,2,1,11,1,7,7,1,5,-1,-1,-1,-1,-1,-1,-1],
+  [9,5,8,8,5,7,10,1,3,10,3,11,-1,-1,-1,-1],
+  [5,7,0,5,0,9,7,11,0,1,0,10,11,10,0,-1],
+  [11,10,0,11,0,3,10,5,0,8,0,7,5,7,0,-1],
+  [11,10,5,7,11,5,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [10,6,5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,8,3,5,10,6,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [9,0,1,5,10,6,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,8,3,1,9,8,5,10,6,-1,-1,-1,-1,-1,-1,-1],
+  [1,6,5,2,6,1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,6,5,1,2,6,3,0,8,-1,-1,-1,-1,-1,-1,-1],
+  [9,6,5,9,0,6,0,2,6,-1,-1,-1,-1,-1,-1,-1],
+  [5,9,8,5,8,2,5,2,6,3,2,8,-1,-1,-1,-1],
+  [2,3,11,10,6,5,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [11,0,8,11,2,0,10,6,5,-1,-1,-1,-1,-1,-1],
+  [0,1,9,2,3,11,5,10,6,-1,-1,-1,-1,-1,-1,-1],
+  [5,10,6,1,9,2,9,11,2,9,8,11,-1,-1,-1,-1],
+  [6,3,11,6,5,3,5,1,3,-1,-1,-1,-1,-1,-1,-1],
+  [0,8,11,0,11,5,0,5,1,5,11,6,-1,-1,-1,-1],
+  [3,11,6,0,3,6,0,6,5,0,5,9,-1,-1,-1,-1],
+  [6,5,9,6,9,11,11,9,8,-1,-1,-1,-1,-1,-1,-1],
+  [5,10,6,4,7,8,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,3,0,4,7,3,6,5,10,-1,-1,-1,-1,-1,-1,-1],
+  [1,9,0,5,10,6,8,4,7,-1,-1,-1,-1,-1,-1,-1],
+  [10,6,5,1,9,7,1,7,3,7,9,4,-1,-1,-1,-1],
+  [6,1,2,6,5,1,4,7,8,-1,-1,-1,-1,-1,-1,-1],
+  [1,2,5,5,2,6,3,0,4,3,4,7,-1,-1,-1,-1],
+  [8,4,7,9,0,5,0,6,5,0,2,6,-1,-1,-1,-1],
+  [7,3,9,7,9,4,3,2,9,5,9,6,2,6,9,-1],
+  [3,11,2,7,8,4,10,6,5,-1,-1,-1,-1,-1,-1,-1],
+  [5,10,6,4,7,2,4,2,0,2,7,11,-1,-1,-1,-1],
+  [0,1,9,4,7,8,2,3,11,5,10,6,-1,-1,-1,-1],
+  [9,2,1,9,11,2,9,4,11,7,11,4,5,10,6,-1],
+  [8,4,7,3,11,5,3,5,1,5,11,6,-1,-1,-1,-1],
+  [5,1,11,5,11,6,1,0,11,7,11,4,0,4,11,-1],
+  [0,5,9,0,6,5,0,3,6,11,6,3,8,4,7,-1],
+  [6,5,9,6,9,11,4,7,9,7,11,9,-1,-1,-1,-1],
+  [10,4,9,6,4,10,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,10,6,4,9,10,0,8,3,-1,-1,-1,-1,-1,-1],
+  [10,0,1,10,6,0,6,4,0,-1,-1,-1,-1,-1,-1],
+  [8,3,1,8,1,6,8,6,4,6,1,10,-1,-1,-1,-1],
+  [1,4,9,1,2,4,2,6,4,-1,-1,-1,-1,-1,-1,-1],
+  [3,0,8,1,2,9,2,4,9,2,6,4,-1,-1,-1,-1],
+  [0,2,4,4,2,6,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [8,3,2,8,2,4,4,2,6,-1,-1,-1,-1,-1,-1,-1],
+  [10,4,9,10,6,4,11,2,3,-1,-1,-1,-1,-1,-1],
+  [0,8,2,2,8,11,4,9,10,4,10,6,-1,-1,-1,-1],
+  [3,11,2,0,1,6,0,6,4,6,1,10,-1,-1,-1,-1],
+  [6,4,1,6,1,10,4,8,1,2,1,11,8,11,1,-1],
+  [9,6,4,9,3,6,9,1,3,11,6,3,-1,-1,-1,-1],
+  [8,11,1,8,1,0,11,6,1,9,1,4,6,4,1,-1],
+  [3,11,6,3,6,0,0,6,4,-1,-1,-1,-1,-1,-1,-1],
+  [6,4,8,11,6,8,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [7,10,6,7,8,10,8,9,10,-1,-1,-1,-1,-1,-1],
+  [0,7,3,0,10,7,0,9,10,6,7,10,-1,-1,-1,-1],
+  [10,6,7,1,10,7,1,7,8,1,8,0,-1,-1,-1,-1],
+  [10,6,7,10,7,1,1,7,3,-1,-1,-1,-1,-1,-1],
+  [1,2,6,1,6,8,1,8,9,8,6,7,-1,-1,-1,-1],
+  [2,6,9,2,9,1,6,7,9,0,9,3,7,3,9,-1],
+  [7,8,0,7,0,6,6,0,2,-1,-1,-1,-1,-1,-1,-1],
+  [7,3,2,6,7,2,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [2,3,11,10,6,8,10,8,9,8,6,7,-1,-1,-1,-1],
+  [2,0,7,2,7,11,0,9,7,6,7,10,9,10,7,-1],
+  [1,8,0,1,7,8,1,10,7,6,7,10,2,3,11,-1],
+  [11,2,1,11,1,7,10,6,1,6,7,1,-1,-1,-1,-1],
+  [8,9,6,8,6,7,9,1,6,11,6,3,1,3,6,-1],
+  [0,9,1,11,6,7,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [7,8,0,7,0,6,3,11,0,11,6,0,-1,-1,-1,-1],
+  [7,11,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [7,6,11,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [3,0,8,11,7,6,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,1,9,11,7,6,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [8,1,9,8,3,1,11,7,6,-1,-1,-1,-1,-1,-1],
+  [10,1,2,6,11,7,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,2,10,3,0,8,6,11,7,-1,-1,-1,-1,-1,-1],
+  [2,9,0,2,10,9,6,11,7,-1,-1,-1,-1,-1,-1],
+  [6,11,7,2,10,3,10,8,3,10,9,8,-1,-1,-1,-1],
+  [7,2,3,6,2,7,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [7,0,8,7,6,0,6,2,0,-1,-1,-1,-1,-1,-1],
+  [2,7,6,2,3,7,0,1,9,-1,-1,-1,-1,-1,-1],
+  [1,6,2,1,8,6,1,9,8,8,7,6,-1,-1,-1,-1],
+  [10,7,6,10,1,7,1,3,7,-1,-1,-1,-1,-1,-1],
+  [10,7,6,1,7,10,1,8,7,1,0,8,-1,-1,-1,-1],
+  [0,3,7,0,7,10,0,10,9,6,10,7,-1,-1,-1,-1],
+  [7,6,10,7,10,8,8,10,9,-1,-1,-1,-1,-1,-1],
+  [6,8,4,11,8,6,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [3,6,11,3,0,6,0,4,6,-1,-1,-1,-1,-1,-1],
+  [8,6,11,8,4,6,9,0,1,-1,-1,-1,-1,-1,-1],
+  [9,4,6,9,6,3,9,3,1,11,3,6,-1,-1,-1,-1],
+  [6,8,4,6,11,8,2,10,1,-1,-1,-1,-1,-1,-1],
+  [1,2,10,3,0,11,0,6,11,0,4,6,-1,-1,-1,-1],
+  [4,11,8,4,6,11,0,2,9,2,10,9,-1,-1,-1,-1],
+  [10,9,3,10,3,2,9,4,3,11,3,6,4,6,3,-1],
+  [8,2,3,8,4,2,4,6,2,-1,-1,-1,-1,-1,-1,-1],
+  [0,4,2,4,6,2,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,9,0,2,3,4,2,4,6,4,3,8,-1,-1,-1,-1],
+  [1,9,4,1,4,2,2,4,6,-1,-1,-1,-1,-1,-1,-1],
+  [8,1,3,8,6,1,8,4,6,6,10,1,-1,-1,-1,-1],
+  [10,1,0,10,0,6,6,0,4,-1,-1,-1,-1,-1,-1],
+  [4,6,3,4,3,8,6,10,3,0,3,9,10,9,3,-1],
+  [10,9,4,6,10,4,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,9,5,7,6,11,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,8,3,4,9,5,11,7,6,-1,-1,-1,-1,-1,-1],
+  [5,0,1,5,4,0,7,6,11,-1,-1,-1,-1,-1,-1],
+  [11,7,6,8,3,4,3,5,4,3,1,5,-1,-1,-1,-1],
+  [9,5,4,10,1,2,7,6,11,-1,-1,-1,-1,-1,-1],
+  [6,11,7,1,2,10,0,8,3,4,9,5,-1,-1,-1,-1],
+  [7,6,11,5,4,10,4,2,10,4,0,2,-1,-1,-1,-1],
+  [3,4,8,3,5,4,3,2,5,10,5,2,11,7,6,-1],
+  [7,2,3,7,6,2,5,4,9,-1,-1,-1,-1,-1,-1,-1],
+  [9,5,4,0,8,6,0,6,2,6,8,7,-1,-1,-1,-1],
+  [3,6,2,3,7,6,1,5,0,5,4,0,-1,-1,-1,-1],
+  [6,2,8,6,8,7,2,1,8,4,8,5,1,5,8,-1],
+  [9,5,4,10,1,6,1,7,6,1,3,7,-1,-1,-1,-1],
+  [1,6,10,1,7,6,1,0,7,8,7,0,9,5,4,-1],
+  [4,0,10,4,10,5,0,3,10,6,10,7,3,7,10,-1],
+  [7,6,10,7,10,8,5,4,10,4,8,10,-1,-1,-1,-1],
+  [6,9,5,6,11,9,11,8,9,-1,-1,-1,-1,-1,-1],
+  [3,6,11,0,6,3,0,5,6,0,9,5,-1,-1,-1,-1],
+  [0,11,8,0,5,11,0,1,5,5,6,11,-1,-1,-1,-1],
+  [6,11,3,6,3,5,5,3,1,-1,-1,-1,-1,-1,-1],
+  [1,2,10,9,5,11,9,11,8,11,5,6,-1,-1,-1,-1],
+  [0,11,3,0,6,11,0,9,6,5,6,9,1,2,10,-1],
+  [11,8,5,11,5,6,8,0,5,10,5,2,0,2,5,-1],
+  [6,11,3,6,3,5,2,10,3,10,5,3,-1,-1,-1,-1],
+  [5,8,9,5,2,8,5,6,2,3,8,2,-1,-1,-1,-1],
+  [9,5,6,9,6,0,0,6,2,-1,-1,-1,-1,-1,-1,-1],
+  [1,5,8,1,8,0,5,6,8,3,8,2,6,2,8,-1],
+  [1,5,6,2,1,6,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,3,6,1,6,10,3,8,6,5,6,9,8,9,6,-1],
+  [10,1,0,10,0,6,9,5,0,5,6,0,-1,-1,-1,-1],
+  [0,3,8,5,6,10,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [10,5,6,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [11,5,10,7,5,11,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [11,5,10,11,7,5,8,3,0,-1,-1,-1,-1,-1,-1],
+  [5,11,7,5,10,11,1,9,0,-1,-1,-1,-1,-1,-1],
+  [10,7,5,10,11,7,9,8,1,8,3,1,-1,-1,-1,-1],
+  [11,1,2,11,7,1,7,5,1,-1,-1,-1,-1,-1,-1],
+  [0,8,3,1,2,7,1,7,5,7,2,11,-1,-1,-1,-1],
+  [9,7,5,9,2,7,9,0,2,2,11,7,-1,-1,-1,-1],
+  [7,5,2,7,2,11,5,9,2,3,2,8,9,8,2,-1],
+  [2,5,10,2,3,5,3,7,5,-1,-1,-1,-1,-1,-1],
+  [8,2,0,8,5,2,8,7,5,10,2,5,-1,-1,-1,-1],
+  [9,0,1,5,10,3,5,3,7,3,10,2,-1,-1,-1,-1],
+  [9,8,2,9,2,1,8,7,2,10,2,5,7,5,2,-1],
+  [1,3,5,3,7,5,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,8,7,0,7,1,1,7,5,-1,-1,-1,-1,-1,-1],
+  [9,0,3,9,3,5,5,3,7,-1,-1,-1,-1,-1,-1],
+  [9,8,7,5,9,7,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [5,8,4,5,10,8,10,11,8,-1,-1,-1,-1,-1,-1],
+  [5,0,4,5,11,0,5,10,11,11,3,0,-1,-1,-1,-1],
+  [0,1,9,8,4,10,8,10,11,10,4,5,-1,-1,-1,-1],
+  [10,11,4,10,4,5,11,3,4,9,4,1,3,1,4,-1],
+  [2,5,1,2,8,5,2,11,8,4,5,8,-1,-1,-1,-1],
+  [0,4,11,0,11,3,4,5,11,2,11,1,5,1,11,-1],
+  [0,2,5,0,5,9,2,11,5,4,5,8,11,8,5,-1],
+  [9,4,5,2,11,3,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [2,5,10,3,5,2,3,4,5,3,8,4,-1,-1,-1,-1],
+  [5,10,2,5,2,4,4,2,0,-1,-1,-1,-1,-1,-1],
+  [3,10,2,3,5,10,3,8,5,4,5,8,0,1,9,-1],
+  [5,10,2,5,2,4,1,9,2,9,4,2,-1,-1,-1,-1],
+  [8,4,5,8,5,3,3,5,1,-1,-1,-1,-1,-1,-1],
+  [0,4,5,1,0,5,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [8,4,5,8,5,3,9,0,5,0,3,5,-1,-1,-1,-1],
+  [9,4,5,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,11,7,4,9,11,9,10,11,-1,-1,-1,-1,-1,-1],
+  [0,8,3,4,9,7,9,11,7,9,10,11,-1,-1,-1,-1],
+  [1,10,11,1,11,4,1,4,0,7,4,11,-1,-1,-1,-1],
+  [3,1,4,3,4,8,1,10,4,7,4,11,10,11,4,-1],
+  [4,11,7,9,11,4,9,2,11,9,1,2,-1,-1,-1,-1],
+  [9,7,4,9,11,7,9,1,11,2,11,1,0,8,3,-1],
+  [11,7,4,11,4,2,2,4,0,-1,-1,-1,-1,-1,-1],
+  [11,7,4,11,4,2,8,3,4,3,2,4,-1,-1,-1,-1],
+  [2,9,10,2,7,9,2,3,7,7,4,9,-1,-1,-1,-1],
+  [9,10,7,9,7,4,10,2,7,8,7,0,2,0,7,-1],
+  [3,7,10,3,10,2,7,4,10,1,10,0,4,0,10,-1],
+  [1,10,2,8,7,4,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,9,1,4,1,7,7,1,3,-1,-1,-1,-1,-1,-1],
+  [4,9,1,4,1,7,0,8,1,8,7,1,-1,-1,-1,-1],
+  [4,0,3,7,4,3,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [4,8,7,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [9,10,8,10,11,8,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [3,0,9,3,9,11,11,9,10,-1,-1,-1,-1,-1,-1],
+  [0,1,10,0,10,8,8,10,11,-1,-1,-1,-1,-1,-1],
+  [3,1,10,11,3,10,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,2,11,1,11,9,9,11,8,-1,-1,-1,-1,-1,-1],
+  [3,0,9,3,9,11,1,2,9,2,11,9,-1,-1,-1,-1],
+  [0,2,11,8,0,11,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [3,2,11,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [2,3,8,2,8,10,10,8,9,-1,-1,-1,-1,-1,-1],
+  [9,10,2,0,9,2,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [2,3,8,2,8,10,0,1,8,1,10,8,-1,-1,-1,-1],
+  [1,10,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [1,3,8,9,1,8,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,9,1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [0,3,8,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
+  [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1]
+];
+
+function marchingCubes(evalFunc, gridSize, bounds, isoValue) {
+  const [minB, maxB] = bounds;
+  const step = (maxB - minB) / gridSize;
+  const vertices = [];
+
+  // Evaluate the scalar field on the grid
+  const field = new Float32Array((gridSize + 1) * (gridSize + 1) * (gridSize + 1));
+  for (let iz = 0; iz <= gridSize; iz++) {
+    for (let iy = 0; iy <= gridSize; iy++) {
+      for (let ix = 0; ix <= gridSize; ix++) {
+        const x = minB + ix * step;
+        const y = minB + iy * step;
+        const z = minB + iz * step;
+        const idx = ix + (gridSize + 1) * (iy + (gridSize + 1) * iz);
+        field[idx] = evalFunc(x, y, z);
+      }
+    }
+  }
+
+  function getField(ix, iy, iz) {
+    return field[ix + (gridSize + 1) * (iy + (gridSize + 1) * iz)];
+  }
+
+  function interp(p1, p2, v1, v2) {
+    if (Math.abs(isoValue - v1) < 1e-10) return p1.slice();
+    if (Math.abs(isoValue - v2) < 1e-10) return p2.slice();
+    if (Math.abs(v1 - v2) < 1e-10) return p1.slice();
+    const mu = (isoValue - v1) / (v2 - v1);
+    return [
+      p1[0] + mu * (p2[0] - p1[0]),
+      p1[1] + mu * (p2[1] - p1[1]),
+      p1[2] + mu * (p2[2] - p1[2])
+    ];
+  }
+
+  for (let iz = 0; iz < gridSize; iz++) {
+    for (let iy = 0; iy < gridSize; iy++) {
+      for (let ix = 0; ix < gridSize; ix++) {
+        const x = minB + ix * step;
+        const y = minB + iy * step;
+        const z = minB + iz * step;
+
+        const corners = [
+          [x,        y,        z       ],
+          [x + step, y,        z       ],
+          [x + step, y + step, z       ],
+          [x,        y + step, z       ],
+          [x,        y,        z + step],
+          [x + step, y,        z + step],
+          [x + step, y + step, z + step],
+          [x,        y + step, z + step]
+        ];
+
+        const vals = [
+          getField(ix, iy, iz),
+          getField(ix+1, iy, iz),
+          getField(ix+1, iy+1, iz),
+          getField(ix, iy+1, iz),
+          getField(ix, iy, iz+1),
+          getField(ix+1, iy, iz+1),
+          getField(ix+1, iy+1, iz+1),
+          getField(ix, iy+1, iz+1)
+        ];
+
+        let cubeIndex = 0;
+        for (let i = 0; i < 8; i++) {
+          if (vals[i] > isoValue) cubeIndex |= (1 << i);
+        }
+
+        if (MC_EDGE_TABLE[cubeIndex] === 0) continue;
+
+        const edgeVerts = new Array(12);
+        const et = MC_EDGE_TABLE[cubeIndex];
+        if (et & 1)    edgeVerts[0]  = interp(corners[0], corners[1], vals[0], vals[1]);
+        if (et & 2)    edgeVerts[1]  = interp(corners[1], corners[2], vals[1], vals[2]);
+        if (et & 4)    edgeVerts[2]  = interp(corners[2], corners[3], vals[2], vals[3]);
+        if (et & 8)    edgeVerts[3]  = interp(corners[3], corners[0], vals[3], vals[0]);
+        if (et & 16)   edgeVerts[4]  = interp(corners[4], corners[5], vals[4], vals[5]);
+        if (et & 32)   edgeVerts[5]  = interp(corners[5], corners[6], vals[5], vals[6]);
+        if (et & 64)   edgeVerts[6]  = interp(corners[6], corners[7], vals[6], vals[7]);
+        if (et & 128)  edgeVerts[7]  = interp(corners[7], corners[4], vals[7], vals[4]);
+        if (et & 256)  edgeVerts[8]  = interp(corners[0], corners[4], vals[0], vals[4]);
+        if (et & 512)  edgeVerts[9]  = interp(corners[1], corners[5], vals[1], vals[5]);
+        if (et & 1024) edgeVerts[10] = interp(corners[2], corners[6], vals[2], vals[6]);
+        if (et & 2048) edgeVerts[11] = interp(corners[3], corners[7], vals[3], vals[7]);
+
+        const triRow = MC_TRI_TABLE[cubeIndex];
+        for (let i = 0; triRow[i] !== -1; i += 3) {
+          vertices.push(
+            ...edgeVerts[triRow[i]],
+            ...edgeVerts[triRow[i + 1]],
+            ...edgeVerts[triRow[i + 2]]
+          );
+        }
+      }
+    }
+  }
+
+  return new Float32Array(vertices);
+}
+
+function buildIsosurface(orbKey, Zeff) {
+  const cacheKey = `${orbKey}_${Zeff}`;
+  if (isosurfaceCache[cacheKey]) return isosurfaceCache[cacheKey];
+
+  const def = ORBITAL_DEFS[orbKey];
+  const { n, l, m } = def;
+  const rMax = 4 * n * n * a0 / Zeff;
+  const gridSize = 64;
+  const bound = rMax * 1.2;
+
+  // Find max density on grid for threshold
+  let maxDen = 0;
+  const testStep = (2 * bound) / 20;
+  for (let ix = 0; ix <= 20; ix++) {
+    for (let iy = 0; iy <= 20; iy++) {
+      for (let iz = 0; iz <= 20; iz++) {
+        const x = -bound + ix * testStep;
+        const y = -bound + iy * testStep;
+        const z = -bound + iz * testStep;
+        const r = Math.sqrt(x*x + y*y + z*z);
+        if (r < 0.001) continue;
+        const theta = Math.acos(z / r);
+        const phi = Math.atan2(y, x);
+        const val = psiSquared(n, l, m, r, theta, phi, Zeff);
+        if (val > maxDen) maxDen = val;
+      }
+    }
+  }
+
+  const isoValue = maxDen * 0.01;
+
+  function evalField(x, y, z) {
+    const r = Math.sqrt(x*x + y*y + z*z);
+    if (r < 0.001) return 0;
+    const theta = Math.acos(z / r);
+    const phi = Math.atan2(y, x);
+    return psiSquared(n, l, m, r, theta, phi, Zeff);
+  }
+
+  const verts = marchingCubes(evalField, gridSize, [-bound, bound], isoValue);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(verts, 3));
+  geo.computeVertexNormals();
+
+  const color = new THREE.Color(def.color);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: color,
+    transparent: true,
+    opacity: 0.15,
+    side: THREE.DoubleSide,
+    wireframe: state.isosurfaceWireframe,
+    depthWrite: false,
+    clippingPlanes: state.crossSectionEnabled ? [clipPlane] : [],
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+  isosurfaceCache[cacheKey] = mesh;
+  return mesh;
+}
+
+// ============================================================
+// 5b. PROBABILITY CURRENT FLOW ARROWS
+// ============================================================
+
+function createFlowArrows(orbKey, Zeff) {
+  const def = ORBITAL_DEFS[orbKey];
+  const { n, l, m } = def;
+
+  const group = new THREE.Group();
+
+  if (m === 0) {
+    // No azimuthal flow for m=0 states — probability current is zero
+    return group;
+  }
+
+  // For m ≠ 0, probability current circulates around z-axis
+  // j_φ ∝ m ℏ / (m_e r sinθ) × |ψ|²
+  // Create streamline rings at various (r, θ) positions
+
+  const rMax = 3 * n * n * a0 / Zeff;
+  const numRings = 6;
+  const pointsPerRing = 32;
+  const arrowColor = m > 0 ? 0xff8844 : 0x44aaff; // warm for +m, cool for -m
+  const direction = Math.sign(m); // +1 or -1
+
+  // Sample radial probability to find best ring radii
+  const rPeak = n * n * a0 / Zeff; // approximate peak
+
+  for (let ir = 0; ir < numRings; ir++) {
+    const r = rPeak * (0.4 + ir * 0.4);
+    if (r > rMax) continue;
+
+    // Place rings at different polar angles
+    for (const thetaFrac of [0.3, 0.5, 0.7]) {
+      const theta = thetaFrac * Math.PI;
+      const sinT = Math.sin(theta);
+      const cosT = Math.cos(theta);
+      if (sinT < 0.1) continue;
+
+      // Check if density is significant here
+      const density = psiSquared(n, l, Math.abs(m), r, theta, 0, Zeff);
+      if (density < 1e-6) continue;
+
+      const ringRadius = r * sinT;
+      const ringY = r * cosT;
+
+      // Create a streamline ring using a tube
+      const curve = new THREE.CurvePath();
+      const ringPoints = [];
+      for (let i = 0; i <= pointsPerRing; i++) {
+        const phi = (i / pointsPerRing) * Math.PI * 2;
+        ringPoints.push(new THREE.Vector3(
+          ringRadius * Math.cos(phi),
+          ringRadius * Math.sin(phi),
+          ringY
+        ));
+      }
+
+      // Use line segments with arrows
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(ringPoints);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: arrowColor,
+        transparent: true,
+        opacity: 0.4 * Math.min(density * 1e4, 1),
+        depthWrite: false,
+      });
+      const line = new THREE.Line(lineGeo, lineMat);
+      group.add(line);
+
+      // Add arrow cones along the ring to show direction
+      const numArrows = 4;
+      const coneGeo = new THREE.ConeGeometry(0.12, 0.3, 4);
+      const coneMat = new THREE.MeshBasicMaterial({
+        color: arrowColor,
+        transparent: true,
+        opacity: 0.6 * Math.min(density * 1e4, 1),
+      });
+
+      for (let ia = 0; ia < numArrows; ia++) {
+        const phi = (ia / numArrows) * Math.PI * 2;
+        const cone = new THREE.Mesh(coneGeo, coneMat);
+        cone.position.set(
+          ringRadius * Math.cos(phi),
+          ringRadius * Math.sin(phi),
+          ringY
+        );
+        // Point cone tangent to ring in the flow direction
+        const tangent = new THREE.Vector3(
+          -Math.sin(phi) * direction,
+          Math.cos(phi) * direction,
+          0
+        ).normalize();
+        cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
+        cone.userData.flowAngle = phi;
+        cone.userData.ringRadius = ringRadius;
+        cone.userData.ringY = ringY;
+        cone.userData.direction = direction;
+        group.add(cone);
+      }
+    }
+  }
+
+  return group;
+}
+
+// ============================================================
+// 5c. RADIAL WAVEFUNCTION PLOT
+// ============================================================
+
+function drawRadialPlot(n, l, Zeff) {
+  const canvas = document.getElementById('radial-plot');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const rMax = 4 * n * n * a0 / Zeff;
+  const numSamples = 200;
+
+  // Sample R(r) and r²|R(r)|²
+  const rVals = [], Rvals = [], probVals = [];
+  let maxR = 0, minR = 0, maxProb = 0;
+
+  for (let i = 0; i <= numSamples; i++) {
+    const r = (i / numSamples) * rMax;
+    const R = radialWavefunction(n, l, r, Zeff);
+    const prob = r * r * R * R;
+    rVals.push(r);
+    Rvals.push(R);
+    probVals.push(prob);
+    if (R > maxR) maxR = R;
+    if (R < minR) minR = R;
+    if (prob > maxProb) maxProb = prob;
+  }
+
+  const pad = { top: 8, bottom: 16, left: 8, right: 8 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+
+  // Draw zero line
+  const Rrange = Math.max(maxR, -minR) * 1.1;
+  const zeroY = pad.top + plotH * (Rrange / (2 * Rrange));
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.left, zeroY);
+  ctx.lineTo(pad.left + plotW, zeroY);
+  ctx.stroke();
+
+  // Draw R(r)
+  ctx.strokeStyle = '#ff6644';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i <= numSamples; i++) {
+    const x = pad.left + (i / numSamples) * plotW;
+    const y = pad.top + plotH * (1 - (Rvals[i] + Rrange) / (2 * Rrange));
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Fill positive/negative regions with subtle color
+  // Positive (above zero)
+  ctx.fillStyle = 'rgba(255,68,68,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(pad.left, zeroY);
+  for (let i = 0; i <= numSamples; i++) {
+    const x = pad.left + (i / numSamples) * plotW;
+    const rawY = pad.top + plotH * (1 - (Rvals[i] + Rrange) / (2 * Rrange));
+    const y = Math.min(rawY, zeroY);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(pad.left + plotW, zeroY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Negative (below zero)
+  ctx.fillStyle = 'rgba(68,136,255,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(pad.left, zeroY);
+  for (let i = 0; i <= numSamples; i++) {
+    const x = pad.left + (i / numSamples) * plotW;
+    const rawY = pad.top + plotH * (1 - (Rvals[i] + Rrange) / (2 * Rrange));
+    const y = Math.max(rawY, zeroY);
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(pad.left + plotW, zeroY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Draw r²|R(r)|²
+  ctx.strokeStyle = '#44aaff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  for (let i = 0; i <= numSamples; i++) {
+    const x = pad.left + (i / numSamples) * plotW;
+    const y = pad.top + plotH * (1 - probVals[i] / (maxProb * 1.1));
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Labels
+  ctx.fillStyle = '#555';
+  ctx.font = '9px Inter, sans-serif';
+  ctx.fillText('0', pad.left, H - 2);
+  ctx.fillText(`r = ${rMax.toFixed(1)} a₀`, pad.left + plotW - 50, H - 2);
+  // Mark nodes (where R crosses zero)
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  for (let i = 1; i <= numSamples; i++) {
+    if (Rvals[i - 1] * Rvals[i] < 0) {
+      const x = pad.left + (i / numSamples) * plotW;
+      ctx.beginPath();
+      ctx.arc(x, zeroY, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+// ============================================================
+// 6. ORBITAL GENERATION & SCENE MANAGEMENT
+// ============================================================
+
+function clearOrbitals() {
+  for (const key of Object.keys(orbitalPointClouds)) {
+    scene.remove(orbitalPointClouds[key]);
+    orbitalPointClouds[key].geometry.dispose();
+    orbitalPointClouds[key].material.dispose();
+    delete orbitalPointClouds[key];
+  }
+  for (const key of Object.keys(orbitalIsosurfaces)) {
+    scene.remove(orbitalIsosurfaces[key]);
+    orbitalIsosurfaces[key].geometry.dispose();
+    orbitalIsosurfaces[key].material.dispose();
+    delete orbitalIsosurfaces[key];
+  }
+  for (const key of Object.keys(flowArrowGroups)) {
+    scene.remove(flowArrowGroups[key]);
+    delete flowArrowGroups[key];
+  }
+}
+
+function createPointCloud(orbKey, Zeff, numPoints) {
+  const def = ORBITAL_DEFS[orbKey];
+  const { n, l, m } = def;
+  const { positions, densities, signs } = sampleOrbital(n, l, m, Zeff, numPoints);
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('size', new THREE.BufferAttribute(densities, 1));
+  geo.setAttribute('sign', new THREE.BufferAttribute(signs, 1));
+
+  // Build vertex colors based on wave function sign
+  const colors = new Float32Array(numPoints * 3);
+  const baseColor = new THREE.Color(def.color);
+  const posColor = new THREE.Color('#ff4444'); // positive lobe
+  const negColor = new THREE.Color('#4488ff'); // negative lobe
+  for (let i = 0; i < numPoints; i++) {
+    const c = state.showWavefunction ? (signs[i] > 0 ? posColor : negColor) : baseColor;
+    colors[i * 3] = c.r;
+    colors[i * 3 + 1] = c.g;
+    colors[i * 3 + 2] = c.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const mat = new THREE.PointsMaterial({
+    color: state.showWavefunction ? 0xffffff : baseColor,
+    vertexColors: state.showWavefunction,
+    size: 0.08,
+    transparent: true,
+    opacity: 0.7,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+    depthWrite: false,
+    clippingPlanes: state.crossSectionEnabled ? [clipPlane] : [],
+  });
+
+  const pts = new THREE.Points(geo, mat);
+  pts.userData.orbital = { n, l, m, Zeff, rMax: 4 * n * n * a0 / Zeff, maxDensity: null, orbKey };
+  pts.userData.orbital.maxDensity = computeMaxDensity(n, l, m, Zeff, pts.userData.orbital.rMax);
+  pts.userData.baseColor = def.color;
+  return pts;
+}
+
+async function regenerateAllOrbitals() {
+  const loadingEl = document.getElementById('loading');
+  const loadingText = document.getElementById('loading-text');
+  loadingEl.style.display = 'flex';
+
+  clearOrbitals();
+
+  const totalOrbitals = state.config.length;
+  for (let i = 0; i < totalOrbitals; i++) {
+    const { key, electrons, Zeff } = state.config[i];
+    loadingText.textContent = `Sampling ${key} orbital (${i + 1}/${totalOrbitals})...`;
+
+    // Scale points by occupancy: 2 electrons = full, 1 = half
+    const scaledPoints = Math.round(state.pointsPerOrbital * (electrons / 2));
+
+    // Yield to UI
+    await new Promise(r => setTimeout(r, 10));
+
+    const points = createPointCloud(key, Zeff, scaledPoints);
+    points.visible = state.showPoints && state.visibleOrbitals.has(key);
+    orbitalPointClouds[key] = points;
+    scene.add(points);
+
+    // Build isosurface
+    if (state.showIsosurface) {
+      const mesh = buildIsosurface(key, Zeff).clone();
+      mesh.material = mesh.material.clone();
+      mesh.material.wireframe = state.isosurfaceWireframe;
+      mesh.material.clippingPlanes = state.crossSectionEnabled ? [clipPlane] : [];
+      mesh.visible = state.visibleOrbitals.has(key);
+      orbitalIsosurfaces[key] = mesh;
+      scene.add(mesh);
+    }
+
+    // Build flow arrows
+    if (state.showFlow) {
+      const flowGroup = createFlowArrows(key, Zeff);
+      flowGroup.visible = state.visibleOrbitals.has(key);
+      flowArrowGroups[key] = flowGroup;
+      scene.add(flowGroup);
+    }
+  }
+
+  // Update radial plot for first visible orbital
+  if (state.showWavefunction || state.showFlow) {
+    updateWavefunctionPanel();
+  }
+
+  loadingEl.style.display = 'none';
+}
+
+// ============================================================
+// 7. EXCITATION LOGIC
+// ============================================================
+
+function getConfigForExcitation(element, level) {
+  const el = ELEMENTS[element];
+  const baseConfig = el.groundState.map(o => ({ ...o }));
+
+  if (level === 0) return baseConfig;
+
+  const seq = el.excitationSequence;
+  // Source orbital is seq[0], target is seq[level]
+  const sourceKey = seq[0];
+  const targetKey = seq[level];
+
+  // Clone and modify
+  const config = baseConfig.map(o => ({ ...o }));
+
+  // Remove one electron from source
+  const sourceEntry = config.find(o => o.key === sourceKey);
+  if (sourceEntry) {
+    sourceEntry.electrons--;
+    if (sourceEntry.electrons <= 0) {
+      config.splice(config.indexOf(sourceEntry), 1);
+    }
+  }
+
+  // Add electron to target
+  const targetDef = ORBITAL_DEFS[targetKey];
+  let Zeff;
+  if (element === 'hydrogen') {
+    Zeff = 1.0;
+  } else {
+    // Carbon
+    if (targetDef.n <= 2) {
+      const orbType = targetDef.l === 0 ? `${targetDef.n}s` : `${targetDef.n}p`;
+      Zeff = CARBON_ZEFF[orbType] || 3.25;
+    } else {
+      Zeff = 1.6;
+    }
+  }
+
+  const existing = config.find(o => o.key === targetKey);
+  if (existing) {
+    existing.electrons++;
+  } else {
+    config.push({ key: targetKey, electrons: 1, Zeff });
+  }
+
+  return config;
+}
+
+// ============================================================
+// 8. UI UPDATE
+// ============================================================
+
+function updateUI() {
+  const el = ELEMENTS[state.element];
+
+  // Element buttons
+  document.getElementById('btn-hydrogen').classList.toggle('active', state.element === 'hydrogen');
+  document.getElementById('btn-carbon').classList.toggle('active', state.element === 'carbon');
+
+  // Info panel
+  document.getElementById('element-name').textContent = el.name;
+
+  // Electron configuration string
+  const configStr = state.config.map(o => {
+    const def = ORBITAL_DEFS[o.key];
+    return `${def.label}<sup>${o.electrons}</sup>`;
+  }).join(' ');
+  document.getElementById('electron-config').innerHTML = configStr;
+
+  // State description
+  if (state.excitationLevel === 0) {
+    document.getElementById('state-desc').textContent = `Ground state configuration`;
+  } else {
+    const seq = el.excitationSequence;
+    document.getElementById('state-desc').textContent =
+      `Excited state: electron promoted from ${seq[0]} to ${seq[state.excitationLevel]}`;
+  }
+
+  // Orbital checkboxes
+  const checkboxContainer = document.getElementById('orbital-checkboxes');
+  checkboxContainer.innerHTML = '';
+  for (const { key } of state.config) {
+    const def = ORBITAL_DEFS[key];
+    const row = document.createElement('div');
+    row.className = 'checkbox-row';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = state.visibleOrbitals.has(key);
+    cb.id = `cb-${key}`;
+    cb.addEventListener('change', () => {
+      if (cb.checked) state.visibleOrbitals.add(key);
+      else state.visibleOrbitals.delete(key);
+      updateVisibility();
+    });
+    const lbl = document.createElement('label');
+    lbl.htmlFor = `cb-${key}`;
+    lbl.textContent = def.label;
+    lbl.style.color = def.color;
+    row.appendChild(cb);
+    row.appendChild(lbl);
+    checkboxContainer.appendChild(row);
+  }
+
+  // Readout — show info for first visible orbital or first in config
+  const visibleKeys = [...state.visibleOrbitals];
+  const displayKey = visibleKeys.length > 0 ? visibleKeys[0] : (state.config.length > 0 ? state.config[0].key : '1s');
+  const displayDef = ORBITAL_DEFS[displayKey];
+  const displayConfig = state.config.find(o => o.key === displayKey);
+  const displayZeff = displayConfig ? displayConfig.Zeff : 1.0;
+
+  document.getElementById('readout-n').textContent = displayDef.n;
+  document.getElementById('readout-l').textContent = displayDef.l;
+  document.getElementById('readout-m').textContent = displayDef.m;
+  document.getElementById('readout-energy').textContent = `${(-13.6 * displayZeff * displayZeff / (displayDef.n * displayDef.n)).toFixed(1)} eV`;
+  document.getElementById('readout-zeff').textContent = displayZeff.toFixed(2);
+
+  // Refresh wavefunction panel if active
+  if (state.showWavefunction || state.showFlow) {
+    updateWavefunctionPanel();
+  }
+}
+
+function updateVisibility() {
+  for (const key of Object.keys(orbitalPointClouds)) {
+    orbitalPointClouds[key].visible = state.showPoints && state.visibleOrbitals.has(key);
+  }
+  for (const key of Object.keys(orbitalIsosurfaces)) {
+    orbitalIsosurfaces[key].visible = state.showIsosurface && state.visibleOrbitals.has(key);
+  }
+  for (const key of Object.keys(flowArrowGroups)) {
+    flowArrowGroups[key].visible = state.showFlow && state.visibleOrbitals.has(key);
+  }
+}
+
+function updateWavefunctionColors() {
+  const posColor = new THREE.Color('#ff4444');
+  const negColor = new THREE.Color('#4488ff');
+  for (const key of Object.keys(orbitalPointClouds)) {
+    const cloud = orbitalPointClouds[key];
+    const signAttr = cloud.geometry.getAttribute('sign');
+    const colorAttr = cloud.geometry.getAttribute('color');
+    const baseColor = new THREE.Color(cloud.userData.baseColor);
+
+    if (state.showWavefunction) {
+      for (let i = 0; i < signAttr.count; i++) {
+        const c = signAttr.array[i] > 0 ? posColor : negColor;
+        colorAttr.array[i * 3] = c.r;
+        colorAttr.array[i * 3 + 1] = c.g;
+        colorAttr.array[i * 3 + 2] = c.b;
+      }
+      cloud.material.vertexColors = true;
+      cloud.material.color.set(0xffffff);
+    } else {
+      for (let i = 0; i < signAttr.count; i++) {
+        colorAttr.array[i * 3] = baseColor.r;
+        colorAttr.array[i * 3 + 1] = baseColor.g;
+        colorAttr.array[i * 3 + 2] = baseColor.b;
+      }
+      cloud.material.vertexColors = false;
+      cloud.material.color.copy(baseColor);
+    }
+    colorAttr.needsUpdate = true;
+    cloud.material.needsUpdate = true;
+  }
+}
+
+function updateWavefunctionPanel() {
+  const panel = document.getElementById('wavefunction-panel');
+  const flowDesc = document.getElementById('flow-desc');
+
+  if (!state.showWavefunction && !state.showFlow) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+
+  // Draw radial plot for the first visible orbital
+  const visibleKeys = [...state.visibleOrbitals];
+  const displayKey = visibleKeys[0] || (state.config[0] && state.config[0].key) || '1s';
+  const def = ORBITAL_DEFS[displayKey];
+  const configEntry = state.config.find(o => o.key === displayKey);
+  const Zeff = configEntry ? configEntry.Zeff : 1.0;
+
+  drawRadialPlot(def.n, def.l, Zeff);
+
+  // Update flow description
+  if (state.showFlow && def.m !== 0) {
+    const dir = def.m > 0 ? 'counter-clockwise' : 'clockwise';
+    flowDesc.textContent = `Probability current flows ${dir} around z-axis (m = ${def.m})`;
+  } else if (state.showFlow && def.m === 0) {
+    flowDesc.textContent = 'No azimuthal flow for m = 0 (standing wave)';
+  } else {
+    flowDesc.textContent = '';
+  }
+}
+
+function updateClipping() {
+  const planes = state.crossSectionEnabled ? [clipPlane] : [];
+  for (const key of Object.keys(orbitalPointClouds)) {
+    orbitalPointClouds[key].material.clippingPlanes = planes;
+  }
+  for (const key of Object.keys(orbitalIsosurfaces)) {
+    orbitalIsosurfaces[key].material.clippingPlanes = planes;
+  }
+}
+
+// ============================================================
+// 9. CROSSFADE TRANSITION
+// ============================================================
+
+async function transitionTo(newConfig) {
+  // Fade out existing
+  const fadeOutPromises = [];
+  const oldKeys = Object.keys(orbitalPointClouds);
+  if (oldKeys.length > 0) {
+    const startTime = performance.now();
+    await new Promise(resolve => {
+      function fadeOut() {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / 300, 1);
+        for (const key of oldKeys) {
+          if (orbitalPointClouds[key]) orbitalPointClouds[key].material.opacity = 0.7 * (1 - t);
+        }
+        for (const key of Object.keys(orbitalIsosurfaces)) {
+          if (orbitalIsosurfaces[key]) orbitalIsosurfaces[key].material.opacity = 0.15 * (1 - t);
+        }
+        if (t < 1) requestAnimationFrame(fadeOut);
+        else resolve();
+      }
+      fadeOut();
+    });
+  }
+
+  // Update config
+  state.config = newConfig;
+  state.visibleOrbitals = new Set(newConfig.map(o => o.key));
+
+  // Regenerate
+  await regenerateAllOrbitals();
+
+  // Fade in
+  const fadeKeys = Object.keys(orbitalPointClouds);
+  if (fadeKeys.length > 0) {
+    const startTime = performance.now();
+    await new Promise(resolve => {
+      function fadeIn() {
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / 300, 1);
+        for (const key of fadeKeys) {
+          if (orbitalPointClouds[key]) orbitalPointClouds[key].material.opacity = 0.7 * t;
+        }
+        for (const key of Object.keys(orbitalIsosurfaces)) {
+          if (orbitalIsosurfaces[key]) orbitalIsosurfaces[key].material.opacity = 0.15 * t;
+        }
+        if (t < 1) requestAnimationFrame(fadeIn);
+        else resolve();
+      }
+      fadeIn();
+    });
+  }
+
+  updateUI();
+}
+
+// ============================================================
+// 10. SET ELEMENT
+// ============================================================
+
+async function setElement(elementKey) {
+  state.element = elementKey;
+  state.excitationLevel = 0;
+  const config = ELEMENTS[elementKey].groundState.map(o => ({ ...o }));
+  // Adjust camera zoom per element (hydrogen orbitals are larger than carbon's)
+  if (elementKey === 'hydrogen') {
+    camera.position.set(0, 0, 15);
+  } else {
+    camera.position.set(0, 0, 10);
+  }
+  await transitionTo(config);
+}
+
+// ============================================================
+// 11. WIRE UP CONTROLS
+// ============================================================
+
+document.getElementById('btn-hydrogen').addEventListener('click', () => setElement('hydrogen'));
+document.getElementById('btn-carbon').addEventListener('click', () => setElement('carbon'));
+
+document.getElementById('btn-show-all').addEventListener('click', () => {
+  state.visibleOrbitals = new Set(state.config.map(o => o.key));
+  updateVisibility();
+  updateUI();
+});
+
+document.getElementById('btn-isolate').addEventListener('click', () => {
+  const first = state.visibleOrbitals.values().next().value || (state.config[0] && state.config[0].key);
+  if (first) {
+    state.visibleOrbitals = new Set([first]);
+    updateVisibility();
+    updateUI();
+  }
+});
+
+document.getElementById('btn-excite').addEventListener('click', async () => {
+  const el = ELEMENTS[state.element];
+  const maxLevel = el.excitationSequence.length - 1;
+  if (state.excitationLevel < maxLevel) {
+    state.excitationLevel++;
+    const config = getConfigForExcitation(state.element, state.excitationLevel);
+    await transitionTo(config);
+  }
+});
+
+document.getElementById('btn-deexcite').addEventListener('click', async () => {
+  if (state.excitationLevel > 0) {
+    state.excitationLevel--;
+    const config = getConfigForExcitation(state.element, state.excitationLevel);
+    await transitionTo(config);
+  }
+});
+
+document.getElementById('toggle-points').addEventListener('change', (e) => {
+  state.showPoints = e.target.checked;
+  updateVisibility();
+});
+
+document.getElementById('toggle-isosurface').addEventListener('change', async (e) => {
+  state.showIsosurface = e.target.checked;
+  if (state.showIsosurface) {
+    // Build isosurfaces for current config
+    for (const { key, Zeff } of state.config) {
+      if (!orbitalIsosurfaces[key]) {
+        const mesh = buildIsosurface(key, Zeff).clone();
+        mesh.material = mesh.material.clone();
+        mesh.material.wireframe = state.isosurfaceWireframe;
+        mesh.material.clippingPlanes = state.crossSectionEnabled ? [clipPlane] : [];
+        mesh.visible = state.visibleOrbitals.has(key);
+        orbitalIsosurfaces[key] = mesh;
+        scene.add(mesh);
+      }
+    }
+  }
+  updateVisibility();
+});
+
+document.getElementById('toggle-wireframe').addEventListener('change', (e) => {
+  state.isosurfaceWireframe = e.target.checked;
+  for (const key of Object.keys(orbitalIsosurfaces)) {
+    orbitalIsosurfaces[key].material.wireframe = state.isosurfaceWireframe;
+  }
+});
+
+document.getElementById('toggle-crosssection').addEventListener('change', (e) => {
+  state.crossSectionEnabled = e.target.checked;
+  document.getElementById('crosssection-slider').disabled = !state.crossSectionEnabled;
+  updateClipping();
+});
+
+document.getElementById('crosssection-slider').addEventListener('input', (e) => {
+  const val = parseFloat(e.target.value);
+  const maxR = 15;
+  state.crossSectionZ = (val / 100) * 2 * maxR - maxR;
+  clipPlane.constant = state.crossSectionZ;
+});
+
+document.getElementById('toggle-wavefunction').addEventListener('change', (e) => {
+  state.showWavefunction = e.target.checked;
+  updateWavefunctionColors();
+  updateWavefunctionPanel();
+});
+
+document.getElementById('toggle-flow').addEventListener('change', async (e) => {
+  state.showFlow = e.target.checked;
+  if (state.showFlow) {
+    // Create flow arrows for current config
+    for (const { key, Zeff } of state.config) {
+      if (!flowArrowGroups[key]) {
+        const flowGroup = createFlowArrows(key, Zeff);
+        flowGroup.visible = state.visibleOrbitals.has(key);
+        flowArrowGroups[key] = flowGroup;
+        scene.add(flowGroup);
+      }
+    }
+  }
+  updateVisibility();
+  updateWavefunctionPanel();
+});
+
+document.getElementById('density-slider').addEventListener('input', (e) => {
+  state.pointsPerOrbital = parseInt(e.target.value);
+  document.getElementById('density-value').textContent = state.pointsPerOrbital;
+});
+
+document.getElementById('density-slider').addEventListener('change', async () => {
+  await regenerateAllOrbitals();
+  updateVisibility();
+});
+
+document.getElementById('btn-reset').addEventListener('click', async () => {
+  state.excitationLevel = 0;
+  const config = ELEMENTS[state.element].groundState.map(o => ({ ...o }));
+  await transitionTo(config);
+});
+
+// ============================================================
+// 12. ANIMATION LOOP
+// ============================================================
+
+// Resample a fraction of points each frame to make the cloud shimmer
+const RESAMPLE_FRACTION = 0.02; // 2% of points per frame
+
+function animateCloud() {
+  for (const key of Object.keys(orbitalPointClouds)) {
+    const cloud = orbitalPointClouds[key];
+    if (!cloud.visible || !cloud.userData.orbital) continue;
+
+    const { n, l, m, Zeff, rMax, maxDensity } = cloud.userData.orbital;
+    const posAttr = cloud.geometry.getAttribute('position');
+    const positions = posAttr.array;
+    const count = posAttr.count;
+    const numToResample = Math.max(1, Math.floor(count * RESAMPLE_FRACTION));
+
+    const signAttr = cloud.geometry.getAttribute('sign');
+    const signArr = signAttr ? signAttr.array : null;
+    const colorAttr = cloud.geometry.getAttribute('color');
+    const colorArr = colorAttr ? colorAttr.array : null;
+    const posColorR = 1.0, posColorG = 0.267, posColorB = 0.267;   // #ff4444
+    const negColorR = 0.267, negColorG = 0.533, negColorB = 1.0;   // #4488ff
+
+    for (let k = 0; k < numToResample; k++) {
+      const idx = Math.floor(Math.random() * count);
+
+      let accepted = false;
+      while (!accepted) {
+        const r = Math.random() * rMax;
+        const theta = Math.acos(2 * Math.random() - 1);
+        const phi = Math.random() * 2 * Math.PI;
+        const density = psiSquared(n, l, m, r, theta, phi, Zeff) * r * r;
+
+        if (Math.random() * maxDensity < density) {
+          const i3 = idx * 3;
+          positions[i3] = r * Math.sin(theta) * Math.cos(phi);
+          positions[i3 + 1] = r * Math.sin(theta) * Math.sin(phi);
+          positions[i3 + 2] = r * Math.cos(theta);
+
+          // Update sign and color for resampled point
+          if (signArr) {
+            const s = psi(n, l, m, r, theta, phi, Zeff) >= 0 ? 1.0 : -1.0;
+            signArr[idx] = s;
+            if (state.showWavefunction && colorArr) {
+              if (s > 0) {
+                colorArr[i3] = posColorR; colorArr[i3+1] = posColorG; colorArr[i3+2] = posColorB;
+              } else {
+                colorArr[i3] = negColorR; colorArr[i3+1] = negColorG; colorArr[i3+2] = negColorB;
+              }
+            }
+          }
+          accepted = true;
+        }
+      }
+    }
+    posAttr.needsUpdate = true;
+    if (signAttr) signAttr.needsUpdate = true;
+    if (state.showWavefunction && colorAttr) colorAttr.needsUpdate = true;
+  }
+}
+
+function animateFlow(time) {
+  if (!state.showFlow) return;
+  const speed = 0.001;
+  for (const key of Object.keys(flowArrowGroups)) {
+    const group = flowArrowGroups[key];
+    if (!group.visible) continue;
+    group.traverse((child) => {
+      if (child.isMesh && child.userData.flowAngle !== undefined) {
+        const { ringRadius, ringY, direction, flowAngle } = child.userData;
+        const phi = flowAngle + time * speed * direction;
+        child.position.set(
+          ringRadius * Math.cos(phi),
+          ringRadius * Math.sin(phi),
+          ringY
+        );
+        const tangent = new THREE.Vector3(
+          -Math.sin(phi) * direction,
+          Math.cos(phi) * direction,
+          0
+        ).normalize();
+        child.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tangent);
+      }
+    });
+  }
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  const time = performance.now();
+  animateCloud();
+  animateFlow(time);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// Start with hydrogen
+setElement('hydrogen');
+  </script>
+</body>
+
+</html>

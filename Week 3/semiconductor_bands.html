@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>BMEN90033 2026: Semiconductor Band Theory — 3D Visualisation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #111;
+      color: #ccc;
+      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      overflow: hidden;
+    }
+
+    #container { width: 100vw; height: 100vh; position: relative; }
+
+    .panel {
+      position: absolute; z-index: 10;
+      background: rgba(20, 20, 20, 0.85);
+      backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px; line-height: 1.6;
+    }
+    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+    .panel h3 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
+    .panel p  { font-size: 11px; color: #666; margin-top: 6px; }
+
+    #info { top: 16px; left: 16px; max-width: 280px; }
+
+    .legend { display: flex; align-items: center; gap: 8px; margin: 3px 0; color: #aaa; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    #band-panel {
+      top: 16px; right: 16px; width: 320px; height: 320px;
+      resize: both; overflow: hidden; min-width: 250px; min-height: 200px;
+    }
+    canvas#bandCanvas {
+      background: rgba(0, 0, 0, 0.5); border-radius: 6px;
+      display: block; width: 100%; height: calc(100% - 28px);
+    }
+
+    #controls {
+      position: absolute; bottom: 16px; left: 16px; z-index: 10;
+      background: rgba(20, 20, 20, 0.85); backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08); font-size: 12px;
+    }
+    #controls label {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 5px 0; color: #999; gap: 10px;
+    }
+    #controls input[type=range] {
+      width: 120px; -webkit-appearance: none;
+      background: rgba(255,255,255,0.1); height: 3px; border-radius: 2px; outline: none;
+    }
+    #controls input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 12px; height: 12px;
+      border-radius: 50%; background: #fff; cursor: pointer;
+    }
+    .btn-row { display: flex; gap: 6px; margin-top: 8px; }
+    button.ctrl-btn {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+      color: #bbb; padding: 5px 14px; border-radius: 6px; cursor: pointer;
+      font-size: 11px; font-weight: 500; transition: all 0.15s;
+    }
+    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    button.ctrl-btn.active {
+      background: rgba(255,200,50,0.15); border-color: rgba(255,200,50,0.4); color: #ffc832;
+    }
+    .mode-btn { padding: 6px 16px; font-size: 12px; font-weight: 600; }
+
+    #status-panel {
+      position: absolute; bottom: 16px; right: 16px; z-index: 10;
+      background: rgba(20,20,20,0.85); backdrop-filter: blur(10px);
+      padding: 14px 18px; border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08); font-size: 12px; min-width: 200px;
+    }
+    #status-panel .val {
+      font-family: 'SF Mono','Fira Code','Consolas',monospace;
+      font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;
+    }
+    #status-panel .stat-row {
+      display: flex; justify-content: space-between; color: #888; margin: 3px 0; font-size: 11px;
+    }
+    #status-panel .stat-val {
+      font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 600; color: #ccc;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="../index.html" id="back-btn" style="position:fixed;top:16px;left:16px;z-index:1000;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;background:rgba(20,20,20,0.8);border:1px solid rgba(255,255,255,0.1);color:#ccc;text-decoration:none;font-size:12px;font-weight:500;backdrop-filter:blur(8px);transition:all 0.15s;" onmouseover="this.style.background='rgba(40,40,40,0.9)';this.style.color='#fff'" onmouseout="this.style.background='rgba(20,20,20,0.8)';this.style.color='#ccc'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>Back</a>
+  <div id="container">
+    <div id="info" class="panel" style="top:52px">
+      <h2>Semiconductor Band Theory</h2>
+      <div class="legend"><div class="dot" style="background:#ff4466"></div> Nucleus (+)</div>
+      <div class="legend"><div class="dot" style="background:#6666cc"></div> Inner-shell electrons</div>
+      <div class="legend"><div class="dot" style="background:#4488ff"></div> Valence band shell / electrons</div>
+      <div class="legend"><div class="dot" style="background:#ff8844"></div> Conduction band shell</div>
+      <div class="legend"><div class="dot" style="background:#ffcc44"></div> Free electrons (delocalised)</div>
+      <p id="descText">Each atom has a valence shell (blue sphere) and a conduction
+        shell (orange sphere). The gap between them is the band gap.
+        As temperature rises the conduction shell contracts — when it
+        overlaps the valence shell, electrons can escape and travel
+        between neighbouring atoms.</p>
+    </div>
+
+    <div id="band-panel" class="panel">
+      <h3 id="bandTitle">Energy Band Diagram</h3>
+      <canvas id="bandCanvas" width="600" height="300"></canvas>
+    </div>
+
+    <div id="controls" class="panel">
+      <h3 style="margin-bottom:8px; color:#fff;">Material Type</h3>
+      <div class="btn-row">
+        <button class="ctrl-btn mode-btn" id="btnInsulator" style="color:#e05050">Insulator</button>
+        <button class="ctrl-btn mode-btn active" id="btnSemiconductor" style="color:#50e080">Semiconductor</button>
+        <button class="ctrl-btn mode-btn" id="btnConductor" style="color:#5090e0">Conductor</button>
+      </div>
+      <label style="margin-top:10px">Temperature <input type="range" id="tempSlider" min="0" max="100" step="1" value="30">
+        <span id="tempValue">300 K</span>
+      </label>
+      <div class="btn-row">
+        <button class="ctrl-btn" id="resetBtn">Reset</button>
+        <button class="ctrl-btn" id="pauseBtn">Pause</button>
+      </div>
+    </div>
+
+    <div id="status-panel">
+      <div class="val" id="materialName">Semiconductor (Si)</div>
+      <div class="stat-row"><span>Band gap</span><span class="stat-val" id="bandGapVal">1.1 eV</span></div>
+      <div class="stat-row"><span>Gap distance</span><span class="stat-val" id="gapDist">—</span></div>
+      <div class="stat-row"><span>Free electrons</span><span class="stat-val" id="freeElecVal">0</span></div>
+      <div class="stat-row"><span>Conductivity</span><span class="stat-val" id="condVal">Low</span></div>
+      <div class="stat-row"><span>Temperature</span><span class="stat-val" id="tempReadout">300 K</span></div>
+    </div>
+  </div>
+
+  <script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    // ─── Scene ───
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111111);
+    scene.fog = new THREE.FogExp2(0x111111, 0.004);
+
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(0, 10, 38);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    document.getElementById('container').appendChild(renderer.domElement);
+
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.enableDamping = true;
+    orbitControls.dampingFactor = 0.08;
+    orbitControls.target.set(0, 0, 0);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    dirLight.position.set(15, 20, 20);
+    scene.add(dirLight);
+    scene.add(new THREE.DirectionalLight(0xffffff, 0.15).translateX(-10).translateY(8));
+
+    const grid = new THREE.GridHelper(80, 40, 0x222222, 0x181818);
+    grid.position.y = -7;
+    scene.add(grid);
+
+    // ─── Material configs ───
+    const MATERIAL_CONFIGS = {
+      insulator: {
+        label: 'Insulator (SiO\u2082)',
+        bandGapEV: '~9 eV',
+        color: 0xe05050, colorCSS: '#e05050',
+        nucleusColor: 0xff4466,
+        innerShellElectrons: 4,
+        valenceElectrons: 4,
+        valenceRadius: 2.8,
+        // Conduction band radius: starts far out, shrinks slightly with temp
+        conductionRadiusBase: 5.5,   // at T=0
+        conductionRadiusMin: 4.5,    // at T=max — barely shrinks, gap stays huge
+        freeElectronCurve: t => (t > 0.9 ? Math.floor((t - 0.9) * 20) : 0),
+        conductivityLabel: t => t > 0.9 ? 'Negligible' : 'None',
+        desc: 'The conduction shell is far from the valence shell (~9 eV gap). Even at high temperature it barely contracts — electrons cannot reach it. No current flows.',
+      },
+      semiconductor: {
+        label: 'Semiconductor (Si)',
+        bandGapEV: '~1.1 eV',
+        color: 0x50e080, colorCSS: '#50e080',
+        nucleusColor: 0x44cc66,
+        innerShellElectrons: 4,
+        valenceElectrons: 4,
+        valenceRadius: 2.8,
+        conductionRadiusBase: 4.5,
+        conductionRadiusMin: 2.8,    // at max temp shrinks to touch valence shell
+        freeElectronCurve: t => Math.floor(t * t * 12),
+        conductivityLabel: t => {
+          if (t < 0.15) return 'Very Low';
+          if (t < 0.4) return 'Low';
+          if (t < 0.7) return 'Moderate';
+          return 'High';
+        },
+        desc: 'The conduction shell starts slightly beyond the valence shell (~1.1 eV gap). As temperature rises, thermal energy shrinks the effective gap — electrons jump to the conduction shell and travel between atoms.',
+      },
+      conductor: {
+        label: 'Conductor (Cu)',
+        bandGapEV: '0 eV (overlap)',
+        color: 0x5090e0, colorCSS: '#5090e0',
+        nucleusColor: 0xffaa44,
+        innerShellElectrons: 6,
+        valenceElectrons: 1,
+        valenceRadius: 2.8,
+        conductionRadiusBase: 2.8,   // already overlaps at any temperature
+        conductionRadiusMin: 2.8,
+        freeElectronCurve: () => 6,
+        conductivityLabel: () => 'Very High',
+        desc: 'The conduction shell overlaps the valence shell at all temperatures (0 eV gap). The outermost electron is always free to drift between atoms — this is the "electron sea" of a metal.',
+      },
+    };
+
+    // ─── State ───
+    let currentMode = 'semiconductor';
+    let temperature = 30;
+    let paused = false;
+    const clock = new THREE.Clock();
+
+    // ─── Constants ───
+    const NUM_ATOMS = 6;
+    const ATOM_SPACING = 7;
+    const INNER_RADIUS = 1.8;
+
+    // ─── Scene objects ───
+    const sceneGroup = new THREE.Group();
+    scene.add(sceneGroup);
+
+    let atomPositions = [];
+    let innerElectrons = [];
+    let valenceElectrons = [];
+    let conductionShells = [];  // the orange spheres that shrink
+    let valenceShells = [];     // the blue spheres (fixed)
+
+    function clearScene() {
+      while (sceneGroup.children.length > 0) {
+        const child = sceneGroup.children[0];
+        sceneGroup.remove(child);
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (child.material.map) child.material.map.dispose();
+          child.material.dispose();
+        }
+      }
+      atomPositions = [];
+      innerElectrons = [];
+      valenceElectrons = [];
+      conductionShells = [];
+      valenceShells = [];
+    }
+
+    function makeTextSprite(text, color, fontSize = 40) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512; canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = color;
+      ctx.font = `bold ${fontSize}px 'Inter', sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 64);
+      const tex = new THREE.CanvasTexture(canvas);
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+      const s = new THREE.Sprite(mat);
+      s.scale.set(8, 2, 1);
+      return s;
+    }
+
+    function createOrbitalRing(radius, color, opacity = 0.15) {
+      const segments = 64;
+      const points = [];
+      for (let i = 0; i <= segments; i++) {
+        const a = (i / segments) * Math.PI * 2;
+        points.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, 0));
+      }
+      const geo = new THREE.BufferGeometry().setFromPoints(points);
+      const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity });
+      return new THREE.Line(geo, mat);
+    }
+
+    // ─── Build scene ───
+    function buildScene(mode) {
+      clearScene();
+      const cfg = MATERIAL_CONFIGS[mode];
+      const totalWidth = (NUM_ATOMS - 1) * ATOM_SPACING;
+      const startX = -totalWidth / 2;
+
+      const nucleusGeo = new THREE.SphereGeometry(0.9, 24, 24);
+      const nucleusMat = new THREE.MeshPhongMaterial({
+        color: cfg.nucleusColor, emissive: cfg.nucleusColor,
+        emissiveIntensity: 0.3, transparent: true, opacity: 0.85,
+      });
+
+      const innerElecGeo = new THREE.SphereGeometry(0.2, 10, 10);
+      const innerElecMat = new THREE.MeshPhongMaterial({
+        color: 0x6666cc, emissive: 0x222244, emissiveIntensity: 0.4,
+        transparent: true, opacity: 0.8,
+      });
+
+      const valElecGeo = new THREE.SphereGeometry(0.28, 12, 12);
+      const valElecMat = new THREE.MeshPhongMaterial({
+        color: 0x4488ff, emissive: 0x112244, emissiveIntensity: 0.5,
+        transparent: true, opacity: 0.9,
+      });
+
+      // Shared geometry for shells (will be scaled per-atom)
+      const shellGeo = new THREE.SphereGeometry(1, 32, 32);
+
+      for (let i = 0; i < NUM_ATOMS; i++) {
+        const ax = startX + i * ATOM_SPACING;
+        atomPositions.push({ x: ax, y: 0, z: 0 });
+
+        // ── Nucleus ──
+        const nucleus = new THREE.Mesh(nucleusGeo, nucleusMat.clone());
+        nucleus.position.set(ax, 0, 0);
+        sceneGroup.add(nucleus);
+
+        // Glow
+        const glow = new THREE.Mesh(
+          new THREE.SphereGeometry(1.4, 16, 16),
+          new THREE.MeshBasicMaterial({ color: cfg.nucleusColor, transparent: true, opacity: 0.05, depthWrite: false })
+        );
+        glow.position.set(ax, 0, 0);
+        sceneGroup.add(glow);
+
+        // + label
+        const plus = makeTextSprite('+', '#ffffff', 36);
+        plus.position.set(ax, 0, 0);
+        plus.scale.set(1.2, 0.6, 1);
+        sceneGroup.add(plus);
+
+        // ── Inner shell orbital rings ──
+        const ir1 = createOrbitalRing(INNER_RADIUS, 0x6666cc, 0.12);
+        ir1.position.set(ax, 0, 0);
+        sceneGroup.add(ir1);
+        const ir2 = createOrbitalRing(INNER_RADIUS, 0x6666cc, 0.12);
+        ir2.position.set(ax, 0, 0);
+        ir2.rotation.y = Math.PI / 2;
+        sceneGroup.add(ir2);
+
+        // ── Inner electrons ──
+        for (let e = 0; e < cfg.innerShellElectrons; e++) {
+          const mesh = new THREE.Mesh(innerElecGeo, innerElecMat.clone());
+          sceneGroup.add(mesh);
+          innerElectrons.push({
+            mesh, atomX: ax, radius: INNER_RADIUS,
+            speed: 2.0 + Math.random() * 0.8,
+            phase: (e / cfg.innerShellElectrons) * Math.PI * 2,
+            planeAngle: e < cfg.innerShellElectrons / 2 ? 0 : Math.PI / 2,
+            tilt: (Math.random() - 0.5) * 0.4,
+          });
+        }
+
+        // ── Valence band shell (blue transparent sphere) ──
+        const vShell = new THREE.Mesh(shellGeo.clone(),
+          new THREE.MeshPhongMaterial({
+            color: 0x4488ff, transparent: true, opacity: 0.06,
+            depthWrite: false, side: THREE.DoubleSide,
+          })
+        );
+        vShell.position.set(ax, 0, 0);
+        vShell.scale.setScalar(cfg.valenceRadius);
+        sceneGroup.add(vShell);
+        valenceShells.push(vShell);
+
+        // Valence wireframe ring (equator)
+        const vRing1 = createOrbitalRing(cfg.valenceRadius, 0x4488ff, 0.18);
+        vRing1.position.set(ax, 0, 0);
+        sceneGroup.add(vRing1);
+        const vRing2 = createOrbitalRing(cfg.valenceRadius, 0x4488ff, 0.12);
+        vRing2.position.set(ax, 0, 0);
+        vRing2.rotation.y = Math.PI / 2;
+        sceneGroup.add(vRing2);
+        const vRing3 = createOrbitalRing(cfg.valenceRadius, 0x4488ff, 0.12);
+        vRing3.position.set(ax, 0, 0);
+        vRing3.rotation.x = Math.PI / 2;
+        sceneGroup.add(vRing3);
+
+        // ── Conduction band shell (orange transparent sphere — will shrink) ──
+        const cShell = new THREE.Mesh(shellGeo.clone(),
+          new THREE.MeshPhongMaterial({
+            color: 0xff8844, transparent: true, opacity: 0.04,
+            depthWrite: false, side: THREE.DoubleSide,
+          })
+        );
+        cShell.position.set(ax, 0, 0);
+        cShell.scale.setScalar(cfg.conductionRadiusBase);
+        sceneGroup.add(cShell);
+
+        // Conduction wireframe rings
+        const cRing1 = createOrbitalRing(1, 0xff8844, 0.12); // radius=1, will be re-scaled
+        cRing1.position.set(ax, 0, 0);
+        sceneGroup.add(cRing1);
+        const cRing2 = createOrbitalRing(1, 0xff8844, 0.08);
+        cRing2.position.set(ax, 0, 0);
+        cRing2.rotation.y = Math.PI / 2;
+        sceneGroup.add(cRing2);
+        const cRing3 = createOrbitalRing(1, 0xff8844, 0.08);
+        cRing3.position.set(ax, 0, 0);
+        cRing3.rotation.x = Math.PI / 2;
+        sceneGroup.add(cRing3);
+
+        conductionShells.push({
+          shell: cShell,
+          rings: [cRing1, cRing2, cRing3],
+          atomX: ax,
+        });
+
+        // ── Valence electrons (orbit ON the valence shell surface) ──
+        for (let e = 0; e < cfg.valenceElectrons; e++) {
+          const mesh = new THREE.Mesh(valElecGeo, valElecMat.clone());
+          sceneGroup.add(mesh);
+
+          // Trail
+          const TRAIL_LEN = 22;
+          const trailPos = new Float32Array(TRAIL_LEN * 3);
+          for (let ti = 0; ti < TRAIL_LEN * 3; ti += 3) {
+            trailPos[ti] = ax; trailPos[ti + 1] = 0; trailPos[ti + 2] = 0;
+          }
+          const trailGeo = new THREE.BufferGeometry();
+          trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+          const trailLine = new THREE.Line(trailGeo,
+            new THREE.LineBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0 })
+          );
+          sceneGroup.add(trailLine);
+
+          valenceElectrons.push({
+            mesh,
+            homeAtomIdx: i, homeX: ax,
+            // Orbital params (orbit on the valence sphere surface)
+            theta: (e / cfg.valenceElectrons) * Math.PI * 2 + Math.random() * 0.5,
+            phi: Math.PI / 2 + (Math.random() - 0.5) * 1.5,
+            speedTheta: 0.8 + Math.random() * 0.6,
+            speedPhi: 0.3 + Math.random() * 0.4,
+            phaseTheta: Math.random() * Math.PI * 2,
+            phasePhi: Math.random() * Math.PI * 2,
+            // Free state
+            isFree: false,
+            freeProgress: 0,
+            // Hopping
+            fromAtomIdx: i,
+            toAtomIdx: Math.min(i + 1, NUM_ATOMS - 1),
+            hopProgress: Math.random(),
+            hopSpeed: 0.3 + Math.random() * 0.4,
+            zWander: (Math.random() - 0.5) * 2,
+            // Trail
+            trail: trailLine, trailPos, trailTimer: 0,
+          });
+        }
+
+        // ── Bond ──
+        if (i < NUM_ATOMS - 1) {
+          const bGeo = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(ax + 1.2, 0, 0),
+            new THREE.Vector3(ax + ATOM_SPACING - 1.2, 0, 0),
+          ]);
+          const bond = new THREE.Line(bGeo,
+            new THREE.LineDashedMaterial({ color: 0x444444, transparent: true, opacity: 0.2, dashSize: 0.4, gapSize: 0.2 })
+          );
+          bond.computeLineDistances();
+          sceneGroup.add(bond);
+        }
+      }
+
+      // Labels
+      for (let i = 0; i < NUM_ATOMS; i++) {
+        const ax = startX + i * ATOM_SPACING;
+        const label = makeTextSprite('Atom ' + (i + 1), '#444', 20);
+        label.position.set(ax, -5.5, 0);
+        label.scale.set(5, 1.3, 1);
+        sceneGroup.add(label);
+      }
+
+      // Valence / conduction labels (one each, positioned at first atom)
+      const vLabel = makeTextSprite('Valence band', '#4488ff', 22);
+      vLabel.position.set(startX - 1, cfg.valenceRadius + 1, 0);
+      vLabel.scale.set(6, 1.5, 1);
+      sceneGroup.add(vLabel);
+
+      const cLabel = makeTextSprite('Conduction band', '#ff8844', 22);
+      cLabel.position.set(startX - 1, cfg.conductionRadiusBase + 1.2, 0);
+      cLabel.scale.set(6, 1.5, 1);
+      sceneGroup.add(cLabel);
+      // Store ref to update position as shell shrinks
+      conductionShells.labelSprite = cLabel;
+    }
+
+    buildScene(currentMode);
+
+    // ─── Band diagram canvas ───
+    const bandCanvas = document.getElementById('bandCanvas');
+    const bandCtx = bandCanvas.getContext('2d');
+
+    function resizeBandCanvas() {
+      const rect = bandCanvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (bandCanvas.width !== w || bandCanvas.height !== h) {
+        bandCanvas.width = w; bandCanvas.height = h;
+      }
+    }
+    new ResizeObserver(resizeBandCanvas).observe(bandCanvas);
+    resizeBandCanvas();
+
+    function drawBandDiagram() {
+      resizeBandCanvas();
+      const dpr = window.devicePixelRatio || 1;
+      const rect = bandCanvas.getBoundingClientRect();
+      const W = Math.round(rect.width);
+      const H = Math.round(rect.height);
+      bandCtx.save();
+      bandCtx.scale(dpr, dpr);
+
+      bandCtx.fillStyle = 'rgba(0,0,0,0.9)';
+      bandCtx.fillRect(0, 0, W, H);
+
+      const cfg = MATERIAL_CONFIGS[currentMode];
+      const tempNorm = temperature / 100;
+      const pad = 30;
+      const topY = 35, botY = H - 20;
+      const midH = botY - topY;
+
+      // Energy axis
+      bandCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+      bandCtx.lineWidth = 1;
+      bandCtx.beginPath();
+      bandCtx.moveTo(pad - 5, topY - 5);
+      bandCtx.lineTo(pad - 5, botY);
+      bandCtx.stroke();
+      bandCtx.beginPath();
+      bandCtx.moveTo(pad - 5, topY - 5);
+      bandCtx.lineTo(pad - 8, topY + 3);
+      bandCtx.moveTo(pad - 5, topY - 5);
+      bandCtx.lineTo(pad - 2, topY + 3);
+      bandCtx.stroke();
+      bandCtx.fillStyle = '#666';
+      bandCtx.font = '10px sans-serif';
+      bandCtx.save();
+      bandCtx.translate(10, (topY + botY) / 2);
+      bandCtx.rotate(-Math.PI / 2);
+      bandCtx.textAlign = 'center';
+      bandCtx.fillText('Energy (E)', 0, 0);
+      bandCtx.restore();
+
+      // Compute band positions that match the 3D shells
+      const vR = cfg.valenceRadius;
+      const cRBase = cfg.conductionRadiusBase;
+      const cRMin = cfg.conductionRadiusMin;
+      const cR = cRBase + (cRMin - cRBase) * tempNorm;
+      const maxR = 6;
+
+      // Map radii to vertical positions (larger radius = higher energy)
+      const vbTopPx = topY + midH * (1 - vR / maxR);
+      const cbBotPx = topY + midH * (1 - cR / maxR);
+
+      const left = pad + 10, right = W - 20;
+      const bandW = right - left;
+      const cx = (left + right) / 2;
+
+      // Valence band
+      bandCtx.fillStyle = 'rgba(68,136,255,0.25)';
+      bandCtx.fillRect(left, vbTopPx, bandW, botY - vbTopPx);
+      bandCtx.strokeStyle = 'rgba(68,136,255,0.6)';
+      bandCtx.lineWidth = 1.5;
+      bandCtx.strokeRect(left, vbTopPx, bandW, botY - vbTopPx);
+
+      // Conduction band
+      bandCtx.fillStyle = 'rgba(255,136,68,0.15)';
+      bandCtx.fillRect(left, topY, bandW, cbBotPx - topY);
+      bandCtx.strokeStyle = 'rgba(255,136,68,0.5)';
+      bandCtx.lineWidth = 1.5;
+      bandCtx.strokeRect(left, topY, bandW, cbBotPx - topY);
+
+      // Gap bracket
+      if (cbBotPx < vbTopPx - 4) {
+        bandCtx.setLineDash([3, 3]);
+        bandCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+        bandCtx.lineWidth = 0.5;
+        bandCtx.beginPath(); bandCtx.moveTo(left, cbBotPx); bandCtx.lineTo(right, cbBotPx); bandCtx.stroke();
+        bandCtx.beginPath(); bandCtx.moveTo(left, vbTopPx); bandCtx.lineTo(right, vbTopPx); bandCtx.stroke();
+        bandCtx.setLineDash([]);
+
+        const bx = right + 4;
+        bandCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+        bandCtx.lineWidth = 1;
+        bandCtx.beginPath();
+        bandCtx.moveTo(bx, cbBotPx); bandCtx.lineTo(bx + 4, cbBotPx);
+        bandCtx.lineTo(bx + 4, vbTopPx); bandCtx.lineTo(bx, vbTopPx);
+        bandCtx.stroke();
+        bandCtx.fillStyle = '#888';
+        bandCtx.font = '10px sans-serif';
+        bandCtx.textAlign = 'left';
+        bandCtx.fillText('E_g', bx + 7, (cbBotPx + vbTopPx) / 2 + 3);
+      }
+
+      // Electrons in valence band
+      const numFree = cfg.freeElectronCurve(tempNorm);
+      bandCtx.fillStyle = 'rgba(68,136,255,0.8)';
+      for (let d = 0; d < 8; d++) {
+        const ex = left + 15 + (d % 5) * (bandW - 30) / 4;
+        const ey = vbTopPx + 10 + Math.floor(d / 5) * 12;
+        bandCtx.beginPath(); bandCtx.arc(ex, ey, 3, 0, Math.PI * 2); bandCtx.fill();
+      }
+
+      // Free electrons in conduction band
+      bandCtx.fillStyle = 'rgba(255,204,68,0.9)';
+      for (let d = 0; d < Math.min(numFree, 10); d++) {
+        const ex = left + 15 + (d % 5) * (bandW - 30) / 4;
+        const ey = topY + 12 + Math.floor(d / 5) * 12;
+        bandCtx.beginPath(); bandCtx.arc(ex, Math.min(ey, cbBotPx - 5), 3.5, 0, Math.PI * 2); bandCtx.fill();
+      }
+
+      // Excitation arrows
+      if (numFree > 0 && cbBotPx < vbTopPx - 4) {
+        const alpha = Math.min(numFree / 5, 0.8);
+        bandCtx.strokeStyle = `rgba(255,200,50,${alpha})`;
+        bandCtx.lineWidth = 1.5;
+        bandCtx.setLineDash([3, 3]);
+        const arrCount = Math.min(numFree, 4);
+        for (let a = 0; a < arrCount; a++) {
+          const ax2 = cx - (arrCount - 1) * 6 + a * 12;
+          bandCtx.beginPath();
+          bandCtx.moveTo(ax2, vbTopPx - 2);
+          bandCtx.lineTo(ax2, cbBotPx + 2);
+          bandCtx.stroke();
+          bandCtx.beginPath();
+          bandCtx.moveTo(ax2, cbBotPx + 2);
+          bandCtx.lineTo(ax2 - 3, cbBotPx + 7);
+          bandCtx.moveTo(ax2, cbBotPx + 2);
+          bandCtx.lineTo(ax2 + 3, cbBotPx + 7);
+          bandCtx.stroke();
+        }
+        bandCtx.setLineDash([]);
+      }
+
+      // Labels
+      bandCtx.fillStyle = cfg.colorCSS;
+      bandCtx.font = 'bold 12px sans-serif';
+      bandCtx.textAlign = 'center';
+      bandCtx.fillText(cfg.label, cx, topY - 14);
+      bandCtx.fillStyle = '#4488ff'; bandCtx.font = '10px sans-serif';
+      bandCtx.fillText('Valence Band', cx, botY - 6);
+      bandCtx.fillStyle = '#ff8844';
+      bandCtx.fillText('Conduction Band', cx, topY + 10);
+
+      const T = Math.round(200 + temperature * 15);
+      bandCtx.fillStyle = '#ffc832';
+      bandCtx.font = 'bold 10px sans-serif';
+      bandCtx.textAlign = 'left';
+      bandCtx.fillText(`T = ${T} K`, pad, botY - 6);
+
+      bandCtx.restore();
+    }
+
+    // ─── Animation ───
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      orbitControls.update();
+
+      const cfg = MATERIAL_CONFIGS[currentMode];
+      const tempNorm = temperature / 100;
+      const numFree = cfg.freeElectronCurve(tempNorm);
+      const totalWidth = (NUM_ATOMS - 1) * ATOM_SPACING;
+      const startX = -totalWidth / 2;
+
+      // ── Compute current conduction shell radius ──
+      const cRadius = cfg.conductionRadiusBase + (cfg.conductionRadiusMin - cfg.conductionRadiusBase) * tempNorm;
+      const gap = cRadius - cfg.valenceRadius;
+
+      // ── Update conduction shell sizes ──
+      for (const cs of conductionShells) {
+        if (!cs.shell) continue;
+        cs.shell.scale.setScalar(cRadius);
+        // Update ring scales — rings were created at radius=1
+        for (const ring of cs.rings) {
+          ring.scale.setScalar(cRadius);
+        }
+        // Shell opacity — brighter when gap is small
+        const gapFrac = Math.max(0, gap) / (cfg.conductionRadiusBase - cfg.valenceRadius + 0.01);
+        cs.shell.material.opacity = 0.03 + (1 - gapFrac) * 0.06;
+      }
+
+      // Update conduction label position
+      if (conductionShells.labelSprite) {
+        conductionShells.labelSprite.position.y = cRadius + 1.2;
+      }
+
+      if (!paused) {
+        const t = clock.getElapsedTime();
+
+        // ── Inner electrons ──
+        for (const e of innerElectrons) {
+          const angle = t * e.speed + e.phase;
+          const ca = Math.cos(e.planeAngle);
+          const sa = Math.sin(e.planeAngle);
+          const ox = Math.cos(angle) * e.radius;
+          const oy = Math.sin(angle) * e.radius;
+          e.mesh.position.set(e.atomX + ox * ca, oy + Math.sin(angle * 0.5) * e.tilt, ox * sa);
+        }
+
+        // ── Decide which valence electrons are free ──
+        let freedSoFar = 0;
+        for (const ve of valenceElectrons) {
+          const shouldBeFree = freedSoFar < numFree;
+          if (shouldBeFree && !ve.isFree) {
+            ve.isFree = true;
+            ve.fromAtomIdx = ve.homeAtomIdx;
+            ve.toAtomIdx = Math.min(ve.homeAtomIdx + 1, NUM_ATOMS - 1);
+            if (ve.toAtomIdx === ve.fromAtomIdx) ve.toAtomIdx = Math.max(0, ve.fromAtomIdx - 1);
+            ve.hopProgress = 0;
+          } else if (!shouldBeFree && ve.isFree) {
+            ve.isFree = false;
+          }
+          if (shouldBeFree) freedSoFar++;
+        }
+
+        // ── Animate valence electrons ──
+        for (const ve of valenceElectrons) {
+          if (ve.isFree) {
+            ve.freeProgress = Math.min(ve.freeProgress + dt * 2.0, 1);
+          } else {
+            ve.freeProgress = Math.max(ve.freeProgress - dt * 2.0, 0);
+          }
+          const fp = ve.freeProgress;
+          const easeF = fp * fp * (3 - 2 * fp);
+
+          // ── Bound position: orbit ON the valence sphere surface ──
+          const thetaB = t * ve.speedTheta + ve.phaseTheta;
+          const phiB = ve.phi + Math.sin(t * ve.speedPhi + ve.phasePhi) * 0.8;
+          const bx = ve.homeX + Math.sin(phiB) * Math.cos(thetaB) * cfg.valenceRadius;
+          const by = Math.cos(phiB) * cfg.valenceRadius;
+          const bz = Math.sin(phiB) * Math.sin(thetaB) * cfg.valenceRadius;
+
+          if (easeF < 0.01) {
+            // Fully bound
+            ve.mesh.position.set(bx, by, bz);
+            ve.mesh.material.color.setHex(0x4488ff);
+            ve.mesh.material.emissive.setHex(0x112244);
+            ve.mesh.material.opacity = 0.9;
+            ve.trail.material.opacity = 0;
+          } else {
+            // ── Free: hop between atoms on the conduction shell surface ──
+            ve.hopProgress += dt * ve.hopSpeed;
+
+            if (ve.hopProgress >= 1) {
+              ve.hopProgress -= 1;
+              const prevFrom = ve.fromAtomIdx;
+              ve.fromAtomIdx = ve.toAtomIdx;
+              let next;
+              if (ve.fromAtomIdx <= 0) { next = 1; }
+              else if (ve.fromAtomIdx >= NUM_ATOMS - 1) { next = NUM_ATOMS - 2; }
+              else {
+                const wasRight = ve.fromAtomIdx > prevFrom;
+                next = ve.fromAtomIdx + ((Math.random() < 0.7 ? wasRight : !wasRight) ? 1 : -1);
+              }
+              ve.toAtomIdx = Math.max(0, Math.min(NUM_ATOMS - 1, next));
+              ve.hopSpeed = 0.25 + Math.random() * 0.4;
+              ve.zWander = (Math.random() - 0.5) * 2.5;
+            }
+
+            // Free position: travel between atoms at the conduction shell radius
+            const fromX = startX + ve.fromAtomIdx * ATOM_SPACING;
+            const toX = startX + ve.toAtomIdx * ATOM_SPACING;
+            const p = ve.hopProgress;
+            const easeP = p * p * (3 - 2 * p);
+            // Arc path between atoms — rises to conduction shell height
+            const fx = fromX + (toX - fromX) * easeP;
+            const fy = Math.sin(p * Math.PI) * cRadius;
+            const fz = ve.zWander * Math.sin(p * Math.PI);
+
+            if (easeF > 0.99) {
+              // Fully free
+              ve.mesh.position.set(fx, fy, fz);
+            } else {
+              // Transitioning — lerp between bound orbit and free hop
+              ve.mesh.position.set(
+                bx + (fx - bx) * easeF,
+                by + (fy - by) * easeF,
+                bz + (fz - bz) * easeF
+              );
+            }
+
+            // Color: lerp blue→gold
+            const boundCol = new THREE.Color(0x4488ff);
+            const freeCol = new THREE.Color(0xffcc44);
+            ve.mesh.material.color.copy(boundCol).lerp(freeCol, easeF);
+            ve.mesh.material.emissive.copy(new THREE.Color(0x112244)).lerp(new THREE.Color(0x664400), easeF);
+            ve.mesh.material.opacity = 0.8 + Math.sin(t * 4 + ve.phaseTheta) * 0.2;
+
+            // Trail
+            ve.trailTimer += dt;
+            if (ve.trailTimer > 0.04) {
+              ve.trailTimer = 0;
+              const tp = ve.trailPos;
+              for (let ti = tp.length - 3; ti >= 3; ti -= 3) {
+                tp[ti] = tp[ti - 3]; tp[ti + 1] = tp[ti - 2]; tp[ti + 2] = tp[ti - 1];
+              }
+              tp[0] = ve.mesh.position.x;
+              tp[1] = ve.mesh.position.y;
+              tp[2] = ve.mesh.position.z;
+              ve.trail.geometry.attributes.position.needsUpdate = true;
+            }
+            ve.trail.material.opacity = easeF * 0.3;
+          }
+        }
+      }
+
+      // ── UI ──
+      const T = Math.round(200 + temperature * 15);
+      document.getElementById('materialName').textContent = cfg.label;
+      document.getElementById('materialName').style.color = cfg.colorCSS;
+      document.getElementById('bandGapVal').textContent = cfg.bandGapEV;
+      document.getElementById('gapDist').textContent = gap > 0.05 ? gap.toFixed(1) + ' (shells apart)' : 'Overlapping';
+      document.getElementById('freeElecVal').textContent = numFree + ' / ' + valenceElectrons.length;
+      document.getElementById('condVal').textContent = cfg.conductivityLabel(tempNorm);
+      document.getElementById('tempReadout').textContent = T + ' K';
+
+      drawBandDiagram();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    // ─── Mode switching ───
+    function setMode(mode) {
+      currentMode = mode;
+      buildScene(mode);
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('btn' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+      document.getElementById('descText').textContent = MATERIAL_CONFIGS[mode].desc;
+      document.getElementById('bandTitle').textContent = 'Energy Band Diagram \u2014 ' + MATERIAL_CONFIGS[mode].label;
+    }
+
+    document.getElementById('btnInsulator').addEventListener('click', () => setMode('insulator'));
+    document.getElementById('btnSemiconductor').addEventListener('click', () => setMode('semiconductor'));
+    document.getElementById('btnConductor').addEventListener('click', () => setMode('conductor'));
+
+    document.getElementById('tempSlider').addEventListener('input', e => {
+      temperature = parseFloat(e.target.value);
+      document.getElementById('tempValue').textContent = Math.round(200 + temperature * 15) + ' K';
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      temperature = 30;
+      document.getElementById('tempSlider').value = 30;
+      document.getElementById('tempValue').textContent = '300 K';
+      paused = false;
+      document.getElementById('pauseBtn').textContent = 'Pause';
+    });
+
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      paused = !paused;
+      document.getElementById('pauseBtn').textContent = paused ? 'Play' : 'Pause';
+    });
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+
+</html>

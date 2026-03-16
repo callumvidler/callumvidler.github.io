@@ -101,6 +101,11 @@
       width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
     }
 
+    #orbital-checkboxes::-webkit-scrollbar { width: 4px; }
+    #orbital-checkboxes::-webkit-scrollbar-track { background: transparent; }
+    #orbital-checkboxes::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+    #orbital-checkboxes::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+
     #loading {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       z-index: 100; background: rgba(17,17,17,0.7);
@@ -137,10 +142,12 @@
       <div class="btn-row">
         <button class="ctrl-btn active" id="btn-hydrogen">Hydrogen</button>
         <button class="ctrl-btn" id="btn-carbon">Carbon</button>
+        <button class="ctrl-btn" id="btn-silicon">Silicon</button>
+        <button class="ctrl-btn" id="btn-gold">Gold</button>
       </div>
 
       <div class="section-label">Orbitals</div>
-      <div id="orbital-checkboxes">
+      <div id="orbital-checkboxes" style="max-height:150px; overflow-y:auto; padding-right:4px;">
         <!-- Orbital checkboxes will be populated by JS -->
       </div>
       <div class="btn-row">
@@ -158,6 +165,10 @@
       <div class="checkbox-row"><input type="checkbox" id="toggle-points" checked><label for="toggle-points">Points</label></div>
       <div class="checkbox-row"><input type="checkbox" id="toggle-isosurface"><label for="toggle-isosurface">Isosurface</label></div>
       <div class="checkbox-row"><input type="checkbox" id="toggle-wireframe"><label for="toggle-wireframe">Wireframe</label></div>
+      <div class="checkbox-row"><input type="checkbox" id="toggle-logbrightness"><label for="toggle-logbrightness">Log brightness</label></div>
+      <label>Opacity <input type="range" id="opacity-slider" min="0" max="100" value="70" step="1">
+        <span id="opacity-value">70%</span>
+      </label>
 
       <div class="section-label">Cross-section</div>
       <div class="checkbox-row"><input type="checkbox" id="toggle-crosssection"><label for="toggle-crosssection">Enable</label></div>
@@ -307,9 +318,40 @@ const ORBITAL_DEFS = {
   '3dyz':  { n: 3, l: 2, m: -1, label: '3d_yz',  color: '#aa66ff' },
   '3dxy':  { n: 3, l: 2, m: 2,  label: '3d_xy',  color: '#ffaa66' },
   '3dx2y2':{ n: 3, l: 2, m: -2, label: '3d_x\u00B2-y\u00B2', color: '#66aaff' },
+  '4s':    { n: 4, l: 0, m: 0,  label: '4s',   color: '#33ffcc' },
+  '4px':   { n: 4, l: 1, m: 1,  label: '4p_x', color: '#ff5599' },
+  '4py':   { n: 4, l: 1, m: -1, label: '4p_y', color: '#55aaff' },
+  '4pz':   { n: 4, l: 1, m: 0,  label: '4p_z', color: '#dd77ff' },
+  '4dz2':  { n: 4, l: 2, m: 0,  label: '4d_z\u00B2',  color: '#ff77bb' },
+  '4dxz':  { n: 4, l: 2, m: 1,  label: '4d_xz',  color: '#77ffbb' },
+  '4dyz':  { n: 4, l: 2, m: -1, label: '4d_yz',  color: '#bb77ff' },
+  '4dxy':  { n: 4, l: 2, m: 2,  label: '4d_xy',  color: '#ffbb77' },
+  '4dx2y2':{ n: 4, l: 2, m: -2, label: '4d_x\u00B2-y\u00B2', color: '#77bbff' },
+  '4f0':   { n: 4, l: 3, m: 0,  label: '4f_0',  color: '#ff99cc' },
+  '4f1':   { n: 4, l: 3, m: 1,  label: '4f_1',  color: '#99ccff' },
+  '4fm1':  { n: 4, l: 3, m: -1, label: '4f_{-1}', color: '#cc99ff' },
+  '4f2':   { n: 4, l: 3, m: 2,  label: '4f_2',  color: '#ffcc99' },
+  '4fm2':  { n: 4, l: 3, m: -2, label: '4f_{-2}', color: '#99ffcc' },
+  '4f3':   { n: 4, l: 3, m: 3,  label: '4f_3',  color: '#ff9999' },
+  '4fm3':  { n: 4, l: 3, m: -3, label: '4f_{-3}', color: '#9999ff' },
+  '5s':    { n: 5, l: 0, m: 0,  label: '5s',   color: '#44ffdd' },
+  '5px':   { n: 5, l: 1, m: 1,  label: '5p_x', color: '#ff4488' },
+  '5py':   { n: 5, l: 1, m: -1, label: '5p_y', color: '#4499ff' },
+  '5pz':   { n: 5, l: 1, m: 0,  label: '5p_z', color: '#cc55ff' },
+  '5dz2':  { n: 5, l: 2, m: 0,  label: '5d_z\u00B2',  color: '#ff88cc' },
+  '5dxz':  { n: 5, l: 2, m: 1,  label: '5d_xz',  color: '#88ffcc' },
+  '5dyz':  { n: 5, l: 2, m: -1, label: '5d_yz',  color: '#cc88ff' },
+  '5dxy':  { n: 5, l: 2, m: 2,  label: '5d_xy',  color: '#ffcc88' },
+  '5dx2y2':{ n: 5, l: 2, m: -2, label: '5d_x\u00B2-y\u00B2', color: '#88ccff' },
+  '6s':    { n: 6, l: 0, m: 0,  label: '6s',   color: '#55ffee' },
 };
 
-const CARBON_ZEFF = { '1s': 5.7, '2s': 3.25, '2p': 3.25 };
+const ELEMENT_ZEFF = {
+  carbon:  { '1s': 5.7, '2s': 3.25, '2p': 3.25 },
+  silicon: { '1s': 13.6, '2s': 9.95, '2p': 9.95, '3s': 4.29, '3p': 4.29 },
+  gold:    { '1s': 77.5, '2s': 69.8, '2p': 69.8, '3s': 48.0, '3p': 48.0, '3d': 38.0,
+             '4s': 28.0, '4p': 28.0, '4d': 18.0, '4f': 10.0, '5s': 8.0, '5p': 8.0, '5d': 4.2, '6s': 2.2 }
+};
 
 const ELEMENTS = {
   hydrogen: {
@@ -326,6 +368,66 @@ const ELEMENTS = {
       { key: '2py', electrons: 1, Zeff: 3.25 },
     ],
     excitationSequence: ['2py', '3s', '3pz', '3dz2']
+  },
+  silicon: {
+    name: 'Silicon (Si)', symbol: 'Si', Z: 14,
+    groundState: [
+      { key: '1s',  electrons: 2, Zeff: 13.6 },
+      { key: '2s',  electrons: 2, Zeff: 9.95 },
+      { key: '2px', electrons: 2, Zeff: 9.95 },
+      { key: '2py', electrons: 2, Zeff: 9.95 },
+      { key: '2pz', electrons: 2, Zeff: 9.95 },
+      { key: '3s',  electrons: 2, Zeff: 4.29 },
+      { key: '3px', electrons: 1, Zeff: 4.29 },
+      { key: '3py', electrons: 1, Zeff: 4.29 },
+    ],
+    excitationSequence: ['3py', '3pz', '3dz2', '4s', '4pz']
+  },
+  gold: {
+    name: 'Gold (Au)', symbol: 'Au', Z: 79,
+    groundState: [
+      { key: '1s',    electrons: 2, Zeff: 77.5 },
+      { key: '2s',    electrons: 2, Zeff: 69.8 },
+      { key: '2px',   electrons: 2, Zeff: 69.8 },
+      { key: '2py',   electrons: 2, Zeff: 69.8 },
+      { key: '2pz',   electrons: 2, Zeff: 69.8 },
+      { key: '3s',    electrons: 2, Zeff: 48.0 },
+      { key: '3px',   electrons: 2, Zeff: 48.0 },
+      { key: '3py',   electrons: 2, Zeff: 48.0 },
+      { key: '3pz',   electrons: 2, Zeff: 48.0 },
+      { key: '3dz2',  electrons: 2, Zeff: 38.0 },
+      { key: '3dxz',  electrons: 2, Zeff: 38.0 },
+      { key: '3dyz',  electrons: 2, Zeff: 38.0 },
+      { key: '3dxy',  electrons: 2, Zeff: 38.0 },
+      { key: '3dx2y2',electrons: 2, Zeff: 38.0 },
+      { key: '4s',    electrons: 2, Zeff: 28.0 },
+      { key: '4px',   electrons: 2, Zeff: 28.0 },
+      { key: '4py',   electrons: 2, Zeff: 28.0 },
+      { key: '4pz',   electrons: 2, Zeff: 28.0 },
+      { key: '4dz2',  electrons: 2, Zeff: 18.0 },
+      { key: '4dxz',  electrons: 2, Zeff: 18.0 },
+      { key: '4dyz',  electrons: 2, Zeff: 18.0 },
+      { key: '4dxy',  electrons: 2, Zeff: 18.0 },
+      { key: '4dx2y2',electrons: 2, Zeff: 18.0 },
+      { key: '4f0',   electrons: 2, Zeff: 10.0 },
+      { key: '4f1',   electrons: 2, Zeff: 10.0 },
+      { key: '4fm1',  electrons: 2, Zeff: 10.0 },
+      { key: '4f2',   electrons: 2, Zeff: 10.0 },
+      { key: '4fm2',  electrons: 2, Zeff: 10.0 },
+      { key: '4f3',   electrons: 2, Zeff: 10.0 },
+      { key: '4fm3',  electrons: 2, Zeff: 10.0 },
+      { key: '5s',    electrons: 2, Zeff: 8.0 },
+      { key: '5px',   electrons: 2, Zeff: 8.0 },
+      { key: '5py',   electrons: 2, Zeff: 8.0 },
+      { key: '5pz',   electrons: 2, Zeff: 8.0 },
+      { key: '5dz2',  electrons: 2, Zeff: 4.2 },
+      { key: '5dxz',  electrons: 2, Zeff: 4.2 },
+      { key: '5dyz',  electrons: 2, Zeff: 4.2 },
+      { key: '5dxy',  electrons: 2, Zeff: 4.2 },
+      { key: '5dx2y2',electrons: 2, Zeff: 4.2 },
+      { key: '6s',    electrons: 1, Zeff: 2.2 },
+    ],
+    excitationSequence: ['6s', '5dz2', '5dxz']
   }
 };
 
@@ -431,6 +533,8 @@ const state = {
   visibleOrbitals: new Set(),
   showWavefunction: false,
   showFlow: false,
+  logBrightness: false,
+  baseOpacity: 0.7,
 };
 
 // Scene objects keyed by orbital key
@@ -1172,7 +1276,7 @@ function createPointCloud(orbKey, Zeff, numPoints) {
     vertexColors: state.showWavefunction,
     size: 0.08,
     transparent: true,
-    opacity: 0.7,
+    opacity: state.baseOpacity,
     blending: THREE.AdditiveBlending,
     sizeAttenuation: true,
     depthWrite: false,
@@ -1270,13 +1374,10 @@ function getConfigForExcitation(element, level) {
   if (element === 'hydrogen') {
     Zeff = 1.0;
   } else {
-    // Carbon
-    if (targetDef.n <= 2) {
-      const orbType = targetDef.l === 0 ? `${targetDef.n}s` : `${targetDef.n}p`;
-      Zeff = CARBON_ZEFF[orbType] || 3.25;
-    } else {
-      Zeff = 1.6;
-    }
+    const zeffTable = ELEMENT_ZEFF[element];
+    const orbTypes = ['s', 'p', 'd', 'f'];
+    const orbType = `${targetDef.n}${orbTypes[targetDef.l]}`;
+    Zeff = (zeffTable && zeffTable[orbType]) || 2.0;
   }
 
   const existing = config.find(o => o.key === targetKey);
@@ -1299,6 +1400,8 @@ function updateUI() {
   // Element buttons
   document.getElementById('btn-hydrogen').classList.toggle('active', state.element === 'hydrogen');
   document.getElementById('btn-carbon').classList.toggle('active', state.element === 'carbon');
+  document.getElementById('btn-silicon').classList.toggle('active', state.element === 'silicon');
+  document.getElementById('btn-gold').classList.toggle('active', state.element === 'gold');
 
   // Info panel
   document.getElementById('element-name').textContent = el.name;
@@ -1364,8 +1467,35 @@ function updateUI() {
 }
 
 function updateVisibility() {
+  // Compute log brightness scaling: equalise visibility across shells
+  let opacityMap = {};
+  if (state.logBrightness && state.config.length > 0) {
+    // Each orbital's spatial extent ~ n²/Zeff. Inner orbitals are very concentrated
+    // so additive blending makes them blindingly bright. Scale opacity down for
+    // concentrated orbitals and up for diffuse ones.
+    const spreads = state.config.map(o => {
+      const def = ORBITAL_DEFS[o.key];
+      return { key: o.key, spread: (def.n * def.n) / o.Zeff };
+    });
+    const maxSpread = Math.max(...spreads.map(s => s.spread));
+    const minSpread = Math.min(...spreads.map(s => s.spread));
+    for (const s of spreads) {
+      // Map spread to opacity: most concentrated → low opacity, most diffuse → high opacity
+      // Use log scale to compress the range
+      const logMin = Math.log(minSpread + 1e-10);
+      const logMax = Math.log(maxSpread + 1e-10);
+      const logVal = Math.log(s.spread + 1e-10);
+      const t = logMax > logMin ? (logVal - logMin) / (logMax - logMin) : 1;
+      // Range from 0.15 (innermost) to 0.9 (outermost)
+      opacityMap[s.key] = 0.15 + t * 0.75;
+    }
+  }
+
   for (const key of Object.keys(orbitalPointClouds)) {
-    orbitalPointClouds[key].visible = state.showPoints && state.visibleOrbitals.has(key);
+    const vis = state.showPoints && state.visibleOrbitals.has(key);
+    orbitalPointClouds[key].visible = vis;
+    orbitalPointClouds[key].material.opacity = state.logBrightness && opacityMap[key] !== undefined
+      ? opacityMap[key] * (state.baseOpacity / 0.7) : state.baseOpacity;
   }
   for (const key of Object.keys(orbitalIsosurfaces)) {
     orbitalIsosurfaces[key].visible = state.showIsosurface && state.visibleOrbitals.has(key);
@@ -1462,7 +1592,7 @@ async function transitionTo(newConfig) {
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / 300, 1);
         for (const key of oldKeys) {
-          if (orbitalPointClouds[key]) orbitalPointClouds[key].material.opacity = 0.7 * (1 - t);
+          if (orbitalPointClouds[key]) orbitalPointClouds[key].material.opacity = state.baseOpacity * (1 - t);
         }
         for (const key of Object.keys(orbitalIsosurfaces)) {
           if (orbitalIsosurfaces[key]) orbitalIsosurfaces[key].material.opacity = 0.15 * (1 - t);
@@ -1490,7 +1620,7 @@ async function transitionTo(newConfig) {
         const elapsed = performance.now() - startTime;
         const t = Math.min(elapsed / 300, 1);
         for (const key of fadeKeys) {
-          if (orbitalPointClouds[key]) orbitalPointClouds[key].material.opacity = 0.7 * t;
+          if (orbitalPointClouds[key]) orbitalPointClouds[key].material.opacity = state.baseOpacity * t;
         }
         for (const key of Object.keys(orbitalIsosurfaces)) {
           if (orbitalIsosurfaces[key]) orbitalIsosurfaces[key].material.opacity = 0.15 * t;
@@ -1513,12 +1643,9 @@ async function setElement(elementKey) {
   state.element = elementKey;
   state.excitationLevel = 0;
   const config = ELEMENTS[elementKey].groundState.map(o => ({ ...o }));
-  // Adjust camera zoom per element (hydrogen orbitals are larger than carbon's)
-  if (elementKey === 'hydrogen') {
-    camera.position.set(0, 0, 15);
-  } else {
-    camera.position.set(0, 0, 10);
-  }
+  // Adjust camera zoom per element (higher Zeff = tighter orbitals)
+  const cameraDistances = { hydrogen: 15, carbon: 10, silicon: 8, gold: 5 };
+  camera.position.set(0, 0, cameraDistances[elementKey] || 10);
   await transitionTo(config);
 }
 
@@ -1528,6 +1655,8 @@ async function setElement(elementKey) {
 
 document.getElementById('btn-hydrogen').addEventListener('click', () => setElement('hydrogen'));
 document.getElementById('btn-carbon').addEventListener('click', () => setElement('carbon'));
+document.getElementById('btn-silicon').addEventListener('click', () => setElement('silicon'));
+document.getElementById('btn-gold').addEventListener('click', () => setElement('gold'));
 
 document.getElementById('btn-show-all').addEventListener('click', () => {
   state.visibleOrbitals = new Set(state.config.map(o => o.key));
@@ -1591,6 +1720,17 @@ document.getElementById('toggle-wireframe').addEventListener('change', (e) => {
   for (const key of Object.keys(orbitalIsosurfaces)) {
     orbitalIsosurfaces[key].material.wireframe = state.isosurfaceWireframe;
   }
+});
+
+document.getElementById('toggle-logbrightness').addEventListener('change', (e) => {
+  state.logBrightness = e.target.checked;
+  updateVisibility();
+});
+
+document.getElementById('opacity-slider').addEventListener('input', (e) => {
+  state.baseOpacity = parseInt(e.target.value) / 100;
+  document.getElementById('opacity-value').textContent = e.target.value + '%';
+  updateVisibility();
 });
 
 document.getElementById('toggle-crosssection').addEventListener('change', (e) => {

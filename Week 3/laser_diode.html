@@ -273,7 +273,7 @@
   <div class="explainer">
     <div class="title-block">
       <h1>Laser Diode Physics</h1>
-      <p>Step through the physics of a semiconductor laser diode — from the unbiased PN junction through population inversion to coherent stimulated emission in a Fabry-Perot cavity.</p>
+      <p>BMEN90033 — Bioinstrumentation</p>
     </div>
 
     <div class="step-nav">
@@ -371,27 +371,27 @@
     const STEPS = [
       {
         title: 'Step 1 — The Unbiased Junction',
-        html: `A laser diode is a forward-biased PN junction engineered so that <strong>stimulated emission</strong> dominates over spontaneous emission. At thermal equilibrium (no applied voltage), the Fermi levels of the p-type and n-type regions align, creating a <strong>built-in potential</strong> across the depletion region.<br><br>The conduction band on the n-side sits lower in energy than on the p-side (relative to vacuum), establishing a potential barrier that prevents majority carrier flow. <span style="color:#4ecdc4">Electrons</span> populate the conduction band on the n-side; <span style="color:#ff6b6b">holes</span> populate the valence band on the p-side.`
+        html: `A laser diode is a forward-biased PN junction where <strong>stimulated emission</strong> dominates over spontaneous emission. With no applied voltage, the Fermi levels of the p-type and n-type regions align, and a <strong>built-in potential</strong> forms across the depletion region.<br><br>The conduction band on the n-side sits lower in energy than on the p-side (relative to vacuum), so there is a potential barrier that blocks majority carrier flow. <span style="color:#4ecdc4">Electrons</span> fill the conduction band on the n-side; <span style="color:#ff6b6b">holes</span> fill the valence band on the p-side.`
       },
       {
         title: 'Step 2 — Forward Bias & Carrier Injection',
-        html: `When a forward voltage V ≈ E<sub>g</sub>/e (typically ~1.5–3 V depending on material) is applied, the barrier height is reduced. <span style="color:#4ecdc4">Electrons</span> from the n-side and <span style="color:#ff6b6b">holes</span> from the p-side are <strong>injected into the active region</strong>.<br><br>In a laser diode, the active region is deliberately thin — often a <strong>quantum well</strong> (~5–10 nm) — to confine carriers spatially and achieve high carrier density. This confinement is essential for reaching the population inversion needed for lasing.<br><br>Use the current slider to increase injection and watch carriers flood into the active region.<br><br><span class="key-equation">J = J₀(e<sup>eV/kT</sup> − 1)</span>`
+        html: `Applying a forward voltage V ≈ E<sub>g</sub>/e (typically ~1.5–3 V depending on the material) lowers the barrier. <span style="color:#4ecdc4">Electrons</span> from the n-side and <span style="color:#ff6b6b">holes</span> from the p-side are <strong>injected into the active region</strong>.<br><br>The active region is kept very thin — often a <strong>quantum well</strong> (~5–10 nm) — so carriers are confined in a small space and the carrier density stays high. Without this confinement, you can't get the population inversion needed for lasing.<br><br>Try increasing the current slider to inject carriers into the active region.<br><br><span class="key-equation">J = J₀(e<sup>eV/kT</sup> − 1)</span>`
       },
       {
         title: 'Step 3 — Population Inversion',
-        html: `At low injection current, most recombination is <strong>spontaneous</strong> — the junction acts as an LED. As current increases, the quasi-Fermi level for electrons (E<sub>Fc</sub>) rises into the conduction band and the quasi-Fermi level for holes (E<sub>Fv</sub>) drops into the valence band.<br><br>When <strong>E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub></strong>, you achieve <strong>population inversion</strong>: more electrons occupy the upper state than the lower state for a range of photon energies. This is the <strong>Bernard-Duraffourg condition</strong> and it defines the threshold for net stimulated emission gain.<br><br>Watch the band diagram — as current increases past threshold (~${THRESHOLD_CURRENT} mA), the quasi-Fermi levels split apart and population inversion is achieved.<br><br><span class="key-equation">E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub>  (Bernard-Duraffourg)</span>`
+        html: `At low current, most recombination is <strong>spontaneous</strong> — the junction just acts as an LED. As current increases, the quasi-Fermi level for electrons (E<sub>Fc</sub>) rises into the conduction band while the quasi-Fermi level for holes (E<sub>Fv</sub>) drops into the valence band.<br><br>Once <strong>E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub></strong>, you get <strong>population inversion</strong>: more electrons sit in the upper state than the lower state across a range of photon energies. This is the <strong>Bernard-Duraffourg condition</strong> — the threshold for net stimulated emission gain.<br><br>In the band diagram, you can see the quasi-Fermi levels split apart as current passes threshold (~${THRESHOLD_CURRENT} mA).<br><br><span class="key-equation">E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub>  (Bernard-Duraffourg)</span>`
       },
       {
         title: 'Step 4 — Stimulated Emission & Optical Gain',
-        html: `A photon with energy ℏω ≈ E<sub>g</sub> passing through the inverted active region has a higher probability of <strong>stimulating</strong> an electron-hole recombination (producing a coherent copy of itself) than of being absorbed. The medium now has <strong>positive optical gain</strong>.<br><br>The gain coefficient g(ω) depends on the joint density of states, the Fermi occupation factors, and the matrix element for the transition. Each stimulated photon has the <strong>same phase, frequency, polarisation, and direction</strong> as the triggering photon — this is the origin of coherence.<br><br>Increase current above threshold to see stimulated emission chains — one photon triggers the emission of another, creating amplification.`
+        html: `A photon with energy ℏω ≈ E<sub>g</sub> passing through the inverted active region is more likely to <strong>stimulate</strong> an electron-hole recombination (producing a copy of itself) than to be absorbed. The medium now has <strong>positive optical gain</strong>.<br><br>The gain coefficient g(ω) depends on the joint density of states, the Fermi occupation factors, and the transition matrix element. Each stimulated photon has the <strong>same phase, frequency, polarisation, and direction</strong> as the photon that triggered it — that's where coherence comes from.<br><br>Increase current above threshold to see stimulated emission chains — one photon triggers another, and the signal gets amplified.`
       },
       {
         title: 'Step 5 — The Fabry-Pérot Optical Cavity',
-        html: `The cleaved crystal facets of the semiconductor (refractive index n ≈ 3.5) act as <strong>~32% reflectors</strong>, forming a <strong>Fabry-Pérot resonator</strong>. Photons bounce back and forth between the mirrors, making multiple passes through the gain medium.<br><br>Lasing occurs when the <strong>round-trip gain equals the round-trip loss</strong> (mirror loss + internal absorption + scattering):<br><br><span class="key-equation">Γ · g<sub>th</sub> = α<sub>i</sub> + (1/2L) · ln(1/R₁R₂)</span><br><br>where Γ is the optical confinement factor, α<sub>i</sub> is internal loss, L is cavity length (~300 μm), and R₁, R₂ are facet reflectivities (~0.32). Only modes satisfying the resonance condition 2nL = mλ are supported.`
+        html: `The cleaved crystal facets of the semiconductor (refractive index n ≈ 3.5) work as <strong>~32% reflectors</strong>, forming a <strong>Fabry-Pérot resonator</strong>. Photons bounce back and forth between these mirrors, passing through the gain medium multiple times.<br><br>Lasing starts when the <strong>round-trip gain matches the round-trip loss</strong> (mirror loss + internal absorption + scattering):<br><br><span class="key-equation">Γ · g<sub>th</sub> = α<sub>i</sub> + (1/2L) · ln(1/R₁R₂)</span><br><br>where Γ is the optical confinement factor, α<sub>i</sub> is internal loss, L is cavity length (~300 μm), and R₁, R₂ are facet reflectivities (~0.32). Only modes that satisfy the resonance condition 2nL = mλ are supported.`
       },
       {
         title: 'Step 6 — Coherent Output Above Threshold',
-        html: `Above threshold, stimulated photons dominate. The output is:<br><br>• <strong>Spatially coherent</strong> — single transverse mode from the waveguide<br>• <strong>Temporally coherent</strong> — narrow linewidth set by the cavity modes<br>• <strong>Linearly related to current</strong> — optical power P scales as P = η(I − I<sub>th</sub>) above threshold<br><br>Below threshold, the device emits incoherent spontaneous emission (LED-like). At threshold, stimulated emission clamps the carrier density and the slope efficiency η<sub>d</sub> ≈ (ℏω/e) · (α<sub>m</sub>/(α<sub>m</sub> + α<sub>i</sub>)) determines how efficiently current converts to light.<br><br>The L-I (light vs current) characteristic shows the sharp kink at threshold — the hallmark of laser action.<br><br><span class="key-equation">P = η<sub>d</sub> · (I − I<sub>th</sub>)  for I > I<sub>th</sub></span>`
+        html: `Above threshold, stimulated photons dominate. The output is:<br><br>• <strong>Spatially coherent</strong> — single transverse mode from the waveguide<br>• <strong>Temporally coherent</strong> — narrow linewidth set by the cavity modes<br>• <strong>Linearly related to current</strong> — optical power P scales as P = η(I − I<sub>th</sub>) above threshold<br><br>Below threshold, the device just emits incoherent spontaneous emission (like an LED). At threshold, stimulated emission clamps the carrier density. The slope efficiency η<sub>d</sub> ≈ (ℏω/e) · (α<sub>m</sub>/(α<sub>m</sub> + α<sub>i</sub>)) tells you how much of the current actually converts to light.<br><br><span class="key-equation">P = η<sub>d</sub> · (I − I<sub>th</sub>)  for I > I<sub>th</sub></span>`
       }
     ];
 
@@ -437,7 +437,13 @@
         vx: (Math.random() - 0.5) * 0.5,
         vy: (Math.random() - 0.5) * 0.5,
         r: 5,
-        region: region || 'n-side'
+        region: region || 'n-side',
+        hopping: false,       // true when electron is hopping through P-type holes
+        targetHole: null,     // index of the hole it's moving toward
+        hopProgress: 0,       // 0-1 progress toward target hole
+        hopFromX: 0,          // start position of current hop
+        hopFromY: 0,
+        lastHoleIdx: -1       // last hole visited (to avoid backtracking)
       };
     }
 
@@ -634,6 +640,7 @@
 
     function drawHoles() {
       holes.forEach(h => {
+        if (h.occupied) return; // hole is filled by a hopping electron — don't draw
         ctx.beginPath();
         ctx.arc(h.x, h.y, h.r, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255, 107, 107, 0.06)';
@@ -1007,8 +1014,10 @@
       const active = getActiveRegionBounds();
       const aboveThresh = isAboveThreshold();
 
-      // Electron thermal motion and drift
+      // Electron thermal motion and drift (skip hopping electrons)
       electrons.forEach(e => {
+        if (e.hopping) return; // hopping electrons are animated separately
+
         e.vx += (Math.random() - 0.5) * 0.3;
         e.vy += (Math.random() - 0.5) * 0.3;
 
@@ -1042,35 +1051,113 @@
         h.y = h.baseY + Math.cos(time * 1.8 + h.baseX) * 1;
       });
 
-      // Recombination in active region
+      // Recombination in active region — electron hops into nearest P-type hole
       if (currentStep >= 2 && injectionCurrent > 5) {
         electrons.forEach(e => {
-          if (e.dead) return;
+          if (e.dead || e.hopping) return;
           if (e.x > active.left - 30 && e.x < active.right + 30 &&
               e.y > active.top && e.y < active.bottom) {
-            // Check for nearby holes (conceptual — recombination)
             if (Math.random() < (aboveThresh ? 0.03 : 0.008)) {
-              e.dead = true;
-              recombinations.push({ x: e.x, y: e.y, life: 1.0 });
+              // Find nearest P-type hole to hop into
+              let bestIdx = -1, bestDist = Infinity;
+              holes.forEach((h, idx) => {
+                if (h.occupied) return;
+                const dx = h.x - e.x, dy = h.y - e.y;
+                const d = dx * dx + dy * dy;
+                if (d < bestDist) { bestDist = d; bestIdx = idx; }
+              });
 
+              // Emit photon at recombination site
+              recombinations.push({ x: e.x, y: e.y, life: 1.0 });
               if (aboveThresh && currentStep >= 3) {
-                // Stimulated emission: coherent photon along cavity axis
                 photons.push(makePhoton(e.x, e.y, 2.5));
-                // Sometimes emit a second (stimulated copy)
                 if (Math.random() < 0.4) {
                   photons.push(makePhoton(e.x, e.y, -2.5));
                 }
               } else {
-                // Spontaneous: random direction
                 const angle = Math.random() * Math.PI * 2;
                 const p = makePhoton(e.x, e.y, Math.cos(angle) * 1.5);
                 p.vy = Math.sin(angle) * 1.5;
                 photons.push(p);
               }
+
+              if (bestIdx >= 0) {
+                // Start hopping toward that hole
+                e.hopping = true;
+                e.targetHole = bestIdx;
+                e.hopProgress = 0;
+                e.hopFromX = e.x;
+                e.hopFromY = e.y;
+                e.vx = 0;
+                e.vy = 0;
+              } else {
+                e.dead = true;
+              }
             }
           }
         });
       }
+
+      // Electron hole-hopping through P-type lattice
+      electrons.forEach(e => {
+        if (!e.hopping || e.dead) return;
+        const hopSpeed = 0.04; // controls hop animation speed
+        e.hopProgress += hopSpeed;
+
+        const target = holes[e.targetHole];
+        if (!target) { e.dead = true; return; }
+
+        if (e.hopProgress < 1) {
+          // Animate arc toward target hole
+          const t = e.hopProgress;
+          e.x = e.hopFromX + (target.baseX - e.hopFromX) * t;
+          e.y = e.hopFromY + (target.baseY - e.hopFromY) * t
+                - Math.sin(t * Math.PI) * 12; // arc upward
+        } else if (!e.settled) {
+          // Just arrived at hole — settle in
+          e.settled = true;
+          e.settleTimer = 8; // pause for a few frames before next hop
+          e.x = target.baseX;
+          e.y = target.baseY;
+
+          // Release previous hole
+          if (e.lastHoleIdx >= 0 && holes[e.lastHoleIdx]) {
+            holes[e.lastHoleIdx].occupied = false;
+          }
+          target.occupied = true;
+          e.lastHoleIdx = e.targetHole;
+        } else {
+          // Waiting at current hole
+          e.x = target.baseX;
+          e.y = target.baseY;
+          e.settleTimer--;
+
+          if (e.settleTimer <= 0) {
+            // Find next hole further left (deeper into P-type)
+            let nextIdx = -1, bestDist = Infinity;
+            holes.forEach((h, idx) => {
+              if (h.occupied || idx === e.targetHole) return;
+              if (h.baseX >= target.baseX) return; // must be further left
+              const dx = h.baseX - target.baseX, dy = h.baseY - target.baseY;
+              const d = dx * dx + dy * dy;
+              if (d < bestDist) { bestDist = d; nextIdx = idx; }
+            });
+
+            if (nextIdx >= 0) {
+              // Hop to next hole
+              e.targetHole = nextIdx;
+              e.hopProgress = 0;
+              e.settled = false;
+              e.hopFromX = e.x;
+              e.hopFromY = e.y;
+            } else {
+              // No more holes — electron exits P-side
+              target.occupied = false;
+              e.dead = true;
+            }
+          }
+        }
+      });
 
       // Inject new electrons from right
       if (currentStep >= 1 && injectionCurrent > 5) {
@@ -1158,7 +1245,12 @@
       // Decay recombinations
       recombinations.forEach(r => { r.life -= 0.03; });
 
-      // Clean up dead particles
+      // Clean up dead particles — release occupied holes first
+      electrons.forEach(e => {
+        if (e.dead && e.lastHoleIdx >= 0 && holes[e.lastHoleIdx]) {
+          holes[e.lastHoleIdx].occupied = false;
+        }
+      });
       electrons = electrons.filter(e => !e.dead);
       photons = photons.filter(p => p.life > 0);
       recombinations = recombinations.filter(r => r.life > 0);

@@ -354,10 +354,14 @@
             regionEl.textContent = 'SUB-THRESHOLD';
             regionEl.style.background = 'rgba(160,160,200,0.08)';
             regionEl.style.color = '#8888bb';
-        } else if (baseCurrent < 70) {
+        } else if (baseCurrent < 55) {
             regionEl.textContent = 'ACTIVE';
             regionEl.style.background = 'rgba(90,154,186,0.10)';
             regionEl.style.color = '#5a9aba';
+        } else if (baseCurrent < 80) {
+            regionEl.textContent = 'APPROACHING SAT.';
+            regionEl.style.background = 'rgba(180,160,80,0.10)';
+            regionEl.style.color = '#b0a050';
         } else {
             regionEl.textContent = 'SATURATION';
             regionEl.style.background = 'rgba(255,180,60,0.12)';
@@ -408,7 +412,12 @@
 
         const maxDepl = Math.min(emitterW, collectorW) * 0.15;
         const beFrac = baseCurrent === 0 ? 1.0 : Math.max(0.15, 1.0 - baseCurrent / 100);
-        const bcFrac = baseCurrent === 0 ? 1.0 : (baseCurrent < 70 ? Math.min(1.4, 1.0 + baseCurrent / 200) : Math.max(0.3, 1.0 - (baseCurrent - 70) / 60));
+        // BC depletion: widens under reverse bias, then smoothly narrows as saturation approaches
+        // Use smooth blend: satBlend goes from 0 to 1 over the range 50-90
+        const satBlend = Math.max(0, Math.min(1, (baseCurrent - 50) / 40));
+        const bcWiden = 1.0 + baseCurrent / 200;       // reverse bias widening
+        const bcNarrow = 0.3 + (1.0 - satBlend) * 0.7; // forward bias narrowing
+        const bcFrac = baseCurrent === 0 ? 1.0 : ((1 - satBlend) * bcWiden + satBlend * bcNarrow);
         const beDepl = maxDepl * beFrac;
         const bcDepl = maxDepl * bcFrac;
 
@@ -787,7 +796,10 @@
 
         // Depletion region shading (grey bands matching cross-section)
         const beFracDepl = baseCurrent === 0 ? 0.04 : Math.max(0.006, 0.04 * (1 - baseCurrent / 100));
-        const bcFracDepl = baseCurrent === 0 ? 0.04 : (baseCurrent < 70 ? Math.min(0.056, 0.04 * (1 + baseCurrent / 200)) : Math.max(0.012, 0.04 * (1 - (baseCurrent - 70) / 60)));
+        const satBlendPlot = Math.max(0, Math.min(1, (baseCurrent - 50) / 40));
+        const bcDeplWiden = 0.04 * (1 + baseCurrent / 200);
+        const bcDeplNarrow = 0.012 + (1 - satBlendPlot) * 0.028;
+        const bcFracDepl = baseCurrent === 0 ? 0.04 : ((1 - satBlendPlot) * bcDeplWiden + satBlendPlot * bcDeplNarrow);
         ctx.fillStyle = 'rgba(255,255,255,0.07)';
         ctx.fillRect(xForFrac(beJunc - beFracDepl), margin.top, xForFrac(beFracDepl * 2) - xForFrac(0), plotH);
         ctx.fillRect(xForFrac(bcJunc - bcFracDepl), margin.top, xForFrac(bcFracDepl * 2) - xForFrac(0), plotH);
@@ -841,7 +853,9 @@
         ctx.lineWidth = 2;
         const nEmitter = isNPN ? eMaj : eMin;
         const nBase0 = isNPN ? Math.min(bMinEq + injectionBoost * 4, eMaj - 0.5) : bMaj;
-        const nBaseEnd = isNPN ? (baseCurrent >= 70 ? bMinEq + injectionBoost * 3 : bMinEq) : bMaj;
+        // BC junction injection increases smoothly as saturation approaches
+        const satBlendConc = Math.max(0, Math.min(1, (baseCurrent - 50) / 40));
+        const nBaseEnd = isNPN ? (bMinEq + satBlendConc * injectionBoost * 3) : bMaj;
         const nCollector = isNPN ? cMaj : cMin;
 
         const steps = 300;
@@ -876,7 +890,7 @@
         ctx.lineWidth = 2;
         const pEmitter = isNPN ? eMin : eMaj;
         const pBase0 = isNPN ? bMaj : Math.min(bMinEq + injectionBoost * 4, eMaj - 0.5);
-        const pBaseEnd = isNPN ? bMaj : (baseCurrent >= 70 ? bMinEq + injectionBoost * 3 : bMinEq);
+        const pBaseEnd = isNPN ? bMaj : (bMinEq + satBlendConc * injectionBoost * 3);
         const pCollector = isNPN ? cMin : cMaj;
 
         function getLogP(frac) {
@@ -995,7 +1009,9 @@
             });
         }
 
-        if (baseCurrent >= 70 && Math.random() < (baseCurrent - 70) / 60 * 0.15) {
+        // Collector-side injection ramps in smoothly as BC junction approaches forward bias
+        const satBlendPart = Math.max(0, Math.min(1, (baseCurrent - 50) / 40));
+        if (satBlendPart > 0 && Math.random() < satBlendPart * 0.15) {
             const carrierType = isNPN ? 'electron' : 'hole';
             particles.push({
                 x: r.base.x + r.base.w - 2,
@@ -1137,7 +1153,7 @@
                 <p>The collector current is essentially zero. The transistor is effectively still OFF, even though V<sub>BE</sub> > 0. This is the <em>sub-threshold</em> or <em>weak inversion</em> regime.</p>
                 <div class="physics-note"><strong>Key physics:</strong> The current in this region is governed by the Shockley diode equation: I \u221d exp(V<sub>BE</sub>/V<sub>T</sub>) \u2212 1. Below ~0.6 V, the exponential is very small, so current is negligible. The transition to full conduction is not a sharp threshold but a rapid exponential rise.</div>
             `;
-        } else if (baseCurrent < 70) {
+        } else if (baseCurrent < 55) {
             regionLabel.textContent = 'Active';
             html = `
                 <h3>Forward Active \u2014 Transistor Action</h3>
@@ -1146,14 +1162,23 @@
                 <p>The small fraction of ${majority} that <em>do</em> recombine in the base is what constitutes the base current I<sub>B</sub>. This gives rise to current gain: I<sub>C</sub>/I<sub>B</sub> &approx; &beta; (typically 50&ndash;300).</p>
                 <div class="physics-note"><strong>Key physics:</strong> Carrier transport across the base is by <em>diffusion</em> (concentration gradient). Collection at the BC junction is by <em>drift</em> (electric field). The thin, lightly-doped base ensures most carriers are collected rather than recombined.</div>
             `;
+        } else if (baseCurrent < 80) {
+            regionLabel.textContent = 'Approaching Sat.';
+            html = `
+                <h3>Approaching Saturation</h3>
+                <p>As I<sub>B</sub> increases further, V<sub>CE</sub> decreases and the base-collector junction moves from reverse bias toward forward bias. The BC depletion region is narrowing.</p>
+                <p>The collector current is still increasing with I<sub>B</sub>, but the gain is beginning to drop. Notice in the carrier concentration plot that minority carriers are starting to build up at the collector side of the base \u2014 the BC junction is no longer efficiently extracting all injected carriers.</p>
+                <p>This is a <em>gradual transition</em>, not a sharp boundary. The transistor smoothly moves from linear amplification toward the saturated state as the BC junction bias shifts from reverse to forward.</p>
+                <div class="physics-note"><strong>Key physics:</strong> Saturation begins when V<sub>BC</sub> \u2265 0 (the BC junction becomes forward biased). This happens gradually: as I<sub>C</sub> increases, the voltage drop across the collector resistor increases, reducing V<sub>CE</sub> until V<sub>CE</sub> < V<sub>BE</sub>, at which point V<sub>BC</sub> > 0.</div>
+            `;
         } else {
             regionLabel.textContent = 'Saturation';
             html = `
                 <h3>Saturation \u2014 Both Junctions Forward Biased</h3>
-                <p>The base current is large enough that <em>both</em> the base-emitter and base-collector junctions are now forward biased. Carriers are injected into the base from both the emitter and the collector sides.</p>
-                <p>The collector current no longer increases proportionally with base current &mdash; the transistor is <em>saturated</em>. V<sub>CE</sub> drops to a small value (V<sub>CE(sat)</sub> &approx; 0.2 V).</p>
-                <p>Excess minority ${majority} accumulate throughout the base region. This stored charge is visible in the carrier concentration plot as an elevated minority concentration that no longer decays linearly across the base.</p>
-                <div class="physics-note"><strong>Key physics:</strong> The excess stored charge in the base is why BJTs are slow to turn off from saturation &mdash; the stored charge must be removed before the transistor can return to cutoff (storage delay time).</div>
+                <p>Both the base-emitter and base-collector junctions are now forward biased. Carriers are injected into the base from both the emitter <em>and</em> the collector sides.</p>
+                <p>The collector current no longer increases proportionally with base current &mdash; the transistor is <em>saturated</em>. V<sub>CE</sub> has dropped to a small value (V<sub>CE(sat)</sub> &approx; 0.2 V).</p>
+                <p>Excess minority ${majority} accumulate throughout the base region. This stored charge is visible in the carrier concentration plot as an elevated minority concentration across the entire base.</p>
+                <div class="physics-note"><strong>Key physics:</strong> The excess stored charge in the base is why BJTs are slow to turn off from saturation &mdash; the stored charge must be removed (recombination or reverse extraction) before the transistor can return to cutoff. This delay is called the <em>storage time</em> t<sub>s</sub>.</div>
             `;
         }
 

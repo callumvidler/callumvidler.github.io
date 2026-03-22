@@ -372,6 +372,7 @@
         updateExplanation();
         drawCrossSection();
         drawConcentration();
+        needsRedraw = true;
     }
 
     // === Cross-Section Canvas ===
@@ -387,7 +388,7 @@
             c.style.height = rect.height + 'px';
         });
     }
-    window.addEventListener('resize', () => { resizeCanvases(); drawCrossSection(); drawConcentration(); });
+    window.addEventListener('resize', () => { resizeCanvases(); initParticles(); drawCrossSection(); drawConcentration(); needsRedraw = true; });
 
     function getRegions(w, h) {
         const margin = w * 0.08;
@@ -522,15 +523,15 @@
         const eDir = isNPN ? 1 : -1;
         const arrowLen = 25;
         drawArrow(ctx, eArrowX, r.top + regionH + 18 - (eDir > 0 ? arrowLen : 0), eArrowX, r.top + regionH + 18 - (eDir > 0 ? 0 : arrowLen));
-        ctx.fillText('I_E', eArrowX, r.top + regionH + 45);
+        ctx.fillText('I\u1d07', eArrowX, r.top + regionH + 45);
 
         const cArrowX = r.collector.x + r.collector.w * 0.7;
         drawArrow(ctx, cArrowX, r.top + regionH + 18 - (eDir > 0 ? 0 : arrowLen), cArrowX, r.top + regionH + 18 - (eDir > 0 ? arrowLen : 0));
-        ctx.fillText('I_C', cArrowX, r.top + regionH + 45);
+        ctx.fillText('I\u1d04', cArrowX, r.top + regionH + 45);
 
         const bArrowX = r.base.x + r.base.w / 2;
         drawArrow(ctx, bArrowX, r.top + regionH + 35, bArrowX, r.top + regionH + 22);
-        ctx.fillText('I_B', bArrowX + 15, r.top + regionH + 35);
+        ctx.fillText('I\u0299', bArrowX + 15, r.top + regionH + 35);
     }
 
     function drawArrow(ctx, x1, y1, x2, y2) {
@@ -714,7 +715,7 @@
         ctx.strokeStyle = '#ffcc44';
         ctx.lineWidth = 2;
         const nEmitter = isNPN ? eMaj : eMin;
-        const nBase0 = isNPN ? (bMinEq + injectionBoost * 4) : bMaj;
+        const nBase0 = isNPN ? Math.min(bMinEq + injectionBoost * 4, eMaj - 0.5) : bMaj;
         const nBaseEnd = isNPN ? (baseCurrent >= 70 ? bMinEq + injectionBoost * 3 : bMinEq) : bMaj;
         const nCollector = isNPN ? cMaj : cMin;
 
@@ -749,7 +750,7 @@
         ctx.strokeStyle = '#ff66aa';
         ctx.lineWidth = 2;
         const pEmitter = isNPN ? eMin : eMaj;
-        const pBase0 = isNPN ? bMaj : (bMinEq + injectionBoost * 4);
+        const pBase0 = isNPN ? bMaj : Math.min(bMinEq + injectionBoost * 4, eMaj - 0.5);
         const pBaseEnd = isNPN ? bMaj : (baseCurrent >= 70 ? bMinEq + injectionBoost * 3 : bMinEq);
         const pCollector = isNPN ? cMin : cMaj;
 
@@ -929,7 +930,14 @@
         }
 
         if (particles.length > MAX_PARTICLES) {
-            particles.splice(0, particles.length - MAX_PARTICLES);
+            // Remove excess injected particles first to preserve majority carriers
+            let excess = particles.length - MAX_PARTICLES;
+            for (let i = particles.length - 1; i >= 0 && excess > 0; i--) {
+                if (particles[i].region === 'injected') {
+                    particles.splice(i, 1);
+                    excess--;
+                }
+            }
         }
     }
 
@@ -951,13 +959,18 @@
     }
 
     // === Animation Loop ===
-    function animate() {
-        updateParticles();
-        drawCrossSection();
+    let needsRedraw = true;
 
-        const dpr = devicePixelRatio;
-        csCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        drawParticles(csCtx);
+    function animate() {
+        if (animating || needsRedraw) {
+            updateParticles();
+            drawCrossSection();
+
+            const dpr = devicePixelRatio;
+            csCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            drawParticles(csCtx);
+            needsRedraw = false;
+        }
 
         requestAnimationFrame(animate);
     }

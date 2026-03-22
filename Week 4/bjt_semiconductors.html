@@ -1177,6 +1177,14 @@
 
         let html = '';
 
+        // Minority carrier explanation — shown in all states
+        const minorityNote = `
+            <div class="physics-note" style="margin-top:0.6rem;">
+                <strong>Why are there ${minority} in the ${isNPN ? 'N' : 'P'}-type regions?</strong>
+                Even in a doped semiconductor, a small number of minority carriers always exist due to thermal generation. At room temperature, silicon has an intrinsic carrier concentration n<sub>i</sub> &approx; 1.5 &times; 10<sup>10</sup> cm<sup>&minus;3</sup>. The <em>mass-action law</em> requires that n &middot; p = n<sub>i</sub><sup>2</sup> always holds at equilibrium. So in the ${emitterType} emitter doped at ~10<sup>17</sup> cm<sup>&minus;3</sup>, the minority ${minority} concentration is n<sub>i</sub><sup>2</sup>/10<sup>17</sup> &approx; 10<sup>3</sup> cm<sup>&minus;3</sup> &mdash; tiny, but not zero. Switch to <strong>linear scale</strong> to see how negligible these are compared to majority carriers.
+            </div>
+        `;
+
         if (baseCurrent === 0) {
             regionLabel.textContent = 'Cutoff';
             html = `
@@ -1185,6 +1193,7 @@
                 <p>The ${emitterType} emitter (${emitterDopant}-doped) contains abundant majority ${majority}, but they cannot cross the base-emitter depletion region. No collector current flows.</p>
                 <p>The ${baseType} base (${baseDopant}-doped, lightly doped and thin) and the ${collectorType} collector sit at equilibrium. Fixed donor and acceptor ions in each depletion region create a built-in electric field that opposes carrier diffusion.</p>
                 <div class="physics-note"><strong>Key physics:</strong> At thermal equilibrium, the diffusion tendency of carriers is exactly balanced by the drift due to the built-in electric field in each depletion region.</div>
+                ${minorityNote}
             `;
         } else if (baseCurrent < 15) {
             regionLabel.textContent = 'Sub-threshold';

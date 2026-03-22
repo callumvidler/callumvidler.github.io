@@ -495,47 +495,88 @@
         ctx.fillStyle = isNPN ? '#e06050' : '#5080d0';
         ctx.fillText(cDoping, r.collector.x + r.collector.w / 2, labelY + 14);
 
-        // Terminal wire stubs
-        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
-        ctx.lineWidth = 2;
-        const eCx = r.emitter.x + r.emitter.w / 2;
-        ctx.beginPath(); ctx.moveTo(eCx, r.top + regionH); ctx.lineTo(eCx, r.top + regionH + 20); ctx.stroke();
-        ctx.fillStyle = '#fff'; ctx.font = '600 11px "IBM Plex Mono"';
-        ctx.fillText('E', eCx, r.top + regionH + 32);
-        const bCx = r.base.x + r.base.w / 2;
-        ctx.beginPath(); ctx.moveTo(bCx, r.top + regionH); ctx.lineTo(bCx, r.top + regionH + 20); ctx.stroke();
-        ctx.fillText('B', bCx, r.top + regionH + 32);
-        const cCx = r.collector.x + r.collector.w / 2;
-        ctx.beginPath(); ctx.moveTo(cCx, r.top + regionH); ctx.lineTo(cCx, r.top + regionH + 20); ctx.stroke();
-        ctx.fillText('C', cCx, r.top + regionH + 32);
-
-        // Current direction arrows (shown when I_B > 0)
-        if (baseCurrent > 0) {
-            drawCurrentArrows(ctx, r, isNPN);
-        }
+        // Terminal wires
+        drawWires(ctx, r, cw, ch, isNPN);
     }
 
-    function drawCurrentArrows(ctx, r, isNPN) {
+    function drawWires(ctx, r, cw, ch, isNPN) {
         const regionH = r.height;
-        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 1.5;
-        ctx.font = '600 9px "IBM Plex Sans"';
+        const wireBottom = r.top + regionH;
+        const wireEnd = ch - 8;  // near bottom of canvas
+        const wireColor = 'rgba(255,255,255,0.35)';
+
+        const eCx = r.emitter.x + r.emitter.w / 2;
+        const bCx = r.base.x + r.base.w / 2;
+        const cCx = r.collector.x + r.collector.w / 2;
+
+        // Draw wires as lines from region bottom down to canvas bottom
+        ctx.strokeStyle = wireColor;
+        ctx.lineWidth = 2;
+
+        // Emitter wire — straight down
+        ctx.beginPath();
+        ctx.moveTo(eCx, wireBottom);
+        ctx.lineTo(eCx, wireEnd);
+        ctx.stroke();
+
+        // Base wire — straight down
+        ctx.beginPath();
+        ctx.moveTo(bCx, wireBottom);
+        ctx.lineTo(bCx, wireEnd);
+        ctx.stroke();
+
+        // Collector wire — straight down
+        ctx.beginPath();
+        ctx.moveTo(cCx, wireBottom);
+        ctx.lineTo(cCx, wireEnd);
+        ctx.stroke();
+
+        // Terminal labels
+        ctx.fillStyle = '#fff';
+        ctx.font = '600 11px "IBM Plex Mono"';
         ctx.textAlign = 'center';
+        ctx.fillText('E', eCx - 10, wireEnd - 4);
+        ctx.fillText('B', bCx - 10, wireEnd - 4);
+        ctx.fillText('C', cCx + 10, wireEnd - 4);
 
-        const eArrowX = r.emitter.x + r.emitter.w * 0.3;
-        const eDir = isNPN ? 1 : -1;
-        const arrowLen = 25;
-        drawArrow(ctx, eArrowX, r.top + regionH + 18 - (eDir > 0 ? arrowLen : 0), eArrowX, r.top + regionH + 18 - (eDir > 0 ? 0 : arrowLen));
-        ctx.fillText('I\u1d07', eArrowX, r.top + regionH + 45);
+        // Conventional current direction arrows alongside wires (when I_B > 0)
+        if (baseCurrent >= 15) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1;
+            ctx.font = '500 9px "IBM Plex Mono"';
 
-        const cArrowX = r.collector.x + r.collector.w * 0.7;
-        drawArrow(ctx, cArrowX, r.top + regionH + 18 - (eDir > 0 ? 0 : arrowLen), cArrowX, r.top + regionH + 18 - (eDir > 0 ? arrowLen : 0));
-        ctx.fillText('I\u1d04', cArrowX, r.top + regionH + 45);
+            const arrowOffset = 14;
+            const arrowMidY = wireBottom + (wireEnd - wireBottom) * 0.4;
 
-        const bArrowX = r.base.x + r.base.w / 2;
-        drawArrow(ctx, bArrowX, r.top + regionH + 35, bArrowX, r.top + regionH + 22);
-        ctx.fillText('I\u0299', bArrowX + 15, r.top + regionH + 35);
+            // NPN: conventional current INTO collector, OUT of emitter, INTO base
+            // PNP: conventional current INTO emitter, OUT of collector, INTO base
+            // (conventional current is opposite to electron flow)
+
+            // Emitter arrow
+            const eArrowDir = isNPN ? 1 : -1;  // NPN: down (out), PNP: up (in)
+            drawArrow(ctx, eCx + arrowOffset, arrowMidY - eArrowDir * 10, eCx + arrowOffset, arrowMidY + eArrowDir * 10);
+            ctx.textAlign = 'left';
+            ctx.fillText('I\u1d07', eCx + arrowOffset + 5, arrowMidY + 4);
+
+            // Collector arrow
+            const cArrowDir = isNPN ? -1 : 1;  // NPN: up (in), PNP: down (out)
+            drawArrow(ctx, cCx - arrowOffset, arrowMidY - cArrowDir * 10, cCx - arrowOffset, arrowMidY + cArrowDir * 10);
+            ctx.textAlign = 'right';
+            ctx.fillText('I\u1d04', cCx - arrowOffset - 5, arrowMidY + 4);
+
+            // Base arrow (always into base — down)
+            drawArrow(ctx, bCx + arrowOffset, arrowMidY - 10, bCx + arrowOffset, arrowMidY + 10);
+            ctx.textAlign = 'left';
+            ctx.fillText('I\u0299', bCx + arrowOffset + 5, arrowMidY + 4);
+        }
+
+        // Store wire geometry for wire electron animation
+        r.wires = {
+            emitter: { x: eCx, top: wireBottom, bottom: wireEnd },
+            base: { x: bCx, top: wireBottom, bottom: wireEnd },
+            collector: { x: cCx, top: wireBottom, bottom: wireEnd }
+        };
     }
 
     function drawArrow(ctx, x1, y1, x2, y2) {
@@ -551,6 +592,86 @@
         ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
         ctx.closePath();
         ctx.fill();
+    }
+
+    // === Wire Electron System ===
+    let wireElectrons = [];
+
+    function updateWireElectrons() {
+        if (!animating || baseCurrent < 15) {
+            wireElectrons = [];
+            return;
+        }
+
+        const cw = csCanvas.width / devicePixelRatio;
+        const ch = csCanvas.height / devicePixelRatio;
+        const r = getRegions(cw, ch);
+        const isNPN = transistorType === 'NPN';
+        const rate = (baseCurrent - 15) / 85;  // 0 to 1 over active+saturation range
+
+        const eCx = r.emitter.x + r.emitter.w / 2;
+        const bCx = r.base.x + r.base.w / 2;
+        const cCx = r.collector.x + r.collector.w / 2;
+        const wireTop = r.top + r.height;
+        const wireBot = ch - 8;
+
+        // Spawn wire electrons
+        // NPN: electrons flow UP into emitter, UP out of base (small), DOWN out of collector
+        // PNP: electrons flow DOWN into collector, DOWN out of base (small), UP out of emitter
+        // (electrons flow opposite to conventional current)
+
+        // Emitter wire electrons
+        if (Math.random() < rate * 0.15) {
+            wireElectrons.push({
+                x: eCx + (Math.random() - 0.5) * 2,
+                y: isNPN ? wireBot : wireTop,
+                vy: isNPN ? -0.6 - rate * 0.4 : 0.6 + rate * 0.4,
+                wire: 'emitter', wireX: eCx, wireTop, wireBot
+            });
+        }
+        // Collector wire electrons (larger flow — most carriers are collected)
+        if (Math.random() < rate * 0.14) {
+            wireElectrons.push({
+                x: cCx + (Math.random() - 0.5) * 2,
+                y: isNPN ? wireTop : wireBot,
+                vy: isNPN ? 0.6 + rate * 0.4 : -0.6 - rate * 0.4,
+                wire: 'collector', wireX: cCx, wireTop, wireBot
+            });
+        }
+        // Base wire electrons (small flow — recombination current)
+        if (Math.random() < rate * 0.03) {
+            wireElectrons.push({
+                x: bCx + (Math.random() - 0.5) * 2,
+                y: wireBot,
+                vy: -0.4 - rate * 0.2,
+                wire: 'base', wireX: bCx, wireTop, wireBot
+            });
+        }
+
+        // Update positions and remove out-of-bounds
+        for (let i = wireElectrons.length - 1; i >= 0; i--) {
+            const e = wireElectrons[i];
+            e.y += e.vy;
+            // Small horizontal jitter
+            e.x = e.wireX + (Math.random() - 0.5) * 1.5;
+            if (e.y < e.wireTop - 3 || e.y > e.wireBot + 3) {
+                wireElectrons.splice(i, 1);
+            }
+        }
+
+        // Cap
+        if (wireElectrons.length > 60) {
+            wireElectrons.splice(0, wireElectrons.length - 60);
+        }
+    }
+
+    function drawWireElectrons(ctx) {
+        ctx.fillStyle = '#ffcc44';
+        for (const e of wireElectrons) {
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
     function drawFixedIons(ctx, r, isNPN) {
@@ -971,11 +1092,13 @@
     function animate() {
         if (animating || needsRedraw) {
             updateParticles();
+            updateWireElectrons();
             drawCrossSection();
 
             const dpr = devicePixelRatio;
             csCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
             drawParticles(csCtx);
+            drawWireElectrons(csCtx);
             needsRedraw = false;
         }
 

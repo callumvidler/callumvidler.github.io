@@ -350,6 +350,10 @@
             regionEl.textContent = 'CUTOFF';
             regionEl.style.background = 'rgba(200,200,200,0.06)';
             regionEl.style.color = 'var(--text-dim)';
+        } else if (baseCurrent < 15) {
+            regionEl.textContent = 'SUB-THRESHOLD';
+            regionEl.style.background = 'rgba(160,160,200,0.08)';
+            regionEl.style.color = '#8888bb';
         } else if (baseCurrent < 70) {
             regionEl.textContent = 'ACTIVE';
             regionEl.style.background = 'rgba(90,154,186,0.10)';
@@ -854,7 +858,10 @@
         const r = getRegions(cw, ch);
         const injectionRate = baseCurrent / 100;
 
-        if (baseCurrent > 0 && Math.random() < injectionRate * 0.3) {
+        // Sub-threshold: exponentially small injection (V_BE < ~0.6V)
+        // Active: strong injection proportional to I_B
+        const effectiveRate = baseCurrent < 15 ? injectionRate * 0.02 : injectionRate * 0.3;
+        if (baseCurrent > 0 && Math.random() < effectiveRate) {
             const carrierType = isNPN ? 'electron' : 'hole';
             particles.push({
                 x: r.base.x + 2,
@@ -997,6 +1004,15 @@
                 <p>The ${emitterType} emitter (${emitterDopant}-doped) contains abundant majority ${majority}, but they cannot cross the base-emitter depletion region. No collector current flows.</p>
                 <p>The ${baseType} base (${baseDopant}-doped, lightly doped and thin) and the ${collectorType} collector sit at equilibrium. Fixed donor and acceptor ions in each depletion region create a built-in electric field that opposes carrier diffusion.</p>
                 <div class="physics-note"><strong>Key physics:</strong> At thermal equilibrium, the diffusion tendency of carriers is exactly balanced by the drift due to the built-in electric field in each depletion region.</div>
+            `;
+        } else if (baseCurrent < 15) {
+            regionLabel.textContent = 'Sub-threshold';
+            html = `
+                <h3>Sub-threshold \u2014 Below V<sub>BE(on)</sub></h3>
+                <p>A small voltage is applied to the base-emitter junction, but it is below the turn-on voltage (\u22480.6\u20130.7 V for silicon). The BE depletion region narrows slightly, but the remaining barrier is still too high for significant carrier injection.</p>
+                <p>Only a tiny, exponentially small leakage current flows. The few ${majority} that have enough thermal energy to surmount the reduced barrier are immediately swept across, but their number is negligible compared to the active region.</p>
+                <p>The collector current is essentially zero. The transistor is effectively still OFF, even though V<sub>BE</sub> > 0. This is the <em>sub-threshold</em> or <em>weak inversion</em> regime.</p>
+                <div class="physics-note"><strong>Key physics:</strong> The current in this region is governed by the Shockley diode equation: I \u221d exp(V<sub>BE</sub>/V<sub>T</sub>) \u2212 1. Below ~0.6 V, the exponential is very small, so current is negligible. The transition to full conduction is not a sharp threshold but a rapid exponential rise.</div>
             `;
         } else if (baseCurrent < 70) {
             regionLabel.textContent = 'Active';

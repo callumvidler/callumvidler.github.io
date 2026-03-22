@@ -764,6 +764,7 @@
         ctx.clearRect(0, 0, cw, ch);
 
         const isNPN = transistorType === 'NPN';
+        const isLog = concScale === 'log';
         const margin = { top: 30, bottom: 40, left: isLog ? 55 : 72, right: 20 };
         const plotW = cw - margin.left - margin.right;
         const plotH = ch - margin.top - margin.bottom;
@@ -775,7 +776,6 @@
         const bcJunc = emitterFrac + baseFrac;
 
         const logMin = 10, logMax = 18;
-        const isLog = concScale === 'log';
 
         // For linear scale, we map real values 0 to 10^maxLinLog
         // Use the highest doping level as the top of the linear scale

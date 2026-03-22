@@ -1,0 +1,2129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: NPN BJT as an Amplifier — Interactive Explainer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #1a1a1e;
+            --bg-panel: #222226;
+            --bg-card: #2a2a2f;
+            --border: rgba(255,255,255,0.08);
+            --accent: #6aaa8e;
+            --accent-dim: #5a9a7e;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --text-muted: #606060;
+            --col-ic: #5a9aba;
+            --col-ib: #cca855;
+            --col-vout: #c96b5a;
+            --col-vin: rgba(255,255,255,0.4);
+            --col-vce: #6aaa8e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 0.55rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 3px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: var(--text-dim); text-decoration: none;
+            font-size: 11px; font-weight: 500; transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+
+        h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
+        .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 42px);
+            gap: 0;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+        .panel-header strong { color: var(--text); font-weight: 500; font-size: 0.75rem; }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        .panel-body canvas { display: block; width: 100%; height: 100%; }
+        #circuit-canvas { cursor: grab; }
+        #circuit-canvas:active { cursor: grabbing; }
+
+        /* Controls panel */
+        .controls-panel {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .ctrl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .ctrl-title {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.3rem;
+        }
+        .ctrl-row:last-child { margin-bottom: 0; }
+
+        .ctrl-row label {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            min-width: 55px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .ctrl-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            color: #fff;
+            min-width: 56px;
+            width: 72px;
+            text-align: right;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 3px;
+            padding: 2px 6px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .ctrl-val:focus {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn.active {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        /* Readout bar */
+        .readout-bar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .readout {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .readout-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .readout-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 500;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 0.85rem;
+            font-size: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-dim);
+        }
+        .legend-dot {
+            width: 8px; height: 8px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Region indicator */
+        .region-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+        .region-cutoff { background: rgba(160,160,160,0.15); color: #aaa; }
+        .region-active { background: rgba(90,154,186,0.2); color: var(--col-ic); }
+        .region-saturation { background: rgba(204,168,85,0.2); color: var(--col-ib); }
+
+        /* Gain display */
+        .gain-display {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            padding: 4px 8px;
+            background: rgba(106,170,142,0.12);
+            border: 1px solid rgba(106,170,142,0.25);
+            border-radius: 3px;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <a class="back-btn" href="../index.html">&larr; Back</a>
+        <div>
+            <h1>NPN BJT as an Amplifier</h1>
+            <div class="header-sub">Week 4 &mdash; Transistors</div>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span id="region-badge" class="region-indicator region-active">ACTIVE</span>
+        <div class="readout-bar">
+            <div class="readout"><span class="readout-label">I<sub>B</sub></span><span class="readout-value" id="ro-ib" style="color:var(--col-ib)">0 µA</span></div>
+            <div class="readout"><span class="readout-label">I<sub>C</sub></span><span class="readout-value" id="ro-ic" style="color:var(--col-ic)">0 mA</span></div>
+            <div class="readout"><span class="readout-label">V<sub>CE</sub></span><span class="readout-value" id="ro-vce" style="color:var(--col-vce)">0 V</span></div>
+            <div class="readout"><span class="readout-label">V<sub>BE</sub></span><span class="readout-value" id="ro-vbe" style="color:var(--col-vout)">0 V</span></div>
+        </div>
+        <span class="gain-display" id="gain-display">A<sub>v</sub> = &mdash;</span>
+    </div>
+</header>
+
+<div class="main-layout">
+    <!-- Top-left: Circuit diagram -->
+    <div class="panel">
+        <div class="panel-header">
+            <strong>Common-Emitter Amplifier</strong>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ib)"></div>Base</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ic)"></div>Collector</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-vce)"></div>V<sub>CE</sub></div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="circuit-canvas"></canvas></div>
+    </div>
+
+    <!-- Top-right: Controls -->
+    <div class="controls-panel">
+        <div class="ctrl-section">
+            <div class="ctrl-title">DC Supplies</div>
+            <div class="ctrl-row">
+                <label>V<sub>CC</sub></label>
+                <input type="range" id="sl-vcc" min="3" max="24" step="0.5" value="12">
+                <input class="ctrl-val" id="val-vcc" value="12.0 V">
+            </div>
+            <div class="ctrl-row">
+                <label>V<sub>BB</sub></label>
+                <input type="range" id="sl-vbb" min="0" max="12" step="0.1" value="2">
+                <input class="ctrl-val" id="val-vbb" value="2.0 V">
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Resistors</div>
+            <div class="ctrl-row">
+                <label>R<sub>B</sub></label>
+                <input type="range" id="sl-rb" min="1000" max="500000" step="1000" value="100000">
+                <input class="ctrl-val" id="val-rb" value="100 kΩ">
+            </div>
+            <div class="ctrl-row">
+                <label>R<sub>C</sub></label>
+                <input type="range" id="sl-rc" min="100" max="10000" step="100" value="2200">
+                <input class="ctrl-val" id="val-rc" value="2.2 kΩ">
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Transistor</div>
+            <div class="ctrl-row">
+                <label>h<sub>FE</sub> (β)</label>
+                <input type="range" id="sl-hfe" min="20" max="1000" step="5" value="200">
+                <input class="ctrl-val" id="val-hfe" value="200">
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">AC Input Signal v<sub>in</sub>(t)</div>
+            <div class="ctrl-row">
+                <label>V<sub>in</sub> pk</label>
+                <input type="range" id="sl-vin" min="0" max="1000" step="1" value="20">
+                <input class="ctrl-val" id="val-vin" value="20 mV">
+            </div>
+            <div class="ctrl-row">
+                <label>Freq</label>
+                <input type="range" id="sl-freq" min="0.1" max="10" step="0.1" value="1">
+                <input class="ctrl-val" id="val-freq" value="1.0 Hz">
+            </div>
+            <div class="btn-group" id="wave-btns" style="margin-top:4px;">
+                <button class="toggle-btn" data-wave="dc">DC</button>
+                <button class="toggle-btn active" data-wave="sine">Sine</button>
+                <button class="toggle-btn" data-wave="square">Square</button>
+                <button class="toggle-btn" data-wave="triangle">Triangle</button>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">BJT Parameters (Silicon)</div>
+            <div style="font-size:0.65rem;color:var(--text-dim);line-height:1.5;">
+                V<sub>BE(on)</sub> = 0.7 V &nbsp;&bull;&nbsp; V<sub>CE(sat)</sub> = 0.2 V<br>
+                V<sub>T</sub> = 26 mV (thermal voltage at 300 K)<br>
+                r<sub>e</sub> = V<sub>T</sub> / I<sub>CQ</sub> &nbsp;(small-signal emitter resistance)<br>
+                r<sub>&pi;</sub> = &beta; &middot; r<sub>e</sub> &nbsp;(base input impedance)<br>
+                A<sub>v</sub> = &minus;&beta; &middot; R<sub>C</sub> / (R<sub>B</sub> + r<sub>&pi;</sub>) &nbsp;(circuit gain, 180° inv.)
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom-left: i_C vs v_BE transfer characteristic -->
+    <div class="panel">
+        <div class="panel-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <strong>i<sub>C</sub> vs v<sub>BE</sub> &mdash; Signal Transfer</strong>
+                <button id="pause-btn" class="toggle-btn active" style="padding:2px 8px;font-size:0.6rem;">&#9646;&#9646; Pause</button>
+                <button id="clear-btn" class="toggle-btn" style="padding:2px 8px;font-size:0.6rem;">Clear</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <button id="btn-show-exact" class="toggle-btn active" style="padding:2px 8px;font-size:0.58rem;">Exact</button>
+                <button id="btn-show-tangent" class="toggle-btn active" style="padding:2px 8px;font-size:0.58rem;">Tangent</button>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="time-canvas"></canvas></div>
+    </div>
+
+    <!-- Bottom-right: IC vs VCE -->
+    <div class="panel">
+        <div class="panel-header">
+            <strong>I<sub>C</sub> vs V<sub>CE</sub> &mdash; Q-Point &amp; Load Line</strong>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ib)"></div>I<sub>B</sub> curves</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#fff"></div>DC load line</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-vout)"></div>Q-point</div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="iv-canvas"></canvas></div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  NPN BJT Common-Emitter Amplifier (Fixed Bias with V_BB)
+// ═══════════════════════════════════════════════════════════════
+//
+//  Circuit topology (matching the reference schematic):
+//
+//       V_CC ──── R_C ──┬── Collector
+//                       │
+//  v_in(t) ─── R_B ─── Base    NPN
+//                       │
+//       V_BB ──────────┬┘ Emitter
+//                      │
+//                     GND
+//
+//  The AC source v_in(t) is in series with V_BB through R_B.
+//  The total base-emitter loop voltage is:
+//      V_BB + v_in(t) = i_B · R_B + v_BE
+//
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Physical Constants ───
+const VBE_ON = 0.7;     // V_BE turn-on (silicon)
+const VCE_SAT = 0.2;    // V_CE saturation
+const VT = 0.026;       // Thermal voltage kT/q ≈ 26 mV at 300 K
+const IS = 1e-14;       // Reverse saturation current (fixed transistor property)
+                        // Gives I_C ≈ 4.9 mA at V_BE = 0.7 V
+
+// Canvas colors
+const COL_IC  = '#5a9aba';
+const COL_IB  = '#cca855';
+const COL_VOUT = '#c96b5a';
+const COL_VIN = 'rgba(255,255,255,0.4)';
+const COL_VCE = '#6aaa8e';
+
+// ─── State ───
+let vcc = 12, vbb = 2, rb = 100000, rc = 2200, hfe = 200;
+let vinPk_mV = 20, freq = 1;
+let waveform = 'sine';
+let paused = false;
+let simTime = 0;
+
+// Rolling data buffer
+const BUFFER_LEN = 600;
+let dataBuf = { t: [], vin: [] };
+function clearBuffer() {
+    dataBuf = { t: [], vin: [] };
+}
+
+// ─── Canvas setup ───
+const circuitCanvas = document.getElementById('circuit-canvas');
+const timeCanvas    = document.getElementById('time-canvas');
+const ivCanvas      = document.getElementById('iv-canvas');
+const circuitCtx = circuitCanvas.getContext('2d');
+const timeCtx    = timeCanvas.getContext('2d');
+const ivCtx      = ivCanvas.getContext('2d');
+
+function resizeCanvas(canvas) {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width  = rect.width  * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height };
+}
+
+let circuitSize, timeSize, ivSize;
+function resizeAll() {
+    circuitSize = resizeCanvas(circuitCanvas);
+    timeSize    = resizeCanvas(timeCanvas);
+    ivSize      = resizeCanvas(ivCanvas);
+}
+window.addEventListener('resize', resizeAll);
+
+// ─── Circuit pan/zoom ───
+let camZoom = 1, camPanX = 0, camPanY = 0;
+let isDragging = false, dragStartX = 0, dragStartY = 0, panStartX = 0, panStartY = 0;
+
+circuitCanvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = circuitCanvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const oldZoom = camZoom;
+    camZoom = Math.max(0.5, Math.min(5, camZoom * (e.deltaY > 0 ? 0.9 : 1.1)));
+    camPanX = mx - (mx - camPanX) * (camZoom / oldZoom);
+    camPanY = my - (my - camPanY) * (camZoom / oldZoom);
+}, { passive: false });
+
+circuitCanvas.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    panStartX = camPanX; panStartY = camPanY;
+});
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    camPanX = panStartX + (e.clientX - dragStartX);
+    camPanY = panStartY + (e.clientY - dragStartY);
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+circuitCanvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+        dragStartX = e.touches[0].clientX; dragStartY = e.touches[0].clientY;
+        panStartX = camPanX; panStartY = camPanY;
+    }
+}, { passive: true });
+circuitCanvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1) {
+        e.preventDefault();
+        camPanX = panStartX + (e.touches[0].clientX - dragStartX);
+        camPanY = panStartY + (e.touches[0].clientY - dragStartY);
+    }
+}, { passive: false });
+circuitCanvas.addEventListener('dblclick', () => { camZoom = 1; camPanX = 0; camPanY = 0; });
+
+resizeAll();
+
+// ─── Waveform generators (output −1 to +1) ───
+function waveValue(t) {
+    if (waveform === 'dc') return 1;
+    const phase = (t * freq) % 1;
+    switch (waveform) {
+        case 'sine':     return Math.sin(2 * Math.PI * phase);
+        case 'square':   return phase < 0.5 ? 1 : -1;
+        case 'triangle': return phase < 0.5 ? (4 * phase - 1) : (3 - 4 * phase);
+        default: return 0;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  DC BIAS ANALYSIS — Fixed Bias
+// ═══════════════════════════════════════════════════════════════
+//
+//  KVL around the base-emitter loop (DC only, v_in = 0):
+//      V_BB = I_BQ · R_B + V_BE(on)
+//      I_BQ = (V_BB − V_BE(on)) / R_B
+//
+//  Collector current:
+//      I_CQ = β · I_BQ       (forward-active region)
+//
+//  KVL around the collector-emitter loop:
+//      V_CC = I_CQ · R_C + V_CEQ
+//      V_CEQ = V_CC − I_CQ · R_C
+//
+//  Operating region check:
+//      If V_BB < V_BE(on)   → Cutoff  (I_B = I_C = 0, V_CE = V_CC)
+//      If V_CEQ > V_CE(sat) → Forward Active
+//      If V_CEQ ≤ V_CE(sat) → Saturation (I_C is limited)
+//
+// ═══════════════════════════════════════════════════════════════
+
+function computeDCBias() {
+    let ibq, icq, vceq, region;
+
+    if (vbb < VBE_ON) {
+        // Cutoff: base-emitter junction not forward biased
+        ibq = 0; icq = 0;
+        vceq = vcc;
+        region = 'cutoff';
+    } else {
+        // Base current from KVL
+        ibq = (vbb - VBE_ON) / rb;
+        const icActive = hfe * ibq;
+        const icSat = (vcc - VCE_SAT) / rc;
+
+        if (icActive <= icSat) {
+            // Forward Active region — BJT acts as current amplifier
+            icq = icActive;
+            vceq = vcc - icq * rc;
+            region = 'active';
+        } else {
+            // Saturation — collector current is limited by external circuit
+            icq = icSat;
+            vceq = VCE_SAT;
+            region = 'saturation';
+        }
+    }
+
+    return { ibq, icq, vceq, region };
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  SMALL-SIGNAL AC ANALYSIS
+// ═══════════════════════════════════════════════════════════════
+//
+//  In the forward-active region, the transistor amplifies
+//  small AC signals superimposed on the DC bias.
+//
+//  Small-signal emitter resistance (from Shockley diode equation):
+//      r_e = V_T / I_CQ
+//
+//  The small-signal model replaces the BJT with a voltage-
+//  controlled current source: i_c = g_m · v_be
+//  where g_m = I_CQ / V_T = 1 / r_e
+//
+//  Input impedance (looking into base):
+//      r_π = β · r_e
+//
+//  Intrinsic transistor gain (from v_be to v_ce):
+//      A_v(intrinsic) = −g_m · R_C = −R_C / r_e
+//
+//  In this circuit, v_in is applied through R_B (no coupling
+//  capacitor), so only a fraction of v_in reaches v_BE:
+//      v_be = v_in · r_π / (R_B + r_π)
+//
+//  Overall circuit voltage gain (from v_in to v_ce):
+//      A_v = −g_m · R_C · r_π / (R_B + r_π)
+//         = −β · R_C / (R_B + r_π)
+//
+//  The NEGATIVE sign means the output is 180° out of phase
+//  with the input — this is the phase inversion inherent
+//  to the common-emitter configuration.
+//
+// ═══════════════════════════════════════════════════════════════
+
+function computeSmallSignal(bias) {
+    if (bias.icq <= 0) {
+        return { av: 0, av_intrinsic: 0, re_small: Infinity, gm: 0, zin: 0, vbe_fraction: 0 };
+    }
+
+    const re_small = VT / bias.icq;    // small-signal r_e
+    const gm = bias.icq / VT;          // transconductance
+    const r_pi = hfe * re_small;       // input impedance looking into base
+    const av_intrinsic = -gm * rc;     // intrinsic gain: v_be → v_ce
+    const vbe_fraction = r_pi / (rb + r_pi); // fraction of v_in reaching v_BE
+
+    if (bias.region !== 'active') {
+        // In saturation/cutoff, gain is zero but vbe_fraction and gm
+        // are still needed for the transfer characteristic display
+        return { av: 0, av_intrinsic: 0, re_small, gm, zin: r_pi, vbe_fraction };
+    }
+
+    const av = av_intrinsic * vbe_fraction;  // circuit gain: v_in → v_ce
+    return { av, av_intrinsic, re_small, gm, zin: r_pi, vbe_fraction };
+}
+
+// ─── Formatting helpers ───
+function formatCurrent(amps) {
+    const abs = Math.abs(amps);
+    if (abs < 1e-6) return (amps * 1e6).toFixed(1) + ' µA';
+    if (abs < 1e-3) return (amps * 1e3).toFixed(2) + ' mA';
+    return amps.toFixed(3) + ' A';
+}
+function formatCurrentShort(amps) {
+    const abs = Math.abs(amps);
+    if (abs < 1e-3) return (amps * 1e6).toFixed(0) + 'µA';
+    return (amps * 1e3).toFixed(1) + 'mA';
+}
+function formatCurrentmA(amps) {
+    return (amps * 1e3).toFixed(3) + ' mA';
+}
+function formatResistance(ohms) {
+    if (ohms >= 1000) return (ohms / 1000).toFixed(1) + ' kΩ';
+    return ohms + ' Ω';
+}
+function formatVoltage(v) {
+    if (Math.abs(v) < 0.01) return (v * 1000).toFixed(1) + ' mV';
+    return v.toFixed(2) + ' V';
+}
+
+// ─── Subscript text helper for canvas ───
+// Draws "AB" where A is normal size and B is subscript (smaller, shifted down).
+// base: the main character(s), sub: the subscript character(s)
+// suffix: optional trailing text at normal size (e.g. " = 5 mA")
+function drawSub(ctx, base, sub, x, y, suffix) {
+    const fontMatch = ctx.font.match(/(\d+(?:\.\d+)?)px/);
+    const fontSize = fontMatch ? parseFloat(fontMatch[1]) : 12;
+    const subSize = Math.round(fontSize * 0.65);
+    const align = ctx.textAlign;
+    const style = ctx.fillStyle;
+    const fontBase = ctx.font;
+    const fontSub = ctx.font.replace(/(\d+(?:\.\d+)?)px/, subSize + 'px');
+
+    // Measure widths
+    ctx.font = fontBase;
+    const baseW = ctx.measureText(base).width;
+    ctx.font = fontSub;
+    const subW = ctx.measureText(sub).width;
+    ctx.font = fontBase;
+    const suffW = suffix ? ctx.measureText(suffix).width : 0;
+    const totalW = baseW + subW + suffW;
+
+    // Compute starting x based on alignment
+    let startX = x;
+    if (align === 'center') startX = x - totalW / 2;
+    else if (align === 'right') startX = x - totalW;
+
+    // Draw base
+    ctx.textAlign = 'left';
+    ctx.font = fontBase;
+    ctx.fillText(base, startX, y);
+
+    // Draw subscript (shifted down)
+    ctx.font = fontSub;
+    ctx.fillText(sub, startX + baseW, y + fontSize * 0.25);
+
+    // Draw suffix at normal size
+    if (suffix) {
+        ctx.font = fontBase;
+        ctx.fillText(suffix, startX + baseW + subW, y);
+    }
+
+    // Restore
+    ctx.textAlign = align;
+    ctx.font = fontBase;
+    ctx.fillStyle = style;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Drawing: Circuit Diagram (matching reference schematic)
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+//  Circuit drawing primitives — clean, grid-aligned
+// ═══════════════════════════════════════════════════════════════
+
+function drawWireH(ctx, x1, x2, y) {
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+function drawWireV(ctx, x, y1, y2) {
+    ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x, y2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = 1.5; ctx.stroke();
+}
+function drawJunction(ctx, x, y, s) {
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x, y, s(3), 0, Math.PI * 2); ctx.fill();
+}
+
+function drawResistorV(ctx, x, y1, y2, s, label, value, labelSide) {
+    // Vertical box resistor with fixed-size box, centred between y1 and y2
+    const top = Math.min(y1, y2), bot = Math.max(y1, y2);
+    const mid = (top + bot) / 2;
+    const boxH = s(28);  // fixed box height
+    const boxW = s(12);  // fixed box width
+    const boxTop = mid - boxH / 2, boxBot = mid + boxH / 2;
+
+    // Lead wires
+    drawWireV(ctx, x, top, boxTop);
+    drawWireV(ctx, x, boxBot, bot);
+
+    // Rectangle
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x - boxW / 2, boxTop, boxW, boxH);
+
+    // Label
+    const lx = x + (boxW / 2 + s(5)) * labelSide;
+    const my = mid;
+    ctx.font = `500 ${s(10)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#ccc';
+    ctx.textAlign = labelSide > 0 ? 'left' : 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, lx, my - s(6));
+    ctx.font = `400 ${s(8.5)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#888';
+    ctx.fillText(value, lx, my + s(6));
+}
+
+function drawResistorH(ctx, y, x1, x2, s, label, value, labelSide) {
+    // Horizontal box resistor with fixed-size box, centred between x1 and x2
+    const left = Math.min(x1, x2), right = Math.max(x1, x2);
+    const mid = (left + right) / 2;
+    const boxW = s(28);  // fixed box width
+    const boxH = s(12);  // fixed box height
+    const boxLeft = mid - boxW / 2, boxRight = mid + boxW / 2;
+
+    // Lead wires
+    drawWireH(ctx, left, boxLeft, y);
+    drawWireH(ctx, boxRight, right, y);
+
+    // Rectangle
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(boxLeft, y - boxH / 2, boxW, boxH);
+
+    // Label
+    const mx = mid;
+    const ly = y + (boxH / 2 + s(5)) * labelSide;
+    ctx.font = `500 ${s(10)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#ccc';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = labelSide > 0 ? 'top' : 'bottom';
+    ctx.fillText(label, mx, ly);
+    ctx.font = `400 ${s(8.5)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#888';
+    ctx.fillText(value, mx, ly + s(12) * labelSide);
+}
+
+function drawBatteryV(ctx, x, y, s, label, value, labelSide) {
+    // Vertical battery centred at (x,y). + on top, − on bottom.
+    const gap = s(4);
+    const longW = s(12);
+    const shortW = s(7);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    // + plate (top, long thin)
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x - longW, y - gap); ctx.lineTo(x + longW, y - gap); ctx.stroke();
+    // − plate (bottom, short thick)
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x - shortW, y + gap); ctx.lineTo(x + shortW, y + gap); ctx.stroke();
+    ctx.lineWidth = 1.5;
+    // + / − signs
+    ctx.font = `400 ${s(8)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#777';
+    const lx = x + longW * labelSide + s(5) * labelSide;
+    ctx.textAlign = labelSide > 0 ? 'left' : 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+', lx, y - gap);
+    ctx.fillText('−', lx, y + gap);
+    // Label
+    ctx.font = `600 ${s(10)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#ccc';
+    ctx.fillText(label, lx, y + s(16));
+    ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#888';
+    ctx.fillText(value, lx, y + s(27));
+}
+
+function drawACSource(ctx, cx, cy, r, s) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    // Sine wave inside
+    ctx.strokeStyle = COL_VIN;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 40; i++) {
+        const t = i / 40;
+        const x = cx - r * 0.6 + t * r * 1.2;
+        const y = cy - Math.sin(t * 2 * Math.PI) * r * 0.3;
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // + / − labels aligned with actual terminals:
+    // + on the right side (connects to R_B / base)
+    // − on the bottom (connects to V_BB / GND)
+    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+', cx + r + s(3), cy);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('−', cx, cy + r + s(2));
+}
+
+function drawGnd(ctx, x, y, s) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) {
+        const wi = s(14) - i * s(5);
+        const yi = y + i * s(4);
+        ctx.beginPath(); ctx.moveTo(x - wi / 2, yi); ctx.lineTo(x + wi / 2, yi); ctx.stroke();
+    }
+}
+
+function drawArrow(ctx, x, y, s, direction, color, label) {
+    ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+    const al = s(10);
+    if (direction === 'right') {
+        ctx.beginPath(); ctx.moveTo(x - al, y); ctx.lineTo(x, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s(5), y - s(3)); ctx.lineTo(x - s(5), y + s(3)); ctx.closePath(); ctx.fill();
+        if (label) { ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(label, x - al / 2, y - s(4)); }
+    } else if (direction === 'down') {
+        ctx.beginPath(); ctx.moveTo(x, y - al); ctx.lineTo(x, y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - s(3), y - s(5)); ctx.lineTo(x + s(3), y - s(5)); ctx.closePath(); ctx.fill();
+        if (label) { ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(label, x + s(5), y - al / 2); }
+    }
+}
+
+// ─── BJT NPN Symbol ───
+// Collector exits straight up at (cx, cy - size)
+// Emitter exits straight down at (cx, cy + size)
+// Base enters from the left at (cx - size, cy)
+function drawBJT_NPN(ctx, cx, cy, size, s) {
+    const r = size; // outer circle radius
+    // Circle
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+
+    const barX = cx - r * 0.3;
+    const barTop = cy - r * 0.5;
+    const barBot = cy + r * 0.5;
+
+    // Base lead: left edge → bar
+    ctx.strokeStyle = COL_IB; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx - r, cy); ctx.lineTo(barX, cy); ctx.stroke();
+
+    // Vertical bar
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(barX, barTop); ctx.lineTo(barX, barBot); ctx.stroke();
+
+    // Collector: bar → straight up exit at (cx, cy - r)
+    ctx.strokeStyle = COL_IC; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(barX, cy - r * 0.25); ctx.lineTo(cx, cy - r); ctx.stroke();
+
+    // Emitter: bar → straight down exit at (cx, cy + r)
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(barX, cy + r * 0.25); ctx.lineTo(cx, cy + r); ctx.stroke();
+
+    // NPN arrow on emitter (pointing away from bar)
+    const ax = cx, ay = cy + r;
+    const dx = ax - barX, dy = ay - (cy + r * 0.25);
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const nx = dx / len, ny = dy / len;
+    const a = s(5);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - a * nx - a * ny * 0.5, ay - a * ny + a * nx * 0.5);
+    ctx.lineTo(ax - a * nx + a * ny * 0.5, ay - a * ny - a * nx * 0.5);
+    ctx.closePath(); ctx.fill();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  drawCircuit — Clean grid-aligned schematic
+// ═══════════════════════════════════════════════════════════════
+
+function drawCircuit(bias, inst) {
+    const ctx = circuitCtx;
+    const W = circuitSize.w, H = circuitSize.h;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.translate(camPanX, camPanY);
+    ctx.scale(camZoom, camZoom);
+
+    const sc = Math.min(W / 580, H / 460);
+    const s = (v) => v * sc;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // ─── Grid nodes (all on clean coordinates) ───
+    //
+    //  Vertical rails:
+    //    srcX — AC source & V_BB
+    //    bjtX — BJT, R_C (collector straight up, emitter straight down)
+    //    vccX — V_CC supply
+    //
+    //  Horizontal rails:
+    //    topY  — top bus connecting R_C to V_CC
+    //    baseY — base level (AC source, R_B, BJT base)
+    //    gndY  — ground bus at bottom
+    //
+
+    const srcX  = W * 0.12;            // AC source rail
+    const bjtX  = W * 0.50;            // BJT vertical rail
+    const vccX  = W * 0.80;            // V_CC rail
+
+    const topY  = H * 0.10;            // top horizontal bus
+    const baseY = H * 0.42;            // base horizontal level
+    const gndY  = H * 0.85;            // ground horizontal bus
+
+    const bjtR  = s(26);               // BJT symbol radius
+    const srcR  = s(18);               // AC source radius
+
+    // Derived positions
+    const collY = baseY - bjtR;        // collector exit = straight up from BJT
+    const emitY = baseY + bjtR;        // emitter exit = straight down from BJT
+
+    // ═══ 1. TOP HORIZONTAL BUS ═══
+    drawWireH(ctx, bjtX, vccX, topY);
+
+    // ═══ 2. R_C (vertical: topY → collector) ═══
+    const rcTop = topY + s(5);
+    const rcBot = collY - s(12);
+    drawResistorV(ctx, bjtX, rcTop, rcBot, s, 'R_C', formatResistance(rc), 1);
+    drawWireV(ctx, bjtX, topY, rcTop);
+    drawWireV(ctx, bjtX, rcBot, collY);
+
+    // i_C arrow between R_C and collector
+    drawArrow(ctx, bjtX, (rcBot + collY) / 2 + s(6), s, 'down', COL_IC, 'i_C');
+
+    // ═══ 3. BJT (centred at bjtX, baseY) ═══
+    drawBJT_NPN(ctx, bjtX, baseY, bjtR, s);
+
+    // ═══ 4. EMITTER → GND (straight down) ═══
+    drawWireV(ctx, bjtX, emitY, gndY);
+
+    // ═══ 5. V_CC (vertical on right rail, between topY and gndY) ═══
+    drawWireV(ctx, vccX, topY, gndY);
+    const vccMidY = (topY + gndY) / 2;
+    drawBatteryV(ctx, vccX, vccMidY, s, 'V_CC', vcc.toFixed(1) + ' V', 1);
+
+    // ═══ 6. GROUND BUS (horizontal: emitter → V_CC bottom) ═══
+    drawWireH(ctx, bjtX, vccX, gndY);
+    drawGnd(ctx, bjtX, gndY + s(2), s);
+    drawGnd(ctx, vccX, gndY + s(2), s);
+
+    // ═══ 7. BASE PATH: AC source → R_B → base ═══
+
+    // AC source (on srcX rail, vertically centred at baseY)
+    const srcCY = baseY;               // centre of AC source at base level
+    drawACSource(ctx, srcX, srcCY, srcR, s);
+    ctx.font = `500 ${s(10)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = COL_VIN;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    drawSub(ctx, 'V', 'in', srcX, srcCY - srcR - s(14), '(t)');
+
+    // Wire from right of AC source → R_B → base
+    const rbLeft  = srcX + srcR + s(4);
+    const rbRight = bjtX - bjtR - s(4);
+    drawResistorH(ctx, baseY, rbLeft, rbRight, s, 'R_B', formatResistance(rb), -1);
+
+    // i_B arrow between R_B and base
+    const ibX = rbRight + (bjtX - bjtR - rbRight) / 2 + s(6);
+    drawArrow(ctx, ibX, baseY, s, 'right', COL_IB, 'i_B');
+
+    // ═══ 8. BOTTOM PATH: AC source (−) → V_BB → GND ═══
+
+    // Wire down from AC source bottom to ground bus
+    drawWireV(ctx, srcX, srcCY + srcR, gndY);
+
+    // V_BB battery on the srcX rail, between AC source and ground
+    const vbbY = (srcCY + srcR + gndY) / 2;
+    drawBatteryV(ctx, srcX, vbbY, s, 'V_BB', vbb.toFixed(1) + ' V', -1);
+
+    // Ground bus extends left to srcX
+    drawWireH(ctx, srcX, bjtX, gndY);
+
+    // Junction dots where wires meet on ground bus
+    drawJunction(ctx, bjtX, gndY, s);
+    drawJunction(ctx, srcX, gndY, s);
+
+    // ═══ 9. VOLTAGE LABELS ═══
+
+    // v_BE (across base-emitter, to the left of BJT)
+    const vbeLblX = bjtX - bjtR - s(8);
+    const vbeTop  = baseY + s(4);
+    const vbeBot  = emitY + s(4);
+    ctx.strokeStyle = 'rgba(201,107,90,0.4)'; ctx.lineWidth = 1;
+    ctx.setLineDash([s(3), s(3)]);
+    ctx.beginPath(); ctx.moveTo(vbeLblX, vbeTop); ctx.lineTo(vbeLblX, vbeBot); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = `400 ${s(8)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = COL_VOUT;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText('+', vbeLblX - s(2), vbeTop + s(4));
+    ctx.fillText('−', vbeLblX - s(2), vbeBot - s(4));
+    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    drawSub(ctx, 'V', 'BE', vbeLblX - s(4), (vbeTop + vbeBot) / 2);
+
+    // v_CE (across collector-emitter, to the right of BJT)
+    const vceLblX = bjtX + bjtR + s(10);
+    const vceTop  = collY + s(4);
+    const vceBot  = emitY - s(4);
+    ctx.strokeStyle = 'rgba(106,170,142,0.4)'; ctx.lineWidth = 1;
+    ctx.setLineDash([s(3), s(3)]);
+    ctx.beginPath(); ctx.moveTo(vceLblX, vceTop); ctx.lineTo(vceLblX, vceBot); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = `400 ${s(8)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = COL_VCE;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('+', vceLblX + s(2), vceTop + s(6));
+    ctx.fillText('−', vceLblX + s(2), vceBot - s(4));
+    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    drawSub(ctx, 'V', 'CE', vceLblX + s(4), (vceTop + vceBot) / 2);
+
+    // ═══ 10. LIVE VALUES ═══
+    const i = inst || { ib: bias.ibq, ic: bias.icq, vce: bias.vceq, vbe: VBE_ON, vin: 0 };
+    ctx.font = `400 ${s(8)}px 'IBM Plex Mono', monospace`;
+
+    // i_B (along R_B)
+    ctx.fillStyle = COL_IB;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    drawSub(ctx, 'I', 'B', (rbLeft + rbRight) / 2, baseY + s(22), ' = ' + formatCurrentmA(i.ib));
+
+    // i_C (left of R_C, rotated)
+    ctx.fillStyle = COL_IC;
+    ctx.save();
+    ctx.translate(bjtX - s(16), (rcTop + rcBot) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    drawSub(ctx, 'I', 'C', 0, 0, ' = ' + formatCurrentmA(i.ic));
+    ctx.restore();
+
+    // v_CE (next to bracket)
+    ctx.fillStyle = COL_VCE;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    drawSub(ctx, 'V', 'CE', vceLblX + s(4), (vceTop + vceBot) / 2 + s(12), ' = ' + formatVoltage(i.vce));
+
+    // v_BE (next to bracket)
+    ctx.fillStyle = COL_VOUT;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    drawSub(ctx, 'V', 'BE', vbeLblX - s(4), (vbeTop + vbeBot) / 2 + s(12), ' = ' + formatVoltage(i.vbe));
+
+    ctx.restore();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Drawing: i_C vs v_BE Transfer Characteristic
+//
+//  Classic textbook diagram:
+//  - Main plot: Shockley exponential i_C vs v_BE
+//  - Q-point on the curve with tangent line (slope = g_m)
+//  - Below: v_be input waveform (time downward) oscillates on x-axis
+//  - Right: i_c output waveform (time rightward) on y-axis
+//  - The input perturbation on v_BE slides along the tangent,
+//    producing an amplified i_C shift on the y-axis
+//
+// ═══════════════════════════════════════════════════════════════
+
+function drawTimePlot() {
+    const ctx = timeCtx;
+    const W = timeSize.w, H = timeSize.h;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const bias = computeDCBias();
+    const ss = computeSmallSignal(bias);
+
+    // ─── Shockley-consistent Q-point (smooth, no snap at cutoff) ───
+    // Solve: V_BB = (I_S·exp(V_BE/V_T) / β) · R_B + V_BE
+    // using Newton's method so the Q-point slides smoothly along the curve.
+    let VBE_Q = Math.min(vbb, VBE_ON);  // initial guess
+    for (let iter = 0; iter < 15; iter++) {
+        const ic_trial = IS * Math.exp(VBE_Q / VT);
+        const ib_trial = ic_trial / hfe;
+        const f = vbb - ib_trial * rb - VBE_Q;
+        const fp = -(ib_trial / VT) * rb - 1;
+        const dv = f / fp;
+        VBE_Q -= dv;
+        if (Math.abs(dv) < 1e-9) break;
+    }
+    VBE_Q = Math.max(0, VBE_Q);
+    let ICQ = IS * Math.exp(VBE_Q / VT);
+    // Clamp at saturation limit
+    const icSatLimit = (vcc - VCE_SAT) / rc;
+    ICQ = Math.min(ICQ, icSatLimit);
+
+    // Local small-signal parameters from the Shockley Q-point
+    // (independent of the piecewise-linear DC bias region)
+    const gmQ = ICQ / VT;
+    const reQ = VT / Math.max(ICQ, 1e-15);
+    const rPiQ = hfe * reQ;
+    const vbeFracQ = rPiQ / (rb + rPiQ);
+
+    // ─── Nonlinear VBE solver for instantaneous values ───
+    // Solves: V_source = (I_S·exp(V_BE/V_T) / β) · R_B + V_BE
+    // for any total source voltage (V_BB + v_in).
+    // Uses Newton's method with Q-point as initial guess for speed.
+    function solveVBE(vSource) {
+        if (vSource <= 0) return 0;
+        let vbe = Math.min(vSource, VBE_Q + 0.1);  // warm start near Q-point
+        for (let iter = 0; iter < 10; iter++) {
+            const ic = IS * Math.exp(vbe / VT);
+            const ib = ic / hfe;
+            const f = vSource - ib * rb - vbe;
+            const fp = -(ib / VT) * rb - 1;
+            vbe -= f / fp;
+            if (Math.abs(f) < 1e-9) break;
+        }
+        return Math.max(0, vbe);
+    }
+
+    // ─── Layout ───
+    const pad = { l: 52, r: 14, t: 16, b: 16 };
+    const totalW = W - pad.l - pad.r;
+    const totalH = H - pad.t - pad.b;
+
+    // Curve area occupies ~50% width, ~60% height (top-left)
+    const curveW = totalW * 0.50;
+    const curveH = totalH * 0.58;
+    const curveL = pad.l;
+    const curveT = pad.t;
+
+    // Output waveform (top-right, same height as curve)
+    const outGap = 6;
+    const outL = curveL + curveW + outGap;
+    const outW = totalW - curveW - outGap;
+    const outT = curveT;
+    const outH = curveH;
+
+    // Input waveform (bottom-left, same width as curve)
+    const inGap = 6;
+    const inL = curveL;
+    const inW = curveW;
+    const inT = curveT + curveH + inGap;
+    const inH = totalH - curveH - inGap;
+
+    // ═══ AXES RANGES ═══
+    const vinPk_V = vinPk_mV / 1000;
+    // Compute actual v_be swing using Shockley-based vbe fraction
+    // Peak VBE swing using full nonlinear solver
+    const vbeAtPosPk = solveVBE(vbb + vinPk_V);
+    const vbeAtNegPk = solveVBE(vbb - vinPk_V);
+    const vbePk_V = Math.max(vbeAtPosPk - VBE_Q, VBE_Q - vbeAtNegPk, 0.001);
+    // v_BE axis: fixed range so the curve doesn't shift when bias changes
+    const vbeMin = 0;
+    const vbeMax = 0.85;
+
+    // i_C axis: scaled to show the saturation limit with some headroom
+    const icHiPeak = Math.min(IS * Math.exp((VBE_Q + vbePk_V) / VT), icSatLimit);
+    const icLoPeak = Math.max(IS * Math.exp((VBE_Q - vbePk_V) / VT), 0);
+    const icMin = 0;
+    const icMax = Math.max(icSatLimit * 1.3, 0.001);
+
+    // Mapping functions
+    const mapVBE = (v) => curveL + ((v - vbeMin) / (vbeMax - vbeMin)) * curveW;
+    const mapIC  = (i) => curveT + curveH - ((i - icMin) / (icMax - icMin)) * curveH;
+
+    // ═══ DRAW AXES ═══
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    // i_C axis (vertical)
+    ctx.beginPath();
+    ctx.moveTo(curveL, curveT);
+    ctx.lineTo(curveL, curveT + curveH);
+    ctx.stroke();
+    // v_BE axis (horizontal)
+    ctx.beginPath();
+    ctx.moveTo(curveL, curveT + curveH);
+    ctx.lineTo(curveL + curveW, curveT + curveH);
+    ctx.stroke();
+
+    // Arrow tips
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(curveL, curveT);
+    ctx.lineTo(curveL - 3, curveT + 8);
+    ctx.lineTo(curveL + 3, curveT + 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(curveL + curveW, curveT + curveH);
+    ctx.lineTo(curveL + curveW - 8, curveT + curveH - 3);
+    ctx.lineTo(curveL + curveW - 8, curveT + curveH + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    // Axis labels
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#fff';
+    // v_BE — centered below x-axis, under the tick numbers
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    drawSub(ctx, 'V', 'BE', curveL + curveW / 2, curveT + curveH + 16);
+    // i_C — rotated, to the left of the tick numbers
+    ctx.save();
+    ctx.translate(8, curveT + curveH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    drawSub(ctx, 'I', 'C', 0, 0);
+    ctx.restore();
+
+    // ─── Tick marks: v_BE axis (mV or V) ───
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const vbeStep = vbeMax <= 1 ? 0.1 : 0.2;
+    for (let v = vbeStep; v < vbeMax; v += vbeStep) {
+        const tx = mapVBE(v);
+        if (tx > curveL + 20 && tx < curveL + curveW - 15) {
+            ctx.beginPath(); ctx.moveTo(tx, curveT + curveH); ctx.lineTo(tx, curveT + curveH + 4); ctx.stroke();
+            ctx.fillText(v.toFixed(1) + 'V', tx, curveT + curveH + 5);
+        }
+    }
+
+    // ─── Tick marks: i_C axis (mA or µA) ───
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    // Choose a nice step size
+    let icStep;
+    if (icMax < 0.001) icStep = icMax / 4;
+    else if (icMax < 0.01) icStep = 0.001;
+    else icStep = Math.pow(10, Math.floor(Math.log10(icMax / 3)));
+    if (icMax / icStep > 8) icStep *= 2;
+    for (let i = icStep; i < icMax; i += icStep) {
+        const ty = mapIC(i);
+        if (ty > curveT + 10 && ty < curveT + curveH - 8) {
+            ctx.beginPath(); ctx.moveTo(curveL - 4, ty); ctx.lineTo(curveL, ty); ctx.stroke();
+            const label = i < 0.001 ? (i * 1e6).toFixed(0) + 'µA' : (i * 1e3).toFixed(1) + 'mA';
+            ctx.fillText(label, curveL - 6, ty);
+        }
+    }
+
+    // ═══ SHOCKLEY EXPONENTIAL CURVE ═══
+    // i_C = I_S · exp(v_BE / V_T)
+    // This is a FIXED property of the transistor (I_S is constant).
+    // The Q-point slides along this curve as bias changes.
+    // The curve plateaus at I_C(sat) where the circuit limits current.
+
+    ctx.strokeStyle = COL_VOUT;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    let started = false;
+    for (let px = 0; px <= curveW; px += 1) {
+        const vbe = vbeMin + (px / curveW) * (vbeMax - vbeMin);
+        let ic = IS * Math.exp(vbe / VT);
+        ic = Math.min(ic, icSatLimit);  // clamp at saturation limit
+        const x = curveL + px;
+        const y = mapIC(ic);
+        const yc = Math.max(curveT - 5, Math.min(curveT + curveH + 5, y));
+        if (!started) { ctx.moveTo(x, yc); started = true; }
+        else { ctx.lineTo(x, yc); }
+    }
+    ctx.stroke();
+
+    // ─── Saturation limit line on the Shockley curve ───
+    const ySatCurve = mapIC(icSatLimit);
+    if (ySatCurve >= curveT - 5 && ySatCurve <= curveT + curveH + 5) {
+        ctx.strokeStyle = 'rgba(204,168,85,0.4)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(curveL, ySatCurve);
+        ctx.lineTo(curveL + curveW, ySatCurve);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = 'rgba(204,168,85,0.5)';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        drawSub(ctx, 'I', 'C', curveL + curveW - 3, ySatCurve - 3, '(sat)');
+    }
+
+    // ═══ Q-POINT & TANGENT ═══
+    // No early return — Q-point slides smoothly via Shockley solver even in cutoff.
+
+    // Q-point sits on the fixed Shockley curve: I_C = I_S · exp(V_BE / V_T)
+    // V_BE_Q = V_T · ln(I_CQ / I_S) — slides along the curve as bias changes.
+    // In saturation, I_CQ is clamped at icSat, so Q sits at the plateau.
+    const qVBE = VBE_Q;
+    const qIC = ICQ;
+    const qx = mapVBE(qVBE);
+    const qy = mapIC(qIC);
+
+    // ─── I_C dashed horizontal → extends into output area ───
+    ctx.strokeStyle = 'rgba(90,154,186,0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(curveL, qy);
+    ctx.lineTo(outL + outW, qy);
+    ctx.stroke();
+
+    // ─── V_BE dashed vertical → extends into input area ───
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.beginPath();
+    ctx.moveTo(qx, curveT);
+    ctx.lineTo(qx, inT + inH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // I_C label — inside the plot, just right of the y-axis
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = COL_IC;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    drawSub(ctx, 'I', 'CQ', curveL + 4, qy - 3);
+
+    // V_BE label
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    drawSub(ctx, 'V', 'BE', qx, curveT + curveH + 4);
+
+    // ─── Q-point dot ───
+    ctx.fillStyle = bias.region === 'saturation' ? COL_IB : COL_VOUT;
+    ctx.beginPath();
+    ctx.arc(qx, qy, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Q label
+    ctx.font = "bold 14px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = bias.region === 'saturation' ? COL_IB : COL_VOUT;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Q', qx - 10, qy - 8);
+
+    // Saturation annotation
+    if (bias.region === 'saturation') {
+        ctx.font = "11px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = COL_IB;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('SATURATION', qx + 12, qy + 6);
+        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        drawSub(ctx, 'I', 'C', qx + 12, qy + 20, ' clamped');
+    }
+
+    // ─── TANGENT LINE ───
+    if (gmQ > 0) {
+        const pxPerV   = curveW / (vbeMax - vbeMin);
+        const pxPerA   = curveH / (icMax - icMin);
+        const slopePx  = -(gmQ * pxPerA) / pxPerV;
+
+        const tangentExtent = 0.03;
+
+        // Draw tangent clipped to V_BE >= 0 and 0 <= I_C <= I_C(sat)
+        ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const tangentSteps = 50;
+        let tangentStarted = false;
+        for (let s = 0; s <= tangentSteps; s++) {
+            const dvbe = -tangentExtent + (2 * tangentExtent * s / tangentSteps);
+            const vbe_tan = qVBE + dvbe;
+            if (vbe_tan < 0) continue;  // clip at y-axis (V_BE = 0)
+            let ic_tan = qIC + gmQ * dvbe;
+            ic_tan = Math.max(0, Math.min(ic_tan, icSatLimit));
+            const tx = mapVBE(vbe_tan);
+            const ty = mapIC(ic_tan);
+            if (!tangentStarted) { ctx.moveTo(tx, ty); tangentStarted = true; }
+            else { ctx.lineTo(tx, ty); }
+        }
+        ctx.stroke();
+
+        ctx.font = "12px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        const x2 = mapVBE(qVBE + tangentExtent);
+        const ic_at_x2 = Math.max(0, Math.min(qIC + gmQ * tangentExtent, icSatLimit));
+        const lblY = mapIC(ic_at_x2);
+        drawSub(ctx, 'Slope = g', 'm', x2 + 6, Math.max(curveT + 16, lblY - 18));
+    }
+
+    // ═══ WAVEFORMS & OPERATING POINT ═══
+    if (dataBuf.t.length < 2) return;
+
+    const tData = dataBuf.t;
+    const vinData = dataBuf.vin;
+    const N = tData.length;
+    const tMin = tData[0], tMax = tData[N - 1];
+
+    const currVin = vinData[N - 1];
+    // Actual v_be across junction = v_in scaled by voltage divider r_π/(R_B+r_π)
+    const currVBE = solveVBE(vbb + currVin);
+    const currVbe_ac = currVBE - VBE_Q;
+    // IC from fixed Shockley curve: I_S · exp(V_BE / V_T)
+    const currIC_exact = IS * Math.exp(currVBE / VT);
+
+    // ─── Sliding operating point (active & saturation) ───
+    if (gmQ > 0) {
+        // In saturation, IC is clamped at icSatLimit
+        const currIC_exact_clamped = Math.min(currIC_exact, icSatLimit);
+        const currIC_tangent = Math.min(qIC + gmQ * currVbe_ac, icSatLimit);
+        const ptX = mapVBE(currVBE);
+        const ptY = mapIC(Math.max(0, currIC_tangent));
+        const ptCurveY = mapIC(Math.max(0, currIC_exact_clamped));
+
+        // Projection lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(ptX, curveT + curveH); ctx.lineTo(ptX, ptY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(curveL, ptY); ctx.lineTo(ptX, ptY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Dot on tangent line (green)
+        if (bias.region === 'active') {
+            ctx.fillStyle = COL_VCE;  // green
+            ctx.beginPath(); ctx.arc(ptX, ptY, 5, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Dot on actual curve (blue)
+        ctx.fillStyle = COL_IC;  // blue
+        ctx.beginPath(); ctx.arc(ptX, ptCurveY, 5, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // ═══ INPUT WAVEFORM (below, time runs downward) ═══
+    ctx.fillStyle = 'rgba(255,255,255,0.015)';
+    ctx.fillRect(inL, inT, inW, inH);
+
+    const mapTimeV = (t) => inT + ((t - tMin) / (tMax - tMin || 1)) * inH;
+
+    // Time arrow (downward)
+    const tArrowX = qx;
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('t', tArrowX, inT + inH + 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.moveTo(tArrowX, inT + inH);
+    ctx.lineTo(tArrowX - 3, inT + inH - 7);
+    ctx.lineTo(tArrowX + 3, inT + inH - 7);
+    ctx.closePath(); ctx.fill();
+
+    // v_be waveform trace (full nonlinear solver at each instant)
+    ctx.strokeStyle = COL_VIN;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < N; i++) {
+        const vbe_inst = solveVBE(vbb + vinData[i]);
+        const x = mapVBE(vbe_inst);
+        const y = mapTimeV(tData[i]);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // "v_be" label — rotated on the y-axis of the input waveform
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = COL_VIN;
+    ctx.save();
+    ctx.translate(inL - 6, inT + inH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    drawSub(ctx, 'V', 'BE', 0, 0);
+    ctx.restore();
+
+    // Projection: current input point → up to curve
+    if (gmQ > 0) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+        const inputPtY = mapTimeV(tData[N - 1]);
+        const currVBE_proj = solveVBE(vbb + currVin);
+        ctx.beginPath();
+        ctx.moveTo(mapVBE(currVBE_proj), inputPtY);
+        ctx.lineTo(mapVBE(currVBE_proj), curveT + curveH);
+        ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // ═══ OUTPUT WAVEFORM (right, time runs rightward) ═══
+    ctx.fillStyle = 'rgba(255,255,255,0.015)';
+    ctx.fillRect(outL, outT, outW, outH);
+
+    const mapTimeH = (t) => outL + ((t - tMin) / (tMax - tMin || 1)) * outW;
+
+    // Time axis line and arrow at I_CQ level
+    const outAxisY = qy;
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(outL, outAxisY); ctx.lineTo(outL + outW, outAxisY); ctx.stroke();
+
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('t', outL + outW - 2, outAxisY + 5);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.moveTo(outL + outW, outAxisY);
+    ctx.lineTo(outL + outW - 7, outAxisY - 3);
+    ctx.lineTo(outL + outW - 7, outAxisY + 3);
+    ctx.closePath(); ctx.fill();
+
+    // ─── Exact output (from fixed Shockley curve, clamped at icSatLimit) ───
+    if (showExact) {
+        ctx.strokeStyle = COL_IC;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < N; i++) {
+            const vbe_now = solveVBE(vbb + vinData[i]);
+            let ic_inst = IS * Math.exp(vbe_now / VT);
+            ic_inst = Math.min(ic_inst, icSatLimit);
+            const x = mapTimeH(tData[i]);
+            const y = mapIC(ic_inst);
+            const yc = Math.max(outT, Math.min(outT + outH, y));
+            i === 0 ? ctx.moveTo(x, yc) : ctx.lineTo(x, yc);
+        }
+        ctx.stroke();
+    }
+
+    // ─── Tangent (linear small-signal) output ───
+    // Uses g_m · v_be where v_be is the actual junction voltage
+    if (showTangent && gmQ > 0) {
+        ctx.strokeStyle = COL_VCE;  // green, matching tangent dot
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        for (let i = 0; i < N; i++) {
+            const vbe_now = solveVBE(vbb + vinData[i]);
+            let ic_tangent = qIC + gmQ * (vbe_now - VBE_Q);
+            ic_tangent = Math.max(0, Math.min(ic_tangent, icSatLimit));
+            const x = mapTimeH(tData[i]);
+            const y = mapIC(ic_tangent);
+            const yc = Math.max(outT, Math.min(outT + outH, y));
+            i === 0 ? ctx.moveTo(x, yc) : ctx.lineTo(x, yc);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
+
+    // Saturation limit line
+    const ySat = mapIC(icSatLimit);
+    if (ySat >= outT && ySat <= outT + outH) {
+        ctx.strokeStyle = 'rgba(204,168,85,0.3)';
+        ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(outL, ySat); ctx.lineTo(outL + outW, ySat); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = 'rgba(204,168,85,0.5)';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+        ctx.fillText('SAT', outL + outW - 3, ySat - 3);
+    }
+
+    // Cutoff line (I_C = 0)
+    const yCut = mapIC(0);
+    if (yCut >= outT && yCut <= outT + outH) {
+        ctx.strokeStyle = 'rgba(160,160,160,0.2)';
+        ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.moveTo(outL, yCut); ctx.lineTo(outL + outW, yCut); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = 'rgba(160,160,160,0.4)';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillText('CUTOFF', outL + outW - 3, yCut + 3);
+    }
+
+    // Labels for output traces — top-left of output area
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    if (showExact) {
+        ctx.fillStyle = COL_IC;
+        ctx.fillText('exact', outL + 5, outT + 4);
+    }
+    if (showTangent && gmQ > 0) {
+        ctx.fillStyle = COL_VCE;  // green
+        ctx.fillText('tangent', outL + 5, outT + (showExact ? 18 : 4));
+    }
+
+    // Projection: current output point → left to curve
+    if (gmQ > 0) {
+        const currIC_tangent = Math.min(qIC + gmQ * currVbe_ac, icSatLimit);
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(mapVBE(currVBE), mapIC(currIC_tangent));
+        ctx.lineTo(mapTimeH(tData[N - 1]), mapIC(currIC_tangent));
+        ctx.stroke(); ctx.setLineDash([]);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Drawing: I_C vs V_CE — Q-Point & Load Line
+// ═══════════════════════════════════════════════════════════════
+
+function drawIVPlot(bias, vinAC) {
+    const ctx = ivCtx;
+    const W = ivSize.w, H = ivSize.h;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = { l: 56, r: 20, t: 22, b: 48 };
+    const pw = W - pad.l - pad.r;
+    const ph = H - pad.t - pad.b;
+
+    // Axis ranges
+    const vceMax = Math.max(vcc * 1.15, 15);
+    const icMax  = Math.max((vcc / rc) * 1.3, bias.icq * 2.5, 0.005);
+
+    const mapX = (v) => pad.l + (v / vceMax) * pw;
+    const mapY = (i) => pad.t + ph - (i / icMax) * ph;
+
+    // ─── Saturation region shading ───
+    ctx.fillStyle = 'rgba(255,180,60,0.06)';
+    const satBoundX = mapX(VCE_SAT + 0.1);
+    ctx.fillRect(pad.l, pad.t, satBoundX - pad.l, ph);
+
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(204,168,85,0.4)';
+    ctx.textAlign = 'center';
+    ctx.fillText('SAT', (pad.l + satBoundX) / 2, pad.t + 16);
+
+    ctx.fillStyle = 'rgba(90,154,186,0.3)';
+    ctx.fillText('FORWARD ACTIVE', (satBoundX + pad.l + pw) / 2, pad.t + 16);
+
+    // ─── I_B characteristic curves (fixed spacing) ───
+    // Draw evenly-spaced background curves at fixed I_B intervals
+    const ibFixedStep = (vcc / rc) / (hfe * 6);  // 6 curves spread across the load line range
+    const numCurves = 7;
+
+    // Helper: draw one I_B curve
+    function drawIBCurve(ib_val, style, width) {
+        const ic_act = hfe * ib_val;
+        ctx.strokeStyle = style;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        for (let vce = 0; vce <= vceMax; vce += 0.2) {
+            let ic;
+            if (vce < VCE_SAT) {
+                ic = ic_act * (vce / VCE_SAT);
+            } else {
+                ic = ic_act * (1 + vce / 100); // Early effect V_A ≈ 100V
+            }
+            const x = mapX(vce);
+            const y = mapY(Math.min(ic, icMax));
+            vce === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // Background curves at fixed intervals
+    for (let n = 1; n <= numCurves; n++) {
+        const ib_n = ibFixedStep * n;
+        drawIBCurve(ib_n, 'rgba(204,168,85,0.15)', 1);
+
+        // Label
+        const ic_act = hfe * ib_n;
+        if (ic_act < icMax * 0.95) {
+            ctx.font = "12px 'IBM Plex Mono', monospace";
+            ctx.fillStyle = 'rgba(204,168,85,0.3)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            const labelIc = ic_act * (1 + vceMax / 100);
+            const ly = mapY(Math.min(labelIc, icMax));
+            drawSub(ctx, 'I', 'B', pad.l + pw - 3, ly - 3, '=' + formatCurrentShort(ib_n));
+        }
+    }
+
+    // Actual I_BQ curve (highlighted, drawn on top)
+    if (bias.ibq > 0) {
+        drawIBCurve(bias.ibq, 'rgba(204,168,85,0.6)', 1.5);
+
+        const ic_act = hfe * bias.ibq;
+        if (ic_act < icMax * 0.95) {
+            ctx.font = "12px 'IBM Plex Mono', monospace";
+            ctx.fillStyle = 'rgba(204,168,85,0.7)';
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'bottom';
+            const labelIc = ic_act * (1 + vceMax / 100);
+            const ly = mapY(Math.min(labelIc, icMax));
+            drawSub(ctx, 'I', 'BQ', pad.l + pw - 3, ly - 3, '=' + formatCurrentShort(bias.ibq));
+        }
+    }
+
+    // ─── DC Load Line ───
+    // V_CC = I_C·R_C + V_CE  →  I_C = (V_CC − V_CE) / R_C
+    // At V_CE = 0:   I_C = V_CC / R_C
+    // At I_C  = 0:   V_CE = V_CC
+    const icAtVce0 = vcc / rc;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 3]);
+    ctx.beginPath();
+    ctx.moveTo(mapX(0), mapY(icAtVce0));
+    ctx.lineTo(mapX(vcc), mapY(0));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Load line label — above the top of the load line
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('DC Load Line', mapX(0) + 5, mapY(icAtVce0) - 18);
+    drawSub(ctx, 'slope = −1/R', 'C', mapX(0) + 5, mapY(icAtVce0) - 5);
+
+    // ─── Q-point ───
+    // Find the true intersection of the load line and I_BQ curve (with Early effect V_A=100)
+    // Load line: I_C = (V_CC - V_CE) / R_C
+    // I_B curve: I_C = β·I_BQ·(1 + V_CE/V_A)
+    // Solve: (V_CC - V_CE)/R_C = β·I_BQ·(1 + V_CE/100)
+    //   V_CC - V_CE = R_C·β·I_BQ + R_C·β·I_BQ·V_CE/100
+    //   V_CC - R_C·β·I_BQ = V_CE·(1 + R_C·β·I_BQ/100)
+    //   V_CE = (V_CC - R_C·β·I_BQ) / (1 + R_C·β·I_BQ/100)
+    if (bias.region === 'active' || bias.region === 'saturation') {
+        let qVce, qIc;
+        if (bias.region === 'active' && bias.ibq > 0) {
+            const bIb = hfe * bias.ibq;
+            qVce = (vcc - rc * bIb) / (1 + rc * bIb / 100);
+            qVce = Math.max(VCE_SAT, qVce);
+            qIc = (vcc - qVce) / rc;  // from load line, guaranteed to be on it
+        } else {
+            qVce = bias.vceq;
+            qIc = bias.icq;
+        }
+        const qx = mapX(qVce);
+        const qy = mapY(qIc);
+
+        // Crosshairs
+        ctx.strokeStyle = 'rgba(201,107,90,0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(qx, pad.t);
+        ctx.lineTo(qx, pad.t + ph);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pad.l, qy);
+        ctx.lineTo(pad.l + pw, qy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Q-point dot
+        ctx.fillStyle = COL_VOUT;
+        ctx.beginPath();
+        ctx.arc(qx, qy, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // AC swing along the DC load line
+        // Load line: I_C = (V_CC - V_CE) / R_C, slope = -1/R_C
+        // A change in V_CE of dvce gives dic = dvce / R_C (they move in opposite directions)
+        const ss = computeSmallSignal(bias);
+        if (ss.av !== 0 && vinPk_mV > 0) {
+            const dvce = Math.min(Math.abs(ss.av * vinPk_mV / 1000), vcc / 2);
+            // Endpoints along the load line from Q-point (using Early-effect corrected Q)
+            const vce1 = Math.max(VCE_SAT, qVce - dvce);
+            const vce2 = Math.min(vcc, qVce + dvce);
+            const ic1 = (vcc - vce1) / rc;  // from load line equation
+            const ic2 = (vcc - vce2) / rc;
+            ctx.strokeStyle = COL_VOUT;
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(mapX(vce1), mapY(Math.min(icMax, ic1)));
+            ctx.lineTo(mapX(vce2), mapY(Math.max(0, ic2)));
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            // Sliding dot on the load line at instantaneous operating point
+            // Uses load line / I_B curve intersection with Early effect (V_A=100V)
+            // so it is consistent with the Q-point and I_B curves drawn on this plot
+            if (vinAC !== undefined) {
+                const vbe_now = vbb + vinAC;
+                let ic_now, vce_now;
+                if (vbe_now < VBE_ON) {
+                    ic_now = 0; vce_now = vcc;  // cutoff
+                } else {
+                    const ib_now = (vbe_now - VBE_ON) / rb;
+                    const bIb_now = hfe * ib_now;
+                    const icSat = (vcc - VCE_SAT) / rc;
+                    if (bIb_now > icSat) {
+                        // Saturation: V_CE pinned at V_CE(sat)
+                        ic_now = icSat; vce_now = VCE_SAT;
+                    } else {
+                        // Active: find load line / I_B curve intersection
+                        // Load line: IC = (VCC - VCE)/RC
+                        // I_B curve: IC = β·IB·(1 + VCE/V_A), V_A = 100V
+                        // Solve: VCE = (VCC - RC·β·IB) / (1 + RC·β·IB/100)
+                        vce_now = (vcc - rc * bIb_now) / (1 + rc * bIb_now / 100);
+                        vce_now = Math.max(VCE_SAT, vce_now);
+                        ic_now = (vcc - vce_now) / rc;  // from load line
+                    }
+                }
+                const dotX = mapX(vce_now);
+                const dotY = mapY(Math.max(0, Math.min(icMax, ic_now)));
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(dotX, dotY, 4, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Q label
+        ctx.font = "bold 12px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = COL_VOUT;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Q', qx + 8, qy - 10);
+        ctx.font = "11px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = '#aaa';
+        ctx.fillText('(' + formatVoltage(qVce) + ', ' + (qIc * 1000).toFixed(2) + ' mA)', qx + 22, qy - 10);
+
+        // ─── h_FE annotation ───
+        if (bias.region === 'active' && bias.ibq > 0) {
+            // Active: h_FE = β (operating as expected)
+            ctx.font = "13px 'IBM Plex Mono', monospace";
+            ctx.fillStyle = COL_VCE;  // green
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            drawSub(ctx, 'h', 'FE', qx + 8, qy + 6, ' = β = ' + hfe);
+        } else if (bias.region === 'saturation' && bias.ibq > 0) {
+            // Saturation: show the gap between β·I_B and I_C(sat)
+            // Where the I_BQ curve would be at V_CE(sat)
+            const icNatural = hfe * bias.ibq * (1 + VCE_SAT / 100);
+            const icNaturalY = mapY(Math.min(icNatural, icMax));
+            const icSatY = mapY(qIc);
+            const annotX = qx + 20;
+
+            // Dashed vertical bracket from Q-point up to the I_BQ curve level
+            ctx.strokeStyle = COL_VCE;  // green
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 3]);
+            ctx.beginPath();
+            ctx.moveTo(annotX, icSatY);
+            ctx.lineTo(annotX, icNaturalY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Bracket ticks
+            ctx.beginPath();
+            ctx.moveTo(annotX - 4, icSatY); ctx.lineTo(annotX + 4, icSatY);
+            ctx.moveTo(annotX - 4, icNaturalY); ctx.lineTo(annotX + 4, icNaturalY);
+            ctx.stroke();
+
+            // Dot at the natural β·I_B level
+            ctx.fillStyle = COL_VCE;  // green
+            ctx.beginPath();
+            ctx.arc(annotX, icNaturalY, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Labels
+            ctx.font = "13px 'IBM Plex Mono', monospace";
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+
+            // β·I_B label at the natural level
+            ctx.fillStyle = COL_VCE;  // green
+            drawSub(ctx, 'β·I', 'B', annotX + 10, icNaturalY);
+
+            // h_FE(forced) in between
+            const hfe_forced = (qIc / bias.ibq).toFixed(0);
+            const midY = (icSatY + icNaturalY) / 2;
+            ctx.fillStyle = COL_VCE;  // green
+            drawSub(ctx, 'h', 'FE(forced)', annotX + 10, midY, ' = ' + hfe_forced);
+
+            // h_FE = β at the bottom (Q-point)
+            ctx.fillStyle = 'rgba(106,170,142,0.6)';  // dimmer green
+            ctx.textBaseline = 'top';
+            drawSub(ctx, 'h', 'FE', annotX + 10, icSatY + 6, ' = β = ' + hfe);
+        }
+    }
+
+    // ─── Axes ───
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t);
+    ctx.lineTo(pad.l, pad.t + ph);
+    ctx.lineTo(pad.l + pw, pad.t + ph);
+    ctx.stroke();
+
+    // Axis labels
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    drawSub(ctx, 'V', 'CE', pad.l + pw / 2, pad.t + ph + 22, ' (V)');
+
+    ctx.save();
+    ctx.translate(14, pad.t + ph / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textBaseline = 'middle';
+    drawSub(ctx, 'I', 'C', 0, 0, ' (mA)');
+    ctx.restore();
+
+    // Tick marks
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const vStep = vceMax <= 15 ? 2 : 5;
+    for (let v = 0; v <= vceMax; v += vStep) {
+        ctx.fillText(v.toString(), mapX(v), pad.t + ph + 5);
+    }
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const icSteps = 5;
+    for (let i = 0; i <= icSteps; i++) {
+        const ic = (icMax / icSteps) * i;
+        ctx.fillText((ic * 1000).toFixed(1), pad.l - 6, mapY(ic));
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Controls Binding
+// ═══════════════════════════════════════════════════════════════
+
+function bindSlider(sliderId, valId, stateKey, formatter, parser) {
+    const slider = document.getElementById(sliderId);
+    const valEl  = document.getElementById(valId);
+
+    slider.addEventListener('input', () => {
+        const raw = parseFloat(slider.value);
+        switch (stateKey) {
+            case 'vcc': vcc = raw; break;
+            case 'vbb': vbb = raw; break;
+            case 'rb':  rb  = raw; break;
+            case 'rc':  rc  = raw; break;
+            case 'hfe': hfe = raw; break;
+            case 'vinPk_mV': vinPk_mV = raw; break;
+            case 'freq': freq = raw; break;
+        }
+        valEl.value = formatter(raw);
+    });
+
+    valEl.addEventListener('change', () => {
+        const parsed = parser(valEl.value);
+        if (!isNaN(parsed)) {
+            slider.value = parsed;
+            switch (stateKey) {
+                case 'vcc': vcc = parsed; break;
+                case 'vbb': vbb = parsed; break;
+                case 'rb':  rb  = parsed; break;
+                case 'rc':  rc  = parsed; break;
+                case 'hfe': hfe = parsed; break;
+                case 'vinPk_mV': vinPk_mV = parsed; break;
+                case 'freq': freq = parsed; break;
+            }
+            valEl.value = formatter(parsed);
+        }
+    });
+}
+
+const parseR = (s) => { const n = parseFloat(s); return s.includes('k') ? n * 1000 : n; };
+const fmtR  = (v) => v >= 1000 ? (v / 1000).toFixed(1) + ' kΩ' : v + ' Ω';
+const fmtV  = (v) => v.toFixed(1) + ' V';
+const fmtmV = (v) => v.toFixed(0) + ' mV';
+const fmtHz = (v) => v >= 1000 ? (v / 1000).toFixed(1) + ' kHz' : v < 1 ? v.toFixed(1) + ' Hz' : v.toFixed(0) + ' Hz';
+const parseNum = (s) => parseFloat(s);
+
+bindSlider('sl-vcc', 'val-vcc', 'vcc', fmtV, parseNum);
+bindSlider('sl-vbb', 'val-vbb', 'vbb', fmtV, parseNum);
+bindSlider('sl-rb',  'val-rb',  'rb',  fmtR, parseR);
+bindSlider('sl-rc',  'val-rc',  'rc',  fmtR, parseR);
+bindSlider('sl-hfe', 'val-hfe', 'hfe', (v) => v.toString(), parseNum);
+bindSlider('sl-vin', 'val-vin', 'vinPk_mV', fmtmV, parseNum);
+bindSlider('sl-freq','val-freq','freq', fmtHz, parseNum);
+
+// Waveform buttons
+document.getElementById('wave-btns').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-wave]');
+    if (!btn) return;
+    document.querySelectorAll('#wave-btns .toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    waveform = btn.dataset.wave;
+});
+
+// Pause / Clear
+document.getElementById('pause-btn').addEventListener('click', (e) => {
+    paused = !paused;
+    e.target.classList.toggle('active');
+    e.target.innerHTML = paused ? '&#9654; Play' : '&#9646;&#9646; Pause';
+});
+document.getElementById('clear-btn').addEventListener('click', clearBuffer);
+
+// Exact / Tangent output toggles
+let showExact = true, showTangent = true;
+document.getElementById('btn-show-exact').addEventListener('click', (e) => {
+    showExact = !showExact;
+    e.target.classList.toggle('active');
+});
+document.getElementById('btn-show-tangent').addEventListener('click', (e) => {
+    showTangent = !showTangent;
+    e.target.classList.toggle('active');
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  Main Animation Loop
+// ═══════════════════════════════════════════════════════════════
+
+let lastTime = 0;
+
+function animate(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+    lastTime = timestamp;
+
+    if (!paused) {
+        simTime += dt;
+
+        // ─── Compute DC bias (Q-point) ───
+        const bias = computeDCBias();
+
+        // ─── Compute small-signal gain ───
+        const ss = computeSmallSignal(bias);
+
+        // ─── Instantaneous AC ───
+        const vinAC = (vinPk_mV / 1000) * waveValue(simTime);
+
+        // Push to buffer
+        dataBuf.t.push(simTime);
+        dataBuf.vin.push(vinAC);
+        if (dataBuf.t.length > BUFFER_LEN) {
+            dataBuf.t.shift();
+            dataBuf.vin.shift();
+        }
+
+        // ─── Compute instantaneous values ───
+        const vbe_source = vbb + vinAC;  // total source voltage in base loop
+        let ib_inst, ic_inst, vce_inst, vbe_actual;
+        if (vbe_source < VBE_ON) {
+            // Cutoff: no current, VBE = source voltage (no drop across RB)
+            ib_inst = 0; ic_inst = 0; vce_inst = vcc;
+            vbe_actual = vbe_source;
+        } else {
+            ib_inst = (vbe_source - VBE_ON) / rb;
+            ic_inst = hfe * ib_inst;
+            const icSat = (vcc - VCE_SAT) / rc;
+            if (ic_inst > icSat) { ic_inst = icSat; vce_inst = VCE_SAT; }
+            else { vce_inst = vcc - ic_inst * rc; }
+            // Actual VBE from KVL: VBE = V_source - IB·RB
+            // In constant-VBE model this is 0.7V, but show the Shockley
+            // value for consistency with the transfer characteristic:
+            // VBE = VT · ln(IC / IS) where IS = ICQ · exp(-VBE_ON/VT)
+            const vbe_ac = vinAC * ss.vbe_fraction;
+            vbe_actual = VBE_ON + vbe_ac;
+        }
+
+        // ─── Update header readouts (instantaneous) ───
+        document.getElementById('ro-ib').textContent  = formatCurrentmA(ib_inst);
+        document.getElementById('ro-ic').textContent  = formatCurrentmA(ic_inst);
+        document.getElementById('ro-vce').textContent = formatVoltage(vce_inst);
+        document.getElementById('ro-vbe').textContent = formatVoltage(vbe_actual);
+
+        // Gain display
+        const gainDisp = document.getElementById('gain-display');
+        if (bias.region === 'active' && isFinite(ss.av)) {
+            const avAbs = Math.abs(ss.av);
+            gainDisp.innerHTML = 'A<sub>v</sub> = ' + ss.av.toFixed(1)
+                + ' (' + (20 * Math.log10(Math.max(avAbs, 1e-10))).toFixed(1) + ' dB)';
+        } else {
+            gainDisp.innerHTML = 'A<sub>v</sub> = &mdash;';
+        }
+
+        // Region badge
+        const badge = document.getElementById('region-badge');
+        badge.textContent = bias.region.toUpperCase();
+        badge.className = 'region-indicator region-' + bias.region;
+
+        // ─── Draw all panels ───
+        drawCircuit(bias, { ib: ib_inst, ic: ic_inst, vce: vce_inst, vbe: vbe_actual, vin: vinAC });
+        drawTimePlot();
+        drawIVPlot(bias, vinAC);
+    }
+
+    requestAnimationFrame(animate);
+}
+
+resizeAll();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>

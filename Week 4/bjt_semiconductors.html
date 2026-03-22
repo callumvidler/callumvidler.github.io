@@ -609,7 +609,189 @@
         }
     }
 
-    function drawConcentration() {}
+    function drawConcentration() {
+        const canvas = document.getElementById('concentration-canvas');
+        const ctx = canvas.getContext('2d');
+        const dpr = devicePixelRatio;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const cw = canvas.width / dpr;
+        const ch = canvas.height / dpr;
+        ctx.clearRect(0, 0, cw, ch);
+
+        const isNPN = transistorType === 'NPN';
+        const margin = { top: 30, bottom: 40, left: 55, right: 20 };
+        const plotW = cw - margin.left - margin.right;
+        const plotH = ch - margin.top - margin.bottom;
+
+        const emitterFrac = 0.42;
+        const baseFrac = 0.15;
+        const collectorFrac = 0.43;
+        const beJunc = emitterFrac;
+        const bcJunc = emitterFrac + baseFrac;
+
+        const logMin = 10, logMax = 18;
+        function yForLog(logVal) {
+            return margin.top + plotH * (1 - (logVal - logMin) / (logMax - logMin));
+        }
+        function xForFrac(frac) {
+            return margin.left + frac * plotW;
+        }
+
+        // Background region shading
+        ctx.globalAlpha = 0.05;
+        ctx.fillStyle = isNPN ? '#e06050' : '#5080d0';
+        ctx.fillRect(xForFrac(0), margin.top, xForFrac(emitterFrac) - xForFrac(0), plotH);
+        ctx.fillStyle = isNPN ? '#5080d0' : '#e06050';
+        ctx.fillRect(xForFrac(beJunc), margin.top, xForFrac(bcJunc) - xForFrac(beJunc), plotH);
+        ctx.fillStyle = isNPN ? '#e06050' : '#5080d0';
+        ctx.fillRect(xForFrac(bcJunc), margin.top, xForFrac(1) - xForFrac(bcJunc), plotH);
+        ctx.globalAlpha = 1;
+
+        // Junction lines
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.lineWidth = 1;
+        [beJunc, bcJunc].forEach(frac => {
+            ctx.beginPath();
+            ctx.moveTo(xForFrac(frac), margin.top);
+            ctx.lineTo(xForFrac(frac), margin.top + plotH);
+            ctx.stroke();
+        });
+        ctx.setLineDash([]);
+
+        // Depletion region shading (grey bands matching cross-section)
+        const beFracDepl = baseCurrent === 0 ? 0.04 : Math.max(0.006, 0.04 * (1 - baseCurrent / 100));
+        const bcFracDepl = baseCurrent === 0 ? 0.04 : (baseCurrent < 70 ? Math.min(0.056, 0.04 * (1 + baseCurrent / 200)) : Math.max(0.012, 0.04 * (1 - (baseCurrent - 70) / 60)));
+        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.fillRect(xForFrac(beJunc - beFracDepl), margin.top, xForFrac(beFracDepl * 2) - xForFrac(0), plotH);
+        ctx.fillRect(xForFrac(bcJunc - bcFracDepl), margin.top, xForFrac(bcFracDepl * 2) - xForFrac(0), plotH);
+
+        // Axes
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(margin.left, margin.top);
+        ctx.lineTo(margin.left, margin.top + plotH);
+        ctx.lineTo(margin.left + plotW, margin.top + plotH);
+        ctx.stroke();
+
+        // Y-axis labels
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.font = '10px "IBM Plex Mono"';
+        ctx.textAlign = 'right';
+        for (let logV = logMin; logV <= logMax; logV += 2) {
+            const y = yForLog(logV);
+            ctx.fillText('10' + superscript(logV), margin.left - 5, y + 3);
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
+        }
+
+        // X-axis labels
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '11px "IBM Plex Sans"';
+        ctx.fillText('Emitter', xForFrac(emitterFrac / 2), margin.top + plotH + 20);
+        ctx.fillText('Base', xForFrac(beJunc + baseFrac / 2), margin.top + plotH + 20);
+        ctx.fillText('Collector', xForFrac(bcJunc + collectorFrac / 2), margin.top + plotH + 20);
+
+        // Y-axis title
+        ctx.save();
+        ctx.translate(12, margin.top + plotH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.font = '11px "IBM Plex Sans"';
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText('Carrier concentration (cm\u207B\u00B3)', 0, 0);
+        ctx.restore();
+
+        // Carrier concentration curves
+        const eMaj = 17, bMaj = 15, cMaj = 16;
+        const eMin = 13, bMinEq = 13, cMin = 12;
+        const injectionBoost = baseCurrent / 100;
+
+        // n(x) — electron concentration
+        ctx.beginPath();
+        ctx.strokeStyle = '#ffcc44';
+        ctx.lineWidth = 2;
+        const nEmitter = isNPN ? eMaj : eMin;
+        const nBase0 = isNPN ? (bMinEq + injectionBoost * 4) : bMaj;
+        const nBaseEnd = isNPN ? (baseCurrent >= 70 ? bMinEq + injectionBoost * 3 : bMinEq) : bMaj;
+        const nCollector = isNPN ? cMaj : cMin;
+
+        const steps = 300;
+        function getLogN(frac) {
+            if (frac < beJunc - 0.005) return nEmitter;
+            if (frac < beJunc + 0.005) {
+                const t = (frac - (beJunc - 0.005)) / 0.01;
+                return nEmitter + (nBase0 - nEmitter) * t;
+            }
+            if (frac < bcJunc - 0.005) {
+                const baseFracLocal = (frac - beJunc - 0.005) / (baseFrac - 0.01);
+                return nBase0 + (nBaseEnd - nBase0) * Math.min(1, Math.max(0, baseFracLocal));
+            }
+            if (frac < bcJunc + 0.005) {
+                const t = (frac - (bcJunc - 0.005)) / 0.01;
+                return nBaseEnd + (nCollector - nBaseEnd) * t;
+            }
+            return nCollector;
+        }
+        for (let i = 0; i <= steps; i++) {
+            const frac = i / steps;
+            const logN = getLogN(frac);
+            const x = xForFrac(frac);
+            const y = yForLog(logN);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // p(x) — hole concentration
+        ctx.beginPath();
+        ctx.strokeStyle = '#ff66aa';
+        ctx.lineWidth = 2;
+        const pEmitter = isNPN ? eMin : eMaj;
+        const pBase0 = isNPN ? bMaj : (bMinEq + injectionBoost * 4);
+        const pBaseEnd = isNPN ? bMaj : (baseCurrent >= 70 ? bMinEq + injectionBoost * 3 : bMinEq);
+        const pCollector = isNPN ? cMin : cMaj;
+
+        function getLogP(frac) {
+            if (frac < beJunc - 0.005) return pEmitter;
+            if (frac < beJunc + 0.005) {
+                const t = (frac - (beJunc - 0.005)) / 0.01;
+                return pEmitter + (pBase0 - pEmitter) * t;
+            }
+            if (frac < bcJunc - 0.005) {
+                const baseFracLocal = (frac - beJunc - 0.005) / (baseFrac - 0.01);
+                return pBase0 + (pBaseEnd - pBase0) * Math.min(1, Math.max(0, baseFracLocal));
+            }
+            if (frac < bcJunc + 0.005) {
+                const t = (frac - (bcJunc - 0.005)) / 0.01;
+                return pBaseEnd + (pCollector - pBaseEnd) * t;
+            }
+            return pCollector;
+        }
+        for (let i = 0; i <= steps; i++) {
+            const frac = i / steps;
+            const logP = getLogP(frac);
+            const x = xForFrac(frac);
+            const y = yForLog(logP);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Curve labels
+        ctx.font = '600 11px "IBM Plex Mono"';
+        ctx.fillStyle = '#ffcc44';
+        ctx.textAlign = 'right';
+        ctx.fillText('n(x)', margin.left + plotW - 5, yForLog(nCollector) - 6);
+        ctx.fillStyle = '#ff66aa';
+        ctx.fillText('p(x)', margin.left + plotW - 5, yForLog(pCollector) + 14);
+    }
+
+    function superscript(n) {
+        const sup = { '0': '\u2070', '1': '\u00B9', '2': '\u00B2', '3': '\u00B3', '4': '\u2074',
+                      '5': '\u2075', '6': '\u2076', '7': '\u2077', '8': '\u2078', '9': '\u2079' };
+        return String(n).split('').map(c => sup[c] || c).join('');
+    }
 
     // === Particle System ===
     let particles = [];

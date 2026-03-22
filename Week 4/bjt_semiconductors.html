@@ -338,6 +338,7 @@
         document.getElementById('btn-pnp').classList.toggle('active', type === 'PNP');
         document.getElementById('type-label').textContent = type;
         updateAll();
+        initParticles();
     }
 
     function setBaseCurrent(val) {
@@ -373,9 +374,411 @@
         drawConcentration();
     }
 
-    // Stubs for later tasks
-    function drawCrossSection() {}
+    // === Cross-Section Canvas ===
+    const csCanvas = document.getElementById('cross-section-canvas');
+    const csCtx = csCanvas.getContext('2d');
+
+    function resizeCanvases() {
+        [csCanvas, document.getElementById('concentration-canvas')].forEach(c => {
+            const rect = c.parentElement.getBoundingClientRect();
+            c.width = rect.width * devicePixelRatio;
+            c.height = rect.height * devicePixelRatio;
+            c.style.width = rect.width + 'px';
+            c.style.height = rect.height + 'px';
+        });
+    }
+    window.addEventListener('resize', () => { resizeCanvases(); drawCrossSection(); drawConcentration(); });
+
+    function getRegions(w, h) {
+        const margin = w * 0.08;
+        const top = h * 0.12;
+        const bottom = h * 0.78;
+        const regionW = w - 2 * margin;
+        const emitterW = regionW * 0.35;
+        const baseW = regionW * 0.12;
+        const collectorW = regionW * 0.35;
+        const eX = margin;
+        const bX = eX + emitterW;
+        const cX = bX + baseW;
+
+        const maxDepl = Math.min(emitterW, collectorW) * 0.15;
+        const beFrac = baseCurrent === 0 ? 1.0 : Math.max(0.15, 1.0 - baseCurrent / 100);
+        const bcFrac = baseCurrent === 0 ? 1.0 : (baseCurrent < 70 ? Math.min(1.4, 1.0 + baseCurrent / 200) : Math.max(0.3, 1.0 - (baseCurrent - 70) / 60));
+        const beDepl = maxDepl * beFrac;
+        const bcDepl = maxDepl * bcFrac;
+
+        return {
+            margin, top, bottom,
+            emitter: { x: eX, w: emitterW },
+            base: { x: bX, w: baseW },
+            collector: { x: cX, w: collectorW },
+            totalW: emitterW + baseW + collectorW,
+            beDepl, bcDepl, maxDepl,
+            height: bottom - top
+        };
+    }
+
+    function drawCrossSection() {
+        const w = csCanvas.width;
+        const h = csCanvas.height;
+        const ctx = csCtx;
+        const dpr = devicePixelRatio;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        const cw = w / dpr, ch = h / dpr;
+
+        ctx.clearRect(0, 0, cw, ch);
+
+        const isNPN = transistorType === 'NPN';
+        const r = getRegions(cw, ch);
+        const regionH = r.height;
+
+        // Draw three regions with background colors
+        ctx.fillStyle = isNPN ? 'rgba(224,96,80,0.15)' : 'rgba(80,128,208,0.15)';
+        ctx.fillRect(r.emitter.x, r.top, r.emitter.w, regionH);
+        ctx.fillStyle = isNPN ? 'rgba(80,128,208,0.15)' : 'rgba(224,96,80,0.15)';
+        ctx.fillRect(r.base.x, r.top, r.base.w, regionH);
+        ctx.fillStyle = isNPN ? 'rgba(224,96,80,0.12)' : 'rgba(80,128,208,0.12)';
+        ctx.fillRect(r.collector.x, r.top, r.collector.w, regionH);
+
+        // Region borders
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(r.emitter.x, r.top, r.emitter.w, regionH);
+        ctx.strokeRect(r.base.x, r.top, r.base.w, regionH);
+        ctx.strokeRect(r.collector.x, r.top, r.collector.w, regionH);
+
+        // Depletion regions
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(r.base.x - r.beDepl, r.top, r.beDepl * 2, regionH);
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.strokeRect(r.base.x - r.beDepl, r.top, r.beDepl * 2, regionH);
+        const bcX = r.base.x + r.base.w;
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(bcX - r.bcDepl, r.top, r.bcDepl * 2, regionH);
+        ctx.strokeRect(bcX - r.bcDepl, r.top, r.bcDepl * 2, regionH);
+        ctx.setLineDash([]);
+
+        // Fixed ions in depletion regions
+        drawFixedIons(ctx, r, isNPN);
+
+        // Labels
+        ctx.font = '600 13px "IBM Plex Sans"';
+        ctx.textAlign = 'center';
+        const labelY = r.top - 20;
+
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Emitter (E)', r.emitter.x + r.emitter.w / 2, labelY);
+        ctx.font = '11px "IBM Plex Mono"';
+        const eDoping = isNPN ? 'N\u207A  Phosphorus' : 'P\u207A  Boron';
+        ctx.fillStyle = isNPN ? '#e06050' : '#5080d0';
+        ctx.fillText(eDoping, r.emitter.x + r.emitter.w / 2, labelY + 14);
+
+        ctx.font = '600 13px "IBM Plex Sans"';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Base (B)', r.base.x + r.base.w / 2, labelY);
+        ctx.font = '11px "IBM Plex Mono"';
+        const bDoping = isNPN ? 'P  Boron' : 'N  Phosphorus';
+        ctx.fillStyle = isNPN ? '#5080d0' : '#e06050';
+        ctx.fillText(bDoping, r.base.x + r.base.w / 2, labelY + 14);
+
+        ctx.font = '600 13px "IBM Plex Sans"';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Collector (C)', r.collector.x + r.collector.w / 2, labelY);
+        ctx.font = '11px "IBM Plex Mono"';
+        const cDoping = isNPN ? 'N  Phosphorus' : 'P  Boron';
+        ctx.fillStyle = isNPN ? '#e06050' : '#5080d0';
+        ctx.fillText(cDoping, r.collector.x + r.collector.w / 2, labelY + 14);
+
+        // Terminal wire stubs
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 2;
+        const eCx = r.emitter.x + r.emitter.w / 2;
+        ctx.beginPath(); ctx.moveTo(eCx, r.top + regionH); ctx.lineTo(eCx, r.top + regionH + 20); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = '600 11px "IBM Plex Mono"';
+        ctx.fillText('E', eCx, r.top + regionH + 32);
+        const bCx = r.base.x + r.base.w / 2;
+        ctx.beginPath(); ctx.moveTo(bCx, r.top + regionH); ctx.lineTo(bCx, r.top + regionH + 20); ctx.stroke();
+        ctx.fillText('B', bCx, r.top + regionH + 32);
+        const cCx = r.collector.x + r.collector.w / 2;
+        ctx.beginPath(); ctx.moveTo(cCx, r.top + regionH); ctx.lineTo(cCx, r.top + regionH + 20); ctx.stroke();
+        ctx.fillText('C', cCx, r.top + regionH + 32);
+
+        // Current direction arrows (shown when I_B > 0)
+        if (baseCurrent > 0) {
+            drawCurrentArrows(ctx, r, isNPN);
+        }
+    }
+
+    function drawCurrentArrows(ctx, r, isNPN) {
+        const regionH = r.height;
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.font = '600 9px "IBM Plex Sans"';
+        ctx.textAlign = 'center';
+
+        const eArrowX = r.emitter.x + r.emitter.w * 0.3;
+        const eDir = isNPN ? 1 : -1;
+        const arrowLen = 25;
+        drawArrow(ctx, eArrowX, r.top + regionH + 18 - (eDir > 0 ? arrowLen : 0), eArrowX, r.top + regionH + 18 - (eDir > 0 ? 0 : arrowLen));
+        ctx.fillText('I_E', eArrowX, r.top + regionH + 45);
+
+        const cArrowX = r.collector.x + r.collector.w * 0.7;
+        drawArrow(ctx, cArrowX, r.top + regionH + 18 - (eDir > 0 ? 0 : arrowLen), cArrowX, r.top + regionH + 18 - (eDir > 0 ? arrowLen : 0));
+        ctx.fillText('I_C', cArrowX, r.top + regionH + 45);
+
+        const bArrowX = r.base.x + r.base.w / 2;
+        drawArrow(ctx, bArrowX, r.top + regionH + 35, bArrowX, r.top + regionH + 22);
+        ctx.fillText('I_B', bArrowX + 15, r.top + regionH + 35);
+    }
+
+    function drawArrow(ctx, x1, y1, x2, y2) {
+        const headLen = 6;
+        const angle = Math.atan2(y2 - y1, x2 - x1);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x2, y2);
+        ctx.lineTo(x2 - headLen * Math.cos(angle - Math.PI / 6), y2 - headLen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(x2 - headLen * Math.cos(angle + Math.PI / 6), y2 - headLen * Math.sin(angle + Math.PI / 6));
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    function drawFixedIons(ctx, r, isNPN) {
+        const regionH = r.height;
+        ctx.font = 'bold 10px "IBM Plex Mono"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const beJunction = r.base.x;
+        const spacing = 12;
+        const rows = Math.floor(regionH / spacing);
+        // Emitter side of BE depletion
+        for (let row = 0; row < rows; row++) {
+            const y = r.top + spacing / 2 + row * spacing;
+            const cols = Math.max(1, Math.floor(r.beDepl / spacing));
+            for (let col = 0; col < cols; col++) {
+                const x = beJunction - r.beDepl + spacing / 2 + col * spacing;
+                if (x >= r.emitter.x && x < beJunction) {
+                    ctx.fillStyle = isNPN ? '#ff8866' : '#66aaff';
+                    ctx.fillText(isNPN ? '+' : '\u2212', x, y);
+                }
+            }
+        }
+        // Base side of BE depletion
+        for (let row = 0; row < rows; row++) {
+            const y = r.top + spacing / 2 + row * spacing;
+            const cols = Math.max(1, Math.floor(r.beDepl / spacing));
+            for (let col = 0; col < cols; col++) {
+                const x = beJunction + spacing / 2 + col * spacing;
+                if (x > beJunction && x < beJunction + r.beDepl) {
+                    ctx.fillStyle = isNPN ? '#66aaff' : '#ff8866';
+                    ctx.fillText(isNPN ? '\u2212' : '+', x, y);
+                }
+            }
+        }
+
+        const bcJunction = r.base.x + r.base.w;
+        // Base side of BC depletion
+        for (let row = 0; row < rows; row++) {
+            const y = r.top + spacing / 2 + row * spacing;
+            const cols = Math.max(1, Math.floor(r.bcDepl / spacing));
+            for (let col = 0; col < cols; col++) {
+                const x = bcJunction - r.bcDepl + spacing / 2 + col * spacing;
+                if (x >= r.base.x && x < bcJunction) {
+                    ctx.fillStyle = isNPN ? '#66aaff' : '#ff8866';
+                    ctx.fillText(isNPN ? '\u2212' : '+', x, y);
+                }
+            }
+        }
+        // Collector side of BC depletion
+        for (let row = 0; row < rows; row++) {
+            const y = r.top + spacing / 2 + row * spacing;
+            const cols = Math.max(1, Math.floor(r.bcDepl / spacing));
+            for (let col = 0; col < cols; col++) {
+                const x = bcJunction + spacing / 2 + col * spacing;
+                if (x > bcJunction && x < bcJunction + r.bcDepl) {
+                    ctx.fillStyle = isNPN ? '#ff8866' : '#66aaff';
+                    ctx.fillText(isNPN ? '+' : '\u2212', x, y);
+                }
+            }
+        }
+    }
+
     function drawConcentration() {}
+
+    // === Particle System ===
+    let particles = [];
+    const MAX_PARTICLES = 200;
+
+    function initParticles() {
+        particles = [];
+        const isNPN = transistorType === 'NPN';
+        const cw = csCanvas.width / devicePixelRatio;
+        const ch = csCanvas.height / devicePixelRatio;
+        const r = getRegions(cw, ch);
+
+        const emitterCarrierCount = 30;
+        for (let i = 0; i < emitterCarrierCount; i++) {
+            particles.push({
+                x: r.emitter.x + Math.random() * r.emitter.w,
+                y: r.top + Math.random() * r.height,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3,
+                type: isNPN ? 'electron' : 'hole',
+                region: 'emitter',
+                life: 1
+            });
+        }
+
+        const baseCarrierCount = 8;
+        for (let i = 0; i < baseCarrierCount; i++) {
+            particles.push({
+                x: r.base.x + Math.random() * r.base.w,
+                y: r.top + Math.random() * r.height,
+                vx: (Math.random() - 0.5) * 0.2,
+                vy: (Math.random() - 0.5) * 0.2,
+                type: isNPN ? 'hole' : 'electron',
+                region: 'base',
+                life: 1
+            });
+        }
+
+        const collectorCarrierCount = 20;
+        for (let i = 0; i < collectorCarrierCount; i++) {
+            particles.push({
+                x: r.collector.x + Math.random() * r.collector.w,
+                y: r.top + Math.random() * r.height,
+                vx: (Math.random() - 0.5) * 0.3,
+                vy: (Math.random() - 0.5) * 0.3,
+                type: isNPN ? 'electron' : 'hole',
+                region: 'collector',
+                life: 1
+            });
+        }
+    }
+
+    function updateParticles() {
+        if (!animating) return;
+
+        const isNPN = transistorType === 'NPN';
+        const cw = csCanvas.width / devicePixelRatio;
+        const ch = csCanvas.height / devicePixelRatio;
+        const r = getRegions(cw, ch);
+        const injectionRate = baseCurrent / 100;
+
+        if (baseCurrent > 0 && Math.random() < injectionRate * 0.3) {
+            const carrierType = isNPN ? 'electron' : 'hole';
+            particles.push({
+                x: r.base.x + 2,
+                y: r.top + Math.random() * r.height,
+                vx: 0.4 + injectionRate * 0.6,
+                vy: (Math.random() - 0.5) * 0.2,
+                type: carrierType,
+                region: 'injected',
+                life: 1
+            });
+        }
+
+        if (baseCurrent >= 70 && Math.random() < (baseCurrent - 70) / 60 * 0.15) {
+            const carrierType = isNPN ? 'electron' : 'hole';
+            particles.push({
+                x: r.base.x + r.base.w - 2,
+                y: r.top + Math.random() * r.height,
+                vx: -0.3,
+                vy: (Math.random() - 0.5) * 0.2,
+                type: carrierType,
+                region: 'injected',
+                life: 1
+            });
+        }
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+
+            if (p.region !== 'injected') {
+                p.vx += (Math.random() - 0.5) * 0.1;
+                p.vy += (Math.random() - 0.5) * 0.1;
+                p.vx *= 0.95;
+                p.vy *= 0.95;
+            }
+
+            p.x += p.vx;
+            p.y += p.vy;
+
+            if (p.y < r.top + 2 || p.y > r.top + r.height - 2) {
+                p.vy *= -1;
+                p.y = Math.max(r.top + 2, Math.min(r.top + r.height - 2, p.y));
+            }
+
+            if (p.region === 'emitter') {
+                if (p.x < r.emitter.x + 2) { p.x = r.emitter.x + 2; p.vx = Math.abs(p.vx); }
+                if (p.x > r.emitter.x + r.emitter.w - r.beDepl) { p.x = r.emitter.x + r.emitter.w - r.beDepl; p.vx = -Math.abs(p.vx); }
+            } else if (p.region === 'base') {
+                if (p.x < r.base.x + r.beDepl) { p.x = r.base.x + r.beDepl; p.vx = Math.abs(p.vx); }
+                if (p.x > r.base.x + r.base.w - r.bcDepl) { p.x = r.base.x + r.base.w - r.bcDepl; p.vx = -Math.abs(p.vx); }
+            } else if (p.region === 'collector') {
+                if (p.x > r.collector.x + r.collector.w - 2) { p.x = r.collector.x + r.collector.w - 2; p.vx = -Math.abs(p.vx); }
+                if (p.x < r.collector.x + r.bcDepl) { p.x = r.collector.x + r.bcDepl; p.vx = Math.abs(p.vx); }
+            } else if (p.region === 'injected') {
+                if (p.x > r.base.x && p.x < r.base.x + r.base.w) {
+                    if (Math.random() < 0.003) {
+                        p.life = 0;
+                    }
+                }
+                if (p.x > r.base.x + r.base.w) {
+                    p.vx = Math.max(p.vx, 0.5);
+                    if (p.x > r.collector.x + r.collector.w) {
+                        p.life = 0;
+                    }
+                }
+                if (p.vx < 0 && p.x < r.base.x) {
+                    p.life = 0;
+                }
+            }
+
+            if (p.life <= 0) {
+                particles.splice(i, 1);
+            }
+        }
+
+        if (particles.length > MAX_PARTICLES) {
+            particles.splice(0, particles.length - MAX_PARTICLES);
+        }
+    }
+
+    function drawParticles(ctx) {
+        for (const p of particles) {
+            if (p.type === 'electron') {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffcc44';
+                ctx.fill();
+            } else {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.strokeStyle = '#ff66aa';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+    }
+
+    // === Animation Loop ===
+    function animate() {
+        updateParticles();
+        drawCrossSection();
+
+        const dpr = devicePixelRatio;
+        csCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawParticles(csCtx);
+
+        requestAnimationFrame(animate);
+    }
 
     function updateExplanation() {
         const panel = document.getElementById('explanation-panel');
@@ -424,7 +827,11 @@
     }
 
     // Initialize
+    resizeCanvases();
+    initParticles();
+    drawConcentration();
     updateExplanation();
+    animate();
 </script>
 
 </body>

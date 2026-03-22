@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: BJT Semiconductors — Fundamental Operation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #1a1a1e;
+            --bg-panel: #222226;
+            --bg-card: #2a2a2f;
+            --border: rgba(255,255,255,0.08);
+            --accent: #6aaa8e;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --text-muted: #606060;
+            --col-ntype: #e06050;
+            --col-ptype: #5080d0;
+            --col-electron: #ffcc44;
+            --col-hole: #ff66aa;
+            --col-donor-ion: #ff8866;
+            --col-acceptor-ion: #66aaff;
+            --col-depletion: rgba(255,255,255,0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 0.55rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 3px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: var(--text-dim); text-decoration: none;
+            font-size: 11px; font-weight: 500; transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+
+        h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
+        .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 42px);
+            gap: 0;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+        .panel-header strong { color: var(--text); font-weight: 500; font-size: 0.75rem; }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        .panel-body canvas { display: block; width: 100%; height: 100%; }
+
+        /* Controls panel */
+        .controls-panel {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .ctrl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .ctrl-title {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.3rem;
+        }
+        .ctrl-row:last-child { margin-bottom: 0; }
+
+        .ctrl-row label {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            min-width: 55px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .ctrl-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            color: #fff;
+            min-width: 56px;
+            width: 72px;
+            text-align: right;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 3px;
+            padding: 2px 6px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .ctrl-val:focus {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn.active {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        /* Explanation panel */
+        #explanation-panel h3 {
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text);
+        }
+        #explanation-panel p {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            line-height: 1.65;
+            margin-bottom: 0.5rem;
+        }
+        #explanation-panel .physics-note {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            border-left: 2px solid var(--border);
+            padding-left: 8px;
+            margin-top: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <a href="../index.html" class="back-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+        </a>
+        <div>
+            <h1>BJT Semiconductors — Fundamental Operation</h1>
+            <div class="header-sub">BMEN90033 · Week 4</div>
+        </div>
+    </div>
+</header>
+
+<div class="main-layout">
+    <!-- Top-left: Cross-section -->
+    <div class="panel">
+        <div class="panel-header"><strong>Transistor Cross-Section</strong><span id="type-label">NPN</span></div>
+        <div class="panel-body"><canvas id="cross-section-canvas"></canvas></div>
+    </div>
+    <!-- Top-right: Carrier concentration -->
+    <div class="panel">
+        <div class="panel-header"><strong>Carrier Concentration</strong><span>n(x), p(x) vs position</span></div>
+        <div class="panel-body"><canvas id="concentration-canvas"></canvas></div>
+    </div>
+    <!-- Bottom-left: Controls -->
+    <div class="panel controls-panel" id="controls-panel">
+
+        <!-- Transistor Type -->
+        <div class="ctrl-section">
+            <div class="ctrl-title">Transistor Type</div>
+            <div class="btn-group">
+                <button class="toggle-btn active" id="btn-npn" onclick="setType('NPN')">NPN</button>
+                <button class="toggle-btn" id="btn-pnp" onclick="setType('PNP')">PNP</button>
+            </div>
+        </div>
+
+        <!-- Base Current -->
+        <div class="ctrl-section">
+            <div class="ctrl-title">Base Current</div>
+            <div class="ctrl-row">
+                <label>I<sub>B</sub></label>
+                <input type="range" id="ib-slider" min="0" max="100" value="0"
+                       oninput="setBaseCurrent(this.value)">
+                <span class="ctrl-val" id="ib-display">0 &micro;A</span>
+            </div>
+            <div style="text-align:center;margin-top:4px;">
+                <span id="operating-region" style="display:inline-block;padding:2px 8px;border-radius:3px;
+                      font-family:'IBM Plex Mono',monospace;font-size:0.65rem;font-weight:500;
+                      background:var(--col-cutoff,rgba(200,200,200,0.06));color:var(--text-dim);">
+                    CUTOFF
+                </span>
+            </div>
+        </div>
+
+        <!-- Animation -->
+        <div class="ctrl-section">
+            <div class="ctrl-title">Animation</div>
+            <div class="btn-group">
+                <button class="toggle-btn active" id="btn-play" onclick="toggleAnimation(true)">Play</button>
+                <button class="toggle-btn" id="btn-pause" onclick="toggleAnimation(false)">Pause</button>
+            </div>
+        </div>
+
+        <!-- Legend -->
+        <div class="ctrl-section">
+            <div class="ctrl-title">Legend</div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:0.68rem;">
+                <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim)">
+                    <div style="width:8px;height:8px;border-radius:50%;background:var(--col-electron)"></div> Electron
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim)">
+                    <div style="width:8px;height:8px;border-radius:50%;border:1.5px solid var(--col-hole);background:transparent"></div> Hole
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim)">
+                    <span style="font-weight:700;font-size:10px;color:var(--col-donor-ion);width:8px;text-align:center">+</span> Donor ion (fixed)
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim)">
+                    <span style="font-weight:700;font-size:10px;color:var(--col-acceptor-ion);width:8px;text-align:center">&minus;</span> Acceptor ion (fixed)
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim)">
+                    <div style="width:8px;height:8px;background:var(--col-ntype);border-radius:2px;opacity:0.5"></div> N-type region
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim)">
+                    <div style="width:8px;height:8px;background:var(--col-ptype);border-radius:2px;opacity:0.5"></div> P-type region
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;color:var(--text-dim)">
+                    <div style="width:8px;height:8px;background:var(--col-depletion);border:1px dashed rgba(255,255,255,0.2);border-radius:2px"></div> Depletion region
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- Bottom-right: Explanation -->
+    <div class="panel">
+        <div class="panel-header"><strong>Explanation</strong><span id="region-label">Cutoff</span></div>
+        <div class="panel-body" style="padding:0.75rem;overflow-y:auto;" id="explanation-panel">
+        </div>
+    </div>
+</div>
+
+<script>
+    // === State ===
+    let transistorType = 'NPN';
+    let baseCurrent = 0;
+    let animating = true;
+
+    function setType(type) {
+        transistorType = type;
+        document.getElementById('btn-npn').classList.toggle('active', type === 'NPN');
+        document.getElementById('btn-pnp').classList.toggle('active', type === 'PNP');
+        document.getElementById('type-label').textContent = type;
+        updateAll();
+    }
+
+    function setBaseCurrent(val) {
+        baseCurrent = parseInt(val);
+        const microAmps = Math.round(baseCurrent * 2);
+        document.getElementById('ib-display').innerHTML = microAmps + ' &micro;A';
+        const regionEl = document.getElementById('operating-region');
+        if (baseCurrent === 0) {
+            regionEl.textContent = 'CUTOFF';
+            regionEl.style.background = 'rgba(200,200,200,0.06)';
+            regionEl.style.color = 'var(--text-dim)';
+        } else if (baseCurrent < 70) {
+            regionEl.textContent = 'ACTIVE';
+            regionEl.style.background = 'rgba(90,154,186,0.10)';
+            regionEl.style.color = '#5a9aba';
+        } else {
+            regionEl.textContent = 'SATURATION';
+            regionEl.style.background = 'rgba(255,180,60,0.12)';
+            regionEl.style.color = '#cca855';
+        }
+        updateAll();
+    }
+
+    function toggleAnimation(play) {
+        animating = play;
+        document.getElementById('btn-play').classList.toggle('active', play);
+        document.getElementById('btn-pause').classList.toggle('active', !play);
+    }
+
+    function updateAll() {
+        updateExplanation();
+        drawCrossSection();
+        drawConcentration();
+    }
+
+    // Stubs for later tasks
+    function drawCrossSection() {}
+    function drawConcentration() {}
+
+    function updateExplanation() {
+        const panel = document.getElementById('explanation-panel');
+        const regionLabel = document.getElementById('region-label');
+        const isNPN = transistorType === 'NPN';
+        const majority = isNPN ? 'electrons' : 'holes';
+        const minority = isNPN ? 'holes' : 'electrons';
+        const emitterDopant = isNPN ? 'Phosphorus' : 'Boron';
+        const baseDopant = isNPN ? 'Boron' : 'Phosphorus';
+        const emitterType = isNPN ? 'N\u207a' : 'P\u207a';
+        const baseType = isNPN ? 'P' : 'N';
+        const collectorType = isNPN ? 'N' : 'P';
+
+        let html = '';
+
+        if (baseCurrent === 0) {
+            regionLabel.textContent = 'Cutoff';
+            html = `
+                <h3>Cutoff \u2014 Transistor OFF</h3>
+                <p>No base current is applied. The base-emitter junction is unbiased, so no minority carriers are injected into the base. Both depletion regions are at their thermal equilibrium width.</p>
+                <p>The ${emitterType} emitter (${emitterDopant}-doped) contains abundant majority ${majority}, but they cannot cross the base-emitter depletion region. No collector current flows.</p>
+                <p>The ${baseType} base (${baseDopant}-doped, lightly doped and thin) and the ${collectorType} collector sit at equilibrium. Fixed donor and acceptor ions in each depletion region create a built-in electric field that opposes carrier diffusion.</p>
+                <div class="physics-note"><strong>Key physics:</strong> At thermal equilibrium, the diffusion tendency of carriers is exactly balanced by the drift due to the built-in electric field in each depletion region.</div>
+            `;
+        } else if (baseCurrent < 70) {
+            regionLabel.textContent = 'Active';
+            html = `
+                <h3>Forward Active \u2014 Transistor Action</h3>
+                <p>A small forward bias is applied to the base-emitter junction, narrowing its depletion region. Majority ${majority} from the heavily-doped ${emitterType} emitter are injected into the thin, lightly-doped ${baseType} base as <em>minority carriers</em>.</p>
+                <p>Because the base is very thin, most injected ${majority} diffuse across it before they can recombine with the base's majority ${minority}. They reach the base-collector depletion region, where the strong electric field sweeps them into the collector.</p>
+                <p>The small fraction of ${majority} that <em>do</em> recombine in the base is what constitutes the base current I<sub>B</sub>. This gives rise to current gain: I<sub>C</sub>/I<sub>B</sub> &approx; &beta; (typically 50&ndash;300).</p>
+                <div class="physics-note"><strong>Key physics:</strong> Carrier transport across the base is by <em>diffusion</em> (concentration gradient). Collection at the BC junction is by <em>drift</em> (electric field). The thin, lightly-doped base ensures most carriers are collected rather than recombined.</div>
+            `;
+        } else {
+            regionLabel.textContent = 'Saturation';
+            html = `
+                <h3>Saturation \u2014 Both Junctions Forward Biased</h3>
+                <p>The base current is large enough that <em>both</em> the base-emitter and base-collector junctions are now forward biased. Carriers are injected into the base from both the emitter and the collector sides.</p>
+                <p>The collector current no longer increases proportionally with base current &mdash; the transistor is <em>saturated</em>. V<sub>CE</sub> drops to a small value (V<sub>CE(sat)</sub> &approx; 0.2 V).</p>
+                <p>Excess minority ${majority} accumulate throughout the base region. This stored charge is visible in the carrier concentration plot as an elevated minority concentration that no longer decays linearly across the base.</p>
+                <div class="physics-note"><strong>Key physics:</strong> The excess stored charge in the base is why BJTs are slow to turn off from saturation &mdash; the stored charge must be removed before the transistor can return to cutoff (storage delay time).</div>
+            `;
+        }
+
+        panel.innerHTML = html;
+    }
+
+    // Initialize
+    updateExplanation();
+</script>
+
+</body>
+</html>

@@ -247,7 +247,7 @@
     </div>
     <!-- Top-right: Carrier concentration -->
     <div class="panel">
-        <div class="panel-header"><strong>Carrier Concentration</strong><span>n(x), p(x) vs position</span></div>
+        <div class="panel-header"><strong>Carrier Concentration</strong><span style="display:flex;align-items:center;gap:6px;"><span id="scale-label">Log scale</span><button class="toggle-btn active" id="btn-log" onclick="setScale('log')" style="padding:2px 8px;font-size:0.6rem;">Log</button><button class="toggle-btn" id="btn-linear" onclick="setScale('linear')" style="padding:2px 8px;font-size:0.6rem;">Linear</button></span></div>
         <div class="panel-body"><canvas id="concentration-canvas"></canvas></div>
     </div>
     <!-- Bottom-left: Controls -->
@@ -331,6 +331,16 @@
     let transistorType = 'NPN';
     let baseCurrent = 0;
     let animating = true;
+    let concScale = 'log';  // 'log' or 'linear'
+
+    function setScale(scale) {
+        concScale = scale;
+        document.getElementById('btn-log').classList.toggle('active', scale === 'log');
+        document.getElementById('btn-linear').classList.toggle('active', scale === 'linear');
+        document.getElementById('scale-label').textContent = scale === 'log' ? 'Log scale' : 'Linear scale';
+        drawConcentration();
+        needsRedraw = true;
+    }
 
     function setType(type) {
         transistorType = type;
@@ -754,7 +764,7 @@
         ctx.clearRect(0, 0, cw, ch);
 
         const isNPN = transistorType === 'NPN';
-        const margin = { top: 30, bottom: 40, left: 55, right: 20 };
+        const margin = { top: 30, bottom: 40, left: isLog ? 55 : 72, right: 20 };
         const plotW = cw - margin.left - margin.right;
         const plotH = ch - margin.top - margin.bottom;
 
@@ -765,8 +775,22 @@
         const bcJunc = emitterFrac + baseFrac;
 
         const logMin = 10, logMax = 18;
-        function yForLog(logVal) {
-            return margin.top + plotH * (1 - (logVal - logMin) / (logMax - logMin));
+        const isLog = concScale === 'log';
+
+        // For linear scale, we map real values 0 to 10^maxLinLog
+        // Use the highest doping level as the top of the linear scale
+        const maxLinLog = 17.5;  // 10^17.5 as max for linear axis
+
+        function yForVal(logVal) {
+            if (isLog) {
+                return margin.top + plotH * (1 - (logVal - logMin) / (logMax - logMin));
+            } else {
+                // Convert log value to real, then map linearly
+                const realVal = Math.pow(10, logVal);
+                const maxReal = Math.pow(10, maxLinLog);
+                const frac = realVal / maxReal;
+                return margin.top + plotH * (1 - Math.min(1, frac));
+            }
         }
         function xForFrac(frac) {
             return margin.left + frac * plotW;
@@ -817,11 +841,29 @@
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
         ctx.font = '10px "IBM Plex Mono"';
         ctx.textAlign = 'right';
-        for (let logV = logMin; logV <= logMax; logV += 2) {
-            const y = yForLog(logV);
-            ctx.fillText('10' + superscript(logV), margin.left - 5, y + 3);
-            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-            ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
+        if (isLog) {
+            for (let logV = logMin; logV <= logMax; logV += 2) {
+                const y = yForVal(logV);
+                ctx.fillText('10' + superscript(logV), margin.left - 5, y + 3);
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
+            }
+        } else {
+            // Linear scale: show 0, 25%, 50%, 75%, 100% of max
+            const maxReal = Math.pow(10, maxLinLog);
+            for (let frac = 0; frac <= 1; frac += 0.25) {
+                const y = margin.top + plotH * (1 - frac);
+                const val = frac * maxReal;
+                let label;
+                if (val === 0) label = '0';
+                else if (val >= 1e15) label = (val / 1e15).toFixed(1) + '\u00d710' + superscript(15);
+                else if (val >= 1e12) label = (val / 1e12).toFixed(1) + '\u00d710' + superscript(12);
+                else label = val.toExponential(0);
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.fillText(label, margin.left - 5, y + 3);
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
+            }
         }
 
         // X-axis labels
@@ -839,7 +881,7 @@
         ctx.textAlign = 'center';
         ctx.font = '11px "IBM Plex Sans"';
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillText('Carrier concentration (cm\u207B\u00B3)', 0, 0);
+        ctx.fillText('Concentration (cm\u207B\u00B3)' + (isLog ? ' \u2014 log' : ' \u2014 linear'), 0, 0);
         ctx.restore();
 
         // Carrier concentration curves
@@ -879,7 +921,7 @@
             const frac = i / steps;
             const logN = getLogN(frac);
             const x = xForFrac(frac);
-            const y = yForLog(logN);
+            const y = yForVal(logN);
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
@@ -913,7 +955,7 @@
             const frac = i / steps;
             const logP = getLogP(frac);
             const x = xForFrac(frac);
-            const y = yForLog(logP);
+            const y = yForVal(logP);
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
@@ -922,9 +964,9 @@
         ctx.font = '600 11px "IBM Plex Mono"';
         ctx.fillStyle = '#ffcc44';
         ctx.textAlign = 'right';
-        ctx.fillText('n(x)', margin.left + plotW - 5, yForLog(nCollector) - 6);
+        ctx.fillText('n(x)', margin.left + plotW - 5, yForVal(nCollector) - 6);
         ctx.fillStyle = '#ff66aa';
-        ctx.fillText('p(x)', margin.left + plotW - 5, yForLog(pCollector) + 14);
+        ctx.fillText('p(x)', margin.left + plotW - 5, yForVal(pCollector) + 14);
     }
 
     function superscript(n) {

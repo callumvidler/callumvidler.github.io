@@ -1,0 +1,1586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: BJT as a Switch — Interactive Explainer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #1a1a1e;
+            --bg-panel: #222226;
+            --bg-card: #2a2a2f;
+            --border: rgba(255,255,255,0.08);
+            --accent: #6aaa8e;
+            --accent-dim: #5a9a7e;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --text-muted: #606060;
+            --col-ic: #5a9aba;
+            --col-ib: #cca855;
+            --col-ie: #c96b5a;
+            --col-vce: #6aaa8e;
+            --col-saturation: rgba(255, 180, 60, 0.12);
+            --col-active: rgba(90, 154, 186, 0.10);
+            --col-cutoff: rgba(200, 200, 200, 0.06);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 0.55rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 3px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: var(--text-dim); text-decoration: none;
+            font-size: 11px; font-weight: 500; transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+
+        h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
+        .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 42px);
+            gap: 0;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+        .panel-header strong { color: var(--text); font-weight: 500; font-size: 0.75rem; }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        .panel-body canvas { display: block; width: 100%; height: 100%; }
+        #circuit-canvas { cursor: grab; }
+        #circuit-canvas:active { cursor: grabbing; }
+
+        /* Controls panel */
+        .controls-panel {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .ctrl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .ctrl-title {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.3rem;
+        }
+        .ctrl-row:last-child { margin-bottom: 0; }
+
+        .ctrl-row label {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            min-width: 55px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .ctrl-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            color: #fff;
+            min-width: 56px;
+            width: 72px;
+            text-align: right;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 3px;
+            padding: 2px 6px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .ctrl-val:focus {
+            border-color: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn.active {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        /* Readout bar */
+        .readout-bar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .readout {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .readout-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .readout-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: 500;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 0.85rem;
+            font-size: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-dim);
+        }
+        .legend-dot {
+            width: 8px; height: 8px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        /* Region indicator */
+        .region-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+        .region-cutoff { background: rgba(200,60,60,0.2); color: #d66; }
+        .region-active { background: rgba(90,154,186,0.2); color: var(--col-ic); }
+        .region-saturation { background: rgba(204,168,85,0.2); color: var(--col-ib); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <a class="back-btn" href="../index.html">&larr; Back</a>
+        <div>
+            <h1>BJT as a Switch</h1>
+            <div class="header-sub">Week 4 &mdash; Transistors</div>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span id="region-badge" class="region-indicator region-cutoff">CUTOFF</span>
+        <div class="readout-bar">
+            <div class="readout"><span class="readout-label">I<sub>B</sub></span><span class="readout-value" id="ro-ib" style="color:var(--col-ib)">0 mA</span></div>
+            <div class="readout"><span class="readout-label">I<sub>C</sub></span><span class="readout-value" id="ro-ic" style="color:var(--col-ic)">0 mA</span></div>
+            <div class="readout"><span class="readout-label">I<sub>E</sub></span><span class="readout-value" id="ro-ie" style="color:var(--col-ie)">0 mA</span></div>
+            <div class="readout"><span class="readout-label" id="ro-vce-label">V<sub>CE</sub></span><span class="readout-value" id="ro-vce" style="color:var(--col-vce)">0 V</span></div>
+            <div class="readout"><span class="readout-label">P</span><span class="readout-value" id="ro-power" style="color:#b87a9a">0 mW</span></div>
+            <div class="readout"><span class="readout-label">T<sub>j</sub></span><span class="readout-value" id="ro-temp" style="color:#b87a9a">25 °C</span></div>
+        </div>
+    </div>
+</header>
+
+<div class="main-layout">
+    <!-- Top-left: Circuit diagram -->
+    <div class="panel">
+        <div class="panel-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <strong>Circuit Diagram</strong>
+                <span id="hfe-forced-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-muted);"></span>
+            </div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ib)"></div>Base</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ic)"></div>Collector</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ie)"></div>Emitter</div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="circuit-canvas"></canvas></div>
+    </div>
+
+    <!-- Top-right: Controls -->
+    <div class="controls-panel">
+        <div class="ctrl-section">
+            <div class="ctrl-title">Transistor Type</div>
+            <div class="btn-group">
+                <button class="toggle-btn active" data-type="NPN">NPN</button>
+                <button class="toggle-btn" data-type="PNP">PNP</button>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Load Circuit</div>
+            <div class="ctrl-row">
+                <label>V<sub>CC</sub></label>
+                <input type="range" id="sl-vcc" min="1" max="24" step="0.5" value="12">
+                <input class="ctrl-val" id="val-vcc" value="12.0 V">
+            </div>
+            <div class="ctrl-row">
+                <label>R<sub>Load</sub></label>
+                <input type="range" id="sl-rload" min="1" max="10000" step="1" value="1000">
+                <input class="ctrl-val" id="val-rload" value="1.0 kΩ">
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Switching Input</div>
+            <div class="ctrl-row">
+                <label>V<sub>in</sub> pk</label>
+                <input type="range" id="sl-vin" min="0" max="12" step="0.1" value="5">
+                <input class="ctrl-val" id="val-vin" value="5.0 V">
+            </div>
+            <div class="ctrl-row">
+                <label>R<sub>Base</sub></label>
+                <input type="range" id="sl-rbase" min="1000" max="100000" step="1000" value="10000">
+                <input class="ctrl-val" id="val-rbase" value="10 kΩ">
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Transistor</div>
+            <div class="ctrl-row">
+                <label>h<sub>FE</sub></label>
+                <input type="range" id="sl-hfe" min="10" max="1000" step="5" value="100">
+                <input class="ctrl-val" id="val-hfe" value="100">
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Input Waveform</div>
+            <div class="btn-group" id="wave-btns">
+                <button class="toggle-btn" data-wave="dc">DC</button>
+                <button class="toggle-btn active" data-wave="square">Square</button>
+                <button class="toggle-btn" data-wave="sine">Sine</button>
+                <button class="toggle-btn" data-wave="sawtooth">Sawtooth</button>
+            </div>
+            <div class="ctrl-row" id="freq-row" style="margin-top:0.35rem;">
+                <label>Freq</label>
+                <input type="range" id="sl-freq" min="0.1" max="10" step="0.1" value="1">
+                <input class="ctrl-val" id="val-freq" value="1.0 Hz">
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">BJT Parameters (Silicon)</div>
+            <div style="font-size:0.65rem;color:var(--text-dim);line-height:1.5;">
+                V<sub>BE(on)</sub> = 0.7 V &nbsp;&bull;&nbsp; V<sub>CE(sat)</sub> = 0.2 V<br>
+                R<sub>&theta;JA</sub> = 200 &deg;C/W (TO-92) &nbsp;&bull;&nbsp; T<sub>amb</sub> = 25 &deg;C<br>
+                Based on common BJTs (2N2222, 2N3904 / 2N3906)
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom-left: Time-domain plots -->
+    <div class="panel">
+        <div class="panel-header">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <strong>Currents vs Time</strong>
+                <button id="pause-btn" class="toggle-btn active" style="padding:2px 8px;font-size:0.6rem;">&#9646;&#9646; Pause</button>
+                <button id="clear-btn" class="toggle-btn" style="padding:2px 8px;font-size:0.6rem;">Clear</button>
+            </div>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ib)"></div>I<sub>B</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ic)"></div>I<sub>C</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ie)"></div>I<sub>E</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.3)"></div>V<sub>in</sub></div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="time-canvas"></canvas></div>
+    </div>
+
+    <!-- Bottom-right: IC vs VCE -->
+    <div class="panel">
+        <div class="panel-header">
+            <strong id="iv-title">I<sub>C</sub> vs V<sub>CE</sub> Characteristic</strong>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ib)"></div>Saturation</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-ic)"></div>Active</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#aaa"></div>Cutoff</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#fff"></div>Load line</div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="iv-canvas"></canvas></div>
+    </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  BJT Switch Simulator — Physics Engine & Viz
+// ═══════════════════════════════════════════════
+
+// ─── Constants ───
+const VBE_ON = 0.7;    // V_BE turn-on voltage (silicon)
+const VCE_SAT = 0.2;   // V_CE saturation voltage
+
+// Colors (mirrored from CSS vars for canvas use)
+const COL_IC = '#5a9aba';
+const COL_IB = '#cca855';
+const COL_IE = '#c96b5a';
+const COL_VCE = '#6aaa8e';
+const COL_SAT = 'rgba(255, 180, 60, 0.12)';
+const COL_CUTOFF = 'rgba(200, 60, 60, 0.12)';
+
+// ─── State ───
+let bjt = 'NPN';
+let vcc = 12, rLoad = 1000, vInPk = 5, rBase = 10000, hfe = 100;
+let waveform = 'square', freq = 1;
+let paused = false;
+let simTime = 0;
+
+// Rolling data buffer (stores last N samples)
+const BUFFER_LEN = 600;
+let dataBuf = { t: [], ib: [], ic: [], ie: [], vin: [], vce: [] };
+function clearBuffer() {
+    dataBuf = { t: [], ib: [], ic: [], ie: [], vin: [], vce: [] };
+}
+
+// ─── Canvas setup ───
+const circuitCanvas = document.getElementById('circuit-canvas');
+const timeCanvas = document.getElementById('time-canvas');
+const ivCanvas = document.getElementById('iv-canvas');
+const circuitCtx = circuitCanvas.getContext('2d');
+const timeCtx = timeCanvas.getContext('2d');
+const ivCtx = ivCanvas.getContext('2d');
+
+function resizeCanvas(canvas) {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height };
+}
+
+let circuitSize, timeSize, ivSize;
+function resizeAll() {
+    circuitSize = resizeCanvas(circuitCanvas);
+    timeSize = resizeCanvas(timeCanvas);
+    ivSize = resizeCanvas(ivCanvas);
+}
+window.addEventListener('resize', resizeAll);
+
+// ─── Circuit pan/zoom ───
+let camZoom = 1, camPanX = 0, camPanY = 0;
+let isDragging = false, dragStartX = 0, dragStartY = 0, panStartX = 0, panStartY = 0;
+
+circuitCanvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = circuitCanvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const oldZoom = camZoom;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    camZoom = Math.max(0.5, Math.min(5, camZoom * delta));
+    // Zoom toward mouse position
+    camPanX = mx - (mx - camPanX) * (camZoom / oldZoom);
+    camPanY = my - (my - camPanY) * (camZoom / oldZoom);
+}, { passive: false });
+
+circuitCanvas.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    panStartX = camPanX; panStartY = camPanY;
+});
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    camPanX = panStartX + (e.clientX - dragStartX);
+    camPanY = panStartY + (e.clientY - dragStartY);
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+// Touch support for pan
+let touchStartX = 0, touchStartY = 0, touchPanStartX = 0, touchPanStartY = 0;
+circuitCanvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+        touchPanStartX = camPanX; touchPanStartY = camPanY;
+    }
+}, { passive: true });
+circuitCanvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1) {
+        e.preventDefault();
+        camPanX = touchPanStartX + (e.touches[0].clientX - touchStartX);
+        camPanY = touchPanStartY + (e.touches[0].clientY - touchStartY);
+    }
+}, { passive: false });
+
+// Double-click to reset view
+circuitCanvas.addEventListener('dblclick', () => {
+    camZoom = 1; camPanX = 0; camPanY = 0;
+});
+resizeAll();
+
+// ─── Waveform generators (output 0..1) ───
+function waveValue(t) {
+    if (waveform === 'dc') return 1;
+    const phase = (t * freq) % 1;
+    switch (waveform) {
+        case 'square': return phase < 0.5 ? 1 : 0;
+        case 'sine': return 0.5 * (1 + Math.sin(2 * Math.PI * phase));
+        case 'sawtooth': return phase;
+        default: return 0;
+    }
+}
+
+// ─── Physics calculation ───
+function computeState(vIn) {
+    let ib, ic, ie, vce, region;
+
+    if (bjt === 'NPN') {
+        // NPN: V_in → R_base → Base, Collector → R_load → V_CC, Emitter → GND
+        if (vIn < VBE_ON) {
+            // Cutoff
+            ib = 0; ic = 0; ie = 0;
+            vce = vcc;
+            region = 'cutoff';
+        } else {
+            ib = (vIn - VBE_ON) / rBase;
+            const icActive = hfe * ib;
+            const icSat = (vcc - VCE_SAT) / rLoad;
+
+            if (icActive <= icSat) {
+                // Forward active
+                ic = icActive;
+                vce = vcc - ic * rLoad;
+                region = 'active';
+            } else {
+                // Saturation
+                ic = icSat;
+                vce = VCE_SAT;
+                region = 'saturation';
+            }
+            ie = ic + ib;
+        }
+    } else {
+        // PNP: Emitter → V_CC, Collector → R_load → GND, V_in → R_base → Base
+        // PNP turns ON when V_B is low enough: V_EB = V_CC - V_B > V_BE_ON
+        // When V_in is LOW, transistor is ON
+        const veb = vcc - vIn;
+        if (veb < VBE_ON) {
+            // Cutoff (V_in too high, base voltage too close to emitter)
+            ib = 0; ic = 0; ie = 0;
+            vce = vcc;
+            region = 'cutoff';
+        } else {
+            ib = (veb - VBE_ON) / rBase;
+            const icActive = hfe * ib;
+            const icSat = (vcc - VCE_SAT) / rLoad;
+
+            if (icActive <= icSat) {
+                // Forward active
+                ic = icActive;
+                vce = vcc - ic * rLoad;
+                region = 'active';
+            } else {
+                // Saturation
+                ic = icSat;
+                vce = VCE_SAT;
+                region = 'saturation';
+            }
+            ie = ic + ib;
+        }
+    }
+
+    // Power dissipation and junction temperature
+    // P_BJT = V_CE * I_C + V_BE * I_B (collector + base dissipation)
+    const vbeOn = (ib > 0) ? VBE_ON : 0;
+    const pBjt = vce * ic + vbeOn * ib;
+    // Thermal model: TO-92 package, R_θJA ≈ 200 °C/W, T_ambient = 25°C
+    const tJunction = 25 + pBjt * 200;
+
+    // h_FE(forced) = I_C / I_B — relevant in saturation where it's less than h_FE
+    const hfeForced = (ib > 0) ? ic / ib : 0;
+
+    return { ib, ic, ie, vce, region, vIn, pBjt, tJunction, hfeForced };
+}
+
+// ─── Drawing: Circuit Diagram ───
+function drawCircuit(state) {
+    const ctx = circuitCtx;
+    const W = circuitSize.w, H = circuitSize.h;
+    const dpr = window.devicePixelRatio || 1;
+
+    // Reset transform fully to clear the whole canvas
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // Apply pan/zoom
+    ctx.save();
+    ctx.translate(camPanX, camPanY);
+    ctx.scale(camZoom, camZoom);
+
+    const scale = Math.min(W / 560, H / 440);
+    const s = (v) => v * scale;
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const isNPN = bjt === 'NPN';
+
+    // ─── Layout coordinates ───
+    // BJT center is the anchor point; everything else is relative
+    const bjtX = W * 0.55, bjtY = H * 0.5;
+    const bjtR = s(24); // BJT circle radius
+
+    // Vertical rail (collector/emitter path)
+    const railX = bjtX;
+    const vccY = bjtY - s(170);    // V_CC supply top
+    const gndY = bjtY + s(170);    // GND bottom
+
+    // Horizontal input path
+    const srcX = W * 0.12;         // voltage source center X
+    const srcY = bjtY;             // aligned with base
+    const srcR = s(22);            // source circle radius
+
+    // ─── NPN layout ───
+    if (isNPN) {
+        // V_CC label
+        ctx.font = `600 ${s(12)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('V_CC = ' + vcc.toFixed(1) + ' V', railX, vccY - s(12));
+
+        // V_CC down to R_load top
+        const rlTop = vccY + s(8);
+        const rlBot = bjtY - bjtR - s(30);
+        drawWire(ctx, railX, vccY, railX, rlTop);
+
+        // R_load
+        const rlVal = rLoad >= 1000 ? (rLoad/1000).toFixed(1)+' kΩ' : rLoad+' Ω';
+        drawResistorBox(ctx, railX, rlTop, railX, rlBot, s, 'R_L', rlVal, 1);
+
+        // R_load voltage drop label (right side)
+        const vRL = state.ic * rLoad;
+        ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = '#777';
+        ctx.textAlign = 'left';
+        ctx.fillText(vRL.toFixed(2) + ' V', railX + s(28), (rlTop + rlBot) / 2);
+
+        // Wire from R_load bottom to collector
+        drawWire(ctx, railX, rlBot, railX, bjtY - bjtR);
+
+        // I_C arrow ON the wire (between R_load and collector), shifted up
+        const icWireY = rlBot + (bjtY - bjtR - rlBot) * 0.3;
+        drawInlineCurrentArrow(ctx, railX, icWireY, s(14), 'down', COL_IC);
+        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = COL_IC;
+        ctx.textAlign = 'left';
+        ctx.fillText('I_C = ' + formatCurrent(state.ic), railX + s(10), icWireY);
+
+        // BJT (NPN)
+        drawBJT_NPN(ctx, bjtX, bjtY, bjtR, s);
+
+        // Wire from emitter to GND
+        drawWire(ctx, railX, bjtY + bjtR, railX, gndY);
+
+        // I_E arrow ON the wire (between emitter and GND), label to the right
+        const ieWireMid = (bjtY + bjtR + gndY) / 2;
+        drawInlineCurrentArrow(ctx, railX, ieWireMid, s(14), 'down', COL_IE);
+        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = COL_IE;
+        ctx.textAlign = 'left';
+        ctx.fillText('I_E = ' + formatCurrent(state.ie), railX + s(10), ieWireMid);
+
+        // GND symbol
+        drawGnd(ctx, railX, gndY, s);
+
+        // V_CE bracket (right side of BJT)
+        drawVCELabel(ctx, railX + bjtR + s(8), bjtY - bjtR, bjtY + bjtR, state.vce, s);
+
+    } else {
+        // ─── PNP layout ───
+        // V_CC label
+        ctx.font = `600 ${s(12)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('V_CC = ' + vcc.toFixed(1) + ' V', railX, vccY - s(12));
+
+        // V_CC down to emitter
+        drawWire(ctx, railX, vccY, railX, bjtY - bjtR);
+
+        // I_E arrow ON the wire (between V_CC and emitter), label to the right
+        const ieWireMid = (vccY + bjtY - bjtR) / 2;
+        drawInlineCurrentArrow(ctx, railX, ieWireMid, s(14), 'down', COL_IE);
+        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = COL_IE;
+        ctx.textAlign = 'left';
+        ctx.fillText('I_E = ' + formatCurrent(state.ie), railX + s(10), ieWireMid);
+
+        // BJT (PNP)
+        drawBJT_PNP(ctx, bjtX, bjtY, bjtR, s);
+
+        // Wire from collector to R_load top
+        const rlTop = bjtY + bjtR + s(30);
+        const rlBot = gndY - s(8);
+        drawWire(ctx, railX, bjtY + bjtR, railX, rlTop);
+
+        // I_C arrow ON the wire (between collector and R_load), shifted up
+        const icWireY = bjtY + bjtR + (rlTop - bjtY - bjtR) * 0.3;
+        drawInlineCurrentArrow(ctx, railX, icWireY, s(14), 'down', COL_IC);
+        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = COL_IC;
+        ctx.textAlign = 'left';
+        ctx.fillText('I_C = ' + formatCurrent(state.ic), railX + s(10), icWireY);
+
+        // R_load
+        const rlVal = rLoad >= 1000 ? (rLoad/1000).toFixed(1)+' kΩ' : rLoad+' Ω';
+        drawResistorBox(ctx, railX, rlTop, railX, rlBot, s, 'R_L', rlVal, 1);
+
+        // R_load voltage drop label
+        const vRL = state.ic * rLoad;
+        ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.fillStyle = '#777';
+        ctx.textAlign = 'left';
+        ctx.fillText(vRL.toFixed(2) + ' V', railX + s(28), (rlTop + rlBot) / 2);
+
+        // Wire from R_load to GND
+        drawWire(ctx, railX, rlBot, railX, gndY);
+
+        // GND symbol
+        drawGnd(ctx, railX, gndY, s);
+
+        // V_CE bracket
+        drawVCELabel(ctx, railX + bjtR + s(8), bjtY - bjtR, bjtY + bjtR, state.vce, s);
+    }
+
+    // h_FE(forced) label below BJT
+    ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    if (state.region === 'saturation') {
+        ctx.fillStyle = '#cca855';
+        ctx.fillText('h_FE(forced) = ' + state.hfeForced.toFixed(1), bjtX, bjtY + bjtR + s(6));
+    } else if (state.region === 'active') {
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillText('h_FE = ' + hfe, bjtX, bjtY + bjtR + s(6));
+    }
+
+    // ─── Input path: V_in source → R_base → Base (straight horizontal) ───
+    const baseConnX = bjtX - bjtR;  // where base wire meets BJT circle
+    const baseY = bjtY;
+
+    // Voltage source (centered on the base Y line)
+    drawVoltageSource(ctx, srcX, baseY, srcR, s, state.vIn);
+
+    // Wire from source right edge to R_base
+    const rBaseLeft = srcX + srcR + s(10);
+    const rBaseRight = baseConnX - s(10);
+    drawWire(ctx, srcX + srcR, baseY, rBaseLeft, baseY);
+
+    // R_base (horizontal, inline with base)
+    const rbVal = rBase >= 1000 ? (rBase/1000).toFixed(0)+' kΩ' : rBase+' Ω';
+    drawResistorBox(ctx, rBaseLeft, baseY, rBaseRight, baseY, s, 'R_B', rbVal, -1);
+
+    // Wire from R_base to base
+    drawWire(ctx, rBaseRight, baseY, baseConnX, baseY);
+
+    // Source bottom terminal to GND
+    drawWire(ctx, srcX, baseY + srcR, srcX, baseY + srcR + s(22));
+    drawGnd(ctx, srcX, baseY + srcR + s(22), s);
+
+    // I_B arrow ON the wire, to the left of the "B" label
+    const bLabelX = baseConnX - s(8);  // where "B" is drawn
+    const ibWireX = bLabelX - s(24);   // arrow center sits left of "B"
+    const ibDir = isNPN ? 'right' : 'left';
+    if (state.ib > 0) {
+        drawInlineCurrentArrow(ctx, ibWireX, baseY, s(28), ibDir, COL_IB);
+    }
+    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = COL_IB;
+    ctx.textAlign = 'center';
+    ctx.fillText('I_B = ' + formatCurrent(state.ib), ibWireX - s(8), baseY - s(14));
+
+    // V_BE label (below and to the left, clear of BJT symbol)
+    const vbe = state.ib > 0 ? VBE_ON : 0;
+    ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#777';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_BE = ' + vbe.toFixed(1) + ' V', ibWireX - s(10), baseY + s(24));
+
+    ctx.restore(); // end pan/zoom transform
+}
+
+// ─── Resistor as a box (IEC style) with value inside ───
+function drawResistorBox(ctx, x1, y1, x2, y2, s, name, valStr, labelSide) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;       // unit along
+    const px = -uy, py = ux;                   // perpendicular
+
+    const boxLen = Math.min(len * 0.6, s(55));
+    const boxW = s(16);
+
+    // Lead-in wire
+    const leadLen = (len - boxLen) / 2;
+    const bx1 = x1 + ux * leadLen, by1 = y1 + uy * leadLen;
+    const bx2 = x1 + ux * (leadLen + boxLen), by2 = y1 + uy * (leadLen + boxLen);
+
+    // Wires
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(bx1, by1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx2, by2); ctx.lineTo(x2, y2); ctx.stroke();
+
+    // Box
+    const midX = (bx1 + bx2) / 2, midY = (by1 + by2) / 2;
+    ctx.save();
+    ctx.translate(midX, midY);
+    ctx.rotate(Math.atan2(dy, dx));
+    ctx.fillStyle = 'rgba(30,30,35,0.9)';
+    ctx.fillRect(-boxLen / 2, -boxW / 2, boxLen, boxW);
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-boxLen / 2, -boxW / 2, boxLen, boxW);
+
+    // Value text inside box
+    ctx.font = `400 ${s(8)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#ccc';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(valStr, 0, 0);
+    ctx.restore();
+
+    // Name label outside box
+    const allMidX = (x1 + x2) / 2, allMidY = (y1 + y2) / 2;
+    const off = (boxW / 2 + s(10)) * labelSide;
+    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#bbb';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, allMidX + px * off, allMidY + py * off);
+}
+
+// ─── BJT symbols ───
+function drawBJT_NPN(ctx, x, y, r, s) {
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Base line (from circle left edge to vertical bar)
+    const barX = x - r * 0.4;
+    const barH = r * 0.6;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(barX, y); ctx.stroke();
+
+    // Vertical bar
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(barX, y - barH); ctx.lineTo(barX, y + barH); ctx.stroke();
+
+    // Collector line (bar upper → top of circle)
+    const cEndX = x, cEndY = y - r;
+    const cBarY = y - barH * 0.45;
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath(); ctx.moveTo(barX, cBarY); ctx.lineTo(cEndX, cEndY); ctx.stroke();
+
+    // Emitter line (bar lower → bottom of circle) with OUTWARD arrow
+    const eEndX = x, eEndY = y + r;
+    const eBarY = y + barH * 0.45;
+    ctx.beginPath(); ctx.moveTo(barX, eBarY); ctx.lineTo(eEndX, eEndY); ctx.stroke();
+
+    // Arrow on emitter: points AWAY from bar (outward) — this is the NPN convention
+    const arrowTipX = eEndX, arrowTipY = eEndY;
+    const arrowDx = eEndX - barX, arrowDy = eEndY - eBarY;
+    const arrowLen = Math.sqrt(arrowDx * arrowDx + arrowDy * arrowDy);
+    const aux = arrowDx / arrowLen, auy = arrowDy / arrowLen;
+    const apx = -auy, apy = aux;
+    const as = s(6);
+    ctx.beginPath();
+    ctx.moveTo(arrowTipX, arrowTipY);
+    ctx.lineTo(arrowTipX - aux * as + apx * as * 0.4, arrowTipY - auy * as + apy * as * 0.4);
+    ctx.lineTo(arrowTipX - aux * as - apx * as * 0.4, arrowTipY - auy * as - apy * as * 0.4);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fill();
+
+    // Terminal labels
+    ctx.font = `600 ${s(9)}px 'IBM Plex Sans', sans-serif`;
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = COL_IC;
+    ctx.textAlign = 'left';
+    ctx.fillText('C', x + s(4), y - r + s(2));
+
+    ctx.fillStyle = COL_IB;
+    ctx.textAlign = 'center';
+    ctx.fillText('B', x - r - s(8), y);
+
+    ctx.fillStyle = COL_IE;
+    ctx.textAlign = 'left';
+    ctx.fillText('E', x + s(4), y + r - s(2));
+
+    // Type label (inside circle, right side)
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = `600 ${s(11)}px 'IBM Plex Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('NPN', x + r * 0.32, y);
+}
+
+function drawBJT_PNP(ctx, x, y, r, s) {
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Base line
+    const barX = x - r * 0.4;
+    const barH = r * 0.6;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(barX, y); ctx.stroke();
+
+    // Vertical bar
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(barX, y - barH); ctx.lineTo(barX, y + barH); ctx.stroke();
+
+    // Emitter line (bar upper → top of circle) with INWARD arrow for PNP
+    const eEndX = x, eEndY = y - r;
+    const eBarY = y - barH * 0.45;
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath(); ctx.moveTo(barX, eBarY); ctx.lineTo(eEndX, eEndY); ctx.stroke();
+
+    // Arrow on emitter: points TOWARD bar (inward) — PNP convention
+    // Arrow tip is at the bar end of the emitter line
+    const arrowTipX = barX, arrowTipY = eBarY;
+    const arrowDx = barX - eEndX, arrowDy = eBarY - eEndY;
+    const arrowLen = Math.sqrt(arrowDx * arrowDx + arrowDy * arrowDy);
+    const aux = arrowDx / arrowLen, auy = arrowDy / arrowLen;
+    const apx = -auy, apy = aux;
+    const as = s(6);
+    ctx.beginPath();
+    ctx.moveTo(arrowTipX, arrowTipY);
+    ctx.lineTo(arrowTipX - aux * as + apx * as * 0.4, arrowTipY - auy * as + apy * as * 0.4);
+    ctx.lineTo(arrowTipX - aux * as - apx * as * 0.4, arrowTipY - auy * as - apy * as * 0.4);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fill();
+
+    // Collector line (bar lower → bottom of circle)
+    const cEndX = x, cEndY = y + r;
+    const cBarY = y + barH * 0.45;
+    ctx.beginPath(); ctx.moveTo(barX, cBarY); ctx.lineTo(cEndX, cEndY); ctx.stroke();
+
+    // Terminal labels
+    ctx.font = `600 ${s(9)}px 'IBM Plex Sans', sans-serif`;
+    ctx.textBaseline = 'middle';
+
+    ctx.fillStyle = COL_IE;
+    ctx.textAlign = 'left';
+    ctx.fillText('E', x + s(4), y - r + s(2));
+
+    ctx.fillStyle = COL_IB;
+    ctx.textAlign = 'center';
+    ctx.fillText('B', x - r - s(8), y);
+
+    ctx.fillStyle = COL_IC;
+    ctx.textAlign = 'left';
+    ctx.fillText('C', x + s(4), y + r - s(2));
+
+    // Type label (inside circle, right side)
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = `600 ${s(11)}px 'IBM Plex Mono', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PNP', x + r * 0.32, y);
+}
+
+// ─── Inline current arrow (drawn ON the wire) ───
+// Draws a small arrow centered at (x,y) along the wire in the given direction
+function drawInlineCurrentArrow(ctx, x, y, len, dir, color) {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 1.5;
+    const half = len / 2;
+    const hs = 4; // arrowhead half-width
+
+    let sx, sy, ex, ey;
+    if (dir === 'down')       { sx = x; sy = y - half; ex = x; ey = y + half; }
+    else if (dir === 'up')    { sx = x; sy = y + half; ex = x; ey = y - half; }
+    else if (dir === 'right') { sx = x - half; sy = y; ex = x + half; ey = y; }
+    else if (dir === 'left')  { sx = x + half; sy = y; ex = x - half; ey = y; }
+    else return;
+
+    // Line
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+
+    // Arrowhead at tip
+    const dx = ex - sx, dy = ey - sy;
+    const l = Math.sqrt(dx*dx + dy*dy);
+    const ux = dx/l, uy = dy/l, px = -uy, py = ux;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey);
+    ctx.lineTo(ex - ux * hs * 1.8 + px * hs, ey - uy * hs * 1.8 + py * hs);
+    ctx.lineTo(ex - ux * hs * 1.8 - px * hs, ey - uy * hs * 1.8 - py * hs);
+    ctx.closePath();
+    ctx.fill();
+}
+
+// ─── V_CE label with bracket ───
+function drawVCELabel(ctx, x, yTop, yBot, vce, s) {
+    ctx.strokeStyle = COL_VCE;
+    ctx.lineWidth = 1;
+    const tick = s(4);
+
+    // Bracket opening toward BJT (ticks point left, vertical line on right)
+    ctx.beginPath();
+    ctx.moveTo(x - tick, yTop); ctx.lineTo(x, yTop);
+    ctx.lineTo(x, yBot);
+    ctx.lineTo(x - tick, yBot);
+    ctx.stroke();
+
+    // Label (to the right of the bracket)
+    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = COL_VCE;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(bjt === 'NPN' ? 'V_CE' : 'V_EC', x + s(4), (yTop + yBot) / 2 - s(6));
+    ctx.fillText(vce.toFixed(2) + ' V', x + s(4), (yTop + yBot) / 2 + s(6));
+}
+
+function drawWire(ctx, x1, y1, x2, y2) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+}
+
+function drawGnd(ctx, x, y, s) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    const w = s(10);
+    for (let i = 0; i < 3; i++) {
+        const hw = w - i * s(3);
+        const yy = y + i * s(3.5);
+        ctx.beginPath();
+        ctx.moveTo(x - hw, yy);
+        ctx.lineTo(x + hw, yy);
+        ctx.stroke();
+    }
+}
+
+function drawVoltageSource(ctx, x, y, r, s, vIn) {
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // + and - labels (top and bottom inside circle)
+    ctx.font = `600 ${s(10)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+', x, y - r * 0.45);
+    ctx.fillText('−', x, y + r * 0.45);
+
+    // V_in label below source
+    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#bbb';
+    ctx.fillText('V_in', x, y - r - s(10));
+    ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.fillStyle = '#fff';
+    ctx.fillText(vIn.toFixed(1) + ' V', x, y - r - s(22));
+}
+
+function formatCurrent(amps) {
+    if (amps === 0) return '0 mA';
+    if (amps < 0.001) return (amps * 1e6).toFixed(1) + ' µA';
+    if (amps < 1) return (amps * 1000).toFixed(2) + ' mA';
+    return amps.toFixed(3) + ' A';
+}
+
+// ─── Drawing: Time-domain plots ───
+function drawTimePlots() {
+    const ctx = timeCtx;
+    const W = timeSize.w, H = timeSize.h;
+    ctx.clearRect(0, 0, W, H);
+
+    if (dataBuf.t.length < 2) return;
+
+    const pad = { l: 76, r: 16, t: 12, b: 44 };
+    const plotW = W - pad.l - pad.r;
+    const plotH = H - pad.t - pad.b;
+
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(pad.l, pad.t, plotW, plotH);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = pad.t + plotH * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
+    }
+    for (let i = 0; i <= 5; i++) {
+        const x = pad.l + plotW * i / 5;
+        ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + plotH); ctx.stroke();
+    }
+
+    // Fixed 10-second time window
+    const tWindow = 10;
+    const tEnd = dataBuf.t[dataBuf.t.length - 1];
+    const tStart = tEnd - tWindow;
+
+    // Find max current for Y-axis scaling
+    const maxIcTheory = vcc / rLoad;  // Maximum possible collector current
+    let maxI = maxIcTheory * 1.15;
+    if (maxI === 0) maxI = 0.001;
+
+    // Map functions
+    const mapX = (t) => pad.l + ((t - tStart) / tWindow) * plotW;
+    const mapY = (i) => pad.t + plotH - (i / maxI) * plotH;
+
+    // Also draw V_in as a normalized overlay
+    const maxVin = vInPk > 0 ? vInPk : 1;
+
+    // Draw V_in trace (background, thin)
+    drawTrace(ctx, dataBuf.t, dataBuf.vin, tStart, tWindow, (v) => pad.t + plotH - (v / maxVin) * plotH * 0.3, pad.l, plotW, 'rgba(255,255,255,0.15)', 1, true);
+
+    // Draw current traces
+    drawTrace(ctx, dataBuf.t, dataBuf.ib, tStart, tWindow, mapY, pad.l, plotW, '#cca855', 1.5);
+    drawTrace(ctx, dataBuf.t, dataBuf.ic, tStart, tWindow, mapY, pad.l, plotW, '#5a9aba', 2);
+    drawTrace(ctx, dataBuf.t, dataBuf.ie, tStart, tWindow, mapY, pad.l, plotW, '#c96b5a', 1.5);
+
+    // Y-axis labels
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#aaa';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const val = maxI * (4 - i) / 4;
+        const y = pad.t + plotH * i / 4;
+        ctx.fillText(formatCurrentShort(val), pad.l - 8, y);
+    }
+
+    // X-axis labels
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= 5; i++) {
+        const x = pad.l + plotW * i / 5;
+        ctx.fillText(formatTimeShort(tWindow * i / 5), x, pad.t + plotH + 6);
+    }
+
+    // Axis titles
+    ctx.save();
+    ctx.translate(14, pad.t + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#999';
+    ctx.font = "13px 'IBM Plex Sans', sans-serif";
+    ctx.fillText('Current', 0, 0);
+    ctx.restore();
+
+    ctx.fillStyle = '#999';
+    ctx.textAlign = 'center';
+    ctx.fillText('Time', pad.l + plotW / 2, H - 4);
+
+    // Border
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad.l, pad.t, plotW, plotH);
+}
+
+function drawTrace(ctx, tArr, vArr, tStart, tWindow, mapYFn, padL, plotW, color, width, dashed) {
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    if (dashed) ctx.setLineDash([4, 4]);
+    else ctx.setLineDash([]);
+
+    let started = false;
+    for (let i = 0; i < tArr.length; i++) {
+        const t = tArr[i];
+        if (t < tStart) continue;
+        const x = padL + ((t - tStart) / tWindow) * plotW;
+        const y = mapYFn(vArr[i]);
+        if (!started) { ctx.moveTo(x, y); started = true; }
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+}
+
+function formatCurrentShort(amps) {
+    if (amps < 0.001) return (amps * 1e6).toFixed(0) + 'µA';
+    if (amps < 1) return (amps * 1000).toFixed(1) + 'mA';
+    return amps.toFixed(2) + 'A';
+}
+
+function formatTimeShort(sec) {
+    if (sec < 0.001) return (sec * 1e6).toFixed(0) + 'µs';
+    if (sec < 1) return (sec * 1000).toFixed(1) + 'ms';
+    return sec.toFixed(2) + 's';
+}
+
+// ─── Drawing: IC vs VCE characteristic ───
+function drawIVCurve(state) {
+    const ctx = ivCtx;
+    const W = ivSize.w, H = ivSize.h;
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = { l: 76, r: 20, t: 16, b: 56 };
+    const plotW = W - pad.l - pad.r;
+    const plotH = H - pad.t - pad.b;
+
+    // Background
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(pad.l, pad.t, plotW, plotH);
+
+    // Axis ranges
+    const vceMax = vcc;
+    const icMax = (vcc / rLoad) * 1.3;
+
+    const mapX = (vce) => pad.l + (vce / vceMax) * plotW;
+    const mapY = (ic) => pad.t + plotH - (ic / icMax) * plotH;
+
+    // ─── Region shading ───
+    // Saturation region (VCE < VCE_SAT)
+    const satX = mapX(VCE_SAT);
+    ctx.fillStyle = COL_SAT;
+    ctx.fillRect(pad.l, pad.t, satX - pad.l, plotH);
+
+    // Cutoff region (IC ≈ 0, bottom strip)
+    const cutoffH = plotH * 0.05;
+    ctx.fillStyle = COL_CUTOFF;
+    ctx.fillRect(pad.l, pad.t + plotH - cutoffH, plotW, cutoffH);
+
+    // Region labels
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(204,168,85,0.8)';
+    ctx.save();
+    ctx.translate((pad.l + satX) / 2, pad.t + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('SATURATION', 0, 0);
+    ctx.restore();
+
+    ctx.fillStyle = 'rgba(220,80,80,0.75)';
+    ctx.fillText('CUTOFF', pad.l + plotW / 2, pad.t + plotH - cutoffH - 6);
+
+    ctx.fillStyle = 'rgba(90,154,186,0.6)';
+    ctx.fillText('FORWARD ACTIVE', mapX(vceMax * 0.55), pad.t + 28);
+
+    // ─── Grid ───
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+        const y = pad.t + plotH * i / 4;
+        ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + plotW, y); ctx.stroke();
+    }
+    for (let i = 0; i <= 4; i++) {
+        const x = pad.l + plotW * i / 4;
+        ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + plotH); ctx.stroke();
+    }
+
+    // ─── I_B curves (family of curves) ───
+    // Fixed curves based on circuit's max possible I_B (Vcc-driven, not slider-driven)
+    const ibValues = [];
+    const ibMaxPossible = vcc > VBE_ON ? (vcc - VBE_ON) / rBase : 0;
+    for (let n = 1; n <= 5; n++) {
+        const ib = ibMaxPossible * n / 5;
+        if (ib > 0) ibValues.push(ib);
+    }
+
+    ctx.lineWidth = 1;
+    ibValues.forEach((ib, idx) => {
+        const alpha = 0.35 + 0.13 * idx;
+        ctx.strokeStyle = `rgba(90,154,186,${alpha})`;
+        ctx.beginPath();
+        let started = false;
+        for (let vce = 0; vce <= vceMax; vce += vceMax / 200) {
+            let ic;
+            if (vce < VCE_SAT) {
+                // In saturation region, IC rises steeply with VCE
+                ic = hfe * ib * (vce / VCE_SAT);
+            } else {
+                // Active region - IC approximately constant
+                ic = hfe * ib;
+            }
+            const x = mapX(vce);
+            const y = mapY(Math.min(ic, icMax));
+            if (!started) { ctx.moveTo(x, y); started = true; }
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Label
+        ctx.font = "11px 'IBM Plex Mono', monospace";
+        ctx.fillStyle = `rgba(90,154,186,${Math.min(alpha + 0.3, 1)})`;
+        ctx.textAlign = 'left';
+        const labelIc = hfe * ib;
+        if (mapY(labelIc) > pad.t + 10) {
+            ctx.fillText('I_B=' + formatCurrentShort(ib), mapX(vceMax * 0.7), mapY(labelIc) - 4);
+        }
+    });
+
+    // ─── Load line ───
+    // I_C = (V_CC - V_CE) / R_load
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    const llIc0 = vcc / rLoad;  // at VCE=0
+    ctx.moveTo(mapX(0), mapY(llIc0));
+    ctx.lineTo(mapX(vcc), mapY(0));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Load line label
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.textAlign = 'right';
+    ctx.fillText('Load line', mapX(vcc) - 4, mapY(0) - 6);
+
+    // ─── Operating point ───
+    const opX = mapX(state.vce);
+    const opY = mapY(state.ic);
+    // Glow
+    ctx.beginPath();
+    ctx.arc(opX, opY, 8, 0, Math.PI * 2);
+    ctx.fillStyle = state.region === 'saturation' ? 'rgba(204,168,85,0.3)' :
+                    state.region === 'active' ? 'rgba(90,154,186,0.3)' : 'rgba(180,180,180,0.2)';
+    ctx.fill();
+    // Dot
+    ctx.beginPath();
+    ctx.arc(opX, opY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = state.region === 'saturation' ? '#cca855' :
+                    state.region === 'active' ? '#5a9aba' : '#aaa';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // ─── Axis labels ───
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#aaa';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+        const val = icMax * (4 - i) / 4;
+        ctx.fillText(formatCurrentShort(val), pad.l - 8, pad.t + plotH * i / 4);
+    }
+
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= 4; i++) {
+        const val = vceMax * i / 4;
+        ctx.fillText(val.toFixed(1) + 'V', pad.l + plotW * i / 4, pad.t + plotH + 6);
+    }
+
+    // Axis titles
+    ctx.save();
+    ctx.translate(14, pad.t + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#999';
+    ctx.font = "13px 'IBM Plex Sans', sans-serif";
+    ctx.fillText('I_C (Collector Current)', 0, 0);
+    ctx.restore();
+
+    ctx.fillStyle = '#999';
+    ctx.textAlign = 'center';
+    ctx.font = "13px 'IBM Plex Sans', sans-serif";
+    const vAxisLabel = bjt === 'NPN' ? 'V_CE (Collector-Emitter)' : 'V_EC (Emitter-Collector)';
+    ctx.fillText(vAxisLabel, pad.l + plotW / 2, pad.t + plotH + 32);
+
+    // Border
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(pad.l, pad.t, plotW, plotH);
+}
+
+// ─── Readout updates ───
+function updateReadouts(state) {
+    document.getElementById('ro-ib').textContent = formatCurrent(state.ib);
+    document.getElementById('ro-ic').textContent = formatCurrent(state.ic);
+    document.getElementById('ro-ie').textContent = formatCurrent(state.ie);
+    document.getElementById('ro-vce').textContent = state.vce.toFixed(2) + ' V';
+    document.getElementById('ro-vce-label').innerHTML = bjt === 'NPN' ? 'V<sub>CE</sub>' : 'V<sub>EC</sub>';
+
+    // Power dissipation
+    const pMw = state.pBjt * 1000;
+    document.getElementById('ro-power').textContent = pMw < 1 ? pMw.toFixed(2) + ' mW' :
+        pMw < 1000 ? pMw.toFixed(1) + ' mW' : (state.pBjt).toFixed(2) + ' W';
+
+    // Junction temperature with warning color
+    const tempEl = document.getElementById('ro-temp');
+    tempEl.textContent = state.tJunction.toFixed(0) + ' °C';
+    tempEl.style.color = state.tJunction > 150 ? '#ff4444' : state.tJunction > 100 ? '#cca855' : '#b87a9a';
+    document.getElementById('iv-title').innerHTML = bjt === 'NPN'
+        ? 'I<sub>C</sub> vs V<sub>CE</sub> Characteristic'
+        : 'I<sub>C</sub> vs V<sub>EC</sub> Characteristic';
+
+    const badge = document.getElementById('region-badge');
+    badge.textContent = state.region.toUpperCase();
+    badge.className = 'region-indicator region-' + state.region;
+
+    // h_FE forced badge
+    const hfeBadge = document.getElementById('hfe-forced-badge');
+    if (state.region === 'saturation') {
+        hfeBadge.textContent = 'h_FE(forced) = ' + state.hfeForced.toFixed(1);
+        hfeBadge.style.color = '#cca855';
+    } else if (state.region === 'active') {
+        hfeBadge.textContent = 'h_FE = ' + hfe;
+        hfeBadge.style.color = 'var(--text-muted)';
+    } else {
+        hfeBadge.textContent = '';
+    }
+}
+
+// ─── Event handlers ───
+// BJT type toggle
+document.querySelectorAll('[data-type]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-type]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        bjt = btn.dataset.type;
+    });
+});
+
+// Waveform toggle
+document.querySelectorAll('[data-wave]').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-wave]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        waveform = btn.dataset.wave;
+        document.getElementById('freq-row').style.display = waveform === 'dc' ? 'none' : 'flex';
+    });
+});
+
+// Pause/Play toggle
+document.getElementById('pause-btn').addEventListener('click', () => {
+    paused = !paused;
+    const btn = document.getElementById('pause-btn');
+    btn.innerHTML = paused ? '&#9654; Play' : '&#9646;&#9646; Pause';
+    btn.classList.toggle('active', !paused);
+});
+
+// Clear time plot
+document.getElementById('clear-btn').addEventListener('click', () => {
+    clearBuffer();
+});
+
+// Sliders + text input (bidirectional)
+function bindSlider(id, valId, getter, setter, formatter, parser) {
+    const slider = document.getElementById(id);
+    const input = document.getElementById(valId);
+    const min = parseFloat(slider.min);
+    const max = parseFloat(slider.max);
+    const step = parseFloat(slider.step);
+
+    // Slider → input
+    slider.addEventListener('input', () => {
+        const v = parseFloat(slider.value);
+        setter(v);
+        input.value = formatter(v);
+    });
+
+    // Input → slider (on Enter or blur)
+    function applyInput() {
+        const raw = parser(input.value);
+        if (isNaN(raw)) { input.value = formatter(getter()); return; }
+        const clamped = Math.min(max, Math.max(min, raw));
+        const stepped = Math.round(clamped / step) * step;
+        setter(stepped);
+        slider.value = stepped;
+        input.value = formatter(stepped);
+    }
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { applyInput(); input.blur(); } });
+    input.addEventListener('blur', applyInput);
+
+    // Select all on focus for easy overwrite
+    input.addEventListener('focus', () => input.select());
+}
+
+// Parser: strip units and multipliers, return raw number
+function parseVal(str) { return parseFloat(str.replace(/[^0-9.\-]/g, '')); }
+function parseResistance(str) {
+    const s = str.trim().toLowerCase();
+    const num = parseFloat(s.replace(/[^0-9.\-]/g, ''));
+    if (isNaN(num)) return NaN;
+    if (s.includes('k')) return num * 1000;
+    return num;
+}
+
+bindSlider('sl-vcc', 'val-vcc', () => vcc, v => vcc = v,
+    v => v.toFixed(1) + ' V', parseVal);
+bindSlider('sl-rload', 'val-rload', () => rLoad, v => rLoad = v,
+    v => v >= 1000 ? (v/1000).toFixed(1) + ' kΩ' : v + ' Ω', parseResistance);
+bindSlider('sl-vin', 'val-vin', () => vInPk, v => vInPk = v,
+    v => v.toFixed(1) + ' V', parseVal);
+bindSlider('sl-rbase', 'val-rbase', () => rBase, v => rBase = v,
+    v => v >= 1000 ? (v/1000).toFixed(0) + ' kΩ' : v + ' Ω', parseResistance);
+bindSlider('sl-hfe', 'val-hfe', () => hfe, v => hfe = v,
+    v => v.toString(), parseVal);
+bindSlider('sl-freq', 'val-freq', () => freq, v => freq = v,
+    v => v.toFixed(1) + ' Hz', parseVal);
+
+// ─── Animation loop ───
+let lastTime = null;
+const SAMPLE_RATE = 200; // samples per displayed window
+let sampleAccum = 0;
+
+function animate(timestamp) {
+    requestAnimationFrame(animate);
+
+    if (!lastTime) { lastTime = timestamp; return; }
+    const dtReal = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    // Advance simulation time (real-time) — only when not paused
+    const tWindow = 10;
+    const dtSim = dtReal;
+
+    if (!paused) {
+        simTime += dtSim;
+    }
+
+    // Sample the simulation (only when running)
+    if (!paused) sampleAccum += dtSim;
+    const sampleInterval = tWindow / SAMPLE_RATE;
+
+    if (!paused && sampleAccum >= sampleInterval) {
+        sampleAccum = 0;
+
+        const vIn = vInPk * waveValue(simTime);
+        const state = computeState(vIn);
+
+        dataBuf.t.push(simTime);
+        dataBuf.ib.push(state.ib);
+        dataBuf.ic.push(state.ic);
+        dataBuf.ie.push(state.ie);
+        dataBuf.vin.push(vIn);
+        dataBuf.vce.push(state.vce);
+
+        // Trim buffer
+        while (dataBuf.t.length > BUFFER_LEN) {
+            dataBuf.t.shift();
+            dataBuf.ib.shift();
+            dataBuf.ic.shift();
+            dataBuf.ie.shift();
+            dataBuf.vin.shift();
+            dataBuf.vce.shift();
+        }
+    }
+
+    // Compute current state for circuit diagram and readouts
+    const vInNow = vInPk * waveValue(simTime);
+    const currentState = computeState(vInNow);
+
+    // Draw everything
+    drawCircuit(currentState);
+    drawTimePlots();
+    drawIVCurve(currentState);
+    updateReadouts(currentState);
+}
+
+requestAnimationFrame(animate);
+
+</script>
+</body>
+</html>

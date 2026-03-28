@@ -383,7 +383,212 @@ function sizeCanvas(canvas) {
 
 // ── Placeholder drawing functions ──────────────────────
 function drawCircuit() {}
-function drawBode() {}
+function drawBode() {
+    const { w, h, ctx } = sizeCanvas(bodeCanvas);
+
+    const pad = { top: 30, right: 30, bottom: 45, left: 60 };
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+
+    // Frequency range: 3 decades below to 3 decades above omega_0
+    const w0 = omega0();
+    const logCenter = Math.log10(w0);
+    const logMin = logCenter - 3;
+    const logMax = logCenter + 3;
+
+    // dB range
+    const avDb = 20 * Math.log10(Av);
+    const dbMax = Math.ceil((avDb + 10) / 10) * 10;
+    const dbMin = dbMax - 80;
+
+    // Helper closures: data -> pixel
+    function xPx(freq) {
+        return pad.left + (Math.log10(freq) - logMin) / (logMax - logMin) * plotW;
+    }
+    function yPx(db) {
+        return pad.top + (dbMax - db) / (dbMax - dbMin) * plotH;
+    }
+
+    // ── Grid lines ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+
+    // Vertical grid at each decade
+    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
+        const x = xPx(Math.pow(10, d));
+        ctx.beginPath();
+        ctx.moveTo(x, pad.top);
+        ctx.lineTo(x, pad.top + plotH);
+        ctx.stroke();
+    }
+
+    // Horizontal grid every 10 dB
+    for (let db = dbMin; db <= dbMax; db += 10) {
+        const y = yPx(db);
+        ctx.beginPath();
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + plotW, y);
+        ctx.stroke();
+    }
+
+    // ── Mid-band gain dashed line ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    const yMid = yPx(avDb);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, yMid);
+    ctx.lineTo(pad.left + plotW, yMid);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('Mid-band: ' + avDb.toFixed(1) + ' dB', pad.left + plotW - 4, yMid - 3);
+
+    // ── omega_0 vertical dashed line ──
+    const xW0 = xPx(w0);
+    ctx.strokeStyle = '#6aaa8e';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xW0, pad.top);
+    ctx.lineTo(xW0, pad.top + plotH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('\u03C9\u2080 = ' + fmtFreq(w0), xW0, pad.top - 4);
+
+    // ── -20 dB/decade asymptotic slope (dotted) ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.setLineDash([3, 3]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xW0, yPx(avDb));
+    // Extend right to edge: slope is -20 dB/decade
+    const decadesRight = logMax - logCenter;
+    const endDb = avDb - 20 * decadesRight;
+    ctx.lineTo(pad.left + plotW, yPx(endDb));
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── Main gain curve ──
+    ctx.strokeStyle = '#6aaa8e';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    const N = 400;
+    for (let i = 0; i <= N; i++) {
+        const logW = logMin + (logMax - logMin) * i / N;
+        const freq = Math.pow(10, logW);
+        const db = gainDb(freq);
+        const x = xPx(freq);
+        const y = yPx(db);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // ── -3 dB point dot at omega_0 ──
+    const db3 = avDb - 3;
+    ctx.fillStyle = '#6aaa8e';
+    ctx.beginPath();
+    ctx.arc(xW0, yPx(db3), 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('-3 dB', xW0 + 7, yPx(db3));
+
+    // ── Test frequency marker ──
+    const testDb = gainDb(testFreq);
+    const xTest = xPx(testFreq);
+    const yTest = yPx(testDb);
+
+    // Vertical dashed line to x-axis
+    ctx.strokeStyle = '#ffcc44';
+    ctx.setLineDash([6, 4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(xTest, yTest);
+    ctx.lineTo(xTest, pad.top + plotH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Yellow dot
+    ctx.fillStyle = '#ffcc44';
+    ctx.beginPath();
+    ctx.arc(xTest, yTest, 6, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Gain readout label — flip alignment based on position
+    const inLeftHalf = xTest < pad.left + plotW / 2;
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = inLeftHalf ? 'left' : 'right';
+    ctx.textBaseline = 'bottom';
+    const labelOffset = inLeftHalf ? 9 : -9;
+    ctx.fillText(testDb.toFixed(1) + ' dB', xTest + labelOffset, yTest - 7);
+
+    // ── X-axis tick labels (decade powers) ──
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
+        const x = xPx(Math.pow(10, d));
+        ctx.fillText('10' + (d < 0 ? '\u207B' : '') + superscriptDigits(Math.abs(d)), x, pad.top + plotH + 5);
+    }
+
+    // ── Y-axis tick labels (dB values) ──
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let db = dbMin; db <= dbMax; db += 10) {
+        ctx.fillText(db + '', pad.left - 6, yPx(db));
+    }
+
+    // ── Axis titles ──
+    // X-axis
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Frequency (rad/s)', pad.left + plotW / 2, pad.top + plotH + 25);
+
+    // Y-axis (rotated)
+    ctx.save();
+    ctx.translate(14, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Gain (dB)', 0, 0);
+    ctx.restore();
+
+    // ── Update header label ──
+    const bodeLabel = document.getElementById('bode-gain-label');
+    if (bodeLabel) {
+        bodeLabel.textContent = 'Gain @ \u03C9 = ' + fmtFreq(testFreq) + ': ' + testDb.toFixed(1) + ' dB';
+    }
+}
+
+// Helper: convert digits to Unicode superscript
+function superscriptDigits(n) {
+    const sup = ['\u2070', '\u00B9', '\u00B2', '\u00B3', '\u2074', '\u2075', '\u2076', '\u2077', '\u2078', '\u2079'];
+    return String(n).split('').map(d => sup[parseInt(d)]).join('');
+}
 
 // ── Log-scale slider helpers ───────────────────────────
 function logMap(t, min, max) {

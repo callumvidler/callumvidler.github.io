@@ -438,6 +438,7 @@ function setClass(cls) {
     else biasPoint = 5;
 
     document.getElementById('sl-bias').value = biasPoint;
+    waveHistory = [];
     updateAll();
 }
 
@@ -500,7 +501,6 @@ function updateUI() {
 
 function updateAll() {
     computeDerived();
-    waveHistory = [];
     updateUI();
     drawCircuit();
     drawWaveforms();

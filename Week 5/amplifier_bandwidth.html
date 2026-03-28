@@ -644,10 +644,10 @@ function drawBode() {
     const logMin = logCenter - 3;
     const logMax = logCenter + 3;
 
-    // dB range
+    // dB range — fixed so axis doesn't jump when Av changes
     const avDb = 20 * Math.log10(Av);
-    const dbMax = Math.ceil((avDb + 10) / 10) * 10;
-    const dbMin = dbMax - 80;
+    const dbMax = 70;   // covers Av up to 1000 (60 dB) with headroom
+    const dbMin = -30;  // covers rolloff well below 0 dB
 
     // Helper closures: data -> pixel
     function xPx(freq) {

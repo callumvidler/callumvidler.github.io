@@ -349,7 +349,39 @@
     </div>
     <!-- Bottom-right: Equations -->
     <div class="eq-panel" id="eq-panel">
-        <!-- Equations content goes here -->
+        <div class="eq-section">
+            <div class="eq-title">Transfer Function</div>
+            <div class="equation" id="eq-transfer">
+                H(j&#969;) = A<sub>v</sub> / (1 + j(<span class="highlight" id="eq-ratio">&#969;/&#969;<sub>0</sub></span>))
+            </div>
+        </div>
+
+        <div class="eq-section">
+            <div class="eq-title">Magnitude</div>
+            <div class="equation" id="eq-magnitude">
+                |H(j&#969;)| = <span id="eq-av-term">A<sub>v</sub></span> / &#8730;(<span id="eq-one-term">1</span> + (<span id="eq-ratio2">&#969;/&#969;<sub>0</sub></span>)&#178;)
+            </div>
+        </div>
+
+        <div class="eq-section">
+            <div class="eq-title">Frequency Response</div>
+            <div class="info-row">
+                <span>Gain at &#969;</span>
+                <span class="val" id="eq-gain-linear">—</span>
+            </div>
+            <div class="info-row">
+                <span>Gain (dB)</span>
+                <span class="val" id="eq-gain-db">—</span>
+            </div>
+            <div class="info-row">
+                <span>&#969; / &#969;<sub>0</sub></span>
+                <span class="val" id="eq-ratio-val">—</span>
+            </div>
+            <div class="info-row" style="margin-top: 0.3rem;">
+                <span>Regime</span>
+                <span class="regime-label" id="eq-regime">—</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -836,6 +868,51 @@ function fmtAv(val) {
     return val.toPrecision(3) + ' (' + db.toFixed(1) + ' dB)';
 }
 
+function updateEquations() {
+    const w0 = omega0();
+    const ratio = testFreq / w0;
+    const gain = gainAt(testFreq);
+    const db = gainDb(testFreq);
+
+    document.getElementById('eq-gain-linear').textContent = gain.toPrecision(4);
+    document.getElementById('eq-gain-db').textContent = db.toFixed(2) + ' dB';
+    document.getElementById('eq-ratio-val').textContent = ratio.toPrecision(3);
+
+    const oneTermEl = document.getElementById('eq-one-term');
+    const ratioEl = document.getElementById('eq-ratio');
+    const ratio2El = document.getElementById('eq-ratio2');
+    const regimeEl = document.getElementById('eq-regime');
+
+    if (ratio < 0.1) {
+        // Passband
+        oneTermEl.className = 'highlight';
+        ratioEl.className = 'dim';
+        ratio2El.className = 'dim';
+        regimeEl.textContent = 'Passband';
+        regimeEl.style.background = 'rgba(106,170,142,0.15)';
+        regimeEl.style.color = 'var(--accent)';
+        regimeEl.style.borderColor = 'rgba(106,170,142,0.3)';
+    } else if (ratio > 10) {
+        // Rolloff
+        oneTermEl.className = 'dim';
+        ratioEl.className = 'highlight';
+        ratio2El.className = 'highlight';
+        regimeEl.textContent = 'Rolloff (\u221220 dB/dec)';
+        regimeEl.style.background = 'rgba(224,96,80,0.15)';
+        regimeEl.style.color = '#e06050';
+        regimeEl.style.borderColor = 'rgba(224,96,80,0.3)';
+    } else {
+        // Cutoff
+        oneTermEl.className = 'highlight';
+        ratioEl.className = 'highlight';
+        ratio2El.className = 'highlight';
+        regimeEl.textContent = 'Cutoff (\u22123 dB)';
+        regimeEl.style.background = 'rgba(255,200,100,0.15)';
+        regimeEl.style.color = '#ffcc44';
+        regimeEl.style.borderColor = 'rgba(255,200,100,0.3)';
+    }
+}
+
 // ── Init ───────────────────────────────────────────────
 function init() {
     circuitCanvas = document.getElementById('circuit-canvas');
@@ -896,6 +973,7 @@ function init() {
     });
 
     updateReadouts();
+    updateEquations();
 
     requestAnimationFrame(animate);
 }
@@ -910,6 +988,7 @@ function animate(now) {
     }
     drawBode();
     drawCircuit();
+    updateEquations();
     requestAnimationFrame(animate);
 }
 

@@ -55,8 +55,8 @@
 
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1.2fr 1fr;
             height: calc(100vh - 42px);
             gap: 0;
         }
@@ -192,8 +192,10 @@
             overflow-y: auto;
             padding: 0.5rem;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            flex-wrap: wrap;
             gap: 0.4rem;
+            grid-column: 2 / 4;
         }
 
         .eq-section {
@@ -201,6 +203,7 @@
             border: 1px solid var(--border);
             border-radius: 3px;
             padding: 0.45rem 0.55rem;
+            flex: 1 1 140px;
         }
 
         .eq-title {
@@ -291,6 +294,11 @@
     <div class="panel">
         <div class="panel-header"><strong>RC Circuit Model</strong><span id="circuit-freq-label">—</span></div>
         <div class="panel-body"><canvas id="circuit-canvas"></canvas></div>
+    </div>
+    <!-- Top-middle: Complex Plane / Phasor -->
+    <div class="panel">
+        <div class="panel-header"><strong>Complex Plane</strong><span id="phasor-mag-label">—</span></div>
+        <div class="panel-body"><canvas id="phasor-canvas"></canvas></div>
     </div>
     <!-- Top-right: Bode Plot -->
     <div class="panel">
@@ -397,7 +405,7 @@ function gainAt(w) { return Av / Math.sqrt(1 + (w / omega0()) ** 2); }
 function gainDb(w) { return 20 * Math.log10(gainAt(w)); }
 
 // ── Canvas references ──────────────────────────────────
-let circuitCanvas, bodeCanvas;
+let circuitCanvas, phasorCanvas, bodeCanvas;
 
 // ── Resize helper ──────────────────────────────────────
 // Cache canvas sizes to avoid layout thrashing every frame
@@ -631,6 +639,176 @@ function drawCircuit() {
         freqLabel.textContent = '\u03C9 = ' + fmtFreq(testFreq);
     }
 }
+// ── Complex Plane / Phasor diagram ───────────────────
+function drawPhasor() {
+    const { w: W, h: H, ctx } = sizeCanvas(phasorCanvas);
+
+    const ratio = testFreq / omega0();
+    const mag = Math.sqrt(1 + ratio * ratio);
+    const angle = Math.atan(ratio);
+
+    // Use square region centered in panel
+    const size = Math.min(W, H);
+    const cx = W / 2;
+    const cy = H / 2;
+    const axisLen = size * 0.38;
+
+    // Scale: the phasor tip is at (1, ratio). We need to fit it.
+    // Use a scale that keeps the phasor visible but maxes out reasonably
+    const maxExtent = Math.max(mag, 1.5);
+    const scale = axisLen / maxExtent;
+
+    // ── Axes ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+
+    // Real axis
+    ctx.beginPath();
+    ctx.moveTo(cx - axisLen - 10, cy);
+    ctx.lineTo(cx + axisLen + 10, cy);
+    ctx.stroke();
+
+    // Imaginary axis
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + axisLen + 10);
+    ctx.lineTo(cx, cy - axisLen - 10);
+    ctx.stroke();
+
+    // Axis labels
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = "10px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('Re', cx + axisLen + 10, cy + 4);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Im', cx + 6, cy - axisLen - 10);
+
+    // ── Unit circle arc (faint reference) ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, scale, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // ── Real component: "1" on the real axis ──
+    const realEndX = cx + 1 * scale;
+    const realEndY = cy;
+
+    // Draw "1" vector along real axis
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(realEndX, realEndY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // "1" label
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('1', cx + 0.5 * scale, cy + 6);
+
+    // ── Imaginary component: j(ω/ω₀) from tip of real to phasor tip ──
+    const tipX = cx + 1 * scale;
+    const tipY = cy - ratio * scale;  // negative because canvas y is inverted
+
+    // Draw vertical dashed line for imaginary part
+    ctx.strokeStyle = '#ffcc44';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(realEndX, realEndY);
+    ctx.lineTo(tipX, tipY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // j(ω/ω₀) label
+    if (ratio > 0.05) {
+        ctx.fillStyle = '#ffcc44';
+        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        const labelY = cy - ratio * scale * 0.5;
+        ctx.fillText('j\u00B7' + ratio.toPrecision(2), tipX + 6, labelY);
+    }
+
+    // ── Main phasor: 1 + j(ω/ω₀) ──
+    ctx.strokeStyle = '#6aaa8e';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(tipX, tipY);
+    ctx.stroke();
+
+    // Arrowhead
+    const arrowLen = 8;
+    const phasorAngle = Math.atan2(cy - tipY, tipX - cx);
+    ctx.fillStyle = '#6aaa8e';
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(
+        tipX - arrowLen * Math.cos(phasorAngle - 0.35),
+        tipY + arrowLen * Math.sin(phasorAngle - 0.35)
+    );
+    ctx.lineTo(
+        tipX - arrowLen * Math.cos(phasorAngle + 0.35),
+        tipY + arrowLen * Math.sin(phasorAngle + 0.35)
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    // Phasor tip dot
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#6aaa8e';
+    ctx.fill();
+
+    // ── Magnitude label on phasor ──
+    const midPx = (cx + tipX) / 2;
+    const midPy = (cy + tipY) / 2;
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('|1 + j\u03C9/\u03C9\u2080| = ' + mag.toPrecision(3), midPx - 6, midPy - 4);
+
+    // ── Angle arc ──
+    if (ratio > 0.05) {
+        const arcRadius = Math.min(scale * 0.3, 30);
+        ctx.strokeStyle = 'rgba(255,200,100,0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, arcRadius, -angle, 0);
+        ctx.stroke();
+
+        // Angle label
+        const angleDeg = (angle * 180 / Math.PI).toFixed(1);
+        const labelAngle = -angle / 2;
+        ctx.fillStyle = 'rgba(255,200,100,0.8)';
+        ctx.font = "10px 'IBM Plex Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(angleDeg + '\u00B0', cx + arcRadius * Math.cos(labelAngle) + 4, cy + arcRadius * Math.sin(labelAngle));
+    }
+
+    // ── Result: |H| = Av / magnitude ──
+    const gainResult = Av / mag;
+    const gainDbResult = 20 * Math.log10(gainResult);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = "11px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('|H| = A\u1D65 / ' + mag.toPrecision(3) + ' = ' + gainDbResult.toFixed(1) + ' dB', cx, H - 8);
+
+    // ── Update header ──
+    document.getElementById('phasor-mag-label').textContent =
+        '|1 + j\u03C9/\u03C9\u2080| = ' + mag.toPrecision(3);
+}
+
 function drawBode() {
     const { w, h, ctx } = sizeCanvas(bodeCanvas);
 
@@ -933,6 +1111,7 @@ function updateEquations() {
 // ── Init ───────────────────────────────────────────────
 function init() {
     circuitCanvas = document.getElementById('circuit-canvas');
+    phasorCanvas = document.getElementById('phasor-canvas');
     bodeCanvas = document.getElementById('bode-canvas');
     // Force initial canvas sizing
     resizeAllCanvases();
@@ -1020,6 +1199,7 @@ function animate(now) {
         animTime += dt;
     }
     drawBode();
+    drawPhasor();
     drawCircuit();
     updateEquations();
     requestAnimationFrame(animate);

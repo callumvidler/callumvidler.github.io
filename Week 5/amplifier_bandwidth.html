@@ -397,11 +397,20 @@ function gainAt(w) { return Av / Math.sqrt(1 + (w / omega0()) ** 2); }
 function gainDb(w) { return 20 * Math.log10(gainAt(w)); }
 
 // ── Canvas references ──────────────────────────────────
-let circuitCanvas, circuitCtx;
-let bodeCanvas, bodeCtx;
+let circuitCanvas, bodeCanvas;
 
 // ── Resize helper ──────────────────────────────────────
-function sizeCanvas(canvas) {
+// Cache canvas sizes to avoid layout thrashing every frame
+const canvasSizes = new Map();
+
+function sizeCanvas(canvas, forceResize) {
+    const cached = canvasSizes.get(canvas);
+    if (cached && !forceResize) {
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { w: cached.w, h: cached.h, ctx };
+    }
     const rect = canvas.parentElement.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     canvas.width = rect.width * dpr;
@@ -410,7 +419,12 @@ function sizeCanvas(canvas) {
     canvas.style.height = rect.height + 'px';
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    canvasSizes.set(canvas, { w: rect.width, h: rect.height });
     return { w: rect.width, h: rect.height, ctx };
+}
+
+function resizeAllCanvases() {
+    canvasSizes.clear();
 }
 
 // ── Drawing helpers ───────────────────────────────────
@@ -483,11 +497,15 @@ function drawCircuit() {
     ctx.beginPath(); ctx.moveTo(xAmp + 20, midY); ctx.lineTo(xR1, midY); ctx.stroke();
     // After resistor -> end
     ctx.beginPath(); ctx.moveTo(xR2, midY); ctx.lineTo(xEnd, midY); ctx.stroke();
-    // Output node down to capacitor/ground
-    ctx.beginPath(); ctx.moveTo(xOut, midY); ctx.lineTo(xOut, gndY - 20); ctx.stroke();
+    // Output node down to capacitor top plate
+    const capY = gndY - 20;
+    const capGap = 6;
+    ctx.beginPath(); ctx.moveTo(xOut, midY); ctx.lineTo(xOut, capY - capGap / 2); ctx.stroke();
+    // Capacitor bottom plate to ground
+    const gndTop = gndY - 10;
+    ctx.beginPath(); ctx.moveTo(xOut, capY + capGap / 2); ctx.lineTo(xOut, gndTop); ctx.stroke();
 
     // ── Ground symbol ──
-    const gndTop = gndY - 10;
     ctx.strokeStyle = 'rgba(255,255,255,0.5)';
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(xOut - 10, gndTop); ctx.lineTo(xOut + 10, gndTop); ctx.stroke();
@@ -561,8 +579,6 @@ function drawCircuit() {
     ctx.fillText(fmtR(R), (xR1 + xR2) / 2, midY + zagAmp + 14);
 
     // ── Capacitor (two plates) ──
-    const capY = gndY - 20;
-    const capGap = 6;
     const capW = 16;
     ctx.strokeStyle = 'rgba(255,255,255,0.7)';
     ctx.lineWidth = 2;
@@ -917,12 +933,11 @@ function updateEquations() {
 function init() {
     circuitCanvas = document.getElementById('circuit-canvas');
     bodeCanvas = document.getElementById('bode-canvas');
-    circuitCtx = circuitCanvas.getContext('2d');
-    bodeCtx = bodeCanvas.getContext('2d');
+    // Force initial canvas sizing
+    resizeAllCanvases();
 
     window.addEventListener('resize', () => {
-        drawBode();
-        drawCircuit();
+        resizeAllCanvases();
     });
 
     const rSlider = document.getElementById('r-slider');
@@ -954,21 +969,38 @@ function init() {
     freqSlider.addEventListener('input', updateFromSliders);
 
     // Preset buttons
-    document.getElementById('preset-audio').addEventListener('click', () => {
+    const presetAudio = document.getElementById('preset-audio');
+    const presetRf = document.getElementById('preset-rf');
+
+    function clearPresetActive() {
+        presetAudio.classList.remove('active');
+        presetRf.classList.remove('active');
+    }
+
+    // Clear active preset when any slider is manually adjusted
+    rSlider.addEventListener('input', clearPresetActive);
+    cSlider.addEventListener('input', clearPresetActive);
+    avSlider.addEventListener('input', clearPresetActive);
+
+    presetAudio.addEventListener('click', () => {
         R = 10000; C = 10e-9; Av = 100; testFreq = omega0();
         rSlider.value = logUnmap(R, R_MIN, R_MAX);
         cSlider.value = logUnmap(C, C_MIN, C_MAX);
         avSlider.value = logUnmap(Av, AV_MIN, AV_MAX);
         freqSlider.value = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
+        clearPresetActive();
+        presetAudio.classList.add('active');
         updateReadouts();
     });
 
-    document.getElementById('preset-rf').addEventListener('click', () => {
+    presetRf.addEventListener('click', () => {
         R = 500; C = 5e-12; Av = 20; testFreq = omega0();
         rSlider.value = logUnmap(R, R_MIN, R_MAX);
         cSlider.value = logUnmap(C, C_MIN, C_MAX);
         avSlider.value = logUnmap(Av, AV_MIN, AV_MAX);
         freqSlider.value = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
+        clearPresetActive();
+        presetRf.classList.add('active');
         updateReadouts();
     });
 

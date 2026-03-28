@@ -1157,94 +1157,79 @@ function drawWaveforms() {
     const { w, h } = waveformSize;
     ctx.clearRect(0, 0, w, h);
 
-    const halfH = h / 2;
-    const topH = halfH - 15;
-    const botH = halfH - 15;
     const padL = 40;
     const padR = 10;
+    const padT = 20;
+    const padB = 10;
     const plotW = w - padL - padR;
+    const plotH = h - padT - padB;
+    const cy = padT + plotH / 2;
 
-    // ─── Grid lines ───
+    // ─── Vertical grid lines ───
     ctx.strokeStyle = 'rgba(255,255,255,0.04)';
     ctx.lineWidth = 1;
     for (let i = 1; i < 8; i++) {
         const gx = padL + (i / 8) * plotW;
         ctx.beginPath();
-        ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+        ctx.moveTo(gx, padT); ctx.lineTo(gx, h - padB); ctx.stroke();
     }
 
-    // ─── Top plot: V_in ───
-    const topCy = halfH * 0.5;
-    const topScale = (topH * 0.35);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
+    // ─── Horizontal zero line ───
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
     ctx.beginPath();
-    ctx.moveTo(padL, topCy); ctx.lineTo(w - padR, topCy); ctx.stroke();
+    ctx.moveTo(padL, cy); ctx.lineTo(w - padR, cy); ctx.stroke();
 
-    ctx.save();
-    ctx.font = '500 10px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#5080d0';
-    ctx.textAlign = 'right';
-    ctx.fillText('V_in', padL - 6, topCy + 4);
-    ctx.restore();
+    // ─── Horizontal grid lines (quarter marks) ───
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    for (let i = 1; i <= 3; i++) {
+        if (i === 2) continue; // skip center (already drawn)
+        const gy = padT + (i / 4) * plotH;
+        ctx.beginPath();
+        ctx.moveTo(padL, gy); ctx.lineTo(w - padR, gy); ctx.stroke();
+    }
 
-    if (waveHistory.length > 1) {
+    // Normalise both traces to the same scale so they overlay meaningfully
+    // Use the output's max range (VCC) as the shared scale
+    const maxVout = VCC;
+    const scale = plotH * 0.45;
+
+    // ─── Draw V_in trace ───
+    if (waveHistory.length > 1 && vinPeak > 0) {
         ctx.strokeStyle = '#5080d0';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let i = 0; i < waveHistory.length; i++) {
             const x = padL + (i / WAVEFORM_HISTORY) * plotW;
-            const y = topCy - (waveHistory[i].vin / Math.max(vinPeak, 0.01)) * topScale;
+            const y = cy - (waveHistory[i].vin / maxVout) * scale;
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
     }
 
-    if (vinPeak > 0) {
-        ctx.save();
-        ctx.font = '9px "IBM Plex Mono", monospace';
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.textAlign = 'right';
-        ctx.fillText('+' + vinPeak.toFixed(2) + 'V', padL - 6, topCy - topScale + 4);
-        ctx.fillText('−' + vinPeak.toFixed(2) + 'V', padL - 6, topCy + topScale + 4);
-        ctx.restore();
-    }
-
-    // ─── Divider ───
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padL, halfH); ctx.lineTo(w - padR, halfH); ctx.stroke();
-
-    // ─── Bottom plot: V_out ───
-    const botCy = halfH + halfH * 0.5;
-    const maxVout = VCC;
-    const botScale = (botH * 0.35);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.beginPath();
-    ctx.moveTo(padL, botCy); ctx.lineTo(w - padR, botCy); ctx.stroke();
-
-    ctx.save();
-    ctx.font = '500 10px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#6aaa8e';
-    ctx.textAlign = 'right';
-    ctx.fillText('V_out', padL - 6, botCy + 4);
-    ctx.restore();
-
+    // ─── Draw V_out trace ───
     if (waveHistory.length > 1) {
         ctx.strokeStyle = '#6aaa8e';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         for (let i = 0; i < waveHistory.length; i++) {
             const x = padL + (i / WAVEFORM_HISTORY) * plotW;
-            const y = botCy - (waveHistory[i].vout / maxVout) * botScale;
+            const y = cy - (waveHistory[i].vout / maxVout) * scale;
             if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
         }
         ctx.stroke();
     }
 
+    // ─── Y-axis labels ───
+    ctx.save();
+    ctx.font = '9px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.textAlign = 'right';
+    ctx.fillText('+' + maxVout + 'V', padL - 6, padT + plotH * 0.05 + 4);
+    ctx.fillText('0', padL - 6, cy + 4);
+    ctx.fillText('−' + maxVout + 'V', padL - 6, h - padB - plotH * 0.05 + 4);
+    ctx.restore();
+
+    // ─── Gain readout ───
     if (vinPeak > 0 && waveHistory.length > 0) {
         const peakOut = Math.max(...waveHistory.map(s => Math.abs(s.vout)));
         const measuredGain = peakOut / vinPeak;
@@ -1252,7 +1237,7 @@ function drawWaveforms() {
         ctx.font = '500 10px "IBM Plex Mono", monospace';
         ctx.fillStyle = 'rgba(106,170,142,0.6)';
         ctx.textAlign = 'right';
-        ctx.fillText('Gain: ~' + measuredGain.toFixed(1) + 'x', w - padR, halfH + 14);
+        ctx.fillText('Gain: ~' + measuredGain.toFixed(1) + 'x', w - padR, padT + 12);
         ctx.restore();
     }
 }

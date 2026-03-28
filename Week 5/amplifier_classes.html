@@ -377,7 +377,161 @@
 </div>
 
 <script>
-// JavaScript will be added in subsequent tasks
+// ═══════════════════════════════════════════════════════════════
+//  Amplifier Classes — Interactive Visualization
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Constants ───
+const VCC = 12;
+const VCE_SAT = 0.2;
+const MAX_IC = 10;
+const RC = 1200;
+const GAIN = 20;
+
+// ─── State ───
+let ampClass = 'A';
+let amplitude = 30;
+let biasPoint = 50;
+let simTime = 0;
+
+// ─── Derived state ───
+let vinPeak = 0;
+let icq = 0;
+let vceq = 0;
+let dcPower = 0;
+let signalPower = 0;
+let heatPower = 0;
+let efficiency = 0;
+
+// ─── Canvas setup ───
+const circuitCanvas = document.getElementById('circuit-canvas');
+const waveformCanvas = document.getElementById('waveform-canvas');
+const circuitCtx = circuitCanvas.getContext('2d');
+const waveformCtx = waveformCanvas.getContext('2d');
+
+function resizeCanvas(canvas) {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height };
+}
+
+let circuitSize, waveformSize;
+function resizeAll() {
+    circuitSize = resizeCanvas(circuitCanvas);
+    waveformSize = resizeCanvas(waveformCanvas);
+}
+window.addEventListener('resize', () => { resizeAll(); updateAll(); });
+resizeAll();
+
+// ─── Control handlers ───
+function setClass(cls) {
+    ampClass = cls;
+    document.getElementById('btn-classA').classList.toggle('active', cls === 'A');
+    document.getElementById('btn-classB').classList.toggle('active', cls === 'B');
+    document.getElementById('btn-classAB').classList.toggle('active', cls === 'AB');
+
+    if (cls === 'A') biasPoint = 50;
+    else if (cls === 'B') biasPoint = 0;
+    else biasPoint = 5;
+
+    document.getElementById('sl-bias').value = biasPoint;
+    updateAll();
+}
+
+function setAmplitude(val) {
+    amplitude = parseInt(val);
+    updateAll();
+}
+
+function setBias(val) {
+    biasPoint = parseInt(val);
+    updateAll();
+}
+
+function computeDerived() {
+    vinPeak = amplitude / 100;
+    icq = (biasPoint / 100) * MAX_IC;
+    vceq = VCC - (icq / 1000) * RC;
+    if (vceq < VCE_SAT) vceq = VCE_SAT;
+
+    dcPower = VCC * icq;
+
+    const voutPeak = Math.min(vinPeak * GAIN, vceq - VCE_SAT, VCC - vceq);
+    const clippedVoutPeak = Math.max(0, voutPeak);
+
+    if (ampClass === 'A') {
+        signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
+    } else if (ampClass === 'B') {
+        const iPeak = clippedVoutPeak / RC * 1000;
+        dcPower = 2 * VCC * iPeak / Math.PI;
+        signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
+    } else {
+        const iPeak = clippedVoutPeak / RC * 1000;
+        const iBias = icq;
+        dcPower = 2 * VCC * (iPeak / Math.PI + iBias);
+        signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
+    }
+
+    heatPower = Math.max(0, dcPower - signalPower);
+    efficiency = dcPower > 0 ? (signalPower / dcPower) * 100 : 0;
+}
+
+function updateUI() {
+    document.getElementById('val-amplitude').textContent = (amplitude / 100).toFixed(2) + ' V';
+    document.getElementById('val-bias').innerHTML = 'I<sub>CQ</sub> ' + icq.toFixed(1) + ' mA';
+
+    const maxPower = Math.max(dcPower, 1);
+    document.getElementById('bar-dc').style.width = '100%';
+    document.getElementById('val-dc').textContent = dcPower.toFixed(0) + ' mW';
+
+    document.getElementById('bar-signal').style.width = (signalPower / maxPower * 100).toFixed(1) + '%';
+    document.getElementById('val-signal').textContent = signalPower.toFixed(0) + ' mW';
+
+    document.getElementById('bar-heat').style.width = (heatPower / maxPower * 100).toFixed(1) + '%';
+    document.getElementById('val-heat').textContent = heatPower.toFixed(0) + ' mW';
+
+    const effStr = '\u03B7 = ' + efficiency.toFixed(0) + '%';
+    document.getElementById('efficiency-readout').textContent = effStr;
+    document.getElementById('efficiency-badge').textContent = effStr;
+}
+
+function updateAll() {
+    computeDerived();
+    updateUI();
+    drawCircuit();
+    drawWaveforms();
+    updateExplanation();
+}
+
+function drawCircuit() {
+    const ctx = circuitCtx;
+    const { w, h } = circuitSize;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = '14px "IBM Plex Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Circuit — Class ' + ampClass, w / 2, h / 2);
+}
+
+function drawWaveforms() {
+    const ctx = waveformCtx;
+    const { w, h } = waveformSize;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = '14px "IBM Plex Sans", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Waveforms — Class ' + ampClass, w / 2, h / 2);
+}
+
+function updateExplanation() {
+    document.getElementById('explanation-panel').innerHTML = '<h3>Class ' + ampClass + '</h3><p>Explanation placeholder</p>';
+}
+
+// ─── Initial render ───
+updateAll();
 </script>
 
 </body>

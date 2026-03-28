@@ -1164,6 +1164,15 @@ function drawWaveforms() {
     const padR = 10;
     const plotW = w - padL - padR;
 
+    // ─── Grid lines ───
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 8; i++) {
+        const gx = padL + (i / 8) * plotW;
+        ctx.beginPath();
+        ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke();
+    }
+
     // ─── Top plot: V_in ───
     const topCy = halfH * 0.5;
     const topScale = (topH * 0.35);

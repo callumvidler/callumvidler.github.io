@@ -513,27 +513,31 @@ function drawResistor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
     const len = Math.sqrt(dx * dx + dy * dy);
     const ux = dx / len, uy = dy / len;
     const px = -uy, py = ux;
-    const teeth = 6;
     const bodyStart = len * 0.2;
     const bodyEnd = len * 0.8;
-    const bodyLen = bodyEnd - bodyStart;
-    const amp = 5;
+    const rectW = 7;
 
+    // Lead wires
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x1 + ux * bodyStart, y1 + uy * bodyStart);
+    ctx.stroke();
 
-    for (let i = 0; i <= teeth; i++) {
-        const t = bodyStart + (i / teeth) * bodyLen;
-        const side = (i % 2 === 0) ? amp : -amp;
-        if (i === 0 || i === teeth) {
-            ctx.lineTo(x1 + ux * t, y1 + uy * t);
-        } else {
-            ctx.lineTo(x1 + ux * t + px * side, y1 + uy * t + py * side);
-        }
-    }
-
+    ctx.beginPath();
+    ctx.moveTo(x1 + ux * bodyEnd, y1 + uy * bodyEnd);
     ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    // Rectangle body
+    const bx = x1 + ux * bodyStart;
+    const by = y1 + uy * bodyStart;
+    const bLen = bodyEnd - bodyStart;
+    ctx.beginPath();
+    ctx.moveTo(bx + px * rectW, by + py * rectW);
+    ctx.lineTo(bx + px * rectW + ux * bLen, by + py * rectW + uy * bLen);
+    ctx.lineTo(bx - px * rectW + ux * bLen, by - py * rectW + uy * bLen);
+    ctx.lineTo(bx - px * rectW, by - py * rectW);
+    ctx.closePath();
     ctx.stroke();
 
     if (label) {

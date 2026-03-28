@@ -1249,7 +1249,84 @@ function drawWaveforms() {
 }
 
 function updateExplanation() {
-    document.getElementById('explanation-panel').innerHTML = '<h3>Class ' + ampClass + '</h3><p>Explanation placeholder</p>';
+    const panel = document.getElementById('explanation-panel');
+    let html = '';
+
+    const isClipping = checkClipping();
+    const isBiasLow = (ampClass === 'A' && biasPoint < 20);
+    const isLowAmplitude = amplitude < 10 && amplitude > 0;
+
+    if (ampClass === 'A') {
+        html += '<h3>Class A — Full-Cycle Conduction</h3>';
+        html += '<p>The transistor is biased in the active region and conducts for the <strong>entire 360&deg;</strong> of the input cycle. ';
+        html += 'This provides the most linear amplification — the output is a faithful (inverted) replica of the input — but at the cost of efficiency.</p>';
+        html += '<p>The transistor is always on, continuously drawing current from the supply even with no input signal. ';
+        html += 'This means significant power is dissipated as heat in the transistor at all times.</p>';
+
+        if (isBiasLow) {
+            html += '<div class="physics-note"><strong>Asymmetric clipping:</strong> The Q-point is not centred on the load line. ';
+            html += 'The output will clip on one side of the waveform before the other, causing asymmetric distortion. ';
+            html += 'For optimal Class A operation, bias the Q-point at the midpoint of the load line.</div>';
+        } else if (isClipping) {
+            html += '<div class="physics-note"><strong>Clipping detected:</strong> The input amplitude is driving the transistor beyond its linear range. ';
+            html += 'The output is being clipped at the supply rails (V<sub>CC</sub>) or at saturation (V<sub>CE(sat)</sub>). ';
+            html += 'Reduce the input amplitude to restore linear operation.</div>';
+        } else {
+            html += '<div class="physics-note"><strong>Key physics:</strong> Conduction angle = 360&deg;. ';
+            html += 'Maximum theoretical efficiency = 25% (with resistive load) or 50% (with transformer-coupled load). ';
+            html += 'The Q-point sits at the centre of the load line for maximum symmetric swing.</div>';
+        }
+
+    } else if (ampClass === 'B') {
+        html += '<h3>Class B — Half-Cycle Conduction (Push-Pull)</h3>';
+        html += '<p>Two complementary transistors (NPN and PNP) each conduct for exactly <strong>180&deg;</strong> of the input cycle. ';
+        html += 'The NPN handles the positive half-cycle and the PNP handles the negative half-cycle.</p>';
+        html += '<p>With no input signal, both transistors are off — zero quiescent current means zero standby power dissipation. ';
+        html += 'This dramatically improves efficiency over Class A.</p>';
+
+        if (isLowAmplitude && (ampClass === 'B')) {
+            html += '<div class="physics-note"><strong>Crossover distortion visible:</strong> At low signal levels, the dead zone around the zero-crossing ';
+            html += 'becomes a significant fraction of the signal. Each transistor requires ~0.6V of base-emitter voltage to begin conducting, ';
+            html += 'creating a gap where neither transistor is on. This is most visible at low amplitudes like now.</div>';
+        } else if (isClipping) {
+            html += '<div class="physics-note"><strong>Clipping detected:</strong> The output is being limited by the supply voltage. ';
+            html += 'The maximum output swing is &plusmn;(V<sub>CC</sub> &minus; V<sub>CE(sat)</sub>).</div>';
+        } else {
+            html += '<div class="physics-note"><strong>Key physics:</strong> Conduction angle = 180&deg; per transistor. ';
+            html += 'Maximum theoretical efficiency = 78.5% (&pi;/4). ';
+            html += 'The trade-off is crossover distortion at zero-crossings due to the V<sub>BE</sub> turn-on threshold.</div>';
+        }
+
+    } else {
+        html += '<h3>Class AB — Best of Both Worlds</h3>';
+        html += '<p>This is a modified push-pull design where two biasing diodes provide a small forward voltage to both transistors. ';
+        html += 'Each transistor conducts for <strong>slightly more than 180&deg;</strong>, ensuring there is always at least one transistor conducting — even at zero-crossings.</p>';
+        html += '<p>The diodes (D1, D2) create approximately 1.2V of bias, keeping both transistors just barely on. ';
+        html += 'This eliminates the crossover distortion of Class B while maintaining most of its efficiency advantage.</p>';
+
+        if (isLowAmplitude) {
+            html += '<div class="physics-note"><strong>Smooth crossover:</strong> Unlike Class B, notice that the output transitions smoothly through zero. ';
+            html += 'The small standing bias current from the diodes keeps both transistors in a slightly conducting state, ';
+            html += 'bridging the gap that causes crossover distortion in Class B.</div>';
+        } else if (isClipping) {
+            html += '<div class="physics-note"><strong>Clipping detected:</strong> The output is being limited by the supply rails. ';
+            html += 'Reduce input amplitude to restore linear operation.</div>';
+        } else {
+            html += '<div class="physics-note"><strong>Key physics:</strong> Conduction angle slightly &gt; 180&deg; per transistor. ';
+            html += 'Typical efficiency 50&ndash;60%, significantly better than Class A (25%) while maintaining much better linearity than Class B. ';
+            html += 'This is the most commonly used class in audio amplifiers and biomedical instrumentation.</div>';
+        }
+    }
+
+    panel.innerHTML = html;
+}
+
+function checkClipping() {
+    if (waveHistory.length < 10) return false;
+    const recent = waveHistory.slice(-50);
+    const maxOut = Math.max(...recent.map(s => Math.abs(s.vout)));
+    const expectedMax = vinPeak * GAIN;
+    return expectedMax > 0 && (maxOut / expectedMax) < 0.85;
 }
 
 // ─── Initial render ───

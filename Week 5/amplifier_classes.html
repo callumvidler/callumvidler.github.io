@@ -506,14 +506,614 @@ function updateAll() {
     updateExplanation();
 }
 
+// ─── Drawing helpers ───
+function drawResistor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const teeth = 6;
+    const bodyStart = len * 0.2;
+    const bodyEnd = len * 0.8;
+    const bodyLen = bodyEnd - bodyStart;
+    const amp = 5;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + ux * bodyStart, y1 + uy * bodyStart);
+
+    for (let i = 0; i <= teeth; i++) {
+        const t = bodyStart + (i / teeth) * bodyLen;
+        const side = (i % 2 === 0) ? amp : -amp;
+        if (i === 0 || i === teeth) {
+            ctx.lineTo(x1 + ux * t, y1 + uy * t);
+        } else {
+            ctx.lineTo(x1 + ux * t + px * side, y1 + uy * t + py * side);
+        }
+    }
+
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    if (label) {
+        ctx.save();
+        ctx.font = labelFont;
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const mx = (x1 + x2) / 2 + px * 14;
+        const my = (y1 + y2) / 2 + py * 14;
+        ctx.fillText(label, mx, my);
+        ctx.restore();
+    }
+}
+
+function drawCapacitor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const gap = 3;
+    const plateLen = 8;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(mx - ux * gap, my - uy * gap);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx - ux * gap + px * plateLen, my - uy * gap + py * plateLen);
+    ctx.lineTo(mx - ux * gap - px * plateLen, my - uy * gap - py * plateLen);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * gap + px * plateLen, my + uy * gap + py * plateLen);
+    ctx.lineTo(mx + ux * gap - px * plateLen, my + uy * gap - py * plateLen);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * gap, my + uy * gap);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    if (label) {
+        ctx.save();
+        ctx.font = labelFont;
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, mx + px * 14, my + py * 14);
+        ctx.restore();
+    }
+}
+
+function drawNPNTransistor(ctx, x, y, scale, labelColor, labelFont) {
+    const s = scale || 1;
+    ctx.beginPath();
+    ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+
+    ctx.beginPath();
+    ctx.moveTo(x - 16 * s, y);
+    ctx.lineTo(x - 6 * s, y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 10 * s);
+    ctx.lineTo(x - 6 * s, y + 10 * s);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 6 * s);
+    ctx.lineTo(x + 10 * s, y - 14 * s);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y + 6 * s);
+    ctx.lineTo(x + 10 * s, y + 14 * s);
+    ctx.stroke();
+
+    const ax = x + 10 * s, ay = y + 14 * s;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - 6 * s, ay - 2 * s);
+    ctx.lineTo(ax - 3 * s, ay - 6 * s);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('B', x - 22 * s, y + 4);
+    ctx.fillText('C', x + 16 * s, y - 16 * s);
+    ctx.fillText('E', x + 16 * s, y + 18 * s);
+    ctx.restore();
+}
+
+function drawPNPTransistor(ctx, x, y, scale, labelColor, labelFont) {
+    const s = scale || 1;
+    ctx.beginPath();
+    ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+
+    ctx.beginPath();
+    ctx.moveTo(x - 16 * s, y);
+    ctx.lineTo(x - 6 * s, y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 10 * s);
+    ctx.lineTo(x - 6 * s, y + 10 * s);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y + 6 * s);
+    ctx.lineTo(x + 10 * s, y + 14 * s);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 6 * s);
+    ctx.lineTo(x + 10 * s, y - 14 * s);
+    ctx.stroke();
+
+    const bx = x - 6 * s, by = y - 6 * s;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + 6 * s, by - 2 * s);
+    ctx.lineTo(bx + 3 * s, by - 6 * s);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('B', x - 22 * s, y + 4);
+    ctx.fillText('E', x + 16 * s, y - 16 * s);
+    ctx.fillText('C', x + 16 * s, y + 18 * s);
+    ctx.restore();
+}
+
+function drawDiode(ctx, x1, y1, x2, y2) {
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const triSize = 6;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(mx - ux * triSize, my - uy * triSize);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx - ux * triSize + px * triSize, my - uy * triSize + py * triSize);
+    ctx.lineTo(mx - ux * triSize - px * triSize, my - uy * triSize - py * triSize);
+    ctx.lineTo(mx + ux * triSize, my + uy * triSize);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * triSize + px * triSize, my + uy * triSize + py * triSize);
+    ctx.lineTo(mx + ux * triSize - px * triSize, my + uy * triSize - py * triSize);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * triSize, my + uy * triSize);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+function drawGround(ctx, x, y) {
+    const w = 10;
+    ctx.beginPath();
+    ctx.moveTo(x - w, y); ctx.lineTo(x + w, y); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.6, y + 4); ctx.lineTo(x + w * 0.6, y + 4); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.25, y + 8); ctx.lineTo(x + w * 0.25, y + 8); ctx.stroke();
+}
+
+// ─── Class A: Common-Emitter ───
+function drawClassACircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
+    ctx.strokeStyle = lineColor;
+    const cx = w / 2;
+    const cy = h / 2 - 10;
+    const spread = Math.min(w, h) * 0.35;
+
+    // VCC rail at top
+    const vccY = cy - spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CC = ' + VCC + 'V', cx, vccY - 8);
+    ctx.restore();
+    ctx.beginPath();
+    ctx.moveTo(cx - spread * 0.6, vccY);
+    ctx.lineTo(cx + spread * 0.3, vccY);
+    ctx.strokeStyle = 'rgba(224,96,80,0.4)';
+    ctx.stroke();
+    ctx.strokeStyle = lineColor;
+
+    // R1 from VCC to base junction
+    const r1Top = vccY;
+    const r1Bot = cy - spread * 0.2;
+    const baseX = cx - spread * 0.3;
+    drawResistor(ctx, baseX, r1Top, baseX, r1Bot, 'R1', labelColor, labelFont);
+
+    // R2 from base junction to ground
+    const r2Top = r1Bot;
+    const r2Bot = cy + spread * 0.6;
+    drawResistor(ctx, baseX, r2Top, baseX, r2Bot, 'R2', labelColor, labelFont);
+    drawGround(ctx, baseX, r2Bot + 5);
+
+    // Transistor
+    const qx = cx + spread * 0.05;
+    const qy = cy + spread * 0.1;
+    drawNPNTransistor(ctx, qx, qy, 1, labelColor, labelFont);
+
+    // Wire from R1/R2 junction to base
+    ctx.beginPath();
+    ctx.moveTo(baseX, r1Bot);
+    ctx.lineTo(qx - 16, qy);
+    ctx.stroke();
+
+    // RC from VCC to collector
+    const rcX = cx + spread * 0.3;
+    drawResistor(ctx, rcX, vccY, rcX, qy - 14, 'RC', labelColor, labelFont);
+    ctx.beginPath();
+    ctx.moveTo(qx + 10, qy - 14);
+    ctx.lineTo(rcX, qy - 14);
+    ctx.stroke();
+
+    // RE from emitter to ground
+    const reBot = cy + spread * 0.6;
+    drawResistor(ctx, rcX, qy + 14, rcX, reBot, 'RE', labelColor, labelFont);
+    ctx.beginPath();
+    ctx.moveTo(qx + 10, qy + 14);
+    ctx.lineTo(rcX, qy + 14);
+    ctx.stroke();
+    drawGround(ctx, rcX, reBot + 5);
+
+    // Bypass capacitor across RE
+    drawCapacitor(ctx, rcX + 20, qy + 14, rcX + 20, reBot, 'CE', labelColor, labelFont);
+    ctx.beginPath();
+    ctx.moveTo(rcX, qy + 14); ctx.lineTo(rcX + 20, qy + 14); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rcX, reBot); ctx.lineTo(rcX + 20, reBot); ctx.stroke();
+
+    // Input coupling capacitor
+    const cinX = baseX - spread * 0.35;
+    drawCapacitor(ctx, cinX, r1Bot, baseX, r1Bot, 'Cin', labelColor, labelFont);
+
+    // Vin label
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in', cinX - 5, r1Bot + 4);
+    ctx.restore();
+
+    // Output coupling capacitor
+    const coutX = rcX + spread * 0.35;
+    drawCapacitor(ctx, rcX, qy - 14, coutX, qy - 14, 'Cout', labelColor, labelFont);
+
+    // Vout label
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = activeColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', coutX + 5, qy - 14 + 4);
+    ctx.restore();
+}
+
+// ─── Class B: Push-Pull ───
+function drawClassBCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
+    ctx.strokeStyle = lineColor;
+    const cx = w / 2;
+    const cy = h / 2;
+    const spread = Math.min(w, h) * 0.35;
+
+    const vccY = cy - spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CC = +' + VCC + 'V', cx + spread * 0.15, vccY - 8);
+    ctx.restore();
+
+    const veeY = cy + spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_EE = −' + VCC + 'V', cx + spread * 0.15, veeY + 16);
+    ctx.restore();
+
+    const npnY = cy - spread * 0.25;
+    drawNPNTransistor(ctx, cx, npnY, 1, labelColor, labelFont);
+
+    const pnpY = cy + spread * 0.25;
+    drawPNPTransistor(ctx, cx, pnpY, 1, labelColor, labelFont);
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, vccY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, veeY);
+    ctx.stroke();
+
+    const outX = cx + spread * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY + 14);
+    ctx.lineTo(outX, npnY + 14);
+    ctx.lineTo(outX, pnpY - 14);
+    ctx.lineTo(cx + 10, pnpY - 14);
+    ctx.stroke();
+
+    const midY = cy;
+    const coutX = outX + spread * 0.4;
+    drawCapacitor(ctx, outX, midY, coutX, midY, 'Cout', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = activeColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', coutX + 5, midY + 4);
+    ctx.restore();
+
+    const baseJoinX = cx - 16;
+    ctx.beginPath();
+    ctx.moveTo(baseJoinX, npnY);
+    ctx.lineTo(baseJoinX, pnpY);
+    ctx.stroke();
+
+    const cinX = baseJoinX - spread * 0.4;
+    drawCapacitor(ctx, cinX, cy, baseJoinX, cy, 'Cin', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in', cinX - 5, cy + 4);
+    ctx.restore();
+
+    const rlX = coutX + 25;
+    drawResistor(ctx, rlX, midY, rlX, midY + spread * 0.5, 'RL', labelColor, labelFont);
+    ctx.beginPath(); ctx.moveTo(coutX, midY); ctx.lineTo(rlX, midY); ctx.stroke();
+    drawGround(ctx, rlX, midY + spread * 0.5 + 5);
+}
+
+// ─── Class AB: Biased Push-Pull ───
+function drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
+    ctx.strokeStyle = lineColor;
+    const cx = w / 2;
+    const cy = h / 2;
+    const spread = Math.min(w, h) * 0.35;
+
+    const vccY = cy - spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CC = +' + VCC + 'V', cx + spread * 0.15, vccY - 8);
+    ctx.restore();
+
+    const veeY = cy + spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_EE = −' + VCC + 'V', cx + spread * 0.15, veeY + 16);
+    ctx.restore();
+
+    const npnY = cy - spread * 0.3;
+    drawNPNTransistor(ctx, cx, npnY, 1, labelColor, labelFont);
+
+    const pnpY = cy + spread * 0.3;
+    drawPNPTransistor(ctx, cx, pnpY, 1, labelColor, labelFont);
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, vccY);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, veeY);
+    ctx.stroke();
+
+    const outX = cx + spread * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY + 14);
+    ctx.lineTo(outX, npnY + 14);
+    ctx.lineTo(outX, pnpY - 14);
+    ctx.lineTo(cx + 10, pnpY - 14);
+    ctx.stroke();
+
+    const midY = cy;
+    const coutX = outX + spread * 0.4;
+    drawCapacitor(ctx, outX, midY, coutX, midY, 'Cout', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = activeColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', coutX + 5, midY + 4);
+    ctx.restore();
+
+    // Two diodes between bases for bias
+    const baseX = cx - 16;
+    const diodeGap = spread * 0.08;
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, npnY);
+    ctx.lineTo(baseX, cy - diodeGap - 12);
+    ctx.stroke();
+
+    drawDiode(ctx, baseX, cy - diodeGap - 12, baseX, cy - diodeGap + 2);
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, cy - diodeGap + 2);
+    ctx.lineTo(baseX, cy + diodeGap - 2);
+    ctx.stroke();
+
+    drawDiode(ctx, baseX, cy + diodeGap - 2, baseX, cy + diodeGap + 12);
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, cy + diodeGap + 12);
+    ctx.lineTo(baseX, pnpY);
+    ctx.stroke();
+
+    const cinX = baseX - spread * 0.4;
+    drawCapacitor(ctx, cinX, cy, baseX, cy, 'Cin', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in', cinX - 5, cy + 4);
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('D1', baseX + 8, cy - diodeGap);
+    ctx.fillText('D2', baseX + 8, cy + diodeGap);
+    ctx.restore();
+
+    const rlX = coutX + 25;
+    drawResistor(ctx, rlX, midY, rlX, midY + spread * 0.5, 'RL', labelColor, labelFont);
+    ctx.beginPath(); ctx.moveTo(coutX, midY); ctx.lineTo(rlX, midY); ctx.stroke();
+    drawGround(ctx, rlX, midY + spread * 0.5 + 5);
+}
+
+// ─── Load Line Inset ───
+function drawLoadLineInset(ctx, w, h) {
+    const insetW = 100;
+    const insetH = 70;
+    const ix = w - insetW - 12;
+    const iy = h - insetH - 12;
+    const pad = 15;
+
+    ctx.fillStyle = 'rgba(26,26,30,0.85)';
+    ctx.fillRect(ix, iy, insetW, insetH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ix, iy, insetW, insetH);
+
+    const ox = ix + pad;
+    const oy = iy + insetH - pad;
+    const axW = insetW - pad * 2;
+    const axH = insetH - pad * 2;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(ox, oy - axH);
+    ctx.lineTo(ox, oy);
+    ctx.lineTo(ox + axW, oy);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.font = '8px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CE', ox + axW / 2, oy + 11);
+    ctx.textAlign = 'right';
+    ctx.fillText('I_C', ox - 3, oy - axH / 2);
+    ctx.restore();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy - axH);
+    ctx.lineTo(ox + axW, oy);
+    ctx.stroke();
+
+    const qFrac = biasPoint / 100;
+    const qx = ox + axW * (1 - qFrac);
+    const qy = oy - axH * qFrac;
+
+    ctx.beginPath();
+    ctx.arc(qx, qy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#e06050';
+    ctx.fill();
+
+    if (amplitude > 0) {
+        const swingFrac = (amplitude / 100) * 0.3;
+        const s1Frac = Math.max(0, qFrac - swingFrac);
+        const s2Frac = Math.min(1, qFrac + swingFrac);
+
+        ctx.strokeStyle = 'rgba(106,170,142,0.5)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(ox + axW * (1 - s2Frac), oy - axH * s2Frac);
+        ctx.lineTo(ox + axW * (1 - s1Frac), oy - axH * s1Frac);
+        ctx.stroke();
+    }
+
+    ctx.lineWidth = 1.5;
+
+    ctx.save();
+    ctx.font = '600 8px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'left';
+    ctx.fillText('Q', qx + 5, qy - 3);
+    ctx.restore();
+}
+
 function drawCircuit() {
     const ctx = circuitCtx;
     const { w, h } = circuitSize;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#a0a0a0';
-    ctx.font = '14px "IBM Plex Sans", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Circuit — Class ' + ampClass, w / 2, h / 2);
+
+    const lineColor = 'rgba(255,255,255,0.5)';
+    const activeColor = '#6aaa8e';
+    const componentColor = 'rgba(255,255,255,0.7)';
+    const labelColor = '#a0a0a0';
+    const labelFont = '500 10px "IBM Plex Mono", monospace';
+    const titleFont = '500 11px "IBM Plex Sans", sans-serif';
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (ampClass === 'A') {
+        drawClassACircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+    } else if (ampClass === 'B') {
+        drawClassBCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+    } else {
+        drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+    }
+
+    drawLoadLineInset(ctx, w, h);
 }
 
 function drawWaveforms() {

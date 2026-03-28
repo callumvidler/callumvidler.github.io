@@ -508,14 +508,20 @@ function updateAll() {
 }
 
 // ─── Drawing helpers ───
+const RESISTOR_BODY = 30;  // fixed body length for all resistors
+const RESISTOR_W = 7;      // half-width of resistor rectangle
+
 function drawResistor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
     const dx = x2 - x1, dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy);
     const ux = dx / len, uy = dy / len;
     const px = -uy, py = ux;
-    const bodyStart = len * 0.2;
-    const bodyEnd = len * 0.8;
-    const rectW = 7;
+
+    // Centre the fixed-size body along the span
+    const mid = len / 2;
+    const halfBody = RESISTOR_BODY / 2;
+    const bodyStart = mid - halfBody;
+    const bodyEnd = mid + halfBody;
 
     // Lead wires
     ctx.beginPath();
@@ -531,12 +537,11 @@ function drawResistor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
     // Rectangle body
     const bx = x1 + ux * bodyStart;
     const by = y1 + uy * bodyStart;
-    const bLen = bodyEnd - bodyStart;
     ctx.beginPath();
-    ctx.moveTo(bx + px * rectW, by + py * rectW);
-    ctx.lineTo(bx + px * rectW + ux * bLen, by + py * rectW + uy * bLen);
-    ctx.lineTo(bx - px * rectW + ux * bLen, by - py * rectW + uy * bLen);
-    ctx.lineTo(bx - px * rectW, by - py * rectW);
+    ctx.moveTo(bx + px * RESISTOR_W, by + py * RESISTOR_W);
+    ctx.lineTo(bx + px * RESISTOR_W + ux * RESISTOR_BODY, by + py * RESISTOR_W + uy * RESISTOR_BODY);
+    ctx.lineTo(bx - px * RESISTOR_W + ux * RESISTOR_BODY, by - py * RESISTOR_W + uy * RESISTOR_BODY);
+    ctx.lineTo(bx - px * RESISTOR_W, by - py * RESISTOR_W);
     ctx.closePath();
     ctx.stroke();
 
@@ -546,8 +551,8 @@ function drawResistor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
         ctx.fillStyle = labelColor;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        const mx = (x1 + x2) / 2 + px * 14;
-        const my = (y1 + y2) / 2 + py * 14;
+        const mx = (x1 + x2) / 2 + px * 16;
+        const my = (y1 + y2) / 2 + py * 16;
         ctx.fillText(label, mx, my);
         ctx.restore();
     }
@@ -739,284 +744,354 @@ function drawGround(ctx, x, y) {
 // ─── Class A: Common-Emitter ───
 function drawClassACircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
     ctx.strokeStyle = lineColor;
-    const cx = w / 2;
-    const cy = h / 2 - 10;
-    const spread = Math.min(w, h) * 0.35;
 
-    // VCC rail at top
-    const vccY = cy - spread * 0.8;
+    // Grid-based layout — all coordinates on a strict grid for clean routing
+    const mx = w / 2;
+    const my = h / 2;
+    const s = Math.min(w, h);
+
+    // Column positions (x)
+    const colIn   = mx - s * 0.32;   // input / Cin
+    const colBias = mx - s * 0.16;   // R1, R2 bias divider
+    const colQ    = mx + s * 0.02;   // transistor center
+    const colRC   = mx + s * 0.18;   // RC, RE column
+    const colCE   = mx + s * 0.26;   // bypass cap
+    const colOut  = mx + s * 0.36;   // output / Cout
+
+    // Row positions (y)
+    const rowVCC  = my - s * 0.32;   // VCC rail
+    const rowBase = my - s * 0.06;   // base / R1-R2 junction
+    const rowQ    = my + s * 0.02;   // transistor center
+    const rowGnd  = my + s * 0.30;   // ground line
+
+    // Transistor pin offsets (from center)
+    const qBaseX = colQ - 16;
+    const qCollY = rowQ - 14;
+    const qEmitY = rowQ + 14;
+    const qCollX = colQ + 10;
+    const qEmitX = colQ + 10;
+
+    // ── VCC rail ──
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#e06050';
     ctx.textAlign = 'center';
-    ctx.fillText('V_CC = ' + VCC + 'V', cx, vccY - 8);
+    ctx.fillText('VCC = ' + VCC + 'V', mx, rowVCC - 8);
     ctx.restore();
     ctx.beginPath();
-    ctx.moveTo(cx - spread * 0.6, vccY);
-    ctx.lineTo(cx + spread * 0.3, vccY);
+    ctx.moveTo(colBias, rowVCC);
+    ctx.lineTo(colRC, rowVCC);
     ctx.strokeStyle = 'rgba(224,96,80,0.4)';
     ctx.stroke();
     ctx.strokeStyle = lineColor;
 
-    // R1 from VCC to base junction
-    const r1Top = vccY;
-    const r1Bot = cy - spread * 0.2;
-    const baseX = cx - spread * 0.3;
-    drawResistor(ctx, baseX, r1Top, baseX, r1Bot, 'R1', labelColor, labelFont);
+    // ── R1: VCC to base junction (vertical) ──
+    drawResistor(ctx, colBias, rowVCC, colBias, rowBase, 'R1', labelColor, labelFont);
 
-    // R2 from base junction to ground
-    const r2Top = r1Bot;
-    const r2Bot = cy + spread * 0.6;
-    drawResistor(ctx, baseX, r2Top, baseX, r2Bot, 'R2', labelColor, labelFont);
-    drawGround(ctx, baseX, r2Bot + 5);
+    // ── R2: base junction to ground (vertical) ──
+    drawResistor(ctx, colBias, rowBase, colBias, rowGnd, 'R2', labelColor, labelFont);
+    drawGround(ctx, colBias, rowGnd + 5);
 
-    // Transistor
-    const qx = cx + spread * 0.05;
-    const qy = cy + spread * 0.1;
-    drawNPNTransistor(ctx, qx, qy, 1, labelColor, labelFont);
+    // ── Transistor ──
+    drawNPNTransistor(ctx, colQ, rowQ, 1, labelColor, labelFont);
 
-    // Wire from R1/R2 junction to base
+    // ── Wire: R1/R2 junction to base (L-shaped: horizontal then nothing — same row) ──
     ctx.beginPath();
-    ctx.moveTo(baseX, r1Bot);
-    ctx.lineTo(qx - 16, qy);
+    ctx.moveTo(colBias, rowBase);
+    ctx.lineTo(qBaseX, rowBase);   // horizontal to base x
+    ctx.lineTo(qBaseX, rowQ);      // vertical down to base pin
     ctx.stroke();
 
-    // RC from VCC to collector
-    const rcX = cx + spread * 0.3;
-    drawResistor(ctx, rcX, vccY, rcX, qy - 14, 'RC', labelColor, labelFont);
+    // ── RC: VCC to collector level (vertical) ──
+    drawResistor(ctx, colRC, rowVCC, colRC, qCollY, 'RC', labelColor, labelFont);
+    // Horizontal wire: collector pin to RC column
     ctx.beginPath();
-    ctx.moveTo(qx + 10, qy - 14);
-    ctx.lineTo(rcX, qy - 14);
+    ctx.moveTo(qCollX, qCollY);
+    ctx.lineTo(colRC, qCollY);
     ctx.stroke();
 
-    // RE from emitter to ground
-    const reBot = cy + spread * 0.6;
-    drawResistor(ctx, rcX, qy + 14, rcX, reBot, 'RE', labelColor, labelFont);
+    // ── RE: emitter to ground (vertical) ──
+    drawResistor(ctx, colRC, qEmitY, colRC, rowGnd, 'RE', labelColor, labelFont);
+    // Horizontal wire: emitter pin to RE column
     ctx.beginPath();
-    ctx.moveTo(qx + 10, qy + 14);
-    ctx.lineTo(rcX, qy + 14);
+    ctx.moveTo(qEmitX, qEmitY);
+    ctx.lineTo(colRC, qEmitY);
     ctx.stroke();
-    drawGround(ctx, rcX, reBot + 5);
+    drawGround(ctx, colRC, rowGnd + 5);
 
-    // Bypass capacitor across RE
-    drawCapacitor(ctx, rcX + 20, qy + 14, rcX + 20, reBot, 'CE', labelColor, labelFont);
+    // ── CE: bypass capacitor across RE ──
+    drawCapacitor(ctx, colCE, qEmitY, colCE, rowGnd, 'CE', labelColor, labelFont);
     ctx.beginPath();
-    ctx.moveTo(rcX, qy + 14); ctx.lineTo(rcX + 20, qy + 14); ctx.stroke();
+    ctx.moveTo(colRC, qEmitY); ctx.lineTo(colCE, qEmitY); ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(rcX, reBot); ctx.lineTo(rcX + 20, reBot); ctx.stroke();
+    ctx.moveTo(colRC, rowGnd); ctx.lineTo(colCE, rowGnd); ctx.stroke();
 
-    // Input coupling capacitor
-    const cinX = baseX - spread * 0.35;
-    drawCapacitor(ctx, cinX, r1Bot, baseX, r1Bot, 'Cin', labelColor, labelFont);
+    // ── Cin: input coupling capacitor (horizontal) ──
+    drawCapacitor(ctx, colIn, rowBase, colBias, rowBase, 'Cin', labelColor, labelFont);
 
-    // Vin label
+    // ── Vin label ──
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#5080d0';
     ctx.textAlign = 'right';
-    ctx.fillText('v_in', cinX - 5, r1Bot + 4);
+    ctx.fillText('v_in', colIn - 5, rowBase + 4);
     ctx.restore();
 
-    // Output coupling capacitor
-    const coutX = rcX + spread * 0.35;
-    drawCapacitor(ctx, rcX, qy - 14, coutX, qy - 14, 'Cout', labelColor, labelFont);
+    // ── Cout: output coupling capacitor (horizontal at collector level) ──
+    drawCapacitor(ctx, colRC, qCollY, colOut, qCollY, 'Cout', labelColor, labelFont);
 
-    // Vout label
+    // ── Vout label ──
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = activeColor;
     ctx.textAlign = 'left';
-    ctx.fillText('v_out', coutX + 5, qy - 14 + 4);
+    ctx.fillText('v_out', colOut + 5, qCollY + 4);
     ctx.restore();
 }
 
 // ─── Class B: Push-Pull ───
 function drawClassBCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
     ctx.strokeStyle = lineColor;
-    const cx = w / 2;
-    const cy = h / 2;
-    const spread = Math.min(w, h) * 0.35;
+    const mx = w / 2;
+    const my = h / 2;
+    const s = Math.min(w, h);
 
-    const vccY = cy - spread * 0.8;
+    // Column positions
+    const colIn   = mx - s * 0.30;
+    const colBase = mx - s * 0.08;   // base join line
+    const colQ    = mx + s * 0.08;   // transistor centers
+    const colRail = mx + s * 0.22;   // VCC/VEE rail + emitter join
+    const colCout = mx + s * 0.36;   // Cout end
+    const colRL   = mx + s * 0.36;   // RL column (same as Cout end)
+
+    // Row positions
+    const rowVCC  = my - s * 0.32;
+    const rowNPN  = my - s * 0.12;
+    const rowMid  = my;
+    const rowPNP  = my + s * 0.12;
+    const rowVEE  = my + s * 0.32;
+    const rowGnd  = my + s * 0.28;
+
+    // NPN and PNP transistor pin offsets
+    const npnCollY = rowNPN - 14;
+    const npnEmitY = rowNPN + 14;
+    const pnpCollY = rowPNP + 14;
+    const pnpEmitY = rowPNP - 14;
+    const pinOutX  = colQ + 10;
+
+    // ── VCC label ──
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#e06050';
     ctx.textAlign = 'center';
-    ctx.fillText('V_CC = +' + VCC + 'V', cx + spread * 0.15, vccY - 8);
+    ctx.fillText('VCC = +' + VCC + 'V', colRail, rowVCC - 8);
     ctx.restore();
 
-    const veeY = cy + spread * 0.8;
+    // ── VEE label ──
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#5080d0';
     ctx.textAlign = 'center';
-    ctx.fillText('V_EE = −' + VCC + 'V', cx + spread * 0.15, veeY + 16);
+    ctx.fillText('VEE = −' + VCC + 'V', colRail, rowVEE + 14);
     ctx.restore();
 
-    const npnY = cy - spread * 0.25;
-    drawNPNTransistor(ctx, cx, npnY, 1, labelColor, labelFont);
+    // ── Transistors ──
+    drawNPNTransistor(ctx, colQ, rowNPN, 1, labelColor, labelFont);
+    drawPNPTransistor(ctx, colQ, rowPNP, 1, labelColor, labelFont);
 
-    const pnpY = cy + spread * 0.25;
-    drawPNPTransistor(ctx, cx, pnpY, 1, labelColor, labelFont);
-
+    // ── NPN collector to VCC (vertical via rail column) ──
     ctx.beginPath();
-    ctx.moveTo(cx + 10, npnY - 14);
-    ctx.lineTo(cx + spread * 0.15, npnY - 14);
-    ctx.lineTo(cx + spread * 0.15, vccY);
+    ctx.moveTo(pinOutX, npnCollY);
+    ctx.lineTo(colRail, npnCollY);
+    ctx.lineTo(colRail, rowVCC);
     ctx.stroke();
 
+    // ── PNP collector to VEE (vertical via rail column) ──
     ctx.beginPath();
-    ctx.moveTo(cx + 10, pnpY + 14);
-    ctx.lineTo(cx + spread * 0.15, pnpY + 14);
-    ctx.lineTo(cx + spread * 0.15, veeY);
+    ctx.moveTo(pinOutX, pnpCollY);
+    ctx.lineTo(colRail, pnpCollY);
+    ctx.lineTo(colRail, rowVEE);
     ctx.stroke();
 
-    const outX = cx + spread * 0.15;
+    // ── Emitter join (output node) — NPN emitter down, PNP emitter up, meet at midpoint ──
     ctx.beginPath();
-    ctx.moveTo(cx + 10, npnY + 14);
-    ctx.lineTo(outX, npnY + 14);
-    ctx.lineTo(outX, pnpY - 14);
-    ctx.lineTo(cx + 10, pnpY - 14);
+    ctx.moveTo(pinOutX, npnEmitY);
+    ctx.lineTo(colRail, npnEmitY);
+    ctx.lineTo(colRail, rowMid);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pinOutX, pnpEmitY);
+    ctx.lineTo(colRail, pnpEmitY);
+    ctx.lineTo(colRail, rowMid);
     ctx.stroke();
 
-    const midY = cy;
-    const coutX = outX + spread * 0.4;
-    drawCapacitor(ctx, outX, midY, coutX, midY, 'Cout', labelColor, labelFont);
+    // ── Cout (horizontal from output node) ──
+    drawCapacitor(ctx, colRail, rowMid, colCout, rowMid, 'Cout', labelColor, labelFont);
 
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = activeColor;
     ctx.textAlign = 'left';
-    ctx.fillText('v_out', coutX + 5, midY + 4);
+    ctx.fillText('v_out', colCout + 5, rowMid + 4);
     ctx.restore();
 
-    const baseJoinX = cx - 16;
+    // ── Base join line (vertical between NPN and PNP bases) ──
+    const baseX = colQ - 16;
     ctx.beginPath();
-    ctx.moveTo(baseJoinX, npnY);
-    ctx.lineTo(baseJoinX, pnpY);
+    ctx.moveTo(baseX, rowNPN);
+    ctx.lineTo(baseX, rowPNP);
     ctx.stroke();
 
-    const cinX = baseJoinX - spread * 0.4;
-    drawCapacitor(ctx, cinX, cy, baseJoinX, cy, 'Cin', labelColor, labelFont);
+    // ── Cin (horizontal to base join) ──
+    drawCapacitor(ctx, colIn, rowMid, baseX, rowMid, 'Cin', labelColor, labelFont);
 
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#5080d0';
     ctx.textAlign = 'right';
-    ctx.fillText('v_in', cinX - 5, cy + 4);
+    ctx.fillText('v_in', colIn - 5, rowMid + 4);
     ctx.restore();
 
-    const rlX = coutX + 25;
-    drawResistor(ctx, rlX, midY, rlX, midY + spread * 0.5, 'RL', labelColor, labelFont);
-    ctx.beginPath(); ctx.moveTo(coutX, midY); ctx.lineTo(rlX, midY); ctx.stroke();
-    drawGround(ctx, rlX, midY + spread * 0.5 + 5);
+    // ── RL: load resistor (vertical from Cout output to ground) ──
+    drawResistor(ctx, colRL, rowMid, colRL, rowGnd, 'RL', labelColor, labelFont);
+    drawGround(ctx, colRL, rowGnd + 5);
 }
 
 // ─── Class AB: Biased Push-Pull ───
 function drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
     ctx.strokeStyle = lineColor;
-    const cx = w / 2;
-    const cy = h / 2;
-    const spread = Math.min(w, h) * 0.35;
+    const mx = w / 2;
+    const my = h / 2;
+    const s = Math.min(w, h);
 
-    const vccY = cy - spread * 0.8;
+    // Same grid as Class B but with more vertical space for diodes
+    const colIn   = mx - s * 0.30;
+    const colBase = mx - s * 0.08;
+    const colQ    = mx + s * 0.08;
+    const colRail = mx + s * 0.22;
+    const colCout = mx + s * 0.36;
+    const colRL   = mx + s * 0.36;
+
+    const rowVCC  = my - s * 0.34;
+    const rowNPN  = my - s * 0.14;
+    const rowMid  = my;
+    const rowPNP  = my + s * 0.14;
+    const rowVEE  = my + s * 0.34;
+    const rowGnd  = my + s * 0.28;
+
+    const npnCollY = rowNPN - 14;
+    const npnEmitY = rowNPN + 14;
+    const pnpCollY = rowPNP + 14;
+    const pnpEmitY = rowPNP - 14;
+    const pinOutX  = colQ + 10;
+
+    // ── VCC label ──
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#e06050';
     ctx.textAlign = 'center';
-    ctx.fillText('V_CC = +' + VCC + 'V', cx + spread * 0.15, vccY - 8);
+    ctx.fillText('VCC = +' + VCC + 'V', colRail, rowVCC - 8);
     ctx.restore();
 
-    const veeY = cy + spread * 0.8;
+    // ── VEE label ──
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#5080d0';
     ctx.textAlign = 'center';
-    ctx.fillText('V_EE = −' + VCC + 'V', cx + spread * 0.15, veeY + 16);
+    ctx.fillText('VEE = −' + VCC + 'V', colRail, rowVEE + 14);
     ctx.restore();
 
-    const npnY = cy - spread * 0.3;
-    drawNPNTransistor(ctx, cx, npnY, 1, labelColor, labelFont);
+    // ── Transistors ──
+    drawNPNTransistor(ctx, colQ, rowNPN, 1, labelColor, labelFont);
+    drawPNPTransistor(ctx, colQ, rowPNP, 1, labelColor, labelFont);
 
-    const pnpY = cy + spread * 0.3;
-    drawPNPTransistor(ctx, cx, pnpY, 1, labelColor, labelFont);
-
+    // ── NPN collector to VCC ──
     ctx.beginPath();
-    ctx.moveTo(cx + 10, npnY - 14);
-    ctx.lineTo(cx + spread * 0.15, npnY - 14);
-    ctx.lineTo(cx + spread * 0.15, vccY);
+    ctx.moveTo(pinOutX, npnCollY);
+    ctx.lineTo(colRail, npnCollY);
+    ctx.lineTo(colRail, rowVCC);
     ctx.stroke();
 
+    // ── PNP collector to VEE ──
     ctx.beginPath();
-    ctx.moveTo(cx + 10, pnpY + 14);
-    ctx.lineTo(cx + spread * 0.15, pnpY + 14);
-    ctx.lineTo(cx + spread * 0.15, veeY);
+    ctx.moveTo(pinOutX, pnpCollY);
+    ctx.lineTo(colRail, pnpCollY);
+    ctx.lineTo(colRail, rowVEE);
     ctx.stroke();
 
-    const outX = cx + spread * 0.15;
+    // ── Emitter join (output node) ──
     ctx.beginPath();
-    ctx.moveTo(cx + 10, npnY + 14);
-    ctx.lineTo(outX, npnY + 14);
-    ctx.lineTo(outX, pnpY - 14);
-    ctx.lineTo(cx + 10, pnpY - 14);
+    ctx.moveTo(pinOutX, npnEmitY);
+    ctx.lineTo(colRail, npnEmitY);
+    ctx.lineTo(colRail, rowMid);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pinOutX, pnpEmitY);
+    ctx.lineTo(colRail, pnpEmitY);
+    ctx.lineTo(colRail, rowMid);
     ctx.stroke();
 
-    const midY = cy;
-    const coutX = outX + spread * 0.4;
-    drawCapacitor(ctx, outX, midY, coutX, midY, 'Cout', labelColor, labelFont);
+    // ── Cout ──
+    drawCapacitor(ctx, colRail, rowMid, colCout, rowMid, 'Cout', labelColor, labelFont);
 
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = activeColor;
     ctx.textAlign = 'left';
-    ctx.fillText('v_out', coutX + 5, midY + 4);
+    ctx.fillText('v_out', colCout + 5, rowMid + 4);
     ctx.restore();
 
-    // Two diodes between bases for bias
-    const baseX = cx - 16;
-    const diodeGap = spread * 0.08;
+    // ── Diodes between bases ──
+    const baseX = colQ - 16;
+    const d1Top = rowMid - 14;
+    const d1Bot = rowMid - 2;
+    const d2Top = rowMid + 2;
+    const d2Bot = rowMid + 14;
 
+    // Wire from NPN base down to D1
     ctx.beginPath();
-    ctx.moveTo(baseX, npnY);
-    ctx.lineTo(baseX, cy - diodeGap - 12);
+    ctx.moveTo(baseX, rowNPN);
+    ctx.lineTo(baseX, d1Top);
     ctx.stroke();
 
-    drawDiode(ctx, baseX, cy - diodeGap - 12, baseX, cy - diodeGap + 2);
+    drawDiode(ctx, baseX, d1Top, baseX, d1Bot);
 
+    // Wire between diodes
     ctx.beginPath();
-    ctx.moveTo(baseX, cy - diodeGap + 2);
-    ctx.lineTo(baseX, cy + diodeGap - 2);
+    ctx.moveTo(baseX, d1Bot);
+    ctx.lineTo(baseX, d2Top);
     ctx.stroke();
 
-    drawDiode(ctx, baseX, cy + diodeGap - 2, baseX, cy + diodeGap + 12);
+    drawDiode(ctx, baseX, d2Top, baseX, d2Bot);
 
+    // Wire from D2 to PNP base
     ctx.beginPath();
-    ctx.moveTo(baseX, cy + diodeGap + 12);
-    ctx.lineTo(baseX, pnpY);
+    ctx.moveTo(baseX, d2Bot);
+    ctx.lineTo(baseX, rowPNP);
     ctx.stroke();
 
-    const cinX = baseX - spread * 0.4;
-    drawCapacitor(ctx, cinX, cy, baseX, cy, 'Cin', labelColor, labelFont);
+    // Diode labels (offset to the right to avoid wire overlap)
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('D1', baseX + 10, d1Top + 6);
+    ctx.fillText('D2', baseX + 10, d2Top + 6);
+    ctx.restore();
+
+    // ── Cin (horizontal to midpoint of diode chain) ──
+    drawCapacitor(ctx, colIn, rowMid, baseX, rowMid, 'Cin', labelColor, labelFont);
 
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = '#5080d0';
     ctx.textAlign = 'right';
-    ctx.fillText('v_in', cinX - 5, cy + 4);
+    ctx.fillText('v_in', colIn - 5, rowMid + 4);
     ctx.restore();
 
-    ctx.save();
-    ctx.font = labelFont;
-    ctx.fillStyle = labelColor;
-    ctx.textAlign = 'left';
-    ctx.fillText('D1', baseX + 8, cy - diodeGap);
-    ctx.fillText('D2', baseX + 8, cy + diodeGap);
-    ctx.restore();
-
-    const rlX = coutX + 25;
-    drawResistor(ctx, rlX, midY, rlX, midY + spread * 0.5, 'RL', labelColor, labelFont);
-    ctx.beginPath(); ctx.moveTo(coutX, midY); ctx.lineTo(rlX, midY); ctx.stroke();
-    drawGround(ctx, rlX, midY + spread * 0.5 + 5);
+    // ── RL ──
+    drawResistor(ctx, colRL, rowMid, colRL, rowGnd, 'RL', labelColor, labelFont);
+    drawGround(ctx, colRL, rowGnd + 5);
 }
 
 // ─── Load Line Inset ───

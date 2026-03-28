@@ -381,8 +381,207 @@ function sizeCanvas(canvas) {
     return { w: rect.width, h: rect.height, ctx };
 }
 
-// ── Placeholder drawing functions ──────────────────────
-function drawCircuit() {}
+// ── Drawing helpers ───────────────────────────────────
+function drawSineWave(ctx, x, y, width, amp, gainFrac, phaseShift, wt, color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.8;
+    ctx.beginPath();
+    for (let i = 0; i <= width; i++) {
+        const t = (i / width) * Math.PI * 2;
+        const px = x + i;
+        const py = y - Math.sin(t + wt + phaseShift) * amp * gainFrac;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = 1.0;
+
+    // Label amplitude percentage
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.6;
+    ctx.font = '9px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText((gainFrac * 100).toFixed(0) + '%', x + width / 2, y + amp + 12);
+    ctx.globalAlpha = 1.0;
+}
+
+function drawSignalPulses(ctx, x1, x2, y, wt, gainFrac, color) {
+    ctx.globalAlpha = 0.4 * gainFrac + 0.1;
+    const len = x2 - x1;
+    const numPulses = 3;
+    for (let i = 0; i < numPulses; i++) {
+        const phase = (wt * 0.5 + i * (Math.PI * 2 / numPulses)) % (Math.PI * 2);
+        const t = phase / (Math.PI * 2);
+        const px = x1 + t * len;
+        const radius = 3 * gainFrac + 1;
+        ctx.beginPath();
+        ctx.arc(px, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+}
+
+// ── Circuit diagram ──────────────────────────────────
+function drawCircuit() {
+    const { w: W, h: H, ctx } = sizeCanvas(circuitCanvas);
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = 40;
+    const midY = H / 2;
+    const gndY = H * 0.75;
+    const xSrc = pad + 20;
+    const xAmp = W * 0.28;
+    const xR1 = W * 0.45;
+    const xR2 = W * 0.62;
+    const xOut = W * 0.72;
+    const xEnd = W - pad - 20;
+
+    const w0 = omega0();
+    const gainFrac = 1 / Math.sqrt(1 + (testFreq / w0) ** 2);
+    const phase = -Math.atan(testFreq / w0);
+    const wt = animTime * testFreq;
+
+    // ── Wires ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.lineWidth = 1.5;
+    // Input wire: xSrc -> amp
+    ctx.beginPath(); ctx.moveTo(xSrc, midY); ctx.lineTo(xAmp - 20, midY); ctx.stroke();
+    // Amp output -> resistor
+    ctx.beginPath(); ctx.moveTo(xAmp + 20, midY); ctx.lineTo(xR1, midY); ctx.stroke();
+    // After resistor -> end
+    ctx.beginPath(); ctx.moveTo(xR2, midY); ctx.lineTo(xEnd, midY); ctx.stroke();
+    // Output node down to capacitor/ground
+    ctx.beginPath(); ctx.moveTo(xOut, midY); ctx.lineTo(xOut, gndY - 20); ctx.stroke();
+
+    // ── Ground symbol ──
+    const gndTop = gndY - 10;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(xOut - 10, gndTop); ctx.lineTo(xOut + 10, gndTop); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xOut - 6, gndTop + 5); ctx.lineTo(xOut + 6, gndTop + 5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xOut - 3, gndTop + 10); ctx.lineTo(xOut + 3, gndTop + 10); ctx.stroke();
+
+    // ── Input source (circle with sine) ──
+    const srcX = xSrc - 14;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.arc(srcX, midY, 12, 0, Math.PI * 2);
+    ctx.stroke();
+    // Tiny sine inside
+    ctx.strokeStyle = '#ffcc44';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 8; i++) {
+        const t = (i / 8) * Math.PI * 2;
+        const px = srcX - 7 + (i / 8) * 14;
+        const py = midY - Math.sin(t) * 4;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    // Label
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('V\u1D62\u2099', srcX, midY - 18);
+
+    // ── Amplifier triangle ──
+    ctx.beginPath();
+    ctx.moveTo(xAmp - 20, midY - 20);
+    ctx.lineTo(xAmp + 20, midY);
+    ctx.lineTo(xAmp - 20, midY + 20);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(106,170,142,0.15)';
+    ctx.fill();
+    ctx.strokeStyle = '#6aaa8e';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Label
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = '12px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('A\u1D65', xAmp - 4, midY + 5);
+
+    // ── Resistor (zig-zag) ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xR1, midY);
+    const rLen = xR2 - xR1;
+    const zags = 6;
+    const zagW = rLen / zags;
+    const zagAmp = 8;
+    for (let i = 0; i < zags; i++) {
+        const x0 = xR1 + i * zagW;
+        ctx.lineTo(x0 + zagW * 0.25, midY - zagAmp);
+        ctx.lineTo(x0 + zagW * 0.75, midY + zagAmp);
+        ctx.lineTo(x0 + zagW, midY);
+    }
+    ctx.stroke();
+    // Labels
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('R', (xR1 + xR2) / 2, midY - zagAmp - 6);
+    ctx.font = '9px IBM Plex Mono, monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText(fmtR(R), (xR1 + xR2) / 2, midY + zagAmp + 14);
+
+    // ── Capacitor (two plates) ──
+    const capY = gndY - 20;
+    const capGap = 6;
+    const capW = 16;
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(xOut - capW / 2, capY - capGap / 2);
+    ctx.lineTo(xOut + capW / 2, capY - capGap / 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(xOut - capW / 2, capY + capGap / 2);
+    ctx.lineTo(xOut + capW / 2, capY + capGap / 2);
+    ctx.stroke();
+    // Labels
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('C', xOut + capW / 2 + 4, capY + 4);
+    ctx.font = '9px IBM Plex Mono, monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText(fmtC(C), xOut + capW / 2 + 4, capY + 16);
+
+    // ── Vout label and output dot ──
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = '11px IBM Plex Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Vout', xEnd, midY - 12);
+    // Output dot at xOut
+    ctx.beginPath();
+    ctx.arc(xOut, midY, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#6aaa8e';
+    ctx.fill();
+
+    // ── Animated sine waves ──
+    const sineW = 30;
+    const sineAmp = 14;
+    // Input sine
+    drawSineWave(ctx, xSrc + 6, midY - 28, sineW, sineAmp, 1.0, 0, wt, '#ffcc44');
+    // Output sine (attenuated + phase shifted)
+    drawSineWave(ctx, xOut - sineW / 2, midY - 28, sineW, sineAmp, gainFrac, phase, wt, '#6aaa8e');
+
+    // ── Animated signal pulses ──
+    // Amp to resistor (full amplitude, yellow)
+    drawSignalPulses(ctx, xAmp + 20, xR1, midY, wt, 1.0, '#ffcc44');
+    // Resistor to end (attenuated, green)
+    drawSignalPulses(ctx, xR2, xEnd, midY, wt, gainFrac, '#6aaa8e');
+
+    // ── Update frequency label ──
+    const freqLabel = document.getElementById('circuit-freq-label');
+    if (freqLabel) {
+        freqLabel.textContent = '\u03C9 = ' + fmtFreq(testFreq);
+    }
+}
 function drawBode() {
     const { w, h, ctx } = sizeCanvas(bodeCanvas);
 

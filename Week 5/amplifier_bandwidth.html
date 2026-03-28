@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Amplifier Bandwidth</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #1a1a1e;
+            --bg-panel: #222226;
+            --bg-card: #2a2a2f;
+            --border: rgba(255,255,255,0.08);
+            --accent: #6aaa8e;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --text-muted: #606060;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 0.55rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 3px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: var(--text-dim); text-decoration: none;
+            font-size: 11px; font-weight: 500; transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+
+        h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
+        .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 42px);
+            gap: 0;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+        .panel-header strong { color: var(--text); font-weight: 500; font-size: 0.75rem; }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        .panel-body canvas { display: block; width: 100%; height: 100%; }
+
+        /* Controls panel */
+        .controls-panel {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .ctrl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .ctrl-title {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.3rem;
+        }
+        .ctrl-row:last-child { margin-bottom: 0; }
+
+        .ctrl-row label {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            min-width: 55px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .ctrl-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            color: #fff;
+            min-width: 56px;
+            width: 80px;
+            text-align: right;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 3px;
+            padding: 2px 6px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn.active {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        /* Equations panel */
+        .eq-panel {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .eq-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .eq-title {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .equation {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.82rem;
+            color: #fff;
+            line-height: 1.8;
+            padding: 0.3rem 0;
+        }
+
+        .equation .dim {
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        .equation .highlight {
+            color: var(--accent);
+            transition: color 0.3s;
+        }
+
+        .regime-label {
+            display: inline-block;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.7rem;
+            font-weight: 500;
+            padding: 3px 10px;
+            border-radius: 3px;
+            background: rgba(106,170,142,0.15);
+            color: var(--accent);
+            border: 1px solid rgba(106,170,142,0.3);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            padding: 0.15rem 0;
+        }
+        .info-row .val {
+            font-family: 'IBM Plex Mono', monospace;
+            color: #fff;
+        }
+
+        .derived-readout {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--accent);
+            text-align: center;
+            padding: 0.4rem;
+            background: rgba(106,170,142,0.08);
+            border: 1px solid rgba(106,170,142,0.2);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <a href="../index.html" class="back-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+                <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+            </svg>
+            Back
+        </a>
+        <div>
+            <h1>Amplifier Bandwidth</h1>
+            <div class="header-sub">BMEN90033 · Week 5</div>
+        </div>
+    </div>
+</header>
+
+<div class="main-layout">
+    <!-- Top-left: Animated RC Circuit -->
+    <div class="panel">
+        <div class="panel-header"><strong>RC Circuit Model</strong><span id="circuit-freq-label">—</span></div>
+        <div class="panel-body"><canvas id="circuit-canvas"></canvas></div>
+    </div>
+    <!-- Top-right: Bode Plot -->
+    <div class="panel">
+        <div class="panel-header"><strong>Bode Magnitude Plot</strong><span id="bode-gain-label">—</span></div>
+        <div class="panel-body"><canvas id="bode-canvas"></canvas></div>
+    </div>
+    <!-- Bottom-left: Controls -->
+    <div class="controls-panel" id="controls-panel">
+        <!-- Controls content goes here -->
+    </div>
+    <!-- Bottom-right: Equations -->
+    <div class="eq-panel" id="eq-panel">
+        <!-- Equations content goes here -->
+    </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────
+let R = 10000;          // Ohms (default 10k)
+let C = 1e-9;           // Farads (default 1nF)
+let Av = 100;           // mid-band gain (linear)
+let testFreq = 1e5;     // rad/s
+
+function omega0() { return 1 / (R * C); }
+function gainAt(w) { return Av / Math.sqrt(1 + (w / omega0()) ** 2); }
+function gainDb(w) { return 20 * Math.log10(gainAt(w)); }
+
+// ── Canvas references ──────────────────────────────────
+let circuitCanvas, circuitCtx;
+let bodeCanvas, bodeCtx;
+
+// ── Resize helper ──────────────────────────────────────
+function sizeCanvas(canvas) {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.style.width = rect.width + 'px';
+    canvas.style.height = rect.height + 'px';
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height, ctx };
+}
+
+// ── Placeholder drawing functions ──────────────────────
+function drawCircuit() {}
+function drawBode() {}
+
+// ── Init ───────────────────────────────────────────────
+function init() {
+    circuitCanvas = document.getElementById('circuit-canvas');
+    bodeCanvas = document.getElementById('bode-canvas');
+    circuitCtx = circuitCanvas.getContext('2d');
+    bodeCtx = bodeCanvas.getContext('2d');
+
+    window.addEventListener('resize', () => {
+        drawBode();
+        drawCircuit();
+    });
+
+    requestAnimationFrame(animate);
+}
+
+let animTime = 0;
+let lastTime = 0;
+function animate(now) {
+    const dt = (now - lastTime) / 1000;
+    lastTime = now;
+    if (dt < 0.1) {
+        animTime += dt;
+    }
+    drawBode();
+    drawCircuit();
+    requestAnimationFrame(animate);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

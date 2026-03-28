@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Amplifier Classes — Interactive Explainer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #1a1a1e;
+            --bg-panel: #222226;
+            --bg-card: #2a2a2f;
+            --border: rgba(255,255,255,0.08);
+            --accent: #6aaa8e;
+            --accent-dim: #5a9a7e;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --text-muted: #606060;
+            --col-input: #5080d0;
+            --col-output: #6aaa8e;
+            --col-heat: #e06050;
+            --col-power-in: #5080d0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 0.55rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 3px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: var(--text-dim); text-decoration: none;
+            font-size: 11px; font-weight: 500; transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+
+        h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
+        .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 42px);
+            gap: 0;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+        .panel-header strong { color: var(--text); font-weight: 500; font-size: 0.75rem; }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        .panel-body canvas { display: block; width: 100%; height: 100%; }
+
+        /* Controls panel */
+        .controls-panel {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .ctrl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .ctrl-title {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.3rem;
+        }
+        .ctrl-row:last-child { margin-bottom: 0; }
+
+        .ctrl-row label {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .ctrl-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            color: #fff;
+            min-width: 56px;
+            text-align: right;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn.active {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        /* Power bars */
+        .power-bar-container {
+            margin-top: 4px;
+        }
+        .power-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .power-bar-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+        .power-bar-track {
+            flex: 1;
+            height: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .power-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.15s ease;
+        }
+        .power-bar-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            min-width: 42px;
+            text-align: right;
+        }
+        .efficiency-readout {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            padding: 4px 0;
+            color: var(--accent);
+        }
+
+        /* Explanation panel */
+        .explanation-panel {
+            padding: 0.75rem;
+            overflow-y: auto;
+            font-size: 0.78rem;
+            line-height: 1.6;
+            color: var(--text-dim);
+        }
+        .explanation-panel h3 {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+        .explanation-panel p {
+            margin-bottom: 0.5rem;
+        }
+        .physics-note {
+            background: rgba(106,170,142,0.08);
+            border: 1px solid rgba(106,170,142,0.2);
+            border-radius: 3px;
+            padding: 0.5rem 0.65rem;
+            margin-top: 0.5rem;
+            font-size: 0.72rem;
+            line-height: 1.5;
+        }
+        .physics-note strong {
+            color: var(--accent);
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 0.85rem;
+            font-size: 0.65rem;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-dim);
+        }
+        .legend-dot {
+            width: 8px; height: 8px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <a class="back-btn" href="../index.html">&larr; Back</a>
+        <div>
+            <h1>Amplifier Classes</h1>
+            <div class="header-sub">Week 5 &mdash; Amplifiers</div>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span id="efficiency-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:3px 8px;border-radius:3px;background:rgba(106,170,142,0.15);color:var(--accent);font-weight:500;">&eta; = 25%</span>
+    </div>
+</header>
+
+<div class="main-layout">
+    <!-- Top-left: Circuit schematic -->
+    <div class="panel">
+        <div class="panel-header">
+            <strong>Circuit Schematic</strong>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-input)"></div>V<sub>in</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-output)"></div>V<sub>out</sub></div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="circuit-canvas"></canvas></div>
+    </div>
+
+    <!-- Top-right: Waveforms -->
+    <div class="panel">
+        <div class="panel-header">
+            <strong>Input / Output Waveforms</strong>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-input)"></div>V<sub>in</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-output)"></div>V<sub>out</sub></div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="waveform-canvas"></canvas></div>
+    </div>
+
+    <!-- Bottom-left: Controls + Power -->
+    <div class="controls-panel">
+        <div class="ctrl-section">
+            <div class="ctrl-title">Amplifier Class</div>
+            <div class="btn-group">
+                <button class="toggle-btn active" id="btn-classA" onclick="setClass('A')">Class A</button>
+                <button class="toggle-btn" id="btn-classB" onclick="setClass('B')">Class B</button>
+                <button class="toggle-btn" id="btn-classAB" onclick="setClass('AB')">Class AB</button>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Input Signal</div>
+            <div class="ctrl-row">
+                <label>Amplitude</label>
+                <input type="range" id="sl-amplitude" min="0" max="100" value="30" oninput="setAmplitude(this.value)">
+                <span class="ctrl-val" id="val-amplitude">0.30 V</span>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Bias Point</div>
+            <div class="ctrl-row">
+                <label>Q-Point</label>
+                <input type="range" id="sl-bias" min="0" max="100" value="50" oninput="setBias(this.value)">
+                <span class="ctrl-val" id="val-bias">I<sub>CQ</sub> 5.0 mA</span>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Power Budget</div>
+            <div class="power-bar-container">
+                <div class="power-bar-row">
+                    <span class="power-bar-label">DC Input</span>
+                    <div class="power-bar-track"><div class="power-bar-fill" id="bar-dc" style="width:80%;background:var(--col-power-in)"></div></div>
+                    <span class="power-bar-val" id="val-dc">120 mW</span>
+                </div>
+                <div class="power-bar-row">
+                    <span class="power-bar-label">Signal Out</span>
+                    <div class="power-bar-track"><div class="power-bar-fill" id="bar-signal" style="width:20%;background:var(--col-output)"></div></div>
+                    <span class="power-bar-val" id="val-signal">30 mW</span>
+                </div>
+                <div class="power-bar-row">
+                    <span class="power-bar-label">Heat</span>
+                    <div class="power-bar-track"><div class="power-bar-fill" id="bar-heat" style="width:60%;background:var(--col-heat)"></div></div>
+                    <span class="power-bar-val" id="val-heat">90 mW</span>
+                </div>
+            </div>
+            <div class="efficiency-readout" id="efficiency-readout">&eta; = 25%</div>
+        </div>
+    </div>
+
+    <!-- Bottom-right: Explanation -->
+    <div class="panel">
+        <div class="panel-header"><strong>Explanation</strong></div>
+        <div class="panel-body explanation-panel" id="explanation-panel">
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript will be added in subsequent tasks
+</script>
+
+</body>
+</html>

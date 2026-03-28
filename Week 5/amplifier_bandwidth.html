@@ -299,7 +299,53 @@
     </div>
     <!-- Bottom-left: Controls -->
     <div class="controls-panel" id="controls-panel">
-        <!-- Controls content goes here -->
+        <div class="ctrl-section">
+            <div class="ctrl-title">Component Values</div>
+            <div class="ctrl-row">
+                <label>R</label>
+                <input type="range" id="r-slider" min="0" max="1" step="0.001" value="0.5">
+                <span class="ctrl-val" id="r-val">10 k&#8486;</span>
+            </div>
+            <div class="ctrl-row">
+                <label>C</label>
+                <input type="range" id="c-slider" min="0" max="1" step="0.001" value="0.5">
+                <span class="ctrl-val" id="c-val">1.0 nF</span>
+            </div>
+        </div>
+
+        <div class="ctrl-section">
+            <div class="ctrl-title">Amplifier</div>
+            <div class="ctrl-row">
+                <label>A<sub>v</sub></label>
+                <input type="range" id="av-slider" min="0" max="1" step="0.001" value="0.667">
+                <span class="ctrl-val" id="av-val">100 (40 dB)</span>
+            </div>
+        </div>
+
+        <div class="ctrl-section">
+            <div class="ctrl-title">Test Signal</div>
+            <div class="ctrl-row">
+                <label>&#969;</label>
+                <input type="range" id="freq-slider" min="0" max="1" step="0.001" value="0.5">
+                <span class="ctrl-val" id="freq-val">100 krad/s</span>
+            </div>
+            <div class="info-row">
+                <span>Frequency</span>
+                <span class="val" id="freq-hz-val">15.9 kHz</span>
+            </div>
+        </div>
+
+        <div class="derived-readout" id="omega0-readout">
+            &#969;<sub>0</sub> = 1/RC = 100 krad/s
+        </div>
+
+        <div class="ctrl-section">
+            <div class="ctrl-title">Presets</div>
+            <div class="btn-group">
+                <button class="toggle-btn" id="preset-audio">Audio Amp</button>
+                <button class="toggle-btn" id="preset-rf">RF Stage</button>
+            </div>
+        </div>
     </div>
     <!-- Bottom-right: Equations -->
     <div class="eq-panel" id="eq-panel">
@@ -339,6 +385,53 @@ function sizeCanvas(canvas) {
 function drawCircuit() {}
 function drawBode() {}
 
+// ── Log-scale slider helpers ───────────────────────────
+function logMap(t, min, max) {
+    return min * Math.pow(max / min, t);
+}
+function logUnmap(val, min, max) {
+    return Math.log(val / min) / Math.log(max / min);
+}
+
+// Slider ranges
+const R_MIN = 100, R_MAX = 100000;
+const C_MIN = 1e-12, C_MAX = 100e-9;
+const AV_MIN = 1, AV_MAX = 1000;
+const FREQ_MIN = 1, FREQ_MAX = 1e9;
+
+// ── Formatting helpers ─────────────────────────────────
+function fmtR(val) {
+    if (val >= 1e6) return (val / 1e6).toPrecision(3) + ' M\u2126';
+    if (val >= 1e3) return (val / 1e3).toPrecision(3) + ' k\u2126';
+    return val.toPrecision(3) + ' \u2126';
+}
+
+function fmtC(val) {
+    if (val >= 1e-6) return (val * 1e6).toPrecision(3) + ' \u00B5F';
+    if (val >= 1e-9) return (val * 1e9).toPrecision(3) + ' nF';
+    return (val * 1e12).toPrecision(3) + ' pF';
+}
+
+function fmtFreq(val) {
+    if (val >= 1e9) return (val / 1e9).toPrecision(3) + ' Grad/s';
+    if (val >= 1e6) return (val / 1e6).toPrecision(3) + ' Mrad/s';
+    if (val >= 1e3) return (val / 1e3).toPrecision(3) + ' krad/s';
+    return val.toPrecision(3) + ' rad/s';
+}
+
+function fmtHz(wVal) {
+    const hz = wVal / (2 * Math.PI);
+    if (hz >= 1e9) return (hz / 1e9).toPrecision(3) + ' GHz';
+    if (hz >= 1e6) return (hz / 1e6).toPrecision(3) + ' MHz';
+    if (hz >= 1e3) return (hz / 1e3).toPrecision(3) + ' kHz';
+    return hz.toPrecision(3) + ' Hz';
+}
+
+function fmtAv(val) {
+    const db = 20 * Math.log10(val);
+    return val.toPrecision(3) + ' (' + db.toFixed(1) + ' dB)';
+}
+
 // ── Init ───────────────────────────────────────────────
 function init() {
     circuitCanvas = document.getElementById('circuit-canvas');
@@ -350,6 +443,55 @@ function init() {
         drawBode();
         drawCircuit();
     });
+
+    const rSlider = document.getElementById('r-slider');
+    const cSlider = document.getElementById('c-slider');
+    const avSlider = document.getElementById('av-slider');
+    const freqSlider = document.getElementById('freq-slider');
+
+    function updateFromSliders() {
+        R = logMap(parseFloat(rSlider.value), R_MIN, R_MAX);
+        C = logMap(parseFloat(cSlider.value), C_MIN, C_MAX);
+        Av = logMap(parseFloat(avSlider.value), AV_MIN, AV_MAX);
+        testFreq = logMap(parseFloat(freqSlider.value), FREQ_MIN, FREQ_MAX);
+        updateReadouts();
+    }
+
+    function updateReadouts() {
+        document.getElementById('r-val').textContent = fmtR(R);
+        document.getElementById('c-val').textContent = fmtC(C);
+        document.getElementById('av-val').textContent = fmtAv(Av);
+        document.getElementById('freq-val').textContent = fmtFreq(testFreq);
+        document.getElementById('freq-hz-val').textContent = fmtHz(testFreq);
+        document.getElementById('omega0-readout').innerHTML =
+            '\u03C9<sub>0</sub> = 1/RC = ' + fmtFreq(omega0());
+    }
+
+    rSlider.addEventListener('input', updateFromSliders);
+    cSlider.addEventListener('input', updateFromSliders);
+    avSlider.addEventListener('input', updateFromSliders);
+    freqSlider.addEventListener('input', updateFromSliders);
+
+    // Preset buttons
+    document.getElementById('preset-audio').addEventListener('click', () => {
+        R = 10000; C = 10e-9; Av = 100; testFreq = omega0();
+        rSlider.value = logUnmap(R, R_MIN, R_MAX);
+        cSlider.value = logUnmap(C, C_MIN, C_MAX);
+        avSlider.value = logUnmap(Av, AV_MIN, AV_MAX);
+        freqSlider.value = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
+        updateReadouts();
+    });
+
+    document.getElementById('preset-rf').addEventListener('click', () => {
+        R = 500; C = 5e-12; Av = 20; testFreq = omega0();
+        rSlider.value = logUnmap(R, R_MIN, R_MAX);
+        cSlider.value = logUnmap(C, C_MIN, C_MAX);
+        avSlider.value = logUnmap(Av, AV_MIN, AV_MAX);
+        freqSlider.value = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
+        updateReadouts();
+    });
+
+    updateReadouts();
 
     requestAnimationFrame(animate);
 }

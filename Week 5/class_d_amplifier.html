@@ -639,6 +639,42 @@ function filteredSignal(t) {
 }
 
 // ─── Drawing helpers ───
+// Supersampled PWM trace — samples at carrier frequency to avoid missing transitions
+function drawPWMTrace(ctx, tStart, windowT, plotW, padL, yHigh, yLow, colorHigh, colorLow, colorTransition) {
+    const samplesPerCycle = 8;
+    const totalCycles = windowT / (2 * Math.PI) * carrierFreqRatio;
+    const numSamples = Math.max(plotW, Math.ceil(totalCycles * samplesPerCycle));
+
+    let prevP = pwmSignal(tStart);
+    ctx.beginPath();
+    ctx.strokeStyle = prevP ? colorHigh : colorLow;
+    ctx.moveTo(padL, prevP ? yHigh : yLow);
+
+    for (let i = 1; i <= numSamples; i++) {
+        const frac = i / numSamples;
+        const t = tStart + frac * windowT;
+        const p = pwmSignal(t);
+        const x = padL + frac * plotW;
+
+        if (p !== prevP) {
+            ctx.lineTo(x, prevP ? yHigh : yLow);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.strokeStyle = colorTransition;
+            ctx.moveTo(x, prevP ? yHigh : yLow);
+            ctx.lineTo(x, p ? yHigh : yLow);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.strokeStyle = p ? colorHigh : colorLow;
+            ctx.moveTo(x, p ? yHigh : yLow);
+        } else {
+            ctx.lineTo(x, p ? yHigh : yLow);
+        }
+        prevP = p;
+    }
+    ctx.stroke();
+}
+
 function drawResistor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
     const dx = x2 - x1, dy = y2 - y1;
     const len = Math.sqrt(dx * dx + dy * dy);
@@ -1054,16 +1090,19 @@ function drawPWM() {
     ctx.fillText('HIGH', padL - 8, botTop + 12);
     ctx.fillText('LOW', padL - 8, botTop + botH + 4);
 
-    // Draw carrier (triangle wave) - gold
+    // Draw carrier (triangle wave) - gold — supersample to catch peaks at high freq
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(255,204,68,0.6)';
     ctx.lineWidth = 1.5;
-    for (let px = 0; px <= plotW; px++) {
-        const t = simTime + (px / plotW) * windowT;
+    const carrierCycles = windowT / (2 * Math.PI) * carrierFreqRatio;
+    const carrierSamples = Math.max(plotW, Math.ceil(carrierCycles * 8));
+    for (let i = 0; i <= carrierSamples; i++) {
+        const frac = i / carrierSamples;
+        const t = simTime + frac * windowT;
         const v = triangleCarrier(t);
-        const x = padL + px;
+        const x = padL + frac * plotW;
         const y = topMid - v * (topH / 2);
-        if (px === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke();
 
@@ -1081,35 +1120,42 @@ function drawPWM() {
     ctx.stroke();
 
     // Draw PWM output
+    // Sample at enough points to catch every carrier transition
     ctx.lineWidth = 2;
-    let prevPwm = pwmSignal(simTime);
-    for (let px = 0; px <= plotW; px++) {
-        const t = simTime + (px / plotW) * windowT;
-        const p = pwmSignal(t);
-        const x = padL + px;
-        const yHigh = botTop + 4;
-        const yLow = botTop + botH - 4;
-        const y = p ? yHigh : yLow;
+    const yHigh = botTop + 4;
+    const yLow = botTop + botH - 4;
+    const samplesPerCarrierCycle = 8;
+    const totalCarrierCycles = windowT / (2 * Math.PI) * carrierFreqRatio;
+    const numSamples = Math.max(plotW, Math.ceil(totalCarrierCycles * samplesPerCarrierCycle));
 
-        ctx.strokeStyle = p ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.7)';
-        if (px === 0) {
+    let prevPwm = pwmSignal(simTime);
+    let prevX = padL;
+    ctx.beginPath();
+    ctx.strokeStyle = prevPwm ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.7)';
+    ctx.moveTo(padL, prevPwm ? yHigh : yLow);
+
+    for (let i = 1; i <= numSamples; i++) {
+        const frac = i / numSamples;
+        const t = simTime + frac * windowT;
+        const p = pwmSignal(t);
+        const x = padL + frac * plotW;
+
+        if (p !== prevPwm) {
+            // Draw up to the transition point
+            ctx.lineTo(x, prevPwm ? yHigh : yLow);
+            ctx.stroke();
+            // Vertical transition line
             ctx.beginPath();
-            ctx.moveTo(x, y);
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.moveTo(x, prevPwm ? yHigh : yLow);
+            ctx.lineTo(x, p ? yHigh : yLow);
+            ctx.stroke();
+            // Start new segment
+            ctx.beginPath();
+            ctx.strokeStyle = p ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.7)';
+            ctx.moveTo(x, p ? yHigh : yLow);
         } else {
-            if (p !== prevPwm) {
-                // Vertical transition
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.moveTo(x, prevPwm ? yHigh : yLow);
-                ctx.lineTo(x, p ? yHigh : yLow);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.strokeStyle = p ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.7)';
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
+            ctx.lineTo(x, p ? yHigh : yLow);
         }
         prevPwm = p;
     }
@@ -1696,37 +1742,11 @@ function drawFilter() {
 
     // Draw raw PWM (semi-transparent)
     ctx.lineWidth = 1.5;
-    let prevP = pwmSignal(simTime);
-    for (let px = 0; px <= plotW; px++) {
-        const t = simTime + (px / plotW) * windowT;
-        const p = pwmSignal(t);
-        const x = padL + px;
-        const yHigh = padT + plotH * 0.05;
-        const yLow = padT + plotH * 0.95;
-        const y = p ? yHigh : yLow;
-
-        ctx.strokeStyle = p ? 'rgba(106,170,142,0.2)' : 'rgba(80,128,208,0.15)';
-        if (px === 0) {
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-        } else {
-            if (p !== prevP) {
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-                ctx.moveTo(x, prevP ? yHigh : yLow);
-                ctx.lineTo(x, p ? yHigh : yLow);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.strokeStyle = p ? 'rgba(106,170,142,0.2)' : 'rgba(80,128,208,0.15)';
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        }
-        prevP = p;
-    }
-    ctx.stroke();
+    const yHighF = padT + plotH * 0.05;
+    const yLowF = padT + plotH * 0.95;
+    drawPWMTrace(ctx, simTime, windowT, plotW, padL,
+        yHighF, yLowF,
+        'rgba(106,170,142,0.2)', 'rgba(80,128,208,0.15)', 'rgba(255,255,255,0.1)');
 
     // Draw filtered output (smooth bright green)
     ctx.beginPath();
@@ -1803,37 +1823,11 @@ function drawFull() {
 
     // Trace 2: PWM
     ctx.lineWidth = 1.5;
-    let prevP = pwmSignal(simTime);
-    for (let px = 0; px <= plotW; px++) {
-        const t = simTime + (px / plotW) * windowT;
-        const p = pwmSignal(t);
-        const x = padL + px;
-        const yHigh = traces[1].y0 - traces[1].h / 2 * 0.85;
-        const yLow = traces[1].y0 + traces[1].h / 2 * 0.85;
-        const y = p ? yHigh : yLow;
-
-        ctx.strokeStyle = p ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.7)';
-        if (px === 0) {
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-        } else {
-            if (p !== prevP) {
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.moveTo(x, prevP ? yHigh : yLow);
-                ctx.lineTo(x, p ? yHigh : yLow);
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.strokeStyle = p ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.7)';
-                ctx.moveTo(x, y);
-            } else {
-                ctx.lineTo(x, y);
-            }
-        }
-        prevP = p;
-    }
-    ctx.stroke();
+    const yHighFull = traces[1].y0 - traces[1].h / 2 * 0.85;
+    const yLowFull = traces[1].y0 + traces[1].h / 2 * 0.85;
+    drawPWMTrace(ctx, simTime, windowT, plotW, padL,
+        yHighFull, yLowFull,
+        'rgba(106,170,142,0.9)', 'rgba(80,128,208,0.7)', 'rgba(255,255,255,0.3)');
 
     // Trace 3: filtered output
     ctx.beginPath();

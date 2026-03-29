@@ -1333,6 +1333,12 @@ function drawBode() {
     const slopeLabelY = yPx(avDb - 30);
     ctx.fillText('\u221220 dB/dec', slopeLabelX + 4, slopeLabelY - 4);
 
+    // ── Clip to plot area ──
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pad.left, pad.top, plotW, plotH);
+    ctx.clip();
+
     // ── Main curve ──
     ctx.strokeStyle = '#6aaa8e';
     ctx.lineWidth = 2.5;
@@ -1383,6 +1389,9 @@ function drawBode() {
     const lx = tx > pad.left + plotW / 2 ? -12 : 12;
     ctx.textBaseline = 'bottom';
     ctx.fillText(testDb.toFixed(1) + ' dB', tx + lx, ty - 10);
+
+    // ── End clip ──
+    ctx.restore();
 
     // ── Axis labels ──
     ctx.fillStyle = 'rgba(255,255,255,0.4)';

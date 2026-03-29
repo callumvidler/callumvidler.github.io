@@ -277,6 +277,30 @@
             border-radius: 2px;
             flex-shrink: 0;
         }
+
+        .transport-bar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+        .transport-bar input[type=range] {
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .transport-bar input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -319,6 +343,11 @@
             </div>
         </div>
         <div class="panel-body"><canvas id="waveform-canvas"></canvas></div>
+        <div class="transport-bar">
+            <button class="toggle-btn active" id="btn-pause" onclick="togglePause()" style="padding:3px 10px;flex:none;width:32px;">&#9646;&#9646;</button>
+            <input type="range" id="sl-speed" min="5" max="200" value="100" oninput="setSpeed(this.value)" style="flex:1;">
+            <span class="ctrl-val" id="val-speed" style="min-width:36px;font-size:0.6rem;">1.0x</span>
+        </div>
     </div>
 
     <!-- Bottom-left: Controls + Power -->
@@ -337,11 +366,6 @@
                 <label>Amplitude</label>
                 <input type="range" id="sl-amplitude" min="0" max="100" value="30" oninput="setAmplitude(this.value)">
                 <span class="ctrl-val" id="val-amplitude">0.30 V</span>
-            </div>
-            <div class="ctrl-row">
-                <label>Speed</label>
-                <input type="range" id="sl-speed" min="5" max="200" value="100" oninput="setSpeed(this.value)">
-                <span class="ctrl-val" id="val-speed">1.0x</span>
             </div>
         </div>
         <div class="ctrl-section">
@@ -464,6 +488,14 @@ function setBias(val) {
 function setSpeed(val) {
     simSpeed = parseInt(val) / 100;
     document.getElementById('val-speed').textContent = simSpeed.toFixed(1) + 'x';
+}
+
+let paused = false;
+function togglePause() {
+    paused = !paused;
+    const btn = document.getElementById('btn-pause');
+    btn.innerHTML = paused ? '&#9654;' : '&#9646;&#9646;';
+    btn.classList.toggle('active', !paused);
 }
 
 function computeDerived() {
@@ -1821,15 +1853,17 @@ function animate(timestamp) {
     const dt = lastTimestamp ? (timestamp - lastTimestamp) / 1000 : 0.016;
     lastTimestamp = timestamp;
 
-    simTime += dt;
+    if (!paused) {
+        simTime += dt;
 
-    const freq = 1 * simSpeed;
-    const vin = vinPeak * Math.sin(2 * Math.PI * freq * simTime);
-    instantVin = vin;
-    const vout = computeOutputSample(vin);
-    waveHistory.push({ vin, vout });
-    if (waveHistory.length > WAVEFORM_HISTORY) {
-        waveHistory.shift();
+        const freq = 1 * simSpeed;
+        const vin = vinPeak * Math.sin(2 * Math.PI * freq * simTime);
+        instantVin = vin;
+        const vout = computeOutputSample(vin);
+        waveHistory.push({ vin, vout });
+        if (waveHistory.length > WAVEFORM_HISTORY) {
+            waveHistory.shift();
+        }
     }
 
     drawCircuit();

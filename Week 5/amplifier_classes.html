@@ -358,6 +358,7 @@
                 <button class="toggle-btn active" id="btn-classA" onclick="setClass('A')">Class A</button>
                 <button class="toggle-btn" id="btn-classB" onclick="setClass('B')">Class B</button>
                 <button class="toggle-btn" id="btn-classAB" onclick="setClass('AB')">Class AB</button>
+                <button class="toggle-btn" id="btn-classD" onclick="setClass('D')">Class D</button>
             </div>
         </div>
         <div class="ctrl-section">
@@ -465,9 +466,11 @@ function setClass(cls) {
     document.getElementById('btn-classA').classList.toggle('active', cls === 'A');
     document.getElementById('btn-classB').classList.toggle('active', cls === 'B');
     document.getElementById('btn-classAB').classList.toggle('active', cls === 'AB');
+    document.getElementById('btn-classD').classList.toggle('active', cls === 'D');
 
     if (cls === 'A') biasPoint = 50;
     else if (cls === 'B') biasPoint = 0;
+    else if (cls === 'D') biasPoint = 50;
     else biasPoint = 5;
 
     document.getElementById('sl-bias').value = biasPoint;
@@ -515,11 +518,17 @@ function computeDerived() {
         const iPeak = clippedVoutPeak / RC * 1000;
         dcPower = 2 * VCC * iPeak / Math.PI;
         signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
-    } else {
+    } else if (ampClass === 'AB') {
         const iPeak = clippedVoutPeak / RC * 1000;
         const iBias = icq;
         dcPower = 2 * VCC * (iPeak / Math.PI + iBias);
         signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
+    } else if (ampClass === 'D') {
+        const voutPeakD = Math.min(vinPeak * GAIN, VCC - VCE_SAT);
+        const clippedD = Math.max(0, voutPeakD);
+        signalPower = (clippedD * clippedD) / (2 * RC) * 1000;
+        const switchingLossFraction = 0.08;
+        dcPower = signalPower / (1 - switchingLossFraction);
     }
 
     heatPower = Math.max(0, dcPower - signalPower);
@@ -1171,6 +1180,182 @@ function drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, l
     drawGround(ctx, colRL, rowGnd + 5);
 }
 
+function drawClassDCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
+    ctx.strokeStyle = lineColor;
+    const mx = w / 2, my = h / 2, s = Math.min(w, h);
+
+    const colIn   = mx - s * 0.34;
+    const colComp = mx - s * 0.18;
+    const colQ    = mx + s * 0.0;
+    const colRail = mx + s * 0.12;
+    const colLout = mx + s * 0.22;
+    const colCfilt = mx + s * 0.28;
+    const colOut  = mx + s * 0.38;
+
+    const rowVCC  = my - s * 0.32;
+    const rowNPN  = my - s * 0.12;
+    const rowMid  = my;
+    const rowPNP  = my + s * 0.12;
+    const rowVEE  = my + s * 0.32;
+    const rowGnd  = my + s * 0.28;
+
+    const pinOutX = colQ + 10;
+    const npnCollY = rowNPN - 14;
+    const npnEmitY = rowNPN + 14;
+    const pnpCollY = rowPNP + 14;
+    const pnpEmitY = rowPNP - 14;
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'center';
+    ctx.fillText('VCC = +' + VCC + 'V', colRail, rowVCC - 8);
+    ctx.restore();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'center';
+    ctx.fillText('GND', colRail, rowVEE + 14);
+    ctx.restore();
+
+    // Comparator triangle
+    const compX = colComp, compY = rowMid;
+    const compW = s * 0.1, compH = s * 0.14;
+    ctx.beginPath();
+    ctx.moveTo(compX - compW/2, compY - compH/2);
+    ctx.lineTo(compX + compW/2, compY);
+    ctx.lineTo(compX - compW/2, compY + compH/2);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.save();
+    ctx.font = '600 10px "IBM Plex Sans", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'center';
+    ctx.fillText('+', compX - compW/2 + 8, compY - compH/4 + 4);
+    ctx.fillText('\u2212', compX - compW/2 + 8, compY + compH/4 + 4);
+    ctx.restore();
+
+    // v_in to comparator + input
+    ctx.beginPath();
+    ctx.moveTo(colIn, compY - compH/4);
+    ctx.lineTo(compX - compW/2, compY - compH/4);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in', colIn - 5, compY - compH/4 + 4);
+    ctx.restore();
+
+    // Triangle wave symbol at - input
+    const twX = compX - compW/2 - 5;
+    const twY = compY + compH/4;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(twX - 12, twY);
+    ctx.lineTo(twX - 9, twY - 4);
+    ctx.lineTo(twX - 3, twY + 4);
+    ctx.lineTo(twX, twY);
+    ctx.stroke();
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.restore();
+
+    // Comparator output to base junction
+    const baseX = colQ - 16;
+    ctx.beginPath();
+    ctx.moveTo(compX + compW/2, compY);
+    ctx.lineTo(baseX, compY);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('PWM', (compX + compW/2 + baseX) / 2, compY - 8);
+    ctx.restore();
+
+    // Switching transistors
+    drawNPNTransistor(ctx, colQ, rowNPN, 1, labelColor, labelFont);
+    drawPNPTransistor(ctx, colQ, rowPNP, 1, labelColor, labelFont);
+
+    ctx.beginPath();
+    ctx.moveTo(baseX, rowNPN);
+    ctx.lineTo(baseX, rowPNP);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pinOutX, npnCollY);
+    ctx.lineTo(colRail, npnCollY);
+    ctx.lineTo(colRail, rowVCC);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pinOutX, pnpCollY);
+    ctx.lineTo(colRail, pnpCollY);
+    ctx.lineTo(colRail, rowVEE);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(pinOutX, npnEmitY);
+    ctx.lineTo(colRail, npnEmitY);
+    ctx.lineTo(colRail, rowMid);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(pinOutX, pnpEmitY);
+    ctx.lineTo(colRail, pnpEmitY);
+    ctx.lineTo(colRail, rowMid);
+    ctx.stroke();
+
+    // LC Filter: Inductor (bumps)
+    const indStart = colRail, indEnd = colLout, indY = rowMid;
+    const bumps = 4, bumpW = (indEnd - indStart) / bumps;
+    ctx.beginPath();
+    ctx.moveTo(indStart, indY);
+    for (let i = 0; i < bumps; i++) {
+        const bx = indStart + i * bumpW;
+        ctx.arc(bx + bumpW/2, indY, bumpW/2, Math.PI, 0, false);
+    }
+    ctx.stroke();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('L', (indStart + indEnd) / 2, indY - 12);
+    ctx.restore();
+
+    // Filter capacitor
+    drawCapacitor(ctx, colCfilt, indY, colCfilt, rowGnd, 'C', labelColor, labelFont);
+    ctx.beginPath();
+    ctx.moveTo(indEnd, indY);
+    ctx.lineTo(colCfilt, indY);
+    ctx.stroke();
+    drawGround(ctx, colCfilt, rowGnd + 5);
+
+    // Output wire and label
+    ctx.beginPath();
+    ctx.moveTo(colCfilt, indY);
+    ctx.lineTo(colOut, indY);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = activeColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', colOut + 5, indY + 4);
+    ctx.restore();
+
+    // RL load
+    drawResistor(ctx, colOut, indY, colOut, rowGnd, 'RL', labelColor, labelFont);
+    drawGround(ctx, colOut, rowGnd + 5);
+}
+
 // ─── Load Line Inset ───
 function drawLoadLineInset(ctx, w, h) {
     const insetW = 100;
@@ -1621,6 +1806,108 @@ function drawClassABCurrentFlow(ctx, w, h) {
     ctx.restore();
 }
 
+function drawClassDCurrentFlow(ctx, w, h) {
+    const mx = w / 2, my = h / 2, s = Math.min(w, h);
+    const colIn   = mx - s * 0.34;
+    const colComp = mx - s * 0.18;
+    const colQ    = mx + s * 0.0;
+    const colRail = mx + s * 0.12;
+    const colLout = mx + s * 0.22;
+    const colCfilt = mx + s * 0.28;
+    const colOut  = mx + s * 0.38;
+    const rowVCC  = my - s * 0.32;
+    const rowNPN  = my - s * 0.12;
+    const rowMid  = my;
+    const rowPNP  = my + s * 0.12;
+    const rowVEE  = my + s * 0.32;
+    const rowGnd  = my + s * 0.28;
+    const pinOutX = colQ + 10;
+    const baseX   = colQ - 16;
+    const compW   = s * 0.1;
+    const compH   = s * 0.14;
+    const npnCollY = rowNPN - 14;
+    const npnEmitY = rowNPN + 14;
+    const pnpCollY = rowPNP + 14;
+    const pnpEmitY = rowPNP - 14;
+
+    const npnColor = 'rgb(106,170,142)';
+    const pnpColor = 'rgb(80,128,208)';
+    const activeColor = '#6aaa8e';
+    const signalIntensity = vinPeak > 0 ? Math.abs(instantVin / vinPeak) : 0;
+
+    // PWM: compare input to fast triangle carrier
+    const carrierFreq = 20;
+    const carrier = ((simTime * carrierFreq) % 1) * 2 - 1;
+    const normalizedVin = vinPeak > 0 ? instantVin / vinPeak : 0;
+    const pwmHigh = normalizedVin > carrier;
+
+    // V_in path
+    const vinPath = [
+        [colIn, rowMid - s * 0.035],
+        [colComp - compW/2, rowMid - s * 0.035]
+    ];
+    drawCurrentFlow(ctx, vinPath, 'rgb(255,255,255)', Math.max(signalIntensity * 0.6, 0.15));
+
+    // Comparator to base
+    const compToBase = [
+        [colComp + compW/2, rowMid],
+        [baseX, rowMid]
+    ];
+    drawCurrentFlow(ctx, compToBase, pwmHigh ? npnColor : pnpColor, 0.7);
+
+    // Signal to bases
+    const toNPN = [[baseX, rowMid], [baseX, rowNPN]];
+    const toPNP = [[baseX, rowMid], [baseX, rowPNP]];
+    drawCurrentFlow(ctx, toNPN, npnColor, pwmHigh ? 0.6 : 0.1);
+    drawCurrentFlow(ctx, toPNP, pnpColor, pwmHigh ? 0.1 : 0.6);
+
+    if (pwmHigh) {
+        const npnPath = [
+            [colRail, rowVCC],
+            [colRail, npnCollY],
+            [pinOutX, npnCollY],
+            [colQ, rowNPN],
+            [pinOutX, npnEmitY],
+            [colRail, npnEmitY],
+            [colRail, rowMid]
+        ];
+        drawCurrentFlow(ctx, npnPath, npnColor, 0.8);
+    } else {
+        const pnpPath = [
+            [colRail, rowMid],
+            [colRail, pnpEmitY],
+            [pinOutX, pnpEmitY],
+            [colQ, rowPNP],
+            [pinOutX, pnpCollY],
+            [colRail, pnpCollY],
+            [colRail, rowVEE]
+        ];
+        drawCurrentFlow(ctx, pnpPath, pnpColor, 0.8);
+    }
+
+    // Output through LC filter
+    const filterPath = [
+        [colRail, rowMid],
+        [colLout, rowMid],
+        [colCfilt, rowMid],
+        [colOut, rowMid],
+        [colOut, rowGnd]
+    ];
+    drawCurrentFlow(ctx, filterPath, npnColor, Math.max(signalIntensity * 0.7, 0.15));
+
+    ctx.save();
+    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+    if (pwmHigh) {
+        ctx.fillStyle = 'rgba(106,170,142,0.8)';
+        ctx.fillText('PWM HIGH \u2014 NPN switch ON', 8, 14);
+    } else {
+        ctx.fillStyle = 'rgba(80,128,208,0.8)';
+        ctx.fillText('PWM LOW \u2014 PNP switch ON', 8, 14);
+    }
+    ctx.restore();
+}
+
 function drawCircuit() {
     const ctx = circuitCtx;
     const { w, h } = circuitSize;
@@ -1644,9 +1931,12 @@ function drawCircuit() {
     } else if (ampClass === 'B') {
         drawClassBCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
         drawClassBCurrentFlow(ctx, w, h);
-    } else {
+    } else if (ampClass === 'AB') {
         drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
         drawClassABCurrentFlow(ctx, w, h);
+    } else if (ampClass === 'D') {
+        drawClassDCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+        drawClassDCurrentFlow(ctx, w, h);
     }
 
     drawLoadLineInset(ctx, w, h);
@@ -1676,7 +1966,7 @@ function computeOutputSample(vinInstant) {
         const vout = sign * (Math.abs(vinInstant) - scaledDead) * GAIN;
         const clipMax = VCC - VCE_SAT;
         return Math.max(-clipMax, Math.min(clipMax, vout));
-    } else {
+    } else if (ampClass === 'AB') {
         // Class AB: same as B but with minimal dead zone
         const deadZone = 0.05;
         const scaledDead = deadZone / GAIN;
@@ -1685,6 +1975,10 @@ function computeOutputSample(vinInstant) {
         }
         const sign = vinInstant > 0 ? 1 : -1;
         const vout = sign * (Math.abs(vinInstant) - scaledDead) * GAIN;
+        const clipMax = VCC - VCE_SAT;
+        return Math.max(-clipMax, Math.min(clipMax, vout));
+    } else if (ampClass === 'D') {
+        const vout = vinInstant * GAIN;
         const clipMax = VCC - VCE_SAT;
         return Math.max(-clipMax, Math.min(clipMax, vout));
     }
@@ -1760,7 +2054,9 @@ function drawWaveforms() {
             const y1 = cy - (waveHistory[i].vout / maxVout) * scale;
             const vout = waveHistory[i].vout;
 
-            if (ampClass === 'A') {
+            if (ampClass === 'D') {
+                ctx.strokeStyle = npnCol;
+            } else if (ampClass === 'A') {
                 // Class A: single transistor, colour by output polarity
                 ctx.strokeStyle = vout >= 0 ? npnCol : pnpCol;
             } else {
@@ -1854,7 +2150,7 @@ function updateExplanation() {
             html += 'The trade-off is crossover distortion at zero-crossings due to the V<sub>BE</sub> turn-on threshold.</div>';
         }
 
-    } else {
+    } else if (ampClass === 'AB') {
         html += '<h3>Class AB — Best of Both Worlds</h3>';
         html += '<p>This is a modified push-pull design where two biasing diodes provide a small forward voltage to both transistors. ';
         html += 'Each transistor conducts for <strong>slightly more than 180&deg;</strong>, ensuring there is always at least one transistor conducting — even at zero-crossings.</p>';
@@ -1872,6 +2168,23 @@ function updateExplanation() {
             html += '<div class="physics-note"><strong>Key physics:</strong> Conduction angle slightly &gt; 180&deg; per transistor. ';
             html += 'Typical efficiency 50&ndash;60%, significantly better than Class A (25%) while maintaining much better linearity than Class B. ';
             html += 'This is the most commonly used class in audio amplifiers and biomedical instrumentation.</div>';
+        }
+    } else if (ampClass === 'D') {
+        html += '<h3>Class D \u2014 Switching (PWM) Amplifier</h3>';
+        html += '<p>Class D is fundamentally different from linear amplifiers. Instead of controlling how much the transistors conduct, ';
+        html += 'it switches them <strong>fully ON or fully OFF</strong> at a high frequency. The input signal is compared with a triangle wave carrier ';
+        html += 'to produce a pulse-width modulated (PWM) signal.</p>';
+        html += '<p>An LC low-pass filter then extracts the average value of the PWM signal, recovering a clean amplified replica of the input. ';
+        html += 'Since the transistors are either fully on (near-zero voltage drop, V<sub>CE</sub> \u2248 0) or fully off (zero current), ';
+        html += 'very little power is wasted as heat.</p>';
+
+        if (isClipping) {
+            html += '<div class="physics-note"><strong>Clipping detected:</strong> The input amplitude exceeds the PWM modulation range. ';
+            html += 'The duty cycle is saturating at 0% or 100%, and the output can no longer track the input.</div>';
+        } else {
+            html += '<div class="physics-note"><strong>Key physics:</strong> No conduction angle concept \u2014 transistors are digital switches. ';
+            html += 'Theoretical efficiency approaches 100%. Practical efficiency 90\u201395% (limited by switching losses, gate drive, and filter losses). ';
+            html += 'This is the dominant class for modern audio amplifiers, motor drivers, and power converters in biomedical devices.</div>';
         }
     }
 

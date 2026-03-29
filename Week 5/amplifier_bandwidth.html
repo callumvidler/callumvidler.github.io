@@ -1269,9 +1269,9 @@ function drawBode() {
     const plotH = H - pad.top - pad.bottom;
 
     const w0 = omega0();
-    const logCenter = Math.log10(w0);
-    const logMin = logCenter - 3;
-    const logMax = logCenter + 3;
+    // Fixed frequency axis spanning the full slider range
+    const logMin = Math.log10(FREQ_MIN);  // 0
+    const logMax = Math.log10(FREQ_MAX);  // 9
 
     const avDb = 20 * Math.log10(Av);
     const dbMax = 70;
@@ -1321,7 +1321,7 @@ function drawBode() {
     ctx.beginPath();
     ctx.moveTo(xW0, yPx(avDb));
     const asymEnd = Math.pow(10, logMax);
-    ctx.lineTo(xPx(asymEnd), yPx(avDb - 20 * (logMax - logCenter)));
+    ctx.lineTo(xPx(asymEnd), yPx(avDb - 20 * (logMax - Math.log10(w0))));
     ctx.stroke();
     ctx.setLineDash([]);
 
@@ -1329,7 +1329,7 @@ function drawBode() {
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.font = "10px 'IBM Plex Sans', sans-serif";
     ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-    const slopeLabelX = xPx(Math.pow(10, logCenter + 1.5));
+    const slopeLabelX = xPx(Math.pow(10, Math.log10(w0) + 1.5));
     const slopeLabelY = yPx(avDb - 30);
     ctx.fillText('\u221220 dB/dec', slopeLabelX + 4, slopeLabelY - 4);
 

@@ -153,7 +153,7 @@
 
         /* ── Derivation steps ── */
         .derivation {
-            margin: 20px 0;
+            margin: 24px 0;
             padding: 0;
             list-style: none;
             counter-reset: step;
@@ -161,18 +161,20 @@
         .derivation li {
             counter-increment: step;
             position: relative;
-            padding: 12px 16px 12px 48px;
-            margin-bottom: 4px;
+            padding: 16px 20px 16px 52px;
+            margin-bottom: 6px;
             background: rgba(255,255,255,0.02);
             border: 1px solid var(--border);
             border-radius: 6px;
             font-size: 13px;
+            line-height: 1.7;
+            color: var(--text-dim);
         }
         .derivation li::before {
             content: counter(step);
             position: absolute;
-            left: 16px;
-            top: 12px;
+            left: 18px;
+            top: 16px;
             font-family: 'IBM Plex Mono', monospace;
             font-size: 11px;
             color: var(--accent);
@@ -184,6 +186,68 @@
             color: #fff;
             margin: 4px 0;
         }
+        .derivation .step-note {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        /* ── LaTeX-style fractions ── */
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 3px;
+            font-family: 'IBM Plex Mono', monospace;
+            color: #fff;
+        }
+        .frac .num, .frac .den {
+            display: block;
+            padding: 0 4px;
+            line-height: 1.4;
+        }
+        .frac .num {
+            border-bottom: 1px solid rgba(255,255,255,0.35);
+            padding-bottom: 2px;
+        }
+        .frac .den {
+            padding-top: 2px;
+        }
+        .frac-lg {
+            font-size: 14px;
+        }
+        .frac-lg .num, .frac-lg .den {
+            padding: 1px 6px;
+        }
+
+        /* ── Equation display line ── */
+        .eq-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            color: #fff;
+            padding: 14px 16px;
+            margin: 12px 0;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            flex-wrap: wrap;
+            line-height: 1.6;
+        }
+        .eq-line .label {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        .eq-line .accent { color: var(--accent); }
+        .eq-line .yellow { color: var(--yellow); }
+        .eq-line .dim { color: var(--text-muted); }
 
         /* ── Controls ── */
         .controls-row {
@@ -371,20 +435,139 @@
             </div>
         </div>
 
-        <p>The output is a voltage divider between R and the capacitor impedance Z<sub>C</sub> = 1/(j&#969;C).
-           Working through the algebra:</p>
+        <p>The amplifier output sees a voltage divider between R and the capacitor's
+           impedance. Let's work through the derivation step by step.</p>
+
+        <p><strong>First, recall the capacitor impedance.</strong> A capacitor's impedance in the
+           frequency domain is:</p>
+
+        <div class="eq-line">
+            <span>Z<sub>C</sub> =</span>
+            <span class="frac frac-lg"><span class="num">1</span><span class="den">j&#969;C</span></span>
+        </div>
+
+        <p>As &#969; increases, Z<sub>C</sub> gets <em>smaller</em> — the capacitor becomes a
+           better conductor at high frequencies. This is why it shunts the signal to ground.</p>
 
         <ol class="derivation">
-            <li>Start with the voltage divider: <span class="math">V<sub>out</sub>/V<sub>amp</sub> = Z<sub>C</sub> / (R + Z<sub>C</sub>)</span></li>
-            <li>Substitute Z<sub>C</sub> = 1/(j&#969;C): <span class="math">= [1/(j&#969;C)] / [R + 1/(j&#969;C)]</span></li>
-            <li>Multiply top and bottom by j&#969;C: <span class="math">= 1 / (1 + j&#969;RC)</span></li>
-            <li>Define <strong>&#969;<sub>0</sub> = 1/RC</strong>, the cutoff frequency: <span class="math">= 1 / (1 + j(&#969;/&#969;<sub>0</sub>))</span></li>
-            <li>Include the amplifier gain A<sub>v</sub>: <span class="math">H(j&#969;) = A<sub>v</sub> / (1 + j(&#969;/&#969;<sub>0</sub>))</span></li>
+            <li>
+                <strong>Write the voltage divider.</strong> The output voltage V<sub>out</sub> is
+                taken across the capacitor, so:
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span class="frac frac-lg"><span class="num">V<sub>out</sub></span><span class="den">V<sub>amp</sub></span></span>
+                    <span>=</span>
+                    <span class="frac frac-lg"><span class="num">Z<sub>C</sub></span><span class="den">R + Z<sub>C</sub></span></span>
+                </div>
+                <span class="step-note">This is the standard voltage divider formula — the output fraction equals
+                the bottom impedance over the total impedance.</span>
+            </li>
+
+            <li>
+                <strong>Substitute the capacitor impedance</strong> Z<sub>C</sub> = 1/(j&#969;C):
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>=</span>
+                    <span class="frac frac-lg">
+                        <span class="num">
+                            <span class="frac"><span class="num">1</span><span class="den">j&#969;C</span></span>
+                        </span>
+                        <span class="den">
+                            R +
+                            <span class="frac"><span class="num">1</span><span class="den">j&#969;C</span></span>
+                        </span>
+                    </span>
+                </div>
+                <span class="step-note">This looks messy — we have a fraction within a fraction. Let's clean it up.</span>
+            </li>
+
+            <li>
+                <strong>Multiply numerator and denominator by j&#969;C</strong> to clear the inner fractions:
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>=</span>
+                    <span class="frac frac-lg">
+                        <span class="num"><span class="yellow">j&#969;C</span> &#183;
+                            <span class="frac"><span class="num">1</span><span class="den">j&#969;C</span></span>
+                        </span>
+                        <span class="den"><span class="yellow">j&#969;C</span> &#183; (R +
+                            <span class="frac"><span class="num">1</span><span class="den">j&#969;C</span></span>)
+                        </span>
+                    </span>
+                    <span>=</span>
+                    <span class="frac frac-lg">
+                        <span class="num">1</span>
+                        <span class="den">j&#969;RC + 1</span>
+                    </span>
+                </div>
+                <span class="step-note">The j&#969;C cancels in the numerator (giving 1) and distributes in the
+                denominator (giving j&#969;RC + 1).</span>
+            </li>
+
+            <li>
+                <strong>Rearrange</strong> to put the constant term first (standard form):
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>=</span>
+                    <span class="frac frac-lg">
+                        <span class="num">1</span>
+                        <span class="den">1 + j&#969;RC</span>
+                    </span>
+                </div>
+                <span class="step-note">This is already the first-order low-pass transfer function.
+                The product RC is the time constant &#964; = RC.</span>
+            </li>
+
+            <li>
+                <strong>Define the cutoff frequency</strong> &#969;<sub>0</sub> = 1/RC. Since
+                &#969;RC = &#969;/(1/RC) = &#969;/&#969;<sub>0</sub>, we can write:
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>=</span>
+                    <span class="frac frac-lg">
+                        <span class="num">1</span>
+                        <span class="den">1 + j(<span class="accent">&#969;/&#969;<sub>0</sub></span>)</span>
+                    </span>
+                </div>
+                <span class="step-note">Now the behaviour is controlled by a single ratio: how does
+                the signal frequency &#969; compare to the natural frequency &#969;<sub>0</sub>?</span>
+            </li>
+
+            <li>
+                <strong>Include the amplifier gain A<sub>v</sub>.</strong> The amplifier multiplies
+                the input by A<sub>v</sub> before the RC network, so the complete transfer function is:
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>H(j&#969;) =</span>
+                    <span class="frac frac-lg">
+                        <span class="num"><span class="accent">A<sub>v</sub></span></span>
+                        <span class="den">1 + j(&#969;/&#969;<sub>0</sub>)</span>
+                    </span>
+                </div>
+                <span class="step-note">This is the standard single-pole low-pass transfer function.
+                Everything from here follows from this one equation.</span>
+            </li>
         </ol>
 
-        <div class="eq-block">
-            H(j&#969;) = A<sub>v</sub> / (1 + j(&#969;/&#969;<sub>0</sub>)) &nbsp;&nbsp;where&nbsp;&nbsp; &#969;<sub>0</sub> = 1/RC
+        <div class="eq-block" style="font-size: 16px; padding: 16px 24px;">
+            H(j&#969;) &nbsp;=&nbsp;
+            <span class="frac frac-lg" style="color: var(--accent);">
+                <span class="num" style="border-color: rgba(106,170,142,0.4);">A<sub>v</sub></span>
+                <span class="den">1 + j(&#969;/&#969;<sub>0</sub>)</span>
+            </span>
+            &nbsp;&nbsp;where&nbsp;&nbsp; &#969;<sub>0</sub> =
+            <span class="frac" style="color: var(--accent);">
+                <span class="num" style="border-color: rgba(106,170,142,0.4);">1</span>
+                <span class="den">RC</span>
+            </span>
         </div>
+
+        <p>Let's unpack what this means physically:</p>
+        <ul>
+            <li><strong>At low frequencies</strong> (&#969; &#8810; &#969;<sub>0</sub>): the term
+                j(&#969;/&#969;<sub>0</sub>) is negligibly small, so the denominator &#8776; 1 and the
+                gain is simply A<sub>v</sub>. The capacitor is essentially an open circuit.</li>
+            <li><strong>At high frequencies</strong> (&#969; &#8811; &#969;<sub>0</sub>): the imaginary
+                term dominates, the denominator grows, and the gain drops. The capacitor
+                shorts the output to ground.</li>
+            <li><strong>At &#969; = &#969;<sub>0</sub></strong>: the real and imaginary parts of the
+                denominator are equal (both = 1), giving a denominator magnitude of &#8730;2
+                and a gain of A<sub>v</sub>/&#8730;2 — the <strong>&#8722;3 dB point</strong>.</li>
+        </ul>
 
         <div class="readout-bar">
             <div class="readout-item">&#969;<sub>0</sub> = <span class="val" id="omega0-val">100 krad/s</span></div>

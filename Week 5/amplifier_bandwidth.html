@@ -872,7 +872,7 @@
            (GBP) is:</p>
 
         <div class="eq-block" style="font-size: 16px; padding: 16px 24px;">
-            GBP = A<sub>v</sub> &#215; f<sub>0</sub> = constant
+            GBP = A<sub>v</sub> &#215; &#969;<sub>0</sub> = constant
         </div>
 
         <p>When you apply feedback to reduce the gain from A<sub>OL</sub> down to some
@@ -922,8 +922,8 @@
         <div class="readout-bar">
             <div class="readout-item">GBP = <span class="val" id="gbp-readout">10.0 MHz</span></div>
             <div class="readout-item">A<sub>v</sub> = <span class="val" id="gbp-av-val">100</span></div>
-            <div class="readout-item">f<sub>0</sub> = <span class="val" id="gbp-f0-val">100 kHz</span></div>
-            <div class="readout-item">BW = <span class="val" id="gbp-bw-val">100 kHz</span></div>
+            <div class="readout-item">&#969;<sub>0</sub> = <span class="val" id="gbp-f0-val">100 krad/s</span></div>
+            <div class="readout-item">BW = <span class="val" id="gbp-bw-val">100 krad/s</span></div>
         </div>
 
         <div class="callout">
@@ -935,9 +935,10 @@
 
         <div class="callout warn">
             <strong>Practical example:</strong> a typical general-purpose op-amp (e.g. LM741)
-            has a GBP of about 1 MHz. At a gain of 100, the bandwidth is only 10 kHz. At a
-            gain of 10, it extends to 100 kHz. Audio applications (20 Hz&#8211;20 kHz) at a gain
-            of 50 require a GBP of at least 1 MHz.
+            has a GBP of about 6.28 Mrad/s (1 MHz). At a gain of 100, &#969;<sub>0</sub> is only
+            62.8 krad/s (10 kHz). At a gain of 10, it extends to 628 krad/s (100 kHz).
+            Audio applications (20 Hz to 20 kHz) at a gain of 50 need a GBP of at least
+            6.28 Mrad/s.
         </div>
     </div>
 
@@ -1701,8 +1702,8 @@ function superscript(n) {
 // ════════════════════════════════════════════════════════
 // SECTION 4: Gain-Bandwidth Product plot
 // ════════════════════════════════════════════════════════
-let GBP = 10e6;  // Hz, default 10 MHz
-const GBP_MIN = 100e3, GBP_MAX = 1e9;  // 100 kHz to 1 GHz
+let GBP = 10e6 * 2 * Math.PI;  // rad/s, default ~62.8 Mrad/s (10 MHz)
+const GBP_MIN = 100e3 * 2 * Math.PI, GBP_MAX = 1e9 * 2 * Math.PI;  // rad/s
 
 function drawGBP() {
     const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('gbp-canvas'));
@@ -1712,9 +1713,9 @@ function drawGBP() {
     const plotW = W - pad.left - pad.right;
     const plotH = H - pad.top - pad.bottom;
 
-    // Fixed axes: frequency 1 Hz to 10 GHz, gain -20 to 80 dB
-    const logMin = 0;   // 10^0 = 1 Hz
-    const logMax = 10;  // 10^10 = 10 GHz
+    // Fixed axes: 1 rad/s to 10^12 rad/s, gain -20 to 80 dB
+    const logMin = 0;   // 10^0 = 1 rad/s
+    const logMax = 12;  // 10^12 rad/s
     const dbMax = 80;
     const dbMin = -20;
 
@@ -1760,8 +1761,7 @@ function drawGBP() {
     const steps = 500;
     for (let g = 0; g < gains.length; g++) {
         const av = gains[g];
-        const f0 = GBP / av;  // cutoff frequency for this gain
-        const w0 = f0 * 2 * Math.PI;
+        const w0 = GBP / av;  // cutoff frequency for this gain (rad/s)
         const avDb = 20 * Math.log10(av);
 
         ctx.strokeStyle = colors[g];
@@ -1769,10 +1769,9 @@ function drawGBP() {
         ctx.beginPath();
         for (let i = 0; i <= steps; i++) {
             const t = i / steps;
-            const f = Math.pow(10, logMin + t * (logMax - logMin));
-            const w = f * 2 * Math.PI;
+            const w = Math.pow(10, logMin + t * (logMax - logMin));
             const db = 20 * Math.log10(av / Math.sqrt(1 + (w / w0) ** 2));
-            const x = xPx(f);
+            const x = xPx(w);
             const y = yPx(db);
             i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
         }
@@ -1788,25 +1787,21 @@ function drawGBP() {
         }
 
         // -3dB dot
-        const f0x = xPx(f0);
-        const f0y = yPx(avDb - 3);
-        ctx.beginPath(); ctx.arc(f0x, f0y, 4, 0, Math.PI * 2);
+        ctx.beginPath(); ctx.arc(xPx(w0), yPx(avDb - 3), 4, 0, Math.PI * 2);
         ctx.fillStyle = colors[g]; ctx.fill();
     }
 
     // Highlight the current Av from the main controls
-    const curF0 = GBP / Av;
-    const curW0 = curF0 * 2 * Math.PI;
+    const curW0 = GBP / Av;
     const curAvDb = 20 * Math.log10(Av);
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i <= steps; i++) {
         const t = i / steps;
-        const f = Math.pow(10, logMin + t * (logMax - logMin));
-        const w = f * 2 * Math.PI;
+        const w = Math.pow(10, logMin + t * (logMax - logMin));
         const db = 20 * Math.log10(Av / Math.sqrt(1 + (w / curW0) ** 2));
-        const x = xPx(f);
+        const x = xPx(w);
         const y = yPx(db);
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
@@ -1822,7 +1817,7 @@ function drawGBP() {
     }
 
     // Current -3dB dot
-    ctx.beginPath(); ctx.arc(xPx(curF0), yPx(curAvDb - 3), 6, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(xPx(curW0), yPx(curAvDb - 3), 6, 0, Math.PI * 2);
     ctx.fillStyle = '#fff'; ctx.fill();
 
     // Open-loop envelope line (the -20dB/dec slope from GBP)
@@ -1830,13 +1825,11 @@ function drawGBP() {
     ctx.strokeStyle = 'rgba(255,255,255,0.2)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    // This line goes from (very low freq, very high gain) through (GBP, 0dB)
-    // At frequency f: gain_dB = 20*log10(GBP/f)
     for (let i = 0; i <= steps; i++) {
         const t = i / steps;
-        const f = Math.pow(10, logMin + t * (logMax - logMin));
-        const db = 20 * Math.log10(GBP / f);
-        const x = xPx(f);
+        const w = Math.pow(10, logMin + t * (logMax - logMin));
+        const db = 20 * Math.log10(GBP / w);
+        const x = xPx(w);
         const y = yPx(db);
         i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
@@ -1849,7 +1842,7 @@ function drawGBP() {
     ctx.fillStyle = 'rgba(255,255,255,0.5)';
     ctx.font = "11px 'IBM Plex Mono', monospace";
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('GBP = ' + fmtHzShort(GBP), gbpX, pad.top + plotH + 4);
+    ctx.fillText('GBP = ' + fmtFreq(GBP), gbpX, pad.top + plotH + 4);
 
     // Axis tick labels
     ctx.fillStyle = 'rgba(255,255,255,0.4)';
@@ -1869,20 +1862,13 @@ function drawGBP() {
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
     ctx.font = "11px 'IBM Plex Sans', sans-serif";
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('Frequency (Hz)', pad.left + plotW / 2, H - 8);
+    ctx.fillText('Frequency \u03C9 (rad/s)', pad.left + plotW / 2, H - 8);
 
     ctx.save();
     ctx.translate(14, pad.top + plotH / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.fillText('Gain (dB)', 0, 0);
     ctx.restore();
-}
-
-function fmtHzShort(hz) {
-    if (hz >= 1e9) return (hz / 1e9).toPrecision(3) + ' GHz';
-    if (hz >= 1e6) return (hz / 1e6).toPrecision(3) + ' MHz';
-    if (hz >= 1e3) return (hz / 1e3).toPrecision(3) + ' kHz';
-    return hz.toPrecision(3) + ' Hz';
 }
 
 // ════════════════════════════════════════════════════════
@@ -1943,13 +1929,13 @@ function updateReadouts() {
     }
 
     // Section 4 readouts (GBP)
-    document.getElementById('gbp-val').textContent = fmtHzShort(GBP);
-    document.getElementById('gbp-readout').textContent = fmtHzShort(GBP);
+    document.getElementById('gbp-val').textContent = fmtFreq(GBP);
+    document.getElementById('gbp-readout').textContent = fmtFreq(GBP);
     document.getElementById('gbp-av-val').textContent = Av.toPrecision(3);
     document.getElementById('av-val-3').textContent = Av.toPrecision(3);
-    const gbpF0 = GBP / Av;
-    document.getElementById('gbp-f0-val').textContent = fmtHzShort(gbpF0);
-    document.getElementById('gbp-bw-val').textContent = fmtHzShort(gbpF0);
+    const gbpW0 = GBP / Av;
+    document.getElementById('gbp-f0-val').textContent = fmtFreq(gbpW0);
+    document.getElementById('gbp-bw-val').textContent = fmtFreq(gbpW0);
 }
 
 // ════════════════════════════════════════════════════════

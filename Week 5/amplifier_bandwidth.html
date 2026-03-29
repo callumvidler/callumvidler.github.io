@@ -645,45 +645,153 @@
     <!-- ════════════════════════════════════════════════ -->
     <div class="section" id="sec-bode">
         <div class="section-number">Part 03</div>
-        <h2>The Bode Magnitude Plot</h2>
+        <h2>Building the Bode Magnitude Plot</h2>
 
-        <p>If we compute |H| in decibels at every frequency and plot it on a log-frequency axis,
-           we get the <strong>Bode magnitude plot</strong> — the standard way engineers visualise
-           an amplifier's frequency response. The plot below is generated from the same transfer function.</p>
+        <p>We now have the magnitude of the transfer function from Part 02:</p>
+
+        <div class="eq-line">
+            <span>|H(j&#969;)| =</span>
+            <span class="frac frac-lg">
+                <span class="num">A<sub>v</sub></span>
+                <span class="den">&#8730;(1 + (&#969;/&#969;<sub>0</sub>)&#178;)</span>
+            </span>
+        </div>
+
+        <p>We could plot this directly — gain vs. frequency — but the numbers span
+           enormous ranges. An amplifier might have a gain of 1000 at 1 rad/s and 0.001 at
+           1 000 000 rad/s. A linear plot would be useless. Instead, engineers use two tricks
+           to compress the scale:</p>
+
+        <ol class="derivation">
+            <li>
+                <strong>Convert gain to decibels (dB).</strong> The decibel is a logarithmic unit
+                that compresses large ratios into manageable numbers:
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>|H|<sub>dB</sub> = 20 log<sub>10</sub> |H|</span>
+                </div>
+                <span class="step-note">A gain of 100 becomes 40 dB. A gain of 1000 becomes 60 dB.
+                A gain of 1 (unity) is 0 dB. Halving the voltage is &#8722;6 dB.</span>
+            </li>
+
+            <li>
+                <strong>Use a logarithmic frequency axis.</strong> Instead of spacing frequencies
+                linearly (0, 100, 200, 300...), we space them by powers of 10 — called <em>decades</em>:
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span class="dim">...</span>
+                    <span>10&#185;</span>
+                    <span class="dim">&nbsp;&#8594;&nbsp;</span>
+                    <span>10&#178;</span>
+                    <span class="dim">&nbsp;&#8594;&nbsp;</span>
+                    <span>10&#179;</span>
+                    <span class="dim">&nbsp;&#8594;&nbsp;</span>
+                    <span>10&#8308;</span>
+                    <span class="dim">&nbsp;&#8594;&nbsp;</span>
+                    <span>10&#8309;</span>
+                    <span class="dim">...</span>
+                </div>
+                <span class="step-note">Each step is a 10&#215; increase. This means 1 Hz and 1 MHz can
+                appear on the same axis with equal visual weight.</span>
+            </li>
+
+            <li>
+                <strong>Substitute into the magnitude equation</strong> to get the dB form:
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>|H|<sub>dB</sub> = 20 log<sub>10</sub> A<sub>v</sub>
+                    &#8722; 20 log<sub>10</sub> &#8730;(1 + (&#969;/&#969;<sub>0</sub>)&#178;)</span>
+                </div>
+                <span class="step-note">The fraction splits into a subtraction in log-space.
+                The first term is the mid-band gain (constant). The second term is the
+                loss due to the RC filter (grows with frequency).</span>
+            </li>
+
+            <li>
+                <strong>Simplify using the half-power rule:</strong>
+                <div class="eq-line" style="margin: 10px 0 4px;">
+                    <span>= 20 log<sub>10</sub> A<sub>v</sub>
+                    &#8722; 10 log<sub>10</sub>(1 + (&#969;/&#969;<sub>0</sub>)&#178;)</span>
+                </div>
+                <span class="step-note">The 20&#183;log of a square root becomes 10&#183;log, since
+                log(&#8730;x) = &#189;&#183;log(x). This is the equation we plot below.</span>
+            </li>
+        </ol>
+
+        <p>The result is a curve with a very distinctive shape — flat at low frequencies,
+           then bending into a straight downward slope at high frequencies. This is the
+           <strong>Bode magnitude plot</strong>:</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="bode-canvas"></canvas>
-        </div>
-
-        <p>The curve has three distinct regimes:</p>
-
-        <div style="margin: 16px 0;">
-            <span class="regime-tag passband" id="tag-passband">Passband</span>
-            <span style="font-size:13px; color:var(--text-dim); margin: 0 4px;">&#969; &#8810; &#969;<sub>0</sub> — gain &#8776; A<sub>v</sub> (flat)</span>
-        </div>
-        <div style="margin: 8px 0;">
-            <span class="regime-tag cutoff" id="tag-cutoff">&#8722;3 dB Cutoff</span>
-            <span style="font-size:13px; color:var(--text-dim); margin: 0 4px;">&#969; = &#969;<sub>0</sub> — gain = A<sub>v</sub>/&#8730;2</span>
-        </div>
-        <div style="margin: 8px 0 16px;">
-            <span class="regime-tag rolloff" id="tag-rolloff">Rolloff</span>
-            <span style="font-size:13px; color:var(--text-dim); margin: 0 4px;">&#969; &#8811; &#969;<sub>0</sub> — gain drops at &#8722;20 dB/decade</span>
-        </div>
-
-        <p>The <strong>&#8722;20 dB/decade</strong> slope means that for every 10&#215; increase in frequency
-           above &#969;<sub>0</sub>, the gain drops by 20 dB (a factor of 10 in voltage). This is the signature
-           of a single-pole system — one RC time constant limiting the bandwidth.</p>
-
-        <div class="callout">
-            <strong>Reading the Bode plot:</strong> The yellow marker shows your current test frequency.
-            Everything to its left (below &#969;<sub>0</sub>) is the useful bandwidth where the amplifier
-            works as intended. The green dot marks the &#8722;3 dB point — the boundary.
         </div>
 
         <div class="readout-bar">
             <div class="readout-item">Regime: <span class="val" id="regime-label">—</span></div>
             <div class="readout-item">Gain at &#969;: <span class="val" id="bode-gain-val">—</span></div>
             <div class="readout-item">Gain: <span class="val" id="bode-db-val">—</span></div>
+        </div>
+
+        <h3 style="font-size: 16px; color: #fff; margin: 32px 0 16px;">Reading the three regimes</h3>
+
+        <p>The shape of the curve comes directly from the equation. In each regime,
+           one part of the denominator dominates:</p>
+
+        <div style="margin: 20px 0;">
+            <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
+                <span class="regime-tag passband" style="flex-shrink:0;">Passband</span>
+                <div style="font-size: 13px; color: var(--text-dim); line-height: 1.7;">
+                    <strong style="color:#fff;">&#969; &#8810; &#969;<sub>0</sub></strong> — The ratio
+                    &#969;/&#969;<sub>0</sub> is tiny, so (&#969;/&#969;<sub>0</sub>)&#178; &#8776; 0 and
+                    the denominator &#8776; 1. The gain is simply A<sub>v</sub> — a flat horizontal line.
+                    <div class="eq-line" style="margin: 8px 0 4px; font-size: 12px; padding: 8px 12px;">
+                        |H|<sub>dB</sub> &#8776; 20 log<sub>10</sub> A<sub>v</sub>
+                        <span class="dim">&nbsp;&nbsp;(constant)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
+                <span class="regime-tag cutoff" style="flex-shrink:0;">&#8722;3 dB</span>
+                <div style="font-size: 13px; color: var(--text-dim); line-height: 1.7;">
+                    <strong style="color:#fff;">&#969; = &#969;<sub>0</sub></strong> — The ratio is
+                    exactly 1, so the denominator is &#8730;(1 + 1) = &#8730;2. The gain drops to
+                    A<sub>v</sub>/&#8730;2, which in dB is:
+                    <div class="eq-line" style="margin: 8px 0 4px; font-size: 12px; padding: 8px 12px;">
+                        20 log<sub>10</sub>(1/&#8730;2) = <span class="yellow">&#8722;3.01 dB</span>
+                        <span class="dim">&nbsp;&nbsp;below mid-band</span>
+                    </div>
+                    This is the <strong style="color:#fff;">half-power point</strong> — the output
+                    power (proportional to V&#178;) is exactly half of its maximum.
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
+                <span class="regime-tag rolloff" style="flex-shrink:0;">Rolloff</span>
+                <div style="font-size: 13px; color: var(--text-dim); line-height: 1.7;">
+                    <strong style="color:#fff;">&#969; &#8811; &#969;<sub>0</sub></strong> — The ratio
+                    dominates: (&#969;/&#969;<sub>0</sub>)&#178; &#8811; 1, so the "1" is negligible
+                    and the denominator &#8776; &#969;/&#969;<sub>0</sub>. The gain simplifies to:
+                    <div class="eq-line" style="margin: 8px 0 4px; font-size: 12px; padding: 8px 12px;">
+                        |H|<sub>dB</sub> &#8776; 20 log<sub>10</sub> A<sub>v</sub> &#8722; 20 log<sub>10</sub>(&#969;/&#969;<sub>0</sub>)
+                    </div>
+                    Every 10&#215; increase in &#969; adds 20 to the log term, so the gain drops by
+                    <strong style="color:#fff;">20 dB per decade</strong> — a straight line on the
+                    log-log plot. This constant slope is the hallmark of a single-pole system.
+                </div>
+            </div>
+        </div>
+
+        <div class="callout">
+            <strong>Why this shape matters:</strong> The Bode plot tells an engineer at a glance what their
+            amplifier can and cannot do. Everything to the left of &#969;<sub>0</sub> (the green
+            dashed line) is the <em>useful bandwidth</em> — the frequency range where the amplifier
+            faithfully reproduces the input signal. The yellow marker shows your current test frequency.
+            Try sweeping it from left to right and watch the gain drop.
+        </div>
+
+        <div class="callout warn">
+            <strong>The &#8722;20 dB/decade rule</strong> only applies to a <em>single-pole</em> system
+            (one RC pair). Real amplifiers often have multiple poles — each additional pole adds another
+            &#8722;20 dB/decade, steepening the rolloff. A two-pole system drops at &#8722;40 dB/decade,
+            three poles at &#8722;60 dB/decade, and so on.
         </div>
     </div>
 

@@ -1224,7 +1224,12 @@ function drawLoadLineInset(ctx, w, h) {
     ctx.fill();
 
     if (amplitude > 0) {
-        const swingFrac = (amplitude / 100) * 0.3;
+        // Compute swing as fraction of load line based on actual output voltage
+        const loadLineRange = VCC - VCE_SAT; // total V_CE span of load line
+        const unclippedSwing = (amplitude / 100) * GAIN; // peak output voltage swing
+        const swingFrac = unclippedSwing / loadLineRange;
+
+        // Clamp to load line endpoints — hitting 0 or 1 means clipping at the axis
         const s1Frac = Math.max(0, qFrac - swingFrac);
         const s2Frac = Math.min(1, qFrac + swingFrac);
 
@@ -1234,6 +1239,23 @@ function drawLoadLineInset(ctx, w, h) {
         ctx.moveTo(ox + axW * (1 - s2Frac), oy - axH * s2Frac);
         ctx.lineTo(ox + axW * (1 - s1Frac), oy - axH * s1Frac);
         ctx.stroke();
+
+        // Draw clipping indicators at the axes
+        const clipColor = 'rgba(224,96,80,0.7)';
+        if (s2Frac >= 1) {
+            // Clipping at saturation (I_C axis / top-left of load line)
+            ctx.beginPath();
+            ctx.arc(ox, oy - axH, 3, 0, Math.PI * 2);
+            ctx.fillStyle = clipColor;
+            ctx.fill();
+        }
+        if (s1Frac <= 0) {
+            // Clipping at cutoff (V_CE axis / bottom-right of load line)
+            ctx.beginPath();
+            ctx.arc(ox + axW, oy, 3, 0, Math.PI * 2);
+            ctx.fillStyle = clipColor;
+            ctx.fill();
+        }
     }
 
     ctx.lineWidth = 1.5;
@@ -1604,6 +1626,47 @@ function drawClassABCurrentFlow(ctx, w, h) {
         [colRL, rowGnd]
     ];
     drawCurrentFlow(ctx, voutPath, dominantColor, Math.max(signalIntensity * 0.8, 0.15));
+
+    // ── Base voltage & current annotations ──
+    // In Class AB the bias diodes set VB_NPN ≈ +VBE above midpoint,
+    // VB_PNP ≈ −VBE below midpoint. The input signal shifts both together.
+    const VBE = 0.6;  // forward diode / base-emitter voltage
+    const BETA = 100; // transistor current gain (hFE)
+
+    // Instantaneous base voltages (referenced to output midpoint = 0V)
+    const vbNPN = VBE + instantVin;    // NPN base tracks input + diode offset
+    const vbPNP = -VBE + instantVin;   // PNP base tracks input − diode offset
+
+    // Collector currents from the intensity model (mA)
+    const icNPN_mA = npnIntensity * (icq > 0 ? icq : 5);  // scale to quiescent current
+    const icPNP_mA = pnpIntensity * (icq > 0 ? icq : 5);
+    const ibNPN_uA = (icNPN_mA / BETA) * 1000;  // base current in µA
+    const ibPNP_uA = (icPNP_mA / BETA) * 1000;
+
+    // Draw NPN base annotation (to the left of the base pin)
+    ctx.save();
+    ctx.font = '500 9px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'right';
+
+    // NPN base voltage
+    ctx.fillStyle = 'rgba(106,170,142,0.9)';
+    const npnLabelX = baseX - 22;
+    const npnLabelY = rowNPN - 6;
+    ctx.fillText('Vb=' + vbNPN.toFixed(2) + 'V', npnLabelX, npnLabelY);
+    // NPN base current
+    ctx.fillStyle = 'rgba(106,170,142,0.65)';
+    ctx.fillText('Ib=' + ibNPN_uA.toFixed(0) + 'µA', npnLabelX, npnLabelY + 11);
+
+    // PNP base voltage
+    ctx.fillStyle = 'rgba(80,128,208,0.9)';
+    const pnpLabelX = baseX - 22;
+    const pnpLabelY = rowPNP - 6;
+    ctx.fillText('Vb=' + vbPNP.toFixed(2) + 'V', pnpLabelX, pnpLabelY);
+    // PNP base current
+    ctx.fillStyle = 'rgba(80,128,208,0.65)';
+    ctx.fillText('Ib=' + ibPNP_uA.toFixed(0) + 'µA', pnpLabelX, pnpLabelY + 11);
+
+    ctx.restore();
 
     // Signal state label
     ctx.save();

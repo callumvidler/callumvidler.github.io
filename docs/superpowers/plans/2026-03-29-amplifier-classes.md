@@ -1,0 +1,1754 @@
+# Amplifier Classes Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Build an interactive Amplifier Classes page for Week 5 that lets students explore Class A, B, and AB amplifiers with realistic circuit schematics, live waveforms, power efficiency bars, and dynamic explanations.
+
+**Architecture:** Single self-contained HTML file (`Week 5/amplifier_classes.html`) with inline CSS and JavaScript. Uses Canvas 2D API for all rendering — circuit schematic, waveforms, and power bars. State managed via globals; `requestAnimationFrame` loop drives waveform animation. Index page updated with Week 5 section.
+
+**Tech Stack:** Vanilla HTML/CSS/JS, Canvas 2D API, Google Fonts (IBM Plex Sans, IBM Plex Mono)
+
+---
+
+### Task 1: Create HTML skeleton with CSS and 2x2 grid layout
+
+**Files:**
+- Create: `Week 5/amplifier_classes.html`
+
+This task creates the full HTML document with all CSS styles and the empty panel structure. No JavaScript yet.
+
+- [ ] **Step 1: Create the Week 5 directory if needed and the HTML file**
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Amplifier Classes — Interactive Explainer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #1a1a1e;
+            --bg-panel: #222226;
+            --bg-card: #2a2a2f;
+            --border: rgba(255,255,255,0.08);
+            --accent: #6aaa8e;
+            --accent-dim: #5a9a7e;
+            --text: #ffffff;
+            --text-dim: #a0a0a0;
+            --text-muted: #606060;
+            --col-input: #5080d0;
+            --col-output: #6aaa8e;
+            --col-heat: #e06050;
+            --col-power-in: #5080d0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg-deep);
+            color: var(--text);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        header {
+            padding: 0.55rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-panel);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 12px; }
+
+        .back-btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 4px 10px; border-radius: 3px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            color: var(--text-dim); text-decoration: none;
+            font-size: 11px; font-weight: 500; transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+
+        h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
+        .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            height: calc(100vh - 42px);
+            gap: 0;
+        }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 0.4rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            flex-shrink: 0;
+        }
+        .panel-header strong { color: var(--text); font-weight: 500; font-size: 0.75rem; }
+
+        .panel-body {
+            flex: 1;
+            position: relative;
+            min-height: 0;
+        }
+        .panel-body canvas { display: block; width: 100%; height: 100%; }
+
+        /* Controls panel */
+        .controls-panel {
+            background: var(--bg-deep);
+            border: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .ctrl-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.45rem 0.55rem;
+        }
+
+        .ctrl-title {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--text-dim);
+            margin-bottom: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 0.3rem;
+        }
+        .ctrl-row:last-child { margin-bottom: 0; }
+
+        .ctrl-row label {
+            font-size: 0.68rem;
+            color: var(--text-dim);
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+
+        .ctrl-row input[type=range] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .ctrl-row input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.68rem;
+            color: #fff;
+            min-width: 56px;
+            text-align: right;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 3px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 5px 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn.active {
+            background: rgba(255,255,255,0.12);
+            border-color: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        /* Power bars */
+        .power-bar-container {
+            margin-top: 4px;
+        }
+        .power-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .power-bar-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            min-width: 70px;
+            flex-shrink: 0;
+        }
+        .power-bar-track {
+            flex: 1;
+            height: 10px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .power-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.15s ease;
+        }
+        .power-bar-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            min-width: 42px;
+            text-align: right;
+        }
+        .efficiency-readout {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            padding: 4px 0;
+            color: var(--accent);
+        }
+
+        /* Explanation panel */
+        .explanation-panel {
+            padding: 0.75rem;
+            overflow-y: auto;
+            font-size: 0.78rem;
+            line-height: 1.6;
+            color: var(--text-dim);
+        }
+        .explanation-panel h3 {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+        .explanation-panel p {
+            margin-bottom: 0.5rem;
+        }
+        .physics-note {
+            background: rgba(106,170,142,0.08);
+            border: 1px solid rgba(106,170,142,0.2);
+            border-radius: 3px;
+            padding: 0.5rem 0.65rem;
+            margin-top: 0.5rem;
+            font-size: 0.72rem;
+            line-height: 1.5;
+        }
+        .physics-note strong {
+            color: var(--accent);
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 0.85rem;
+            font-size: 0.65rem;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            color: var(--text-dim);
+        }
+        .legend-dot {
+            width: 8px; height: 8px;
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <a class="back-btn" href="../index.html">&larr; Back</a>
+        <div>
+            <h1>Amplifier Classes</h1>
+            <div class="header-sub">Week 5 &mdash; Amplifiers</div>
+        </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;">
+        <span id="efficiency-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:3px 8px;border-radius:3px;background:rgba(106,170,142,0.15);color:var(--accent);font-weight:500;">&eta; = 25%</span>
+    </div>
+</header>
+
+<div class="main-layout">
+    <!-- Top-left: Circuit schematic -->
+    <div class="panel">
+        <div class="panel-header">
+            <strong>Circuit Schematic</strong>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-input)"></div>V<sub>in</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-output)"></div>V<sub>out</sub></div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="circuit-canvas"></canvas></div>
+    </div>
+
+    <!-- Top-right: Waveforms -->
+    <div class="panel">
+        <div class="panel-header">
+            <strong>Input / Output Waveforms</strong>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-input)"></div>V<sub>in</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--col-output)"></div>V<sub>out</sub></div>
+            </div>
+        </div>
+        <div class="panel-body"><canvas id="waveform-canvas"></canvas></div>
+    </div>
+
+    <!-- Bottom-left: Controls + Power -->
+    <div class="controls-panel">
+        <div class="ctrl-section">
+            <div class="ctrl-title">Amplifier Class</div>
+            <div class="btn-group">
+                <button class="toggle-btn active" id="btn-classA" onclick="setClass('A')">Class A</button>
+                <button class="toggle-btn" id="btn-classB" onclick="setClass('B')">Class B</button>
+                <button class="toggle-btn" id="btn-classAB" onclick="setClass('AB')">Class AB</button>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Input Signal</div>
+            <div class="ctrl-row">
+                <label>Amplitude</label>
+                <input type="range" id="sl-amplitude" min="0" max="100" value="30" oninput="setAmplitude(this.value)">
+                <span class="ctrl-val" id="val-amplitude">0.30 V</span>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Bias Point</div>
+            <div class="ctrl-row">
+                <label>Q-Point</label>
+                <input type="range" id="sl-bias" min="0" max="100" value="50" oninput="setBias(this.value)">
+                <span class="ctrl-val" id="val-bias">I<sub>CQ</sub> 5.0 mA</span>
+            </div>
+        </div>
+        <div class="ctrl-section">
+            <div class="ctrl-title">Power Budget</div>
+            <div class="power-bar-container">
+                <div class="power-bar-row">
+                    <span class="power-bar-label">DC Input</span>
+                    <div class="power-bar-track"><div class="power-bar-fill" id="bar-dc" style="width:80%;background:var(--col-power-in)"></div></div>
+                    <span class="power-bar-val" id="val-dc">120 mW</span>
+                </div>
+                <div class="power-bar-row">
+                    <span class="power-bar-label">Signal Out</span>
+                    <div class="power-bar-track"><div class="power-bar-fill" id="bar-signal" style="width:20%;background:var(--col-output)"></div></div>
+                    <span class="power-bar-val" id="val-signal">30 mW</span>
+                </div>
+                <div class="power-bar-row">
+                    <span class="power-bar-label">Heat</span>
+                    <div class="power-bar-track"><div class="power-bar-fill" id="bar-heat" style="width:60%;background:var(--col-heat)"></div></div>
+                    <span class="power-bar-val" id="val-heat">90 mW</span>
+                </div>
+            </div>
+            <div class="efficiency-readout" id="efficiency-readout">&eta; = 25%</div>
+        </div>
+    </div>
+
+    <!-- Bottom-right: Explanation -->
+    <div class="panel">
+        <div class="panel-header"><strong>Explanation</strong></div>
+        <div class="panel-body explanation-panel" id="explanation-panel">
+        </div>
+    </div>
+</div>
+
+<script>
+// JavaScript will be added in subsequent tasks
+</script>
+
+</body>
+</html>
+```
+
+- [ ] **Step 2: Open in browser and verify layout**
+
+Open `Week 5/amplifier_classes.html` in a browser. Verify:
+- Header shows title, back button, and efficiency badge
+- 2x2 grid fills the viewport
+- Top-left shows "Circuit Schematic" panel header with empty canvas
+- Top-right shows "Input / Output Waveforms" panel header with empty canvas
+- Bottom-left shows controls with three class toggle buttons, two sliders, and power bars
+- Bottom-right shows "Explanation" panel header
+- Dark theme matches existing pages
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "Week 5/amplifier_classes.html"
+git commit -m "feat: add amplifier classes page skeleton with CSS and 2x2 grid layout"
+```
+
+---
+
+### Task 2: Add state management, canvas setup, and control handlers
+
+**Files:**
+- Modify: `Week 5/amplifier_classes.html` (inside `<script>` tag)
+
+This task wires up the controls to state variables and sets up canvas rendering infrastructure.
+
+- [ ] **Step 1: Add state variables and constants inside the `<script>` tag**
+
+Replace the script placeholder with:
+
+```javascript
+// ═══════════════════════════════════════════════════════════════
+//  Amplifier Classes — Interactive Visualization
+// ═══════════════════════════════════════════════════════════════
+
+// ─── Constants ───
+const VCC = 12;          // Supply voltage
+const VCE_SAT = 0.2;     // Saturation voltage
+const MAX_IC = 10;        // Max collector current mA for load line
+const RC = 1200;          // Collector resistance ohms
+const GAIN = 20;          // Voltage gain magnitude
+
+// ─── State ───
+let ampClass = 'A';       // 'A', 'B', 'AB'
+let amplitude = 30;       // 0-100 slider value
+let biasPoint = 50;       // 0-100 slider value
+let simTime = 0;
+
+// ─── Derived state (recomputed on change) ───
+let vinPeak = 0;          // Input voltage peak (V)
+let icq = 0;              // Quiescent collector current (mA)
+let vceq = 0;             // Quiescent V_CE (V)
+let dcPower = 0;          // DC input power (mW)
+let signalPower = 0;      // Signal output power (mW)
+let heatPower = 0;        // Wasted power (mW)
+let efficiency = 0;       // Percentage
+
+// ─── Canvas setup ───
+const circuitCanvas = document.getElementById('circuit-canvas');
+const waveformCanvas = document.getElementById('waveform-canvas');
+const circuitCtx = circuitCanvas.getContext('2d');
+const waveformCtx = waveformCanvas.getContext('2d');
+
+function resizeCanvas(canvas) {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { w: rect.width, h: rect.height };
+}
+
+let circuitSize, waveformSize;
+function resizeAll() {
+    circuitSize = resizeCanvas(circuitCanvas);
+    waveformSize = resizeCanvas(waveformCanvas);
+}
+window.addEventListener('resize', () => { resizeAll(); updateAll(); });
+resizeAll();
+```
+
+- [ ] **Step 2: Add control handler functions**
+
+```javascript
+// ─── Control handlers ───
+function setClass(cls) {
+    ampClass = cls;
+    document.getElementById('btn-classA').classList.toggle('active', cls === 'A');
+    document.getElementById('btn-classB').classList.toggle('active', cls === 'B');
+    document.getElementById('btn-classAB').classList.toggle('active', cls === 'AB');
+
+    // Snap bias to default for each class
+    if (cls === 'A') biasPoint = 50;
+    else if (cls === 'B') biasPoint = 0;
+    else biasPoint = 5;
+
+    document.getElementById('sl-bias').value = biasPoint;
+    updateAll();
+}
+
+function setAmplitude(val) {
+    amplitude = parseInt(val);
+    updateAll();
+}
+
+function setBias(val) {
+    biasPoint = parseInt(val);
+    updateAll();
+}
+
+function computeDerived() {
+    vinPeak = amplitude / 100;  // 0 to 1 V
+
+    // Bias maps to quiescent collector current: 0-100 → 0-10 mA
+    icq = (biasPoint / 100) * MAX_IC;
+    vceq = VCC - (icq / 1000) * RC;
+    if (vceq < VCE_SAT) vceq = VCE_SAT;
+
+    // Power calculations
+    dcPower = VCC * icq;  // mW (VCC * ICQ_mA)
+
+    // Output signal power depends on class and amplitude
+    const voutPeak = Math.min(vinPeak * GAIN, vceq - VCE_SAT, VCC - vceq);
+    const clippedVoutPeak = Math.max(0, voutPeak);
+
+    if (ampClass === 'A') {
+        // Class A: full cycle, signal power = Vout_peak^2 / (2 * RC)
+        signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
+    } else if (ampClass === 'B') {
+        // Class B: two transistors share the cycle, efficiency up to pi/4
+        // DC power for push-pull: 2 * VCC * Ipeak / pi
+        const iPeak = clippedVoutPeak / RC * 1000;
+        dcPower = 2 * VCC * iPeak / Math.PI;
+        signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
+    } else {
+        // Class AB: slightly more DC power than B due to bias
+        const iPeak = clippedVoutPeak / RC * 1000;
+        const iBias = icq;  // small standing current
+        dcPower = 2 * VCC * (iPeak / Math.PI + iBias);
+        signalPower = (clippedVoutPeak * clippedVoutPeak) / (2 * RC) * 1000;
+    }
+
+    heatPower = Math.max(0, dcPower - signalPower);
+    efficiency = dcPower > 0 ? (signalPower / dcPower) * 100 : 0;
+}
+
+function updateUI() {
+    // Amplitude display
+    document.getElementById('val-amplitude').textContent = (amplitude / 100).toFixed(2) + ' V';
+
+    // Bias display
+    document.getElementById('val-bias').innerHTML = 'I<sub>CQ</sub> ' + icq.toFixed(1) + ' mA';
+
+    // Power bars
+    const maxPower = Math.max(dcPower, 1);
+    document.getElementById('bar-dc').style.width = '100%';
+    document.getElementById('val-dc').textContent = dcPower.toFixed(0) + ' mW';
+
+    document.getElementById('bar-signal').style.width = (signalPower / maxPower * 100).toFixed(1) + '%';
+    document.getElementById('val-signal').textContent = signalPower.toFixed(0) + ' mW';
+
+    document.getElementById('bar-heat').style.width = (heatPower / maxPower * 100).toFixed(1) + '%';
+    document.getElementById('val-heat').textContent = heatPower.toFixed(0) + ' mW';
+
+    // Efficiency
+    const effStr = '\u03B7 = ' + efficiency.toFixed(0) + '%';
+    document.getElementById('efficiency-readout').textContent = effStr;
+    document.getElementById('efficiency-badge').textContent = effStr;
+}
+
+function updateAll() {
+    computeDerived();
+    updateUI();
+    drawCircuit();
+    drawWaveforms();
+    updateExplanation();
+}
+```
+
+- [ ] **Step 3: Add placeholder render and explanation functions so updateAll works**
+
+```javascript
+function drawCircuit() {
+    const ctx = circuitCtx;
+    const { w, h } = circuitSize;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = 'var(--text-dim)';
+    ctx.font = '14px IBM Plex Sans';
+    ctx.textAlign = 'center';
+    ctx.fillText('Circuit — Class ' + ampClass, w / 2, h / 2);
+}
+
+function drawWaveforms() {
+    const ctx = waveformCtx;
+    const { w, h } = waveformSize;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#a0a0a0';
+    ctx.font = '14px IBM Plex Sans';
+    ctx.textAlign = 'center';
+    ctx.fillText('Waveforms — Class ' + ampClass, w / 2, h / 2);
+}
+
+function updateExplanation() {
+    document.getElementById('explanation-panel').innerHTML = '<h3>Class ' + ampClass + '</h3><p>Explanation placeholder</p>';
+}
+
+// ─── Initial render ───
+updateAll();
+```
+
+- [ ] **Step 4: Open in browser and verify controls work**
+
+Verify:
+- Clicking Class A/B/AB toggles highlight correctly
+- Bias slider snaps to correct default when switching class
+- Amplitude and bias sliders update their readout values
+- Power bars update (values change)
+- Efficiency badge in header updates
+- Canvas shows placeholder text matching selected class
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add "Week 5/amplifier_classes.html"
+git commit -m "feat: add state management, canvas setup, and control handlers"
+```
+
+---
+
+### Task 3: Implement circuit schematic rendering
+
+**Files:**
+- Modify: `Week 5/amplifier_classes.html` (replace `drawCircuit` function)
+
+This task replaces the placeholder `drawCircuit` with realistic canvas-drawn schematics for each class.
+
+- [ ] **Step 1: Replace the `drawCircuit` function with the full implementation**
+
+Replace `function drawCircuit() { ... }` (the placeholder version) with:
+
+```javascript
+function drawCircuit() {
+    const ctx = circuitCtx;
+    const { w, h } = circuitSize;
+    ctx.clearRect(0, 0, w, h);
+
+    // Shared drawing helpers
+    const lineColor = 'rgba(255,255,255,0.5)';
+    const activeColor = '#6aaa8e';
+    const componentColor = 'rgba(255,255,255,0.7)';
+    const labelColor = '#a0a0a0';
+    const labelFont = '500 10px "IBM Plex Mono", monospace';
+    const titleFont = '500 11px "IBM Plex Sans", sans-serif';
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (ampClass === 'A') {
+        drawClassACircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+    } else if (ampClass === 'B') {
+        drawClassBCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+    } else {
+        drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+    }
+
+    // Draw load line inset in bottom-right corner
+    drawLoadLineInset(ctx, w, h);
+}
+
+// ─── Drawing helpers ───
+function drawResistor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;  // perpendicular
+    const teeth = 6;
+    const bodyStart = len * 0.2;
+    const bodyEnd = len * 0.8;
+    const bodyLen = bodyEnd - bodyStart;
+    const amp = 5;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 + ux * bodyStart, y1 + uy * bodyStart);
+
+    for (let i = 0; i <= teeth; i++) {
+        const t = bodyStart + (i / teeth) * bodyLen;
+        const side = (i % 2 === 0) ? amp : -amp;
+        if (i === 0 || i === teeth) {
+            ctx.lineTo(x1 + ux * t, y1 + uy * t);
+        } else {
+            ctx.lineTo(x1 + ux * t + px * side, y1 + uy * t + py * side);
+        }
+    }
+
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    if (label) {
+        ctx.save();
+        ctx.font = labelFont;
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const mx = (x1 + x2) / 2 + px * 14;
+        const my = (y1 + y2) / 2 + py * 14;
+        ctx.fillText(label, mx, my);
+        ctx.restore();
+    }
+}
+
+function drawCapacitor(ctx, x1, y1, x2, y2, label, labelColor, labelFont) {
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const gap = 3;
+    const plateLen = 8;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(mx - ux * gap, my - uy * gap);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx - ux * gap + px * plateLen, my - uy * gap + py * plateLen);
+    ctx.lineTo(mx - ux * gap - px * plateLen, my - uy * gap - py * plateLen);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * gap + px * plateLen, my + uy * gap + py * plateLen);
+    ctx.lineTo(mx + ux * gap - px * plateLen, my + uy * gap - py * plateLen);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * gap, my + uy * gap);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    if (label) {
+        ctx.save();
+        ctx.font = labelFont;
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, mx + px * 14, my + py * 14);
+        ctx.restore();
+    }
+}
+
+function drawNPNTransistor(ctx, x, y, scale, labelColor, labelFont) {
+    const s = scale || 1;
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+
+    // Base line (left)
+    ctx.beginPath();
+    ctx.moveTo(x - 16 * s, y);
+    ctx.lineTo(x - 6 * s, y);
+    ctx.stroke();
+
+    // Vertical bar at base
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 10 * s);
+    ctx.lineTo(x - 6 * s, y + 10 * s);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // Collector (top-right)
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 6 * s);
+    ctx.lineTo(x + 10 * s, y - 14 * s);
+    ctx.stroke();
+
+    // Emitter (bottom-right) with arrow
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y + 6 * s);
+    ctx.lineTo(x + 10 * s, y + 14 * s);
+    ctx.stroke();
+
+    // Arrow on emitter
+    const ax = x + 10 * s, ay = y + 14 * s;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.lineTo(ax - 6 * s, ay - 2 * s);
+    ctx.lineTo(ax - 3 * s, ay - 6 * s);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+
+    // Labels
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('B', x - 22 * s, y + 4);
+    ctx.fillText('C', x + 16 * s, y - 16 * s);
+    ctx.fillText('E', x + 16 * s, y + 18 * s);
+    ctx.restore();
+}
+
+function drawPNPTransistor(ctx, x, y, scale, labelColor, labelFont) {
+    const s = scale || 1;
+    ctx.beginPath();
+    ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+
+    ctx.beginPath();
+    ctx.moveTo(x - 16 * s, y);
+    ctx.lineTo(x - 6 * s, y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 10 * s);
+    ctx.lineTo(x - 6 * s, y + 10 * s);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // Collector (bottom-right)
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y + 6 * s);
+    ctx.lineTo(x + 10 * s, y + 14 * s);
+    ctx.stroke();
+
+    // Emitter (top-right) with arrow pointing IN
+    ctx.beginPath();
+    ctx.moveTo(x - 6 * s, y - 6 * s);
+    ctx.lineTo(x + 10 * s, y - 14 * s);
+    ctx.stroke();
+
+    // Arrow on emitter (pointing inward for PNP)
+    const bx = x - 6 * s, by = y - 6 * s;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + 6 * s, by - 2 * s);
+    ctx.lineTo(bx + 3 * s, by - 6 * s);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('B', x - 22 * s, y + 4);
+    ctx.fillText('E', x + 16 * s, y - 16 * s);
+    ctx.fillText('C', x + 16 * s, y + 18 * s);
+    ctx.restore();
+}
+
+function drawDiode(ctx, x1, y1, x2, y2) {
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const triSize = 6;
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(mx - ux * triSize, my - uy * triSize);
+    ctx.stroke();
+
+    // Triangle
+    ctx.beginPath();
+    ctx.moveTo(mx - ux * triSize + px * triSize, my - uy * triSize + py * triSize);
+    ctx.lineTo(mx - ux * triSize - px * triSize, my - uy * triSize - py * triSize);
+    ctx.lineTo(mx + ux * triSize, my + uy * triSize);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fill();
+    ctx.stroke();
+
+    // Bar
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * triSize + px * triSize, my + uy * triSize + py * triSize);
+    ctx.lineTo(mx + ux * triSize - px * triSize, my + uy * triSize - py * triSize);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(mx + ux * triSize, my + uy * triSize);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+}
+
+function drawGround(ctx, x, y) {
+    const w = 10;
+    ctx.beginPath();
+    ctx.moveTo(x - w, y); ctx.lineTo(x + w, y); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.6, y + 4); ctx.lineTo(x + w * 0.6, y + 4); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - w * 0.25, y + 8); ctx.lineTo(x + w * 0.25, y + 8); ctx.stroke();
+}
+
+function drawVoltageSource(ctx, x, y, label, labelColor, labelFont) {
+    ctx.beginPath();
+    ctx.arc(x, y, 10, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.save();
+    ctx.font = '500 9px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+', x, y - 4);
+    ctx.fillText('−', x, y + 5);
+    ctx.restore();
+    if (label) {
+        ctx.save();
+        ctx.font = labelFont;
+        ctx.fillStyle = labelColor;
+        ctx.textAlign = 'center';
+        ctx.fillText(label, x - 18, y);
+        ctx.restore();
+    }
+}
+
+// ─── Class A: Common-Emitter ───
+function drawClassACircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
+    ctx.strokeStyle = lineColor;
+    const cx = w / 2;
+    const cy = h / 2 - 10;
+    const spread = Math.min(w, h) * 0.35;
+
+    // VCC rail at top
+    const vccY = cy - spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CC = ' + VCC + 'V', cx, vccY - 8);
+    ctx.restore();
+    ctx.beginPath();
+    ctx.moveTo(cx - spread * 0.6, vccY);
+    ctx.lineTo(cx + spread * 0.3, vccY);
+    ctx.strokeStyle = 'rgba(224,96,80,0.4)';
+    ctx.stroke();
+    ctx.strokeStyle = lineColor;
+
+    // R1 from VCC to base junction
+    const r1Top = vccY;
+    const r1Bot = cy - spread * 0.2;
+    const baseX = cx - spread * 0.3;
+    drawResistor(ctx, baseX, r1Top, baseX, r1Bot, 'R1', labelColor, labelFont);
+
+    // R2 from base junction to ground
+    const r2Top = r1Bot;
+    const r2Bot = cy + spread * 0.6;
+    drawResistor(ctx, baseX, r2Top, baseX, r2Bot, 'R2', labelColor, labelFont);
+    drawGround(ctx, baseX, r2Bot + 5);
+
+    // Transistor
+    const qx = cx + spread * 0.05;
+    const qy = cy + spread * 0.1;
+    drawNPNTransistor(ctx, qx, qy, 1, labelColor, labelFont);
+
+    // Wire from R1/R2 junction to base
+    ctx.beginPath();
+    ctx.moveTo(baseX, r1Bot);
+    ctx.lineTo(qx - 16, qy);
+    ctx.stroke();
+
+    // RC from VCC to collector
+    const rcX = cx + spread * 0.3;
+    drawResistor(ctx, rcX, vccY, rcX, qy - 14, 'RC', labelColor, labelFont);
+    ctx.beginPath();
+    ctx.moveTo(qx + 10, qy - 14);
+    ctx.lineTo(rcX, qy - 14);
+    ctx.stroke();
+
+    // RE from emitter to ground
+    const reBot = cy + spread * 0.6;
+    drawResistor(ctx, rcX, qy + 14, rcX, reBot, 'RE', labelColor, labelFont);
+    ctx.beginPath();
+    ctx.moveTo(qx + 10, qy + 14);
+    ctx.lineTo(rcX, qy + 14);
+    ctx.stroke();
+    drawGround(ctx, rcX, reBot + 5);
+
+    // Bypass capacitor across RE
+    drawCapacitor(ctx, rcX + 20, qy + 14, rcX + 20, reBot, 'CE', labelColor, labelFont);
+    ctx.beginPath();
+    ctx.moveTo(rcX, qy + 14); ctx.lineTo(rcX + 20, qy + 14); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rcX, reBot); ctx.lineTo(rcX + 20, reBot); ctx.stroke();
+
+    // Input coupling capacitor
+    const cinX = baseX - spread * 0.35;
+    drawCapacitor(ctx, cinX, r1Bot, baseX, r1Bot, 'Cin', labelColor, labelFont);
+
+    // Vin label
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in', cinX - 5, r1Bot + 4);
+    ctx.restore();
+
+    // Output coupling capacitor
+    const coutX = rcX + spread * 0.35;
+    drawCapacitor(ctx, rcX, qy - 14, coutX, qy - 14, 'Cout', labelColor, labelFont);
+
+    // Vout label
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = activeColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', coutX + 5, qy - 14 + 4);
+    ctx.restore();
+}
+
+// ─── Class B: Push-Pull ───
+function drawClassBCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
+    ctx.strokeStyle = lineColor;
+    const cx = w / 2;
+    const cy = h / 2;
+    const spread = Math.min(w, h) * 0.35;
+
+    // VCC at top
+    const vccY = cy - spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CC = +' + VCC + 'V', cx + spread * 0.15, vccY - 8);
+    ctx.restore();
+
+    // VEE at bottom
+    const veeY = cy + spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_EE = −' + VCC + 'V', cx + spread * 0.15, veeY + 16);
+    ctx.restore();
+
+    // NPN transistor (top)
+    const npnY = cy - spread * 0.25;
+    drawNPNTransistor(ctx, cx, npnY, 1, labelColor, labelFont);
+
+    // PNP transistor (bottom)
+    const pnpY = cy + spread * 0.25;
+    drawPNPTransistor(ctx, cx, pnpY, 1, labelColor, labelFont);
+
+    // VCC to NPN collector
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, vccY);
+    ctx.stroke();
+
+    // VEE to PNP collector
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, veeY);
+    ctx.stroke();
+
+    // NPN emitter to PNP emitter (output node)
+    const outX = cx + spread * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY + 14);
+    ctx.lineTo(outX, npnY + 14);
+    ctx.lineTo(outX, pnpY - 14);
+    ctx.lineTo(cx + 10, pnpY - 14);
+    ctx.stroke();
+
+    // Output node to coupling cap
+    const midY = cy;
+    const coutX = outX + spread * 0.4;
+    drawCapacitor(ctx, outX, midY, coutX, midY, 'Cout', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = activeColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', coutX + 5, midY + 4);
+    ctx.restore();
+
+    // Bases tied together — input coupling cap
+    const baseJoinX = cx - 16;
+    ctx.beginPath();
+    ctx.moveTo(baseJoinX, npnY);
+    ctx.lineTo(baseJoinX, pnpY);
+    ctx.stroke();
+
+    const cinX = baseJoinX - spread * 0.4;
+    drawCapacitor(ctx, cinX, cy, baseJoinX, cy, 'Cin', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in', cinX - 5, cy + 4);
+    ctx.restore();
+
+    // Load resistor
+    const rlX = coutX + 25;
+    drawResistor(ctx, rlX, midY, rlX, midY + spread * 0.5, 'RL', labelColor, labelFont);
+    ctx.beginPath(); ctx.moveTo(coutX, midY); ctx.lineTo(rlX, midY); ctx.stroke();
+    drawGround(ctx, rlX, midY + spread * 0.5 + 5);
+}
+
+// ─── Class AB: Biased Push-Pull ───
+function drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
+    // Same as Class B but with two diodes between the bases
+    ctx.strokeStyle = lineColor;
+    const cx = w / 2;
+    const cy = h / 2;
+    const spread = Math.min(w, h) * 0.35;
+
+    const vccY = cy - spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CC = +' + VCC + 'V', cx + spread * 0.15, vccY - 8);
+    ctx.restore();
+
+    const veeY = cy + spread * 0.8;
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_EE = −' + VCC + 'V', cx + spread * 0.15, veeY + 16);
+    ctx.restore();
+
+    const npnY = cy - spread * 0.3;
+    drawNPNTransistor(ctx, cx, npnY, 1, labelColor, labelFont);
+
+    const pnpY = cy + spread * 0.3;
+    drawPNPTransistor(ctx, cx, pnpY, 1, labelColor, labelFont);
+
+    // VCC to NPN collector
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, npnY - 14);
+    ctx.lineTo(cx + spread * 0.15, vccY);
+    ctx.stroke();
+
+    // VEE to PNP collector
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, pnpY + 14);
+    ctx.lineTo(cx + spread * 0.15, veeY);
+    ctx.stroke();
+
+    // Emitters to output node
+    const outX = cx + spread * 0.15;
+    ctx.beginPath();
+    ctx.moveTo(cx + 10, npnY + 14);
+    ctx.lineTo(outX, npnY + 14);
+    ctx.lineTo(outX, pnpY - 14);
+    ctx.lineTo(cx + 10, pnpY - 14);
+    ctx.stroke();
+
+    const midY = cy;
+    const coutX = outX + spread * 0.4;
+    drawCapacitor(ctx, outX, midY, coutX, midY, 'Cout', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = activeColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', coutX + 5, midY + 4);
+    ctx.restore();
+
+    // Two diodes between bases for bias
+    const baseX = cx - 16;
+    const diodeGap = spread * 0.08;
+
+    // Wire from NPN base down to top diode
+    ctx.beginPath();
+    ctx.moveTo(baseX, npnY);
+    ctx.lineTo(baseX, cy - diodeGap - 12);
+    ctx.stroke();
+
+    // Diode 1 (top)
+    drawDiode(ctx, baseX, cy - diodeGap - 12, baseX, cy - diodeGap + 2);
+
+    // Wire between diodes
+    ctx.beginPath();
+    ctx.moveTo(baseX, cy - diodeGap + 2);
+    ctx.lineTo(baseX, cy + diodeGap - 2);
+    ctx.stroke();
+
+    // Diode 2 (bottom)
+    drawDiode(ctx, baseX, cy + diodeGap - 2, baseX, cy + diodeGap + 12);
+
+    // Wire from bottom diode to PNP base
+    ctx.beginPath();
+    ctx.moveTo(baseX, cy + diodeGap + 12);
+    ctx.lineTo(baseX, pnpY);
+    ctx.stroke();
+
+    // Input coupling cap to midpoint between diodes
+    const cinX = baseX - spread * 0.4;
+    drawCapacitor(ctx, cinX, cy, baseX, cy, 'Cin', labelColor, labelFont);
+
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in', cinX - 5, cy + 4);
+    ctx.restore();
+
+    // Diode labels
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'left';
+    ctx.fillText('D1', baseX + 8, cy - diodeGap);
+    ctx.fillText('D2', baseX + 8, cy + diodeGap);
+    ctx.restore();
+
+    // Load resistor
+    const rlX = coutX + 25;
+    drawResistor(ctx, rlX, midY, rlX, midY + spread * 0.5, 'RL', labelColor, labelFont);
+    ctx.beginPath(); ctx.moveTo(coutX, midY); ctx.lineTo(rlX, midY); ctx.stroke();
+    drawGround(ctx, rlX, midY + spread * 0.5 + 5);
+}
+
+// ─── Load Line Inset ───
+function drawLoadLineInset(ctx, w, h) {
+    const insetW = 100;
+    const insetH = 70;
+    const ix = w - insetW - 12;
+    const iy = h - insetH - 12;
+    const pad = 15;
+
+    // Background
+    ctx.fillStyle = 'rgba(26,26,30,0.85)';
+    ctx.fillRect(ix, iy, insetW, insetH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(ix, iy, insetW, insetH);
+
+    // Axes
+    const ox = ix + pad;
+    const oy = iy + insetH - pad;
+    const axW = insetW - pad * 2;
+    const axH = insetH - pad * 2;
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(ox, oy - axH);
+    ctx.lineTo(ox, oy);
+    ctx.lineTo(ox + axW, oy);
+    ctx.stroke();
+
+    // Labels
+    ctx.save();
+    ctx.font = '8px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_CE', ox + axW / 2, oy + 11);
+    ctx.textAlign = 'right';
+    ctx.fillText('I_C', ox - 3, oy - axH / 2);
+    ctx.restore();
+
+    // Load line
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy - axH);        // (0, VCC/RC) top
+    ctx.lineTo(ox + axW, oy);         // (VCC, 0) right
+    ctx.stroke();
+
+    // Q-point
+    const qFrac = biasPoint / 100;
+    const qx = ox + axW * (1 - qFrac);
+    const qy = oy - axH * qFrac;
+
+    ctx.beginPath();
+    ctx.arc(qx, qy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#e06050';
+    ctx.fill();
+
+    // Signal swing on load line
+    if (amplitude > 0) {
+        const swingFrac = (amplitude / 100) * 0.3;  // visual scale
+        const s1Frac = Math.max(0, qFrac - swingFrac);
+        const s2Frac = Math.min(1, qFrac + swingFrac);
+
+        ctx.strokeStyle = 'rgba(106,170,142,0.5)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(ox + axW * (1 - s2Frac), oy - axH * s2Frac);
+        ctx.lineTo(ox + axW * (1 - s1Frac), oy - axH * s1Frac);
+        ctx.stroke();
+    }
+
+    ctx.lineWidth = 1.5;
+
+    // Q label
+    ctx.save();
+    ctx.font = '600 8px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#e06050';
+    ctx.textAlign = 'left';
+    ctx.fillText('Q', qx + 5, qy - 3);
+    ctx.restore();
+}
+```
+
+- [ ] **Step 2: Open in browser and verify circuit rendering**
+
+Verify for each class:
+- **Class A**: Shows common-emitter with R1, R2, RC, RE, CE, Cin, Cout, NPN transistor, VCC rail, ground symbols
+- **Class B**: Shows push-pull with NPN + PNP, Cin, Cout, VCC/VEE, load resistor
+- **Class AB**: Same as B but with two diodes (D1, D2) between bases
+- **All**: Load line inset in bottom-right corner with Q-point dot, signal swing highlighted
+- Q-point moves on load line when bias slider changes
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "Week 5/amplifier_classes.html"
+git commit -m "feat: add realistic circuit schematic rendering for all three amplifier classes"
+```
+
+---
+
+### Task 4: Implement waveform rendering
+
+**Files:**
+- Modify: `Week 5/amplifier_classes.html` (replace `drawWaveforms` function, add animation loop)
+
+- [ ] **Step 1: Replace the `drawWaveforms` function and add animation**
+
+Replace `function drawWaveforms() { ... }` (the placeholder) with:
+
+```javascript
+// ─── Waveform rendering ───
+const WAVEFORM_HISTORY = 400;  // samples to display
+let waveHistory = [];  // array of { vin, vout } samples
+
+function computeOutputSample(vinInstant) {
+    // vinInstant is in range [-vinPeak, +vinPeak]
+    const gainedSignal = vinInstant * GAIN;
+
+    if (ampClass === 'A') {
+        // Class A: output centered at VCE_Q, clips symmetrically at rails
+        const vout = -gainedSignal;  // 180° phase inversion
+        const upperClip = vceq - VCE_SAT;
+        const lowerClip = -(VCC - vceq);
+        return Math.max(lowerClip, Math.min(upperClip, vout));
+    } else if (ampClass === 'B') {
+        // Class B: each transistor conducts for one half-cycle
+        // Dead zone around zero crossing (crossover distortion)
+        const deadZone = 0.6;  // ~0.6V dead zone (V_BE threshold)
+        const scaledDead = deadZone / GAIN;
+        if (Math.abs(vinInstant) < scaledDead) {
+            return 0;  // Neither transistor conducting
+        }
+        const sign = vinInstant > 0 ? -1 : 1;
+        const vout = sign * (Math.abs(vinInstant) - scaledDead) * GAIN;
+        const clipMax = VCC - VCE_SAT;
+        return Math.max(-clipMax, Math.min(clipMax, vout));
+    } else {
+        // Class AB: small dead zone (much smaller than Class B)
+        const deadZone = 0.05;  // Almost eliminated by diode bias
+        const scaledDead = deadZone / GAIN;
+        if (Math.abs(vinInstant) < scaledDead) {
+            return 0;
+        }
+        const sign = vinInstant > 0 ? -1 : 1;
+        const vout = sign * (Math.abs(vinInstant) - scaledDead) * GAIN;
+        const clipMax = VCC - VCE_SAT;
+        return Math.max(-clipMax, Math.min(clipMax, vout));
+    }
+}
+
+function drawWaveforms() {
+    const ctx = waveformCtx;
+    const { w, h } = waveformSize;
+    ctx.clearRect(0, 0, w, h);
+
+    const halfH = h / 2;
+    const topH = halfH - 15;   // space for label
+    const botH = halfH - 15;
+    const padL = 40;
+    const padR = 10;
+    const plotW = w - padL - padR;
+
+    // ─── Top plot: V_in ───
+    const topCy = halfH * 0.5;
+    const topScale = (topH * 0.35);
+
+    // Grid lines and axis
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, topCy); ctx.lineTo(w - padR, topCy); ctx.stroke();  // zero line
+
+    // Label
+    ctx.save();
+    ctx.font = '500 10px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#5080d0';
+    ctx.textAlign = 'right';
+    ctx.fillText('V_in', padL - 6, topCy + 4);
+    ctx.restore();
+
+    // Draw input waveform
+    if (waveHistory.length > 1) {
+        ctx.strokeStyle = '#5080d0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        for (let i = 0; i < waveHistory.length; i++) {
+            const x = padL + (i / WAVEFORM_HISTORY) * plotW;
+            const y = topCy - (waveHistory[i].vin / Math.max(vinPeak, 0.01)) * topScale;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // Amplitude label
+    if (vinPeak > 0) {
+        ctx.save();
+        ctx.font = '9px "IBM Plex Mono", monospace';
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.textAlign = 'right';
+        ctx.fillText('+' + vinPeak.toFixed(2) + 'V', padL - 6, topCy - topScale + 4);
+        ctx.fillText('−' + vinPeak.toFixed(2) + 'V', padL - 6, topCy + topScale + 4);
+        ctx.restore();
+    }
+
+    // ─── Divider ───
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(padL, halfH); ctx.lineTo(w - padR, halfH); ctx.stroke();
+
+    // ─── Bottom plot: V_out ───
+    const botCy = halfH + halfH * 0.5;
+    const maxVout = VCC;
+    const botScale = (botH * 0.35);
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.beginPath();
+    ctx.moveTo(padL, botCy); ctx.lineTo(w - padR, botCy); ctx.stroke();
+
+    // Label
+    ctx.save();
+    ctx.font = '500 10px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#6aaa8e';
+    ctx.textAlign = 'right';
+    ctx.fillText('V_out', padL - 6, botCy + 4);
+    ctx.restore();
+
+    // Draw output waveform
+    if (waveHistory.length > 1) {
+        ctx.strokeStyle = '#6aaa8e';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        const outMax = Math.max(...waveHistory.map(s => Math.abs(s.vout)), 0.01);
+        for (let i = 0; i < waveHistory.length; i++) {
+            const x = padL + (i / WAVEFORM_HISTORY) * plotW;
+            const y = botCy - (waveHistory[i].vout / maxVout) * botScale;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // Gain display
+    if (vinPeak > 0 && waveHistory.length > 0) {
+        const peakOut = Math.max(...waveHistory.map(s => Math.abs(s.vout)));
+        const measuredGain = peakOut / vinPeak;
+        ctx.save();
+        ctx.font = '500 10px "IBM Plex Mono", monospace';
+        ctx.fillStyle = 'rgba(106,170,142,0.6)';
+        ctx.textAlign = 'right';
+        ctx.fillText('Gain: ~' + measuredGain.toFixed(1) + 'x', w - padR, halfH + 14);
+        ctx.restore();
+    }
+}
+
+// ─── Animation loop ───
+let lastTimestamp = 0;
+function animate(timestamp) {
+    const dt = lastTimestamp ? (timestamp - lastTimestamp) / 1000 : 0.016;
+    lastTimestamp = timestamp;
+
+    simTime += dt;
+
+    // Generate new sample
+    const freq = 1;  // 1 Hz
+    const vin = vinPeak * Math.sin(2 * Math.PI * freq * simTime);
+    const vout = computeOutputSample(vin);
+    waveHistory.push({ vin, vout });
+    if (waveHistory.length > WAVEFORM_HISTORY) {
+        waveHistory.shift();
+    }
+
+    drawWaveforms();
+    requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+```
+
+- [ ] **Step 2: Clear waveform history when class or controls change**
+
+Add this line at the top of `updateAll()`, right after `computeDerived();`:
+
+```javascript
+waveHistory = [];
+```
+
+So `updateAll` becomes:
+
+```javascript
+function updateAll() {
+    computeDerived();
+    waveHistory = [];
+    updateUI();
+    drawCircuit();
+    drawWaveforms();
+    updateExplanation();
+}
+```
+
+- [ ] **Step 3: Open in browser and verify waveforms**
+
+Verify:
+- **Class A**: Clean sine input, phase-inverted output. Increasing amplitude past ~70% causes symmetric clipping. Moving bias off-center causes asymmetric clipping.
+- **Class B**: Input sine, output shows flat dead zones at zero crossings (crossover distortion). No clipping at moderate amplitude.
+- **Class AB**: Input sine, output nearly clean. Very slight distortion at low amplitude near zero-crossing, nearly invisible at moderate amplitude.
+- Waveforms scroll continuously
+- Switching class resets waveforms
+- Gain readout shown
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add "Week 5/amplifier_classes.html"
+git commit -m "feat: add animated waveform rendering with class-specific distortion behavior"
+```
+
+---
+
+### Task 5: Implement dynamic explanation panel
+
+**Files:**
+- Modify: `Week 5/amplifier_classes.html` (replace `updateExplanation` function)
+
+- [ ] **Step 1: Replace the `updateExplanation` function**
+
+Replace `function updateExplanation() { ... }` (the placeholder) with:
+
+```javascript
+function updateExplanation() {
+    const panel = document.getElementById('explanation-panel');
+    let html = '';
+
+    const isClipping = checkClipping();
+    const isBiasLow = (ampClass === 'A' && biasPoint < 20);
+    const isLowAmplitude = amplitude < 10 && amplitude > 0;
+
+    if (ampClass === 'A') {
+        html += '<h3>Class A — Full-Cycle Conduction</h3>';
+        html += '<p>The transistor is biased in the active region and conducts for the <strong>entire 360&deg;</strong> of the input cycle. ';
+        html += 'This provides the most linear amplification — the output is a faithful (inverted) replica of the input — but at the cost of efficiency.</p>';
+        html += '<p>The transistor is always on, continuously drawing current from the supply even with no input signal. ';
+        html += 'This means significant power is dissipated as heat in the transistor at all times.</p>';
+
+        if (isBiasLow) {
+            html += '<div class="physics-note"><strong>Asymmetric clipping:</strong> The Q-point is not centred on the load line. ';
+            html += 'The output will clip on one side of the waveform before the other, causing asymmetric distortion. ';
+            html += 'For optimal Class A operation, bias the Q-point at the midpoint of the load line.</div>';
+        } else if (isClipping) {
+            html += '<div class="physics-note"><strong>Clipping detected:</strong> The input amplitude is driving the transistor beyond its linear range. ';
+            html += 'The output is being clipped at the supply rails (V<sub>CC</sub>) or at saturation (V<sub>CE(sat)</sub>). ';
+            html += 'Reduce the input amplitude to restore linear operation.</div>';
+        } else {
+            html += '<div class="physics-note"><strong>Key physics:</strong> Conduction angle = 360&deg;. ';
+            html += 'Maximum theoretical efficiency = 25% (with resistive load) or 50% (with transformer-coupled load). ';
+            html += 'The Q-point sits at the centre of the load line for maximum symmetric swing.</div>';
+        }
+
+    } else if (ampClass === 'B') {
+        html += '<h3>Class B — Half-Cycle Conduction (Push-Pull)</h3>';
+        html += '<p>Two complementary transistors (NPN and PNP) each conduct for exactly <strong>180&deg;</strong> of the input cycle. ';
+        html += 'The NPN handles the positive half-cycle and the PNP handles the negative half-cycle.</p>';
+        html += '<p>With no input signal, both transistors are off — zero quiescent current means zero standby power dissipation. ';
+        html += 'This dramatically improves efficiency over Class A.</p>';
+
+        if (isLowAmplitude && (ampClass === 'B')) {
+            html += '<div class="physics-note"><strong>Crossover distortion visible:</strong> At low signal levels, the dead zone around the zero-crossing ';
+            html += 'becomes a significant fraction of the signal. Each transistor requires ~0.6V of base-emitter voltage to begin conducting, ';
+            html += 'creating a gap where neither transistor is on. This is most visible at low amplitudes like now.</div>';
+        } else if (isClipping) {
+            html += '<div class="physics-note"><strong>Clipping detected:</strong> The output is being limited by the supply voltage. ';
+            html += 'The maximum output swing is &plusmn;(V<sub>CC</sub> &minus; V<sub>CE(sat)</sub>).</div>';
+        } else {
+            html += '<div class="physics-note"><strong>Key physics:</strong> Conduction angle = 180&deg; per transistor. ';
+            html += 'Maximum theoretical efficiency = 78.5% (&pi;/4). ';
+            html += 'The trade-off is crossover distortion at zero-crossings due to the V<sub>BE</sub> turn-on threshold.</div>';
+        }
+
+    } else {
+        html += '<h3>Class AB — Best of Both Worlds</h3>';
+        html += '<p>This is a modified push-pull design where two biasing diodes provide a small forward voltage to both transistors. ';
+        html += 'Each transistor conducts for <strong>slightly more than 180&deg;</strong>, ensuring there is always at least one transistor conducting — even at zero-crossings.</p>';
+        html += '<p>The diodes (D1, D2) create approximately 1.2V of bias, keeping both transistors just barely on. ';
+        html += 'This eliminates the crossover distortion of Class B while maintaining most of its efficiency advantage.</p>';
+
+        if (isLowAmplitude) {
+            html += '<div class="physics-note"><strong>Smooth crossover:</strong> Unlike Class B, notice that the output transitions smoothly through zero. ';
+            html += 'The small standing bias current from the diodes keeps both transistors in a slightly conducting state, ';
+            html += 'bridging the gap that causes crossover distortion in Class B.</div>';
+        } else if (isClipping) {
+            html += '<div class="physics-note"><strong>Clipping detected:</strong> The output is being limited by the supply rails. ';
+            html += 'Reduce input amplitude to restore linear operation.</div>';
+        } else {
+            html += '<div class="physics-note"><strong>Key physics:</strong> Conduction angle slightly &gt; 180&deg; per transistor. ';
+            html += 'Typical efficiency 50&ndash;60%, significantly better than Class A (25%) while maintaining much better linearity than Class B. ';
+            html += 'This is the most commonly used class in audio amplifiers and biomedical instrumentation.</div>';
+        }
+    }
+
+    panel.innerHTML = html;
+}
+
+function checkClipping() {
+    if (waveHistory.length < 10) return false;
+    const recent = waveHistory.slice(-50);
+    const maxOut = Math.max(...recent.map(s => Math.abs(s.vout)));
+    const expectedMax = vinPeak * GAIN;
+    // Clipping if actual output is significantly less than expected
+    return expectedMax > 0 && (maxOut / expectedMax) < 0.85;
+}
+```
+
+- [ ] **Step 2: Open in browser and verify explanations**
+
+Verify:
+- **Class A default**: Shows full-cycle conduction explanation with efficiency physics note
+- **Class A with bias < 20%**: Shows asymmetric clipping warning
+- **Class A with high amplitude (~80%+)**: Shows clipping detected warning
+- **Class B default**: Shows push-pull explanation with efficiency note
+- **Class B with low amplitude (~5%)**: Shows crossover distortion explanation
+- **Class AB default**: Shows best-of-both-worlds explanation
+- **Class AB with low amplitude**: Shows smooth crossover note
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add "Week 5/amplifier_classes.html"
+git commit -m "feat: add dynamic context-aware explanation panel for all amplifier classes"
+```
+
+---
+
+### Task 6: Update index.html with Week 5 section
+
+**Files:**
+- Modify: `index.html`
+
+- [ ] **Step 1: Add Week 5 section to index.html**
+
+Add the following block after the Week 4 closing `</div>` (after line 238 in the current file), before the closing `</div>` of `.container`:
+
+```html
+
+        <div class="week">
+            <div class="week-label">
+                <h2>Week 5</h2>
+                <span>Amplifiers</span>
+            </div>
+            <div class="topics">
+                <a href="Week 5/amplifier_classes.html" class="topic">
+                    <span class="topic-number">1</span>
+                    <span class="topic-title">Amplifier Classes</span>
+                </a>
+            </div>
+        </div>
+```
+
+- [ ] **Step 2: Open index.html in browser and verify**
+
+Verify:
+- Week 5 section appears after Week 4
+- Shows "Week 5" heading with "Amplifiers" subtitle
+- Lists "Amplifier Classes" as topic 1
+- Link navigates to the correct page
+- Back button on amplifier page returns to index
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add index.html
+git commit -m "feat: add Week 5 Amplifiers section to index page"
+```
+
+---
+
+### Task 7: Final polish and integration test
+
+**Files:**
+- Modify: `Week 5/amplifier_classes.html` (minor fixes if needed)
+
+- [ ] **Step 1: Full integration test**
+
+Open `index.html` in browser and run through this checklist:
+1. Click "Amplifier Classes" link → page loads
+2. Class A selected by default, bias at 50%, amplitude at 30%
+3. Circuit shows common-emitter schematic with all components
+4. Waveforms scroll with clean sine in, inverted sine out
+5. Power bars show ~25% efficiency
+6. Explanation describes Class A operation
+7. Switch to Class B → circuit changes to push-pull, bias snaps to 0%
+8. Waveforms show crossover distortion dead zones
+9. Power bars show higher efficiency (~60-78%)
+10. Switch to Class AB → diodes appear in circuit, bias at 5%
+11. Waveforms nearly clean, slight improvement over B
+12. Move amplitude slider → waveforms and power bars update in real-time
+13. Move bias slider → Q-point moves on load line, explanations update
+14. Click "← Back" → returns to index
+15. No console errors
+
+- [ ] **Step 2: Fix any issues found in integration test**
+
+Address any rendering issues, layout problems, or broken interactions discovered.
+
+- [ ] **Step 3: Final commit**
+
+```bash
+git add "Week 5/amplifier_classes.html"
+git commit -m "fix: polish amplifier classes page after integration testing"
+```
+
+Only create this commit if changes were made in step 2.

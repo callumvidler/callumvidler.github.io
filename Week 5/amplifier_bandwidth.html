@@ -84,20 +84,43 @@
         .section {
             margin-bottom: 72px;
         }
+        .section summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 12px 0;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            transition: border-color 0.15s;
+        }
+        .section summary:hover { border-bottom-color: var(--border-hover); }
+        .section summary::-webkit-details-marker { display: none; }
+        .section summary::after {
+            content: '\25B6';
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+        .section[open] summary::after {
+            transform: rotate(90deg);
+        }
         .section-number {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 11px;
             color: var(--accent);
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin-bottom: 8px;
+            flex-shrink: 0;
         }
         .section h2 {
             font-size: 22px;
             font-weight: 700;
             color: #fff;
             letter-spacing: -0.3px;
-            margin-bottom: 16px;
+            margin: 0;
         }
         .section p, .section li {
             font-size: 14px;
@@ -405,9 +428,11 @@
     <!-- ════════════════════════════════════════════════ -->
     <!-- SECTION 1: THE TRANSFER FUNCTION -->
     <!-- ════════════════════════════════════════════════ -->
-    <div class="section" id="sec-transfer">
-        <div class="section-number">Part 01</div>
-        <h2>Deriving the Transfer Function</h2>
+    <details class="section" id="sec-transfer" open>
+        <summary>
+            <span class="section-number">Part 01</span>
+            <h2>Deriving the Transfer Function</h2>
+        </summary>
 
         <p>An ideal amplifier multiplies its input by a constant gain A<sub>v</sub> at all frequencies.
            In practice, parasitic capacitance (from transistors, wiring, and the load) shunts
@@ -582,14 +607,16 @@
             that grows with frequency. Since it sits in the denominator, the gain <em>decreases</em>.
             The complex plane in Part 02 shows exactly how.
         </div>
-    </div>
+    </details>
 
     <!-- ════════════════════════════════════════════════ -->
     <!-- SECTION 2: THE COMPLEX PLANE -->
     <!-- ════════════════════════════════════════════════ -->
-    <div class="section" id="sec-complex">
-        <div class="section-number">Part 02</div>
-        <h2>Visualising on the Complex Plane</h2>
+    <details class="section" id="sec-complex" open>
+        <summary>
+            <span class="section-number">Part 02</span>
+            <h2>Visualising on the Complex Plane</h2>
+        </summary>
 
         <p>The denominator <strong>1 + j(&#969;/&#969;<sub>0</sub>)</strong> is a point in the complex plane.
            The real part is fixed at 1. The imaginary part is &#969;/&#969;<sub>0</sub>, which grows with frequency.
@@ -682,14 +709,16 @@
             <em>bandwidth</em> of the amplifier: the frequency range where the gain stays within
             3 dB of its maximum. At this same frequency, the phase lag is exactly &#8722;45&#176;.
         </div>
-    </div>
+    </details>
 
     <!-- ════════════════════════════════════════════════ -->
     <!-- SECTION 3: THE BODE PLOT -->
     <!-- ════════════════════════════════════════════════ -->
-    <div class="section" id="sec-bode">
-        <div class="section-number">Part 03</div>
-        <h2>Building the Bode Magnitude Plot</h2>
+    <details class="section" id="sec-bode" open>
+        <summary>
+            <span class="section-number">Part 03</span>
+            <h2>Building the Bode Magnitude Plot</h2>
+        </summary>
 
         <p>We now have the magnitude of the transfer function from Part 02:</p>
 
@@ -853,14 +882,16 @@
             &#8722;20 dB/decade to the rolloff: two poles give &#8722;40 dB/decade,
             three give &#8722;60 dB/decade, and so on.
         </div>
-    </div>
+    </details>
 
     <!-- ════════════════════════════════════════════════ -->
     <!-- SECTION 4: GAIN-BANDWIDTH PRODUCT -->
     <!-- ════════════════════════════════════════════════ -->
-    <div class="section" id="sec-gbp">
-        <div class="section-number">Part 04</div>
-        <h2>Gain-Bandwidth Product</h2>
+    <details class="section" id="sec-gbp" open>
+        <summary>
+            <span class="section-number">Part 04</span>
+            <h2>Gain-Bandwidth Product</h2>
+        </summary>
 
         <p>In Parts 01 to 03 we treated the gain A<sub>v</sub> and the cutoff frequency
            &#969;<sub>0</sub> as independent parameters. In a real amplifier, they are linked.
@@ -966,7 +997,7 @@
             Audio applications (20 Hz to 20 kHz) at a gain of 50 need a GBP of at least
             6.28 Mrad/s.
         </div>
-    </div>
+    </details>
 
 </div>
 

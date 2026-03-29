@@ -450,7 +450,12 @@
         <div class="section-number">Part 05</div>
         <h2>Putting It All Together &mdash; Efficiency</h2>
 
-        <p>Now we can see the complete Class D signal chain.</p>
+        <p>Now we can see the complete Class D signal chain — from the input signal through the
+           comparator, half-bridge, and LC filter to the output.</p>
+
+        <div class="canvas-container" style="height: 280px;">
+            <canvas id="canvas-full-circuit"></canvas>
+        </div>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-full"></canvas>
@@ -537,7 +542,7 @@ const RESISTOR_W = 7;
 const EFFICIENCY = 0.92;       // Class D typical efficiency
 
 // ─── Canvas refs ───
-const canvasIds = ['canvas-input', 'canvas-comp-circuit', 'canvas-pwm', 'canvas-circuit', 'canvas-lc-circuit', 'canvas-filter', 'canvas-full'];
+const canvasIds = ['canvas-input', 'canvas-comp-circuit', 'canvas-pwm', 'canvas-circuit', 'canvas-lc-circuit', 'canvas-filter', 'canvas-full-circuit', 'canvas-full'];
 const canvases = {};
 const contexts = {};
 
@@ -1770,6 +1775,278 @@ function drawFilter() {
     ctx.fillText('Filtered Output', padL + 100, padT + 16);
 }
 
+// ─── Draw: Part 05 — Full Circuit Schematic ───
+function drawFullCircuit() {
+    const c = canvases['canvas-full-circuit'];
+    const ctx = contexts['canvas-full-circuit'];
+    if (!c || !ctx) return;
+    const W = c.width / (window.devicePixelRatio || 1);
+    const H = c.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, W, H);
+
+    const lineColor = 'rgba(255,255,255,0.5)';
+    const labelColor = '#8892a4';
+    const labelFont = '11px "IBM Plex Mono", monospace';
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const pwmNow = pwmSignal(simTime);
+    const pmosOn = pwmNow === 1;
+    const nmosOn = pwmNow === 0;
+
+    // ── Layout x-positions (left to right) ──
+    const padL = 30, padR = 30;
+    const usableW = W - padL - padR;
+    const wireY = H * 0.38;         // main signal wire
+    const railY = H * 0.08;         // VCC rail
+    const gndY = H * 0.85;          // ground
+
+    const srcX = padL + usableW * 0.02;
+    const compX = padL + usableW * 0.16;
+    const mosX = padL + usableW * 0.35;
+    const indStartX = padL + usableW * 0.46;
+    const indEndX = padL + usableW * 0.62;
+    const nodeX = indEndX + 12;
+    const outX = padL + usableW * 0.78;
+    const loadX = outX;
+    const endX = padL + usableW * 0.92;
+
+    // ── Input source ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(srcX, wireY, 12, 0, Math.PI * 2); ctx.stroke();
+    // Sine inside
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+        const t = (i / 10) * Math.PI * 2;
+        const px = srcX - 7 + (i / 10) * 14;
+        const py = wireY - Math.sin(t) * 4;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('v\u1D62\u2099', srcX, wireY - 18);
+
+    // Wire: source → comparator
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(srcX + 12, wireY); ctx.lineTo(compX - 28, wireY); ctx.stroke();
+
+    // ── Comparator triangle ──
+    const compW = 28, compH = 36;
+    ctx.beginPath();
+    ctx.moveTo(compX - compW / 2, wireY - compH / 2);
+    ctx.lineTo(compX + compW / 2, wireY);
+    ctx.lineTo(compX - compW / 2, wireY + compH / 2);
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.stroke();
+    // + and -
+    ctx.font = '10px "IBM Plex Sans", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('+', compX - compW / 2 + 8, wireY - 6);
+    ctx.fillText('\u2212', compX - compW / 2 + 8, wireY + 10);
+
+    // Triangle carrier input (bottom)
+    ctx.strokeStyle = 'rgba(255,204,68,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(compX - 8, wireY + compH / 2 + 20);
+    ctx.lineTo(compX - 8, wireY + compH / 2);
+    ctx.stroke();
+    // Tiny triangle icon
+    ctx.beginPath();
+    const tcy = wireY + compH / 2 + 28;
+    ctx.moveTo(compX - 16, tcy + 6);
+    ctx.lineTo(compX - 8, tcy - 6);
+    ctx.lineTo(compX, tcy + 6);
+    ctx.strokeStyle = 'rgba(255,204,68,0.6)';
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255,204,68,0.5)';
+    ctx.font = '9px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('carrier', compX - 8, tcy + 18);
+
+    // Wire: comparator → MOSFET gates
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(compX + compW / 2, wireY);
+    ctx.lineTo(mosX - 20, wireY);
+    ctx.stroke();
+
+    // ── Half-bridge (PMOS + NMOS) ──
+    const mosScale = 0.9;
+    const pmosY = wireY - 30;
+    const nmosY = wireY + 30;
+
+    // VCC rail
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath(); ctx.moveTo(mosX - 20, railY); ctx.lineTo(mosX + 40, railY); ctx.stroke();
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '10px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('V\u1D9C\u1D9C', mosX + 10, railY - 6);
+
+    // Wire: VCC → PMOS
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(mosX + 10, railY); ctx.lineTo(mosX + 10, pmosY - 16); ctx.stroke();
+
+    // PMOS
+    drawPMOS(ctx, mosX, pmosY, mosScale, labelColor, '9px "IBM Plex Mono", monospace');
+
+    // Wire: PMOS → midpoint → NMOS
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath();
+    ctx.moveTo(mosX + 10, pmosY + 14);
+    ctx.lineTo(mosX + 10, wireY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(mosX + 10, wireY);
+    ctx.lineTo(mosX + 10, nmosY - 14);
+    ctx.stroke();
+
+    // NMOS
+    drawNMOS(ctx, mosX, nmosY, mosScale, labelColor, '9px "IBM Plex Mono", monospace');
+
+    // Wire: NMOS → GND
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(mosX + 10, nmosY + 14); ctx.lineTo(mosX + 10, gndY); ctx.stroke();
+    drawGround(ctx, mosX + 10, gndY);
+
+    // Gate wires
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath();
+    ctx.moveTo(mosX - 20, wireY);
+    ctx.lineTo(mosX - 20, pmosY);
+    ctx.lineTo(mosX - 6, pmosY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(mosX - 20, wireY);
+    ctx.lineTo(mosX - 20, nmosY);
+    ctx.lineTo(mosX - 6, nmosY);
+    ctx.stroke();
+
+    // State indicators
+    ctx.font = 'bold 9px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = pmosOn ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.6)';
+    ctx.fillText(pmosOn ? 'ON' : 'OFF', mosX + 22, pmosY + 3);
+    ctx.fillStyle = nmosOn ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.6)';
+    ctx.fillText(nmosOn ? 'ON' : 'OFF', mosX + 22, nmosY + 3);
+
+    // ── Wire: half-bridge output → inductor ──
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(mosX + 10, wireY);
+    ctx.lineTo(indStartX, wireY);
+    ctx.stroke();
+
+    // Node dot at half-bridge output
+    ctx.beginPath(); ctx.arc(mosX + 10, wireY, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    // ── Inductor ──
+    const bumps = 5;
+    const bumpW = (indEndX - indStartX) / bumps;
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath();
+    ctx.moveTo(indStartX, wireY);
+    for (let i = 0; i < bumps; i++) {
+        const bx = indStartX + i * bumpW;
+        ctx.arc(bx + bumpW / 2, wireY, bumpW / 2, Math.PI, 0, false);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('L', (indStartX + indEndX) / 2, wireY - 16);
+
+    // ── Wire: inductor → node ──
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(indEndX, wireY); ctx.lineTo(nodeX, wireY); ctx.stroke();
+
+    // Node dot
+    ctx.beginPath(); ctx.arc(nodeX, wireY, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    // ── Capacitor (node to GND) ──
+    const capTopY = wireY + 20;
+    const capGap = 6;
+    const capPlateW = 14;
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(nodeX, wireY); ctx.lineTo(nodeX, capTopY); ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(nodeX - capPlateW / 2, capTopY); ctx.lineTo(nodeX + capPlateW / 2, capTopY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(nodeX - capPlateW / 2, capTopY + capGap); ctx.lineTo(nodeX + capPlateW / 2, capTopY + capGap); ctx.stroke();
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(nodeX, capTopY + capGap); ctx.lineTo(nodeX, gndY); ctx.stroke();
+    drawGround(ctx, nodeX, gndY);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('C', nodeX + capPlateW / 2 + 4, capTopY + capGap / 2 + 4);
+
+    // ── Wire: node → output / load ──
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(nodeX, wireY); ctx.lineTo(outX, wireY); ctx.stroke();
+
+    // ── Load resistor (to GND) ──
+    drawResistor(ctx, loadX, wireY, loadX, gndY - 8, 'R\u2097', '#e2e8f0', '12px "IBM Plex Mono", monospace');
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(loadX, gndY - 8); ctx.lineTo(loadX, gndY); ctx.stroke();
+    drawGround(ctx, loadX, gndY);
+
+    // ── Output label ──
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(outX, wireY); ctx.lineTo(endX, wireY); ctx.stroke();
+
+    ctx.beginPath(); ctx.arc(outX, wireY, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    ctx.fillStyle = var_accent();
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('v\u2092\u1D64\u209C', endX + 6, wireY + 4);
+
+    // ── Signal flow arrows (faint) ──
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = '18px "IBM Plex Sans", sans-serif';
+    ctx.textAlign = 'center';
+    const arrowY = railY + 6;
+    ctx.fillText('\u2192', (srcX + compX) / 2, arrowY);
+    ctx.fillText('\u2192', (compX + mosX) / 2, arrowY);
+    ctx.fillText('\u2192', (mosX + (indStartX + indEndX) / 2) / 2 + 10, arrowY);
+    ctx.fillText('\u2192', ((indStartX + indEndX) / 2 + outX) / 2, arrowY);
+
+    // ── Stage labels ──
+    ctx.font = '9px "IBM Plex Sans", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.textAlign = 'center';
+    const stageY = H - 8;
+    ctx.fillText('Input', srcX, stageY);
+    ctx.fillText('Comparator', compX, stageY);
+    ctx.fillText('Half-Bridge', mosX + 10, stageY);
+    ctx.fillText('LC Filter', (indStartX + nodeX) / 2, stageY);
+    ctx.fillText('Output', outX, stageY);
+}
+
 // ─── Draw: Part 05 — Full View ───
 function drawFull() {
     const c = canvases['canvas-full'];
@@ -1883,6 +2160,7 @@ function animate(now) {
     drawCircuit();
     drawLCCircuit();
     drawFilter();
+    drawFullCircuit();
     drawFull();
 
     requestAnimationFrame(animate);

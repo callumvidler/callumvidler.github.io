@@ -1587,7 +1587,7 @@ function drawCircuit() {
     ctx.font = 'bold 13px "IBM Plex Mono", monospace';
     ctx.fillStyle = '#e2e8f0';
     ctx.textAlign = 'center';
-    ctx.fillText('V_CC = +12V', cx, railY - 16);
+    ctx.fillText('VCC = +12V', cx, railY - 16);
 
     // VCC rail line
     ctx.strokeStyle = 'rgba(255,255,255,0.3)';
@@ -1745,8 +1745,8 @@ function drawFilter() {
     ctx.font = '10px "IBM Plex Mono", monospace';
     ctx.fillStyle = '#505868';
     ctx.textAlign = 'right';
-    ctx.fillText('V_CC', padL - 8, padT + 4);
-    ctx.fillText('V_CC/2', padL - 8, midY + 4);
+    ctx.fillText('VCC', padL - 8, padT + 4);
+    ctx.fillText('VCC/2', padL - 8, midY + 4);
     ctx.fillText('GND', padL - 8, padT + plotH + 4);
 
     // Draw raw PWM (semi-transparent)

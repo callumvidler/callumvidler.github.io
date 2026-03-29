@@ -654,15 +654,17 @@
             <li><strong>&#969; &#8811; &#969;<sub>0</sub></strong>: the angle approaches &#8722;90&#176;. The capacitor dominates and current leads voltage by 90&#176;.</li>
         </ul>
 
-        <p>The plot below shows this phase relationship across frequency. The yellow marker
-           tracks your current test frequency:</p>
+        <p>The plot below shows what this looks like in the time domain. The yellow
+           wave is the input, the green wave is the output. As you increase the test
+           frequency past &#969;<sub>0</sub>, watch the output shrink and shift to the right:</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="phase-canvas"></canvas>
         </div>
 
         <div class="readout-bar">
-            <div class="readout-item">Output phase lag: <span class="val" id="phase-lag-val">&#8722;45.0°</span></div>
+            <div class="readout-item">Gain: <span class="val" id="phase-gain-pct">70.7%</span></div>
+            <div class="readout-item">Phase lag: <span class="val" id="phase-lag-val">&#8722;45.0°</span></div>
         </div>
 
         <div class="callout">
@@ -1298,138 +1300,151 @@ function drawPhasor() {
 }
 
 // ════════════════════════════════════════════════════════
-// SECTION 2b: Phase plot
+// SECTION 2b: Input vs Output sine wave comparison
 // ════════════════════════════════════════════════════════
 function drawPhase() {
     const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('phase-canvas'));
     ctx.clearRect(0, 0, W, H);
 
-    const pad = { top: 30, right: 30, bottom: 45, left: 60 };
+    const w0 = omega0();
+    const ratio = testFreq / w0;
+    const gf = 1 / Math.sqrt(1 + ratio * ratio);
+    const phaseLag = -Math.atan(ratio);
+    const phaseDeg = phaseLag * 180 / Math.PI;
+
+    const pad = { left: 20, right: 20, top: 30, bottom: 24 };
     const plotW = W - pad.left - pad.right;
     const plotH = H - pad.top - pad.bottom;
+    const midY = pad.top + plotH / 2;
+    const amp = plotH * 0.38;
 
-    const w0 = omega0();
-    const logMin = Math.log10(FREQ_MIN);
-    const logMax = Math.log10(FREQ_MAX);
+    const wt = animTime * 3; // slow constant animation
+    const cycles = 2.5;
 
-    // Phase axis: 0 to -90 degrees
-    const phaseMax = 0;
-    const phaseMin = -90;
-
-    function xPx(f) { return pad.left + (Math.log10(f) - logMin) / (logMax - logMin) * plotW; }
-    function yPx(deg) { return pad.top + (phaseMax - deg) / (phaseMax - phaseMin) * plotH; }
-
-    // Grid
+    // ── Center line ──
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
-    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
-        const x = xPx(Math.pow(10, d));
-        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
-    }
-    for (let deg = phaseMin; deg <= phaseMax; deg += 15) {
-        const y = yPx(deg);
-        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
-    }
+    ctx.beginPath(); ctx.moveTo(pad.left, midY); ctx.lineTo(W - pad.right, midY); ctx.stroke();
 
-    // -45 degree line (at omega_0)
-    ctx.setLineDash([6, 4]);
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    ctx.beginPath(); ctx.moveTo(pad.left, yPx(-45)); ctx.lineTo(pad.left + plotW, yPx(-45)); ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = "10px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
-    ctx.fillText('\u221245\u00B0', pad.left + plotW - 4, yPx(-45) - 3);
-
-    // omega_0 vertical
-    const xW0 = xPx(w0);
-    ctx.setLineDash([6, 4]);
-    ctx.strokeStyle = 'rgba(106,170,142,0.5)';
-    ctx.beginPath(); ctx.moveTo(xW0, pad.top); ctx.lineTo(xW0, pad.top + plotH); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#6aaa8e';
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('\u03C9\u2080', xW0, pad.top + plotH + 4);
-
-    // Clip to plot area
-    ctx.save();
+    // ── Input sine (yellow) ──
+    ctx.strokeStyle = 'rgba(255,204,68,0.7)';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.rect(pad.left, pad.top, plotW, plotH);
-    ctx.clip();
-
-    // Phase curve
-    ctx.strokeStyle = '#6aaa8e';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    const steps = 500;
-    for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const w = Math.pow(10, logMin + t * (logMax - logMin));
-        const deg = -Math.atan(w / w0) * 180 / Math.PI;
-        const x = xPx(w);
-        const y = yPx(deg);
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    for (let i = 0; i <= plotW; i++) {
+        const t = (i / plotW) * Math.PI * 2 * cycles;
+        const px = pad.left + i;
+        const py = midY - Math.sin(t + wt) * amp;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.stroke();
 
-    // -45 degree point dot
-    ctx.beginPath(); ctx.arc(xW0, yPx(-45), 6, 0, Math.PI * 2);
-    ctx.fillStyle = '#6aaa8e'; ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('\u221245\u00B0', xW0 + 10, yPx(-45));
+    // ── Output sine (green, attenuated + lagged) ──
+    ctx.strokeStyle = 'rgba(106,170,142,0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= plotW; i++) {
+        const t = (i / plotW) * Math.PI * 2 * cycles;
+        const px = pad.left + i;
+        const py = midY - Math.sin(t + wt + phaseLag) * amp * gf;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
 
-    // Test frequency marker
-    const testPhase = -Math.atan(testFreq / w0) * 180 / Math.PI;
-    const tx = xPx(Math.max(Math.pow(10, logMin), Math.min(Math.pow(10, logMax), testFreq)));
-    const ty = yPx(testPhase);
+    // ── Phase lag annotation ──
+    // Find a peak of the input to mark the lag visually
+    // Input peak when sin(t + wt) = 1, i.e. t + wt = pi/2
+    // Solve for t: t = pi/2 - wt, pick one that's on screen
+    const peakT = Math.PI / 2 - (wt % (Math.PI * 2));
+    const normT = ((peakT % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+    const peakFrac = normT / (Math.PI * 2 * cycles);
 
-    ctx.setLineDash([2, 2]);
-    ctx.strokeStyle = 'rgba(255,200,100,0.3)';
+    if (peakFrac > 0.05 && peakFrac < 0.85 && Math.abs(phaseDeg) > 2) {
+        const inPeakX = pad.left + peakFrac * plotW;
+        const outPeakFrac = (normT - phaseLag) / (Math.PI * 2 * cycles);
+
+        if (outPeakFrac > 0 && outPeakFrac < 1) {
+            const outPeakX = pad.left + outPeakFrac * plotW;
+            const outPeakY = midY - amp * gf;
+
+            // Arrow between peaks
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 2]);
+            // Vertical dashed from input peak down
+            ctx.beginPath(); ctx.moveTo(inPeakX, midY - amp); ctx.lineTo(inPeakX, midY - amp - 18); ctx.stroke();
+            // Vertical dashed from output peak down
+            ctx.beginPath(); ctx.moveTo(outPeakX, outPeakY); ctx.lineTo(outPeakX, midY - amp - 18); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Horizontal bracket
+            ctx.strokeStyle = 'rgba(255,200,100,0.6)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(inPeakX, midY - amp - 14);
+            ctx.lineTo(outPeakX, midY - amp - 14);
+            ctx.stroke();
+
+            // Arrowhead on bracket
+            const dir = outPeakX > inPeakX ? 1 : -1;
+            ctx.beginPath();
+            ctx.moveTo(outPeakX, midY - amp - 14);
+            ctx.lineTo(outPeakX - dir * 5, midY - amp - 18);
+            ctx.lineTo(outPeakX - dir * 5, midY - amp - 10);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255,200,100,0.6)';
+            ctx.fill();
+
+            // Phase label
+            ctx.fillStyle = 'rgba(255,200,100,0.8)';
+            ctx.font = "11px 'IBM Plex Mono', monospace";
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            ctx.fillText(phaseDeg.toFixed(1) + '\u00B0', (inPeakX + outPeakX) / 2, midY - amp - 18);
+        }
+    }
+
+    // ── Amplitude annotations ──
+    // Input amplitude bracket (left side)
+    const bracketX = pad.left + 8;
+    ctx.strokeStyle = 'rgba(255,204,68,0.3)';
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx, pad.top + plotH); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(pad.left, ty); ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(bracketX, midY - amp); ctx.lineTo(bracketX, midY + amp);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bracketX - 3, midY - amp); ctx.lineTo(bracketX + 3, midY - amp); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bracketX - 3, midY + amp); ctx.lineTo(bracketX + 3, midY + amp); ctx.stroke();
 
-    ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffcc44'; ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Output amplitude bracket
+    const bracketX2 = W - pad.right - 8;
+    ctx.strokeStyle = 'rgba(106,170,142,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(bracketX2, midY - amp * gf); ctx.lineTo(bracketX2, midY + amp * gf);
+    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bracketX2 - 3, midY - amp * gf); ctx.lineTo(bracketX2 + 3, midY - amp * gf); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bracketX2 - 3, midY + amp * gf); ctx.lineTo(bracketX2 + 3, midY + amp * gf); ctx.stroke();
 
-    ctx.fillStyle = '#ffcc44';
-    ctx.font = "12px 'IBM Plex Mono', monospace";
-    ctx.textAlign = tx > pad.left + plotW / 2 ? 'right' : 'left';
-    const lx = tx > pad.left + plotW / 2 ? -12 : 12;
-    ctx.textBaseline = 'bottom';
-    ctx.fillText(testPhase.toFixed(1) + '\u00B0', tx + lx, ty - 10);
+    // ── Legend ──
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
 
-    ctx.restore();
+    // Input legend
+    ctx.strokeStyle = 'rgba(255,204,68,0.7)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(pad.left + 10, pad.top - 20); ctx.lineTo(pad.left + 30, pad.top - 20); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    ctx.fillText('Input (V\u1D62\u2099)', pad.left + 34, pad.top - 25);
 
-    // Axis labels
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.font = "10px 'IBM Plex Mono', monospace";
+    // Output legend
+    ctx.strokeStyle = 'rgba(106,170,142,0.9)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(pad.left + 160, pad.top - 20); ctx.lineTo(pad.left + 180, pad.top - 20); ctx.stroke();
+    ctx.fillStyle = 'rgba(106,170,142,0.9)';
+    ctx.fillText('Output (V\u2092\u1D64\u209C) ' + (gf * 100).toFixed(0) + '%', pad.left + 184, pad.top - 25);
+
+    // ── Time axis label ──
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = "10px 'IBM Plex Sans', sans-serif";
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
-        ctx.fillText('10' + superscript(d), xPx(Math.pow(10, d)), pad.top + plotH + 4);
-    }
-    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    for (let deg = phaseMin; deg <= phaseMax; deg += 15) {
-        ctx.fillText(deg + '\u00B0', pad.left - 6, yPx(deg));
-    }
-
-    // Axis titles
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.font = "11px 'IBM Plex Sans', sans-serif";
-    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
-    ctx.fillText('Frequency \u03C9 (rad/s)', pad.left + plotW / 2, H - 8);
-
-    ctx.save();
-    ctx.translate(14, pad.top + plotH / 2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.fillText('Phase (\u00B0)', 0, 0);
-    ctx.restore();
+    ctx.fillText('Time', pad.left + plotW / 2, H - 10);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1634,6 +1649,7 @@ function updateReadouts() {
 
     // Phase lag readout
     document.getElementById('phase-lag-val').textContent = '\u2212' + angle.toFixed(1) + '\u00B0';
+    document.getElementById('phase-gain-pct').textContent = (gain / Av * 100).toFixed(1) + '%';
 
     // Section 3 readouts
     document.getElementById('bode-gain-val').textContent = gain.toPrecision(4);

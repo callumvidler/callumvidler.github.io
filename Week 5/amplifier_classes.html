@@ -312,8 +312,9 @@
         <div class="panel-header">
             <strong>Input / Output Waveforms</strong>
             <div class="legend">
-                <div class="legend-item"><div class="legend-dot" style="background:var(--col-input)"></div>V<sub>in</sub></div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--col-output)"></div>V<sub>out</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.35)"></div>V<sub>in</sub></div>
+                <div class="legend-item"><div class="legend-dot" style="background:#6aaa8e"></div>NPN</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#5080d0"></div>PNP</div>
             </div>
         </div>
         <div class="panel-body"><canvas id="waveform-canvas"></canvas></div>
@@ -1544,10 +1545,10 @@ function drawWaveforms() {
     const maxVout = VCC;
     const scale = plotH * 0.45;
 
-    // ─── Draw V_in trace ───
+    // ─── Draw V_in trace (white) ───
     if (waveHistory.length > 1 && vinPeak > 0) {
-        ctx.strokeStyle = '#5080d0';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 1;
         ctx.beginPath();
         for (let i = 0; i < waveHistory.length; i++) {
             const x = padL + (i / WAVEFORM_HISTORY) * plotW;
@@ -1557,17 +1558,43 @@ function drawWaveforms() {
         ctx.stroke();
     }
 
-    // ─── Draw V_out trace ───
+    // ─── Draw V_out trace (colour-coded: green=NPN/positive, blue=PNP/negative) ───
+    // For Class A, green for positive output, accent-dim for negative
+    // For Class B/AB, green when NPN conducts (vout < 0 since inverted), blue when PNP
     if (waveHistory.length > 1) {
-        ctx.strokeStyle = '#6aaa8e';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        for (let i = 0; i < waveHistory.length; i++) {
-            const x = padL + (i / WAVEFORM_HISTORY) * plotW;
-            const y = cy - (waveHistory[i].vout / maxVout) * scale;
-            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        ctx.lineWidth = 2;
+        const npnCol = '#6aaa8e';   // green — matches NPN current flow
+        const pnpCol = '#5080d0';   // blue — matches PNP current flow
+        const deadCol = 'rgba(255,255,255,0.15)';
+
+        for (let i = 1; i < waveHistory.length; i++) {
+            const x0 = padL + ((i - 1) / WAVEFORM_HISTORY) * plotW;
+            const x1 = padL + (i / WAVEFORM_HISTORY) * plotW;
+            const y0 = cy - (waveHistory[i-1].vout / maxVout) * scale;
+            const y1 = cy - (waveHistory[i].vout / maxVout) * scale;
+            const vout = waveHistory[i].vout;
+
+            if (ampClass === 'A') {
+                // Class A: single transistor, colour by output polarity
+                ctx.strokeStyle = vout >= 0 ? npnCol : pnpCol;
+            } else {
+                // Class B/AB: colour by which transistor is conducting
+                // Output is inverted: positive input → negative output (NPN conducts)
+                // So positive vout means PNP conducted, negative vout means NPN conducted
+                if (Math.abs(vout) < 0.01) {
+                    ctx.strokeStyle = deadCol;
+                } else if (vout < 0) {
+                    ctx.strokeStyle = npnCol;  // NPN produced this (inverted from positive input)
+                } else {
+                    ctx.strokeStyle = pnpCol;  // PNP produced this (inverted from negative input)
+                }
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
         }
-        ctx.stroke();
     }
 
     // ─── Y-axis labels ───

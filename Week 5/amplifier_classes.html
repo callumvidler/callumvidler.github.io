@@ -1416,7 +1416,7 @@ function drawClassBCurrentFlow(ctx, w, h) {
 
     } else if (vinPeak > 0) {
         // Dead zone — show red pulsing on base path to indicate blocked signal
-        drawCurrentFlow(ctx, vinPath, deadColor, 0.5);
+        drawCurrentFlow(ctx, vinToJunction, deadColor, 0.5);
     }
 
     // Signal state label

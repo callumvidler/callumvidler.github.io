@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMEN90033: Amplifier Bandwidth — Interactive Explainer</title>
+    <title>BMEN90033: Amplifier Bandwidth</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -397,9 +397,9 @@
     <div class="title-block">
         <div class="sub">BMEN90033 · Week 5</div>
         <h1>Amplifier Bandwidth</h1>
-        <p>Every real amplifier has a frequency limit. We'll derive where that limit comes from by modelling
-           the amplifier's output as a simple RC low-pass filter, visualise the result on the complex plane,
-           and build up to the Bode magnitude plot that engineers use to characterise bandwidth.</p>
+        <p>Every real amplifier has a frequency limit. Here we model the amplifier's output
+           as a simple RC low-pass filter, look at the result on the complex plane,
+           and build up to the Bode magnitude plot.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════ -->
@@ -410,9 +410,9 @@
         <h2>Deriving the Transfer Function</h2>
 
         <p>An ideal amplifier multiplies its input by a constant gain A<sub>v</sub> at all frequencies.
-           But real amplifiers have parasitic capacitance — stray capacitance in transistors, wiring,
-           and load — that shunts high-frequency signals to ground. We can model this with a single
-           resistor R and capacitor C at the output.</p>
+           In practice, parasitic capacitance (from transistors, wiring, and the load) shunts
+           high-frequency signals to ground. We model this with a single resistor R and capacitor C
+           at the output.</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="circuit-canvas"></canvas>
@@ -447,8 +447,8 @@
             <span class="frac frac-lg"><span class="num">1</span><span class="den">j&#969;C</span></span>
         </div>
 
-        <p>As &#969; increases, Z<sub>C</sub> gets <em>smaller</em> — the capacitor becomes a
-           better conductor at high frequencies. This is why it shunts the signal to ground.</p>
+        <p>As &#969; increases, Z<sub>C</sub> gets <em>smaller</em>. The capacitor becomes a
+           better conductor at high frequencies, which is why it shunts the signal to ground.</p>
 
         <ol class="derivation">
             <li>
@@ -459,7 +459,7 @@
                     <span>=</span>
                     <span class="frac frac-lg"><span class="num">Z<sub>C</sub></span><span class="den">R + Z<sub>C</sub></span></span>
                 </div>
-                <span class="step-note">This is the standard voltage divider formula — the output fraction equals
+                <span class="step-note">The standard voltage divider: output fraction equals
                 the bottom impedance over the total impedance.</span>
             </li>
 
@@ -477,7 +477,7 @@
                         </span>
                     </span>
                 </div>
-                <span class="step-note">This looks messy — we have a fraction within a fraction. Let's clean it up.</span>
+                <span class="step-note">A fraction within a fraction. We can clean this up.</span>
             </li>
 
             <li>
@@ -498,9 +498,9 @@
                         <span class="den">j&#969;RC + 1</span>
                     </span>
                 </div>
-                <span class="step-note"><strong>Numerator:</strong> j&#969;C &#215; 1/(j&#969;C) — the j&#969;C cancels, leaving 1.<br>
-                <strong>Denominator:</strong> distribute j&#969;C across both terms: j&#969;C &#215; R = j&#969;RC, and j&#969;C &#215; 1/(j&#969;C) = 1.
-                Together: j&#969;RC + 1.</span>
+                <span class="step-note"><strong>Numerator:</strong> j&#969;C &#215; 1/(j&#969;C) cancels, leaving 1.<br>
+                <strong>Denominator:</strong> distribute j&#969;C across both terms. j&#969;C &#215; R = j&#969;RC, and j&#969;C &#215; 1/(j&#969;C) = 1.
+                Together that gives j&#969;RC + 1.</span>
             </li>
 
             <li>
@@ -526,8 +526,8 @@
                         <span class="den">1 + j(<span class="accent">&#969;/&#969;<sub>0</sub></span>)</span>
                     </span>
                 </div>
-                <span class="step-note">Now the behaviour is controlled by a single ratio: how does
-                the signal frequency &#969; compare to the natural frequency &#969;<sub>0</sub>?</span>
+                <span class="step-note">The behaviour now depends on a single ratio:
+                the signal frequency &#969; compared to the natural frequency &#969;<sub>0</sub>.</span>
             </li>
 
             <li>
@@ -558,7 +558,7 @@
             </span>
         </div>
 
-        <p>Let's unpack what this means physically:</p>
+        <p>What does this mean physically?</p>
         <ul>
             <li><strong>At low frequencies</strong> (&#969; &#8810; &#969;<sub>0</sub>): the term
                 j(&#969;/&#969;<sub>0</sub>) is negligibly small, so the denominator &#8776; 1 and the
@@ -568,7 +568,7 @@
                 shorts the output to ground.</li>
             <li><strong>At &#969; = &#969;<sub>0</sub></strong>: the real and imaginary parts of the
                 denominator are equal (both = 1), giving a denominator magnitude of &#8730;2
-                and a gain of A<sub>v</sub>/&#8730;2 — the <strong>&#8722;3 dB point</strong>.</li>
+                and a gain of A<sub>v</sub>/&#8730;2. This is the <strong>&#8722;3 dB point</strong>.</li>
         </ul>
 
         <div class="readout-bar">
@@ -578,9 +578,9 @@
         </div>
 
         <div class="callout">
-            <strong>The key insight:</strong> the denominator (1 + j(&#969;/&#969;<sub>0</sub>)) is a complex number
-            that grows larger as frequency increases. Since it's in the denominator, the gain <em>decreases</em>.
-            But how exactly? That's what the complex plane shows us.
+            <strong>Key point:</strong> the denominator (1 + j(&#969;/&#969;<sub>0</sub>)) is a complex number
+            that grows with frequency. Since it sits in the denominator, the gain <em>decreases</em>.
+            The complex plane in Part 02 shows exactly how.
         </div>
     </div>
 
@@ -592,8 +592,8 @@
         <h2>Visualising on the Complex Plane</h2>
 
         <p>The denominator <strong>1 + j(&#969;/&#969;<sub>0</sub>)</strong> is a point in the complex plane.
-           The real part is always 1. The imaginary part is &#969;/&#969;<sub>0</sub>, which grows with frequency.
-           Sweep the test frequency below to watch the phasor grow:</p>
+           The real part is fixed at 1. The imaginary part is &#969;/&#969;<sub>0</sub>, which grows with frequency.
+           Use the test frequency slider to watch the phasor grow:</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="phasor-canvas"></canvas>
@@ -636,9 +636,10 @@
         </div>
 
         <div class="callout">
-            <strong>Why &#8722;3 dB matters:</strong> &#8722;3 dB corresponds to the half-power point — the output power
-            is exactly half of its mid-band value. Engineers define this as the <em>bandwidth</em> of the amplifier:
-            the frequency range where the gain stays within 3 dB of its maximum.
+            <strong>Why &#8722;3 dB matters:</strong> &#8722;3 dB is the half-power point. The output power
+            (proportional to V&#178;) is exactly half of its mid-band value. This defines the
+            <em>bandwidth</em> of the amplifier: the frequency range where the gain stays within
+            3 dB of its maximum.
         </div>
     </div>
 
@@ -659,10 +660,9 @@
             </span>
         </div>
 
-        <p>We could plot this directly — gain vs. frequency — but the numbers span
-           enormous ranges. An amplifier might have a gain of 1000 at 1 rad/s and 0.001 at
-           1 000 000 rad/s. A linear plot would be useless. Instead, engineers use two tricks
-           to compress the scale:</p>
+        <p>We could plot this directly (gain vs. frequency), but the numbers span
+           enormous ranges. A gain of 1000 at 1 rad/s and 0.001 at 1 000 000 rad/s
+           on a linear plot would be unreadable. Two standard tricks compress the scale:</p>
 
         <ol class="derivation">
             <li>
@@ -677,7 +677,7 @@
 
             <li>
                 <strong>Use a logarithmic frequency axis.</strong> Instead of spacing frequencies
-                linearly (0, 100, 200, 300...), we space them by powers of 10 — called <em>decades</em>:
+                linearly (0, 100, 200, 300...), we space them by powers of 10, called <em>decades</em>:
                 <div class="eq-line" style="margin: 10px 0 4px;">
                     <span class="dim">...</span>
                     <span>10&#185;</span>
@@ -717,9 +717,8 @@
             </li>
         </ol>
 
-        <p>The result is a curve with a very distinctive shape — flat at low frequencies,
-           then bending into a straight downward slope at high frequencies. This is the
-           <strong>Bode magnitude plot</strong>:</p>
+        <p>The result is a curve that is flat at low frequencies, then bends into a straight
+           downward slope at high frequencies. This is the <strong>Bode magnitude plot</strong>:</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="bode-canvas"></canvas>
@@ -759,9 +758,9 @@
             <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
                 <span class="regime-tag passband" style="flex-shrink:0;">Passband</span>
                 <div style="font-size: 13px; color: var(--text-dim); line-height: 1.7;">
-                    <strong style="color:#fff;">&#969; &#8810; &#969;<sub>0</sub></strong> — The ratio
+                    <strong style="color:#fff;">&#969; &#8810; &#969;<sub>0</sub></strong>: The ratio
                     &#969;/&#969;<sub>0</sub> is tiny, so (&#969;/&#969;<sub>0</sub>)&#178; &#8776; 0 and
-                    the denominator &#8776; 1. The gain is simply A<sub>v</sub> — a flat horizontal line.
+                    the denominator &#8776; 1. The gain is just A<sub>v</sub>, giving a flat horizontal line.
                     <div class="eq-line" style="margin: 8px 0 4px; font-size: 12px; padding: 8px 12px;">
                         |H|<sub>dB</sub> &#8776; 20 log<sub>10</sub> A<sub>v</sub>
                         <span class="dim">&nbsp;&nbsp;(constant)</span>
@@ -772,14 +771,14 @@
             <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
                 <span class="regime-tag cutoff" style="flex-shrink:0;">&#8722;3 dB</span>
                 <div style="font-size: 13px; color: var(--text-dim); line-height: 1.7;">
-                    <strong style="color:#fff;">&#969; = &#969;<sub>0</sub></strong> — The ratio is
+                    <strong style="color:#fff;">&#969; = &#969;<sub>0</sub></strong>: The ratio is
                     exactly 1, so the denominator is &#8730;(1 + 1) = &#8730;2. The gain drops to
                     A<sub>v</sub>/&#8730;2, which in dB is:
                     <div class="eq-line" style="margin: 8px 0 4px; font-size: 12px; padding: 8px 12px;">
                         20 log<sub>10</sub>(1/&#8730;2) = <span class="yellow">&#8722;3.01 dB</span>
                         <span class="dim">&nbsp;&nbsp;below mid-band</span>
                     </div>
-                    This is the <strong style="color:#fff;">half-power point</strong> — the output
+                    This is the <strong style="color:#fff;">half-power point</strong>: the output
                     power (proportional to V&#178;) is exactly half of its maximum.
                 </div>
             </div>
@@ -787,32 +786,31 @@
             <div style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px;">
                 <span class="regime-tag rolloff" style="flex-shrink:0;">Rolloff</span>
                 <div style="font-size: 13px; color: var(--text-dim); line-height: 1.7;">
-                    <strong style="color:#fff;">&#969; &#8811; &#969;<sub>0</sub></strong> — The ratio
-                    dominates: (&#969;/&#969;<sub>0</sub>)&#178; &#8811; 1, so the "1" is negligible
+                    <strong style="color:#fff;">&#969; &#8811; &#969;<sub>0</sub></strong>: The ratio
+                    dominates. (&#969;/&#969;<sub>0</sub>)&#178; &#8811; 1, so the "1" is negligible
                     and the denominator &#8776; &#969;/&#969;<sub>0</sub>. The gain simplifies to:
                     <div class="eq-line" style="margin: 8px 0 4px; font-size: 12px; padding: 8px 12px;">
                         |H|<sub>dB</sub> &#8776; 20 log<sub>10</sub> A<sub>v</sub> &#8722; 20 log<sub>10</sub>(&#969;/&#969;<sub>0</sub>)
                     </div>
                     Every 10&#215; increase in &#969; adds 20 to the log term, so the gain drops by
-                    <strong style="color:#fff;">20 dB per decade</strong> — a straight line on the
-                    log-log plot. This constant slope is the hallmark of a single-pole system.
+                    <strong style="color:#fff;">20 dB per decade</strong>, which appears as a straight line on the
+                    log-log plot. This constant slope is characteristic of a single-pole system.
                 </div>
             </div>
         </div>
 
         <div class="callout">
-            <strong>Why this shape matters:</strong> The Bode plot tells an engineer at a glance what their
-            amplifier can and cannot do. Everything to the left of &#969;<sub>0</sub> (the green
-            dashed line) is the <em>useful bandwidth</em> — the frequency range where the amplifier
-            faithfully reproduces the input signal. The yellow marker shows your current test frequency.
-            Try sweeping it from left to right and watch the gain drop.
+            <strong>Reading the plot:</strong> Everything to the left of &#969;<sub>0</sub> (the green
+            dashed line) is the useful bandwidth, where the amplifier faithfully reproduces
+            the input. The yellow marker shows your current test frequency. Try sweeping it
+            across and watch the gain drop.
         </div>
 
         <div class="callout warn">
-            <strong>The &#8722;20 dB/decade rule</strong> only applies to a <em>single-pole</em> system
-            (one RC pair). Real amplifiers often have multiple poles — each additional pole adds another
-            &#8722;20 dB/decade, steepening the rolloff. A two-pole system drops at &#8722;40 dB/decade,
-            three poles at &#8722;60 dB/decade, and so on.
+            <strong>Note:</strong> the &#8722;20 dB/decade slope only holds for a <em>single-pole</em> system
+            (one RC pair). Real amplifiers often have multiple poles. Each additional pole adds another
+            &#8722;20 dB/decade to the rolloff: two poles give &#8722;40 dB/decade,
+            three give &#8722;60 dB/decade, and so on.
         </div>
     </div>
 

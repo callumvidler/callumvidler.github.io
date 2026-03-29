@@ -1762,13 +1762,13 @@ function drawOpampOpen() {
     // Output wire
     ctx.beginPath(); ctx.moveTo(cx + tw/2, cy); ctx.lineTo(cx + tw/2 + 80, cy); ctx.stroke();
 
-    // Labels
+    // Labels: Vin to + (bottom), GND to - (top)
     ctx.font = "12px 'IBM Plex Mono', monospace";
     ctx.textAlign = 'right';
-    ctx.fillStyle = '#ffcc44';
-    ctx.fillText('V\u1D62\u2099', cx - tw/2 - 86, cy - th/4 + 4);
     ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText('GND', cx - tw/2 - 86, cy + th/4 + 4);
+    ctx.fillText('GND', cx - tw/2 - 86, cy - th/4 + 4);
+    ctx.fillStyle = '#ffcc44';
+    ctx.fillText('V\u1D62\u2099', cx - tw/2 - 86, cy + th/4 + 4);
 
     ctx.textAlign = 'left';
     ctx.fillStyle = '#6aaa8e';

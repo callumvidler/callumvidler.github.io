@@ -338,6 +338,11 @@
                 <input type="range" id="sl-amplitude" min="0" max="100" value="30" oninput="setAmplitude(this.value)">
                 <span class="ctrl-val" id="val-amplitude">0.30 V</span>
             </div>
+            <div class="ctrl-row">
+                <label>Speed</label>
+                <input type="range" id="sl-speed" min="5" max="200" value="100" oninput="setSpeed(this.value)">
+                <span class="ctrl-val" id="val-speed">1.0x</span>
+            </div>
         </div>
         <div class="ctrl-section">
             <div class="ctrl-title">Bias Point</div>
@@ -395,6 +400,7 @@ let ampClass = 'A';
 let amplitude = 30;
 let biasPoint = 50;
 let simTime = 0;
+let simSpeed = 1;          // 0.05 to 2.0x speed multiplier
 
 // ─── Derived state ───
 let instantVin = 0;      // current instantaneous input voltage (updated each frame)
@@ -453,6 +459,11 @@ function setAmplitude(val) {
 function setBias(val) {
     biasPoint = parseInt(val);
     updateAll();
+}
+
+function setSpeed(val) {
+    simSpeed = parseInt(val) / 100;
+    document.getElementById('val-speed').textContent = simSpeed.toFixed(1) + 'x';
 }
 
 function computeDerived() {
@@ -1810,7 +1821,7 @@ function animate(timestamp) {
 
     simTime += dt;
 
-    const freq = 1;
+    const freq = 1 * simSpeed;
     const vin = vinPeak * Math.sin(2 * Math.PI * freq * simTime);
     instantVin = vin;
     const vout = computeOutputSample(vin);

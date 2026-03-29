@@ -1290,10 +1290,12 @@ function drawClassACurrentFlow(ctx, w, h) {
     ];
     drawCurrentFlow(ctx, basePath, 'rgb(204,168,85)', baseIntensity * 0.4);
 
-    // V_in signal path: input → Cin → base junction
+    // V_in signal path: input → Cin → bias junction → base pin
     const vinPath = [
         [colIn, rowBase],
-        [colBias, rowBase]
+        [colBias, rowBase],
+        [qBaseX, rowBase],
+        [qBaseX, rowQ]
     ];
     drawCurrentFlow(ctx, vinPath, 'rgb(255,255,255)', signalIntensity * 0.6);
 
@@ -1348,13 +1350,27 @@ function drawClassBCurrentFlow(ctx, w, h) {
     const pnpColor = 'rgb(80,128,208)';    // blue for PNP path
     const deadColor = 'rgb(224,96,80)';    // red for dead zone
 
-    // V_in signal path: input → Cin → base junction
+    // V_in signal path: input → Cin → base join → up to NPN base / down to PNP base
     const signalIntensity = Math.abs(normalizedVin);
-    const vinPath = [
+    const vinToJunction = [
         [colIn, rowMid],
         [baseX, rowMid]
     ];
-    drawCurrentFlow(ctx, vinPath, 'rgb(255,255,255)', signalIntensity * 0.6);
+    drawCurrentFlow(ctx, vinToJunction, 'rgb(255,255,255)', signalIntensity * 0.6);
+
+    // Signal flows to NPN base (upward)
+    const vinToNPN = [
+        [baseX, rowMid],
+        [baseX, rowNPN]
+    ];
+    drawCurrentFlow(ctx, vinToNPN, npnColor, signalIntensity * 0.5);
+
+    // Signal flows to PNP base (downward)
+    const vinToPNP = [
+        [baseX, rowMid],
+        [baseX, rowPNP]
+    ];
+    drawCurrentFlow(ctx, vinToPNP, pnpColor, signalIntensity * 0.5);
 
     if (normalizedVin > deadZone) {
         const intensity = Math.min(1, (normalizedVin - deadZone) / (1 - deadZone));
@@ -1450,11 +1466,25 @@ function drawClassABCurrentFlow(ctx, w, h) {
     const pnpIntensity = Math.max(0.15, Math.min(1, 0.5 - normalizedVin * 0.6));
 
     // V_in signal path: input → Cin → diode junction
-    const vinPath = [
+    const vinToJunction = [
         [colIn, rowMid],
         [baseX, rowMid]
     ];
-    drawCurrentFlow(ctx, vinPath, 'rgb(255,255,255)', Math.max(signalIntensity * 0.6, 0.15));
+    drawCurrentFlow(ctx, vinToJunction, 'rgb(255,255,255)', Math.max(signalIntensity * 0.6, 0.15));
+
+    // Signal flows through diodes to NPN base (upward)
+    const vinToNPN = [
+        [baseX, rowMid],
+        [baseX, rowNPN]
+    ];
+    drawCurrentFlow(ctx, vinToNPN, npnColor, Math.max(signalIntensity * 0.5, 0.1));
+
+    // Signal flows through diodes to PNP base (downward)
+    const vinToPNP = [
+        [baseX, rowMid],
+        [baseX, rowPNP]
+    ];
+    drawCurrentFlow(ctx, vinToPNP, pnpColor, Math.max(signalIntensity * 0.5, 0.1));
 
     // NPN path
     const npnPath = [

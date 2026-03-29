@@ -855,6 +855,86 @@
         </div>
     </div>
 
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- SECTION 4: GAIN-BANDWIDTH PRODUCT -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div class="section" id="sec-gbp">
+        <div class="section-number">Part 04</div>
+        <h2>Gain-Bandwidth Product</h2>
+
+        <p>In Parts 01&#8211;03 we treated R, C, and A<sub>v</sub> as independent. In a real
+           op-amp or transistor amplifier, they are not. The internal parasitic capacitance C
+           is fixed by the silicon, and when you use negative feedback to set the closed-loop
+           gain, you are effectively trading gain for bandwidth.</p>
+
+        <p>Consider the open-loop gain A<sub>OL</sub> of the amplifier (gain with no feedback).
+           It has its own cutoff frequency &#969;<sub>OL</sub>. The <strong>gain-bandwidth product</strong>
+           (GBP) is:</p>
+
+        <div class="eq-block" style="font-size: 16px; padding: 16px 24px;">
+            GBP = A<sub>v</sub> &#215; f<sub>0</sub> = constant
+        </div>
+
+        <p>When you apply feedback to reduce the gain from A<sub>OL</sub> down to some
+           closed-loop value A<sub>CL</sub>, the bandwidth extends by the same factor.
+           The product stays the same.</p>
+
+        <ol class="derivation">
+            <li>
+                <strong>High gain, narrow bandwidth.</strong> Set A<sub>v</sub> = 1000. The amplifier
+                amplifies a lot, but the &#8722;3 dB frequency is low.
+                <span class="step-note">All the amplifier's "resources" go to gain, leaving little room for speed.</span>
+            </li>
+            <li>
+                <strong>Low gain, wide bandwidth.</strong> Set A<sub>v</sub> = 10. The gain is modest,
+                but the &#8722;3 dB frequency is 100&#215; higher than the previous case.
+                <span class="step-note">Less gain means the feedback loop can correct errors faster, extending the bandwidth.</span>
+            </li>
+            <li>
+                <strong>Unity gain, maximum bandwidth.</strong> Set A<sub>v</sub> = 1. The &#8722;3 dB
+                frequency equals the GBP itself. This is the widest bandwidth the amplifier can achieve.
+                <span class="step-note">This is why datasheets specify "unity-gain bandwidth" as the key speed metric.</span>
+            </li>
+        </ol>
+
+        <p>The plot below shows this visually. Each curve is the Bode plot for a different
+           closed-loop gain, all from the same amplifier (same GBP). Use the slider to set the
+           GBP, then see how increasing A<sub>v</sub> shifts the curve up but pushes the
+           cutoff left:</p>
+
+        <div class="canvas-container canvas-tall">
+            <canvas id="gbp-canvas"></canvas>
+        </div>
+
+        <div class="controls-row">
+            <div class="control-group">
+                <label>GBP</label>
+                <input type="range" id="gbp-slider" min="0" max="1" step="0.001" value="0.5">
+                <span class="control-value" id="gbp-val">10.0 MHz</span>
+            </div>
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">GBP = <span class="val" id="gbp-readout">10.0 MHz</span></div>
+            <div class="readout-item">At A<sub>v</sub> = <span class="val" id="gbp-av-val">100</span>:</div>
+            <div class="readout-item">f<sub>0</sub> = <span class="val" id="gbp-f0-val">100 kHz</span></div>
+        </div>
+
+        <div class="callout">
+            <strong>Reading the plot:</strong> all the curves converge to the same point at the
+            bottom right. That convergence point is the GBP (at unity gain). No matter how you
+            configure the feedback, you cannot get gain above the open-loop curve. The
+            gain-bandwidth product is a hard limit set by the amplifier's physics.
+        </div>
+
+        <div class="callout warn">
+            <strong>Practical example:</strong> a typical general-purpose op-amp (e.g. LM741)
+            has a GBP of about 1 MHz. At a gain of 100, the bandwidth is only 10 kHz. At a
+            gain of 10, it extends to 100 kHz. Audio applications (20 Hz&#8211;20 kHz) at a gain
+            of 50 require a GBP of at least 1 MHz.
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -1613,6 +1693,193 @@ function superscript(n) {
 }
 
 // ════════════════════════════════════════════════════════
+// SECTION 4: Gain-Bandwidth Product plot
+// ════════════════════════════════════════════════════════
+let GBP = 10e6;  // Hz, default 10 MHz
+const GBP_MIN = 100e3, GBP_MAX = 1e9;  // 100 kHz to 1 GHz
+
+function drawGBP() {
+    const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('gbp-canvas'));
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = { top: 35, right: 35, bottom: 50, left: 65 };
+    const plotW = W - pad.left - pad.right;
+    const plotH = H - pad.top - pad.bottom;
+
+    // Fixed axes: frequency 1 Hz to 10 GHz, gain -20 to 80 dB
+    const logMin = 0;   // 10^0 = 1 Hz
+    const logMax = 10;  // 10^10 = 10 GHz
+    const dbMax = 80;
+    const dbMin = -20;
+
+    function xPx(f) { return pad.left + (Math.log10(f) - logMin) / (logMax - logMin) * plotW; }
+    function yPx(db) { return pad.top + (dbMax - db) / (dbMax - dbMin) * plotH; }
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
+        const x = xPx(Math.pow(10, d));
+        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
+    }
+    for (let db = dbMin; db <= dbMax; db += 10) {
+        const y = yPx(db);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+    }
+
+    // Clip
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pad.left, pad.top, plotW, plotH);
+    ctx.clip();
+
+    // GBP vertical line at unity-gain frequency
+    const gbpX = xPx(GBP);
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(gbpX, pad.top); ctx.lineTo(gbpX, pad.top + plotH); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw Bode curves at different gains
+    const gains = [1, 10, 100, 1000];
+    const colors = [
+        'rgba(255,204,68,0.5)',     // Av=1, yellow
+        'rgba(255,204,68,0.7)',     // Av=10
+        'rgba(106,170,142,0.7)',    // Av=100, green
+        'rgba(106,170,142,0.9)',    // Av=1000
+    ];
+    const lineWidths = [1.5, 1.5, 2, 2.5];
+
+    const steps = 500;
+    for (let g = 0; g < gains.length; g++) {
+        const av = gains[g];
+        const f0 = GBP / av;  // cutoff frequency for this gain
+        const w0 = f0 * 2 * Math.PI;
+        const avDb = 20 * Math.log10(av);
+
+        ctx.strokeStyle = colors[g];
+        ctx.lineWidth = lineWidths[g];
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const f = Math.pow(10, logMin + t * (logMax - logMin));
+            const w = f * 2 * Math.PI;
+            const db = 20 * Math.log10(av / Math.sqrt(1 + (w / w0) ** 2));
+            const x = xPx(f);
+            const y = yPx(db);
+            i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Label at the left edge
+        ctx.fillStyle = colors[g];
+        ctx.font = "11px 'IBM Plex Mono', monospace";
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        const labelY = yPx(avDb);
+        if (labelY > pad.top + 5 && labelY < pad.top + plotH - 5) {
+            ctx.fillText('A\u1D65=' + av, pad.left - 6, labelY);
+        }
+
+        // -3dB dot
+        const f0x = xPx(f0);
+        const f0y = yPx(avDb - 3);
+        ctx.beginPath(); ctx.arc(f0x, f0y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = colors[g]; ctx.fill();
+    }
+
+    // Highlight the current Av from the main controls
+    const curF0 = GBP / Av;
+    const curW0 = curF0 * 2 * Math.PI;
+    const curAvDb = 20 * Math.log10(Av);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const f = Math.pow(10, logMin + t * (logMax - logMin));
+        const w = f * 2 * Math.PI;
+        const db = 20 * Math.log10(Av / Math.sqrt(1 + (w / curW0) ** 2));
+        const x = xPx(f);
+        const y = yPx(db);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Current Av label
+    ctx.fillStyle = '#fff';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    const curLabelY = yPx(curAvDb);
+    if (curLabelY > pad.top + 5 && curLabelY < pad.top + plotH - 5) {
+        ctx.fillText('A\u1D65=' + Av.toPrecision(3) + ' (current)', pad.left + 6, curLabelY - 4);
+    }
+
+    // Current -3dB dot
+    ctx.beginPath(); ctx.arc(xPx(curF0), yPx(curAvDb - 3), 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    // Open-loop envelope line (the -20dB/dec slope from GBP)
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    // This line goes from (very low freq, very high gain) through (GBP, 0dB)
+    // At frequency f: gain_dB = 20*log10(GBP/f)
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const f = Math.pow(10, logMin + t * (logMax - logMin));
+        const db = 20 * Math.log10(GBP / f);
+        const x = xPx(f);
+        const y = yPx(db);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.restore();
+
+    // GBP label at the convergence point
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('GBP = ' + fmtHzShort(GBP), gbpX, pad.top + plotH + 4);
+
+    // Axis tick labels
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
+        if (Math.abs(xPx(Math.pow(10, d)) - gbpX) > 30) {
+            ctx.fillText('10' + superscript(d), xPx(Math.pow(10, d)), pad.top + plotH + 4);
+        }
+    }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let db = dbMin; db <= dbMax; db += 20) {
+        ctx.fillText(db + '', pad.left - 6, yPx(db));
+    }
+
+    // Axis titles
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = "11px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('Frequency (Hz)', pad.left + plotW / 2, H - 8);
+
+    ctx.save();
+    ctx.translate(14, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Gain (dB)', 0, 0);
+    ctx.restore();
+}
+
+function fmtHzShort(hz) {
+    if (hz >= 1e9) return (hz / 1e9).toPrecision(3) + ' GHz';
+    if (hz >= 1e6) return (hz / 1e6).toPrecision(3) + ' MHz';
+    if (hz >= 1e3) return (hz / 1e3).toPrecision(3) + ' kHz';
+    return hz.toPrecision(3) + ' Hz';
+}
+
+// ════════════════════════════════════════════════════════
 // Readouts + wiring
 // ════════════════════════════════════════════════════════
 function updateReadouts() {
@@ -1668,6 +1935,13 @@ function updateReadouts() {
         regimeEl.textContent = 'Cutoff (\u22123 dB)';
         regimeEl.style.color = 'var(--yellow)';
     }
+
+    // Section 4 readouts (GBP)
+    document.getElementById('gbp-val').textContent = fmtHzShort(GBP);
+    document.getElementById('gbp-readout').textContent = fmtHzShort(GBP);
+    document.getElementById('gbp-av-val').textContent = Av.toPrecision(3);
+    const gbpF0 = GBP / Av;
+    document.getElementById('gbp-f0-val').textContent = fmtHzShort(gbpF0);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1746,6 +2020,13 @@ function init() {
         setSliders();
     });
 
+    // GBP slider
+    const gbpSlider = document.getElementById('gbp-slider');
+    gbpSlider.addEventListener('input', () => {
+        GBP = logMap(parseFloat(gbpSlider.value), GBP_MIN, GBP_MAX);
+        updateReadouts();
+    });
+
     updateReadouts();
     requestAnimationFrame(animate);
 }
@@ -1761,6 +2042,7 @@ function animate(now) {
     drawPhasor();
     drawPhase();
     drawBode();
+    drawGBP();
     requestAnimationFrame(animate);
 }
 

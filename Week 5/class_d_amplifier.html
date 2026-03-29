@@ -352,6 +352,11 @@
                 <input type="range" id="slider-speed" min="0.1" max="3" step="0.1" value="1">
                 <span class="control-value" id="val-speed">1.0x</span>
             </div>
+            <div class="control-group">
+                <label>f<sub>sw</sub> / f<sub>sig</sub></label>
+                <input type="range" id="slider-ratio" min="5" max="60" step="1" value="15">
+                <span class="control-value" id="val-ratio">15x</span>
+            </div>
             <button class="pause-btn active" id="btn-pause" onclick="togglePause()">&#9646;&#9646;</button>
         </div>
 
@@ -412,8 +417,10 @@
         <div class="callout">
             <strong>The LC filter averages the PWM signal.</strong> During HIGH periods, current flows through the
             inductor into the capacitor and load. During LOW periods, the inductor's stored energy maintains the
-            current. The result is a smooth voltage proportional to the duty cycle &mdash; which is proportional
-            to the original input.
+            current. The result is a voltage proportional to the duty cycle &mdash; but not perfectly smooth.
+            <strong>Try dragging the f<sub>sw</sub>/f<sub>sig</sub> slider above.</strong> At low ratios (5&ndash;10x), you can
+            clearly see the switching ripple riding on top of the output. At high ratios (40x+), the ripple
+            becomes negligible. A 2nd-order LC filter attenuates ripple by the ratio squared (&minus;40 dB/decade).
         </div>
 
         <div class="eq-block">
@@ -509,7 +516,7 @@ let lastFrameTime = 0;
 const VCC = 12;
 const VCE_SAT = 0.2;
 const GAIN = 20;
-const CARRIER_FREQ_BASE = 15;  // carrier frequency relative to signal
+let carrierFreqRatio = 15;  // carrier frequency relative to signal (adjustable)
 const RC = 1000;               // load resistance in ohms
 const RESISTOR_BODY = 30;
 const RESISTOR_W = 7;
@@ -568,6 +575,12 @@ speedSlider.addEventListener('input', () => {
     document.getElementById('val-speed').textContent = simSpeed.toFixed(1) + 'x';
 });
 
+const ratioSlider = document.getElementById('slider-ratio');
+ratioSlider.addEventListener('input', () => {
+    carrierFreqRatio = +ratioSlider.value;
+    document.getElementById('val-ratio').textContent = carrierFreqRatio + 'x';
+});
+
 function togglePause() {
     paused = !paused;
     const btn = document.getElementById('btn-pause');
@@ -581,8 +594,8 @@ function inputSignal(t) {
 }
 
 function triangleCarrier(t) {
-    // Triangle wave from -1 to 1 at CARRIER_FREQ_BASE times the signal frequency
-    const phase = (t * CARRIER_FREQ_BASE) / (2 * Math.PI);
+    // Triangle wave from -1 to 1 at carrierFreqRatio times the signal frequency
+    const phase = (t * carrierFreqRatio) / (2 * Math.PI);
     const frac = phase - Math.floor(phase);
     return frac < 0.5 ? (-1 + 4 * frac) : (3 - 4 * frac);
 }
@@ -591,13 +604,24 @@ function pwmSignal(t) {
     return inputSignal(t) > triangleCarrier(t) ? 1 : 0;
 }
 
-// Compute filtered output using a running average over one carrier period
+// Compute filtered output with realistic switching ripple
+// A 2nd-order LC filter attenuates at -40dB/decade above cutoff.
+// Ripple amplitude ≈ VCC / (16 × ratio²) for a triangle-modulated PWM into an LC filter.
+// At low ratios (5x) ripple is clearly visible; at high ratios (50x+) it's negligible.
 function filteredSignal(t) {
-    // Approximate: duty cycle at time t maps to output voltage
-    // Duty cycle = (Vin + 1) / 2 => Vout = duty * VCC
     const vin = inputSignal(t);
     const duty = (vin + 1) / 2;
-    return (duty - 0.5) * 2; // normalized -1..1 like input
+    const idealOut = (duty - 0.5) * 2;  // normalized -1..1
+
+    // Ripple: sawtooth-like component at the switching frequency
+    // Amplitude inversely proportional to ratio² (2nd order filter rolloff)
+    const rippleAmp = 1.0 / (carrierFreqRatio * carrierFreqRatio) * 8;
+    const carrierPhase = (t * carrierFreqRatio) / (2 * Math.PI);
+    const frac = carrierPhase - Math.floor(carrierPhase);
+    // Triangular ripple shape (capacitor charge/discharge)
+    const ripple = (frac < 0.5 ? (frac * 2) : (2 - frac * 2)) - 0.5;
+
+    return idealOut + ripple * rippleAmp;
 }
 
 // ─── Drawing helpers ───

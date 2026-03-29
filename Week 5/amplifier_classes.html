@@ -335,7 +335,7 @@
     <div class="panel">
         <div class="panel-header">
             <strong>Input / Output Waveforms</strong>
-            <div class="legend">
+            <div class="legend" id="waveform-legend">
                 <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.35)"></div>V<sub>in</sub></div>
                 <div class="legend-item"><div class="legend-dot" style="background:#6aaa8e"></div>NPN</div>
                 <div class="legend-item"><div class="legend-dot" style="background:#5080d0"></div>PNP</div>
@@ -552,6 +552,22 @@ function updateUI() {
     const effStr = '\u03B7 = ' + efficiency.toFixed(0) + '%';
     document.getElementById('efficiency-readout').textContent = effStr;
     document.getElementById('efficiency-badge').textContent = effStr;
+
+    // Update waveform legend based on class
+    const legend = document.getElementById('waveform-legend');
+    if (ampClass === 'D') {
+        legend.innerHTML =
+            '<div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.35)"></div>V<sub>in</sub></div>' +
+            '<div class="legend-item"><div class="legend-dot" style="background:rgba(204,168,85,0.5)"></div>Carrier</div>' +
+            '<div class="legend-item"><div class="legend-dot" style="background:rgba(106,170,142,0.35)"></div>PWM</div>' +
+            '<div class="legend-item"><div class="legend-dot" style="background:#6aaa8e"></div>V<sub>out</sub></div>';
+    } else {
+        legend.innerHTML =
+            '<div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.35)"></div>V<sub>in</sub></div>' +
+            '<div class="legend-item"><div class="legend-dot" style="background:#6aaa8e"></div>NPN</div>' +
+            '<div class="legend-item"><div class="legend-dot" style="background:#5080d0"></div>PNP</div>' +
+            '<div class="legend-item"><div class="legend-dot" style="background:#e06050"></div>Crossover</div>';
+    }
 }
 
 function updateAll() {
@@ -2038,6 +2054,40 @@ function drawWaveforms() {
         ctx.stroke();
     }
 
+    // ─── Class D: draw triangle carrier and PWM square wave ───
+    if (ampClass === 'D' && waveHistory.length > 1 && vinPeak > 0) {
+        // Triangle carrier (dim yellow, thin)
+        ctx.strokeStyle = 'rgba(204,168,85,0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < waveHistory.length; i++) {
+            const x = padL + (i / WAVEFORM_HISTORY) * plotW;
+            // Carrier is normalised to -1..1, scale to match input amplitude
+            const y = cy - (waveHistory[i].carrier * vinPeak / maxVout) * scale;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // PWM square wave (colour-coded by switch state, semi-transparent)
+        for (let i = 1; i < waveHistory.length; i++) {
+            const x0 = padL + ((i - 1) / WAVEFORM_HISTORY) * plotW;
+            const x1 = padL + (i / WAVEFORM_HISTORY) * plotW;
+            const pwmVal0 = waveHistory[i-1].pwm * (VCC - VCE_SAT);
+            const pwmVal1 = waveHistory[i].pwm * (VCC - VCE_SAT);
+            const y0 = cy - (pwmVal0 / maxVout) * scale;
+            const y1 = cy - (pwmVal1 / maxVout) * scale;
+
+            ctx.strokeStyle = waveHistory[i].pwm > 0
+                ? 'rgba(106,170,142,0.25)'   // NPN on — green
+                : 'rgba(80,128,208,0.25)';    // PNP on — blue
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(x0, y0);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+        }
+    }
+
     // ─── Draw V_out trace (colour-coded: green=NPN/positive, blue=PNP/negative) ───
     // For Class A, green for positive output, accent-dim for negative
     // For Class B/AB, green when NPN conducts (vout < 0 since inverted), blue when PNP
@@ -2215,7 +2265,16 @@ function animate(timestamp) {
         const vin = vinPeak * Math.sin(2 * Math.PI * freq * simTime);
         instantVin = vin;
         const vout = computeOutputSample(vin);
-        waveHistory.push({ vin, vout });
+
+        // For Class D, compute PWM switching state and carrier
+        let pwm = 0, carrier = 0;
+        if (ampClass === 'D') {
+            const carrierFreq = 20 * simSpeed;
+            carrier = ((simTime * carrierFreq) % 1) * 2 - 1;  // triangle -1 to 1
+            const normalizedVin = vinPeak > 0 ? vin / vinPeak : 0;
+            pwm = normalizedVin > carrier ? 1 : -1;  // +1 = VCC, -1 = GND
+        }
+        waveHistory.push({ vin, vout, pwm, carrier });
         if (waveHistory.length > WAVEFORM_HISTORY) {
             waveHistory.shift();
         }

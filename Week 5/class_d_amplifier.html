@@ -385,24 +385,30 @@
     <!-- ════════════════════════════════════════════════ -->
     <div class="section" id="sec-mosfet">
         <div class="section-number">Part 03</div>
-        <h2>The Switching Stage: MOSFET Half-Bridge</h2>
+        <h2>The Switching Stage: Full H-Bridge</h2>
 
-        <p>The PWM signal drives a pair of complementary MOSFETs (NMOS and PMOS) arranged in a half-bridge.
-           Unlike BJTs in linear amplifiers, these MOSFETs operate as digital switches: they are either
-           fully ON or fully OFF, with nothing in between.</p>
+        <p>To produce a true bipolar output (both positive and negative voltages across the load), Class D
+           amplifiers use a full H-bridge: four MOSFETs arranged in two half-bridge legs. The load is connected
+           between the midpoints of the two legs ("bridge-tied load").</p>
+
+        <p>When the PWM signal is HIGH, switches Q1 and Q4 close while Q2 and Q3 open. Current flows left-to-right
+           through the load. When PWM goes LOW, Q2 and Q3 close while Q1 and Q4 open, reversing the current.
+           The load sees a differential voltage that swings between +VCC and &minus;VCC.</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-circuit"></canvas>
         </div>
 
         <div class="callout">
-            <strong>Because the MOSFETs are either fully on</strong> (R<sub>DS(on)</sub> &asymp; milliohms, nearly
+            <strong>Because the MOSFETs are either fully on</strong> (R<sub>DS(on)</sub> in the milliohm range, nearly
             zero voltage drop) <strong>or fully off</strong> (zero current), the power dissipated in the switches
-            is almost zero. This is why Class D efficiency approaches 100%.
+            is close to zero. The H-bridge also doubles the output voltage swing compared to a single half-bridge,
+            since the load sees the difference between the two legs.
         </div>
 
         <div class="eq-block">
-            P<sub>switch</sub> &asymp; 0 <span class="dim">&nbsp;&nbsp;(</span>V<sub>DS</sub> &times; I<sub>D</sub> &asymp; 0 <span class="dim">in both states)</span>
+            V<sub>load</sub> = V<sub>A</sub> &minus; V<sub>B</sub> <span class="dim">&nbsp;&nbsp;swings&nbsp;&nbsp;</span>
+            +VCC <span class="dim">&nbsp;to&nbsp;</span> &minus;VCC
         </div>
     </div>
 
@@ -1558,159 +1564,224 @@ function drawLCCircuit() {
     ctx.restore();
 }
 
-// ─── Draw: Part 03 — MOSFET Half-Bridge Circuit ───
+// ─── Draw: Part 03 — Full H-Bridge Circuit ───
 function drawCircuit() {
     const c = canvases['canvas-circuit'];
     const ctx = contexts['canvas-circuit'];
     if (!c || !ctx) return;
     const W = c.width / (window.devicePixelRatio || 1);
     const H = c.height / (window.devicePixelRatio || 1);
-
     ctx.clearRect(0, 0, W, H);
+
+    const lineColor = 'rgba(255,255,255,0.5)';
+    const labelColor = '#8892a4';
+    const labelFont = '10px "IBM Plex Mono", monospace';
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const pwmNow = pwmSignal(simTime);
+    // PWM HIGH: Q1+Q4 on (current left to right through load)
+    // PWM LOW:  Q2+Q3 on (current right to left through load)
+    const q1On = pwmNow === 1;
+    const q4On = pwmNow === 1;
+    const q2On = pwmNow === 0;
+    const q3On = pwmNow === 0;
 
     const cx = W / 2;
     const cy = H / 2;
+    const s = Math.min(W, H);
+    const mScale = 0.9;
 
-    // Current PWM state
-    const pwmNow = pwmSignal(simTime);
+    // Layout
+    const railY = cy - s * 0.36;
+    const gndY  = cy + s * 0.36;
+    const topY  = cy - s * 0.16;  // top MOSFET row
+    const botY  = cy + s * 0.16;  // bottom MOSFET row
+    const legAx = cx - s * 0.22;  // left leg
+    const legBx = cx + s * 0.22;  // right leg
+    const midAy = cy;             // left leg midpoint
+    const midBy = cy;             // right leg midpoint
+    const pinOff = 10 * mScale;   // drain/source pin x-offset from MOSFET center
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.fillStyle = '#8892a4';
-
-    // VCC rail at top
-    const railY = cy - 130;
-    const gndY = cy + 130;
-    const mosX = cx;
-
-    // VCC label
-    ctx.font = 'bold 13px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#e2e8f0';
+    // ── VCC rail ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.beginPath();
+    ctx.moveTo(legAx + pinOff, railY);
+    ctx.lineTo(legBx + pinOff, railY);
+    ctx.stroke();
+    ctx.fillStyle = '#e06050';
+    ctx.font = 'bold 11px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('VCC = +12V', cx, railY - 16);
+    ctx.fillText('VCC = +' + VCC + 'V', cx, railY - 10);
 
-    // VCC rail line
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    // ── GND rail ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.beginPath();
-    ctx.moveTo(cx - 60, railY);
-    ctx.lineTo(cx + 60, railY);
+    ctx.moveTo(legAx + pinOff, gndY);
+    ctx.lineTo(legBx + pinOff, gndY);
     ctx.stroke();
-
-    // Wire from VCC to PMOS
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(mosX + 10, railY);
-    ctx.lineTo(mosX + 10, cy - 74);
-    ctx.stroke();
-
-    // PMOS (top)
-    const pmosY = cy - 60;
-    drawPMOS(ctx, mosX, pmosY, 1.4, '#8892a4', '11px "IBM Plex Mono", monospace');
-
-    // Wire from PMOS drain to midpoint
-    const midPointY = cy;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(mosX + 14, pmosY + 20);
-    ctx.lineTo(mosX + 14, midPointY);
-    ctx.stroke();
-
-    // Output label at midpoint
-    ctx.beginPath();
-    ctx.moveTo(mosX + 14, midPointY);
-    ctx.lineTo(mosX + 80, midPointY);
-    ctx.stroke();
-    ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillStyle = var_accent();
-    ctx.textAlign = 'left';
-    ctx.fillText('V_out (PWM)', mosX + 86, midPointY + 4);
-
-    // Wire from midpoint to NMOS
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(mosX + 14, midPointY);
-    ctx.lineTo(mosX + 14, cy + 40);
-    ctx.stroke();
-
-    // NMOS (bottom)
-    const nmosY = cy + 60;
-    drawNMOS(ctx, mosX, nmosY, 1.4, '#8892a4', '11px "IBM Plex Mono", monospace');
-
-    // Wire from NMOS source to GND
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.beginPath();
-    ctx.moveTo(mosX + 14, nmosY + 20);
-    ctx.lineTo(mosX + 14, gndY);
-    ctx.stroke();
-
-    // GND
-    drawGround(ctx, mosX + 14, gndY);
-    ctx.font = '11px "IBM Plex Mono", monospace';
     ctx.fillStyle = '#505868';
+    ctx.font = '11px "IBM Plex Mono", monospace';
+    ctx.fillText('GND', cx, gndY + 18);
+
+    // ── Left leg: Q1 (PMOS top) + Q2 (NMOS bottom) ──
+    // Q1: VCC → source, drain → midpoint A
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(legAx + pinOff, railY); ctx.lineTo(legAx + pinOff, topY - 14 * mScale); ctx.stroke();
+    drawPMOS(ctx, legAx, topY, mScale, labelColor, labelFont);
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(legAx + pinOff, topY + 14 * mScale); ctx.lineTo(legAx + pinOff, midAy); ctx.stroke();
+
+    // Q2: midpoint A → drain, source → GND
+    ctx.beginPath(); ctx.moveTo(legAx + pinOff, midAy); ctx.lineTo(legAx + pinOff, botY - 14 * mScale); ctx.stroke();
+    drawNMOS(ctx, legAx, botY, mScale, labelColor, labelFont);
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(legAx + pinOff, botY + 14 * mScale); ctx.lineTo(legAx + pinOff, gndY); ctx.stroke();
+
+    // ── Right leg: Q3 (PMOS top) + Q4 (NMOS bottom) ──
+    ctx.beginPath(); ctx.moveTo(legBx + pinOff, railY); ctx.lineTo(legBx + pinOff, topY - 14 * mScale); ctx.stroke();
+    drawPMOS(ctx, legBx, topY, mScale, labelColor, labelFont);
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(legBx + pinOff, topY + 14 * mScale); ctx.lineTo(legBx + pinOff, midBy); ctx.stroke();
+
+    ctx.beginPath(); ctx.moveTo(legBx + pinOff, midBy); ctx.lineTo(legBx + pinOff, botY - 14 * mScale); ctx.stroke();
+    drawNMOS(ctx, legBx, botY, mScale, labelColor, labelFont);
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(legBx + pinOff, botY + 14 * mScale); ctx.lineTo(legBx + pinOff, gndY); ctx.stroke();
+
+    // ── Load between midpoints A and B ──
+    drawResistor(ctx, legAx + pinOff, midAy, legBx + pinOff, midBy, 'LOAD', '#e2e8f0', '11px "IBM Plex Mono", monospace');
+
+    // Node dots at midpoints
+    ctx.beginPath(); ctx.arc(legAx + pinOff, midAy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(legBx + pinOff, midBy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    // Midpoint labels
+    ctx.font = '11px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('GND', mosX + 14, gndY + 22);
+    ctx.fillStyle = '#6aaa8e';
+    ctx.fillText('A', legAx + pinOff, midAy - 10);
+    ctx.fillText('B', legBx + pinOff, midBy - 10);
 
-    // PWM input label
-    ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.moveTo(mosX - 80, cy);
-    ctx.lineTo(mosX - 60, pmosY);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(mosX - 80, cy);
-    ctx.lineTo(mosX - 60, nmosY);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(mosX - 130, cy);
-    ctx.lineTo(mosX - 80, cy);
-    ctx.stroke();
-
-    ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    // ── MOSFET labels (Q1-Q4) ──
+    ctx.font = 'bold 11px "IBM Plex Mono", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText('PWM In', mosX - 134, cy + 4);
+    ctx.fillStyle = q1On ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.6)';
+    ctx.fillText('Q1 ' + (q1On ? 'ON' : 'OFF'), legAx - 16 * mScale - 4, topY + 4);
 
-    // State indicators
-    const pmosOn = pwmNow === 1;
-    const nmosOn = pwmNow === 0;
+    ctx.fillStyle = q2On ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.6)';
+    ctx.fillText('Q2 ' + (q2On ? 'ON' : 'OFF'), legAx - 16 * mScale - 4, botY + 4);
 
-    // PMOS state
-    ctx.font = 'bold 12px "IBM Plex Mono", monospace';
     ctx.textAlign = 'left';
-    ctx.fillStyle = pmosOn ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.7)';
-    ctx.fillText(pmosOn ? 'ON' : 'OFF', mosX + 30, pmosY + 4);
+    ctx.fillStyle = q3On ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.6)';
+    ctx.fillText((q3On ? 'ON' : 'OFF') + ' Q3', legBx + 16 * mScale + 14, topY + 4);
 
-    // NMOS state
-    ctx.fillStyle = nmosOn ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.7)';
-    ctx.fillText(nmosOn ? 'ON' : 'OFF', mosX + 30, nmosY + 4);
+    ctx.fillStyle = q4On ? 'rgba(106,170,142,0.9)' : 'rgba(224,96,80,0.6)';
+    ctx.fillText((q4On ? 'ON' : 'OFF') + ' Q4', legBx + 16 * mScale + 14, botY + 4);
 
-    // Current flow animation
-    if (pmosOn) {
-        // Current from VCC through PMOS to output
+    // ── PWM input label ──
+    ctx.font = '11px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(255,204,68,0.7)';
+    ctx.textAlign = 'center';
+    ctx.fillText('PWM', cx, railY - 26);
+
+    // ── Gate wires (connect PWM to all 4 gates) ──
+    const gateAx = legAx - 16 * mScale;
+    const gateBx = legBx - 16 * mScale;
+    const pwmWireY = railY - 34;
+
+    // Horizontal PWM bus
+    ctx.strokeStyle = 'rgba(255,204,68,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(gateAx, pwmWireY);
+    ctx.lineTo(gateBx, pwmWireY);
+    ctx.stroke();
+
+    // Vertical drops to each gate
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    // Q1 gate
+    ctx.beginPath(); ctx.moveTo(gateAx, pwmWireY); ctx.lineTo(gateAx, topY); ctx.stroke();
+    // Q2 gate (inverted via NOT bubble)
+    ctx.beginPath(); ctx.moveTo(gateAx, pwmWireY); ctx.lineTo(gateAx, botY); ctx.stroke();
+    // Small NOT bubble on Q2 and Q3 gates
+    ctx.beginPath(); ctx.arc(gateAx, botY - 16 * mScale - 4, 3, 0, Math.PI * 2); ctx.stroke();
+    // Q3 gate (inverted)
+    ctx.beginPath(); ctx.moveTo(gateBx, pwmWireY); ctx.lineTo(gateBx, topY); ctx.stroke();
+    ctx.beginPath(); ctx.arc(gateBx, topY - 16 * mScale - 4, 3, 0, Math.PI * 2); ctx.stroke();
+    // Q4 gate
+    ctx.beginPath(); ctx.moveTo(gateBx, pwmWireY); ctx.lineTo(gateBx, botY); ctx.stroke();
+
+    // ── Current flow ──
+    const greenFlow = 'rgb(106,170,142)';
+    const blueFlow = 'rgb(80,128,208)';
+
+    if (q1On) {
+        // PWM HIGH: VCC → Q1 → A → load (left to right) → B → Q4 → GND
         drawCurrentFlow(ctx, [
-            [mosX + 10, railY],
-            [mosX + 10, pmosY - 20],
-            [mosX + 14, pmosY + 20],
-            [mosX + 14, midPointY],
-            [mosX + 80, midPointY]
-        ], 'rgb(106,170,142)', 1);
+            [legAx + pinOff, railY],
+            [legAx + pinOff, topY - 14 * mScale],
+            [legAx + pinOff, topY + 14 * mScale],
+            [legAx + pinOff, midAy]
+        ], greenFlow, 0.8);
+
+        // Through load left to right
+        drawCurrentFlow(ctx, [
+            [legAx + pinOff, midAy],
+            [legBx + pinOff, midBy]
+        ], greenFlow, 0.9);
+
+        drawCurrentFlow(ctx, [
+            [legBx + pinOff, midBy],
+            [legBx + pinOff, botY - 14 * mScale],
+            [legBx + pinOff, botY + 14 * mScale],
+            [legBx + pinOff, gndY]
+        ], greenFlow, 0.8);
     } else {
-        // Current from output through NMOS to GND
+        // PWM LOW: VCC → Q3 → B → load (right to left) → A → Q2 → GND
         drawCurrentFlow(ctx, [
-            [mosX + 80, midPointY],
-            [mosX + 14, midPointY],
-            [mosX + 14, nmosY - 20],
-            [mosX + 14, nmosY + 20],
-            [mosX + 14, gndY]
-        ], 'rgb(80,128,208)', 1);
+            [legBx + pinOff, railY],
+            [legBx + pinOff, topY - 14 * mScale],
+            [legBx + pinOff, topY + 14 * mScale],
+            [legBx + pinOff, midBy]
+        ], blueFlow, 0.8);
+
+        // Through load right to left
+        drawCurrentFlow(ctx, [
+            [legBx + pinOff, midBy],
+            [legAx + pinOff, midAy]
+        ], blueFlow, 0.9);
+
+        drawCurrentFlow(ctx, [
+            [legAx + pinOff, midAy],
+            [legAx + pinOff, botY - 14 * mScale],
+            [legAx + pinOff, botY + 14 * mScale],
+            [legAx + pinOff, gndY]
+        ], blueFlow, 0.8);
     }
 
-    // Output voltage indicator
-    const vOut = pmosOn ? VCC : 0;
-    ctx.font = 'bold 14px "IBM Plex Mono", monospace';
-    ctx.fillStyle = pmosOn ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.8)';
-    ctx.textAlign = 'left';
-    ctx.fillText('V_out = ' + vOut.toFixed(0) + 'V', mosX + 86, midPointY + 22);
+    // ── Voltage indicator ──
+    const vLoad = q1On ? VCC : -VCC;
+    ctx.font = 'bold 13px "IBM Plex Mono", monospace';
+    ctx.fillStyle = q1On ? 'rgba(106,170,142,0.9)' : 'rgba(80,128,208,0.9)';
+    ctx.textAlign = 'center';
+    ctx.fillText('V_load = ' + (vLoad > 0 ? '+' : '') + vLoad + 'V', cx, midAy + 24);
+
+    // ── Direction arrow on load ──
+    const arrowMidX = cx;
+    const arrowDir = q1On ? 1 : -1;
+    ctx.fillStyle = q1On ? greenFlow : blueFlow;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(arrowMidX + arrowDir * 8, midAy - 12);
+    ctx.lineTo(arrowMidX + arrowDir * 14, midAy - 6);
+    ctx.lineTo(arrowMidX + arrowDir * 8, midAy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
 }
 
 function var_accent() { return '#6aaa8e'; }

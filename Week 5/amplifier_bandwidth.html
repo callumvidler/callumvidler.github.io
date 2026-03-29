@@ -1087,9 +1087,14 @@ function drawPhasor() {
     ctx.beginPath(); ctx.moveTo(oneX, cy - 3); ctx.lineTo(oneX, cy + 3); ctx.stroke();
     ctx.fillText('1', oneX, cy + 6);
 
-    // Imaginary ticks
+    // Imaginary ticks — choose step so labels don't overlap
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    for (let v = 1; v <= Math.ceil(maxExtent); v++) {
+    const minTickPx = 28;
+    let tickStep = 1;
+    if (scale < minTickPx) {
+        tickStep = Math.ceil(minTickPx / scale);
+    }
+    for (let v = tickStep; v <= Math.ceil(maxExtent); v += tickStep) {
         const iy = cy - v * scale;
         if (iy > cy - axisLen - 10) {
             ctx.beginPath(); ctx.moveTo(cx - 3, iy); ctx.lineTo(cx + 3, iy); ctx.stroke();

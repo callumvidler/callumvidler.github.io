@@ -1591,22 +1591,25 @@ function computeOutputSample(vinInstant) {
         const lowerClip = -(VCC - vceq);
         return Math.max(lowerClip, Math.min(upperClip, vout));
     } else if (ampClass === 'B') {
+        // Push-pull emitter follower: no phase inversion
+        // NPN conducts on positive half, PNP on negative half
         const deadZone = 0.6;
         const scaledDead = deadZone / GAIN;
         if (Math.abs(vinInstant) < scaledDead) {
             return 0;
         }
-        const sign = vinInstant > 0 ? -1 : 1;
+        const sign = vinInstant > 0 ? 1 : -1;
         const vout = sign * (Math.abs(vinInstant) - scaledDead) * GAIN;
         const clipMax = VCC - VCE_SAT;
         return Math.max(-clipMax, Math.min(clipMax, vout));
     } else {
+        // Class AB: same as B but with minimal dead zone
         const deadZone = 0.05;
         const scaledDead = deadZone / GAIN;
         if (Math.abs(vinInstant) < scaledDead) {
             return 0;
         }
-        const sign = vinInstant > 0 ? -1 : 1;
+        const sign = vinInstant > 0 ? 1 : -1;
         const vout = sign * (Math.abs(vinInstant) - scaledDead) * GAIN;
         const clipMax = VCC - VCE_SAT;
         return Math.max(-clipMax, Math.min(clipMax, vout));
@@ -1687,15 +1690,14 @@ function drawWaveforms() {
                 // Class A: single transistor, colour by output polarity
                 ctx.strokeStyle = vout >= 0 ? npnCol : pnpCol;
             } else {
-                // Class B/AB: colour by which transistor is conducting
-                // Output is inverted: positive input → negative output (NPN conducts)
-                // So positive vout means PNP conducted, negative vout means NPN conducted
+                // Class B/AB: push-pull emitter follower (no inversion)
+                // Positive output = NPN conducting, negative output = PNP conducting
                 if (Math.abs(vout) < 0.01) {
                     ctx.strokeStyle = deadCol;
-                } else if (vout < 0) {
-                    ctx.strokeStyle = npnCol;  // NPN produced this (inverted from positive input)
+                } else if (vout > 0) {
+                    ctx.strokeStyle = npnCol;  // NPN conducts on positive half
                 } else {
-                    ctx.strokeStyle = pnpCol;  // PNP produced this (inverted from negative input)
+                    ctx.strokeStyle = pnpCol;  // PNP conducts on negative half
                 }
             }
 

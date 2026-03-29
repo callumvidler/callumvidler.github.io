@@ -662,8 +662,17 @@
             <canvas id="phase-canvas"></canvas>
         </div>
 
+        <div class="controls-row">
+            <div class="control-group">
+                <label>Test &#969;</label>
+                <input type="range" id="freq-slider-2" min="0" max="1" step="0.001" value="0.5">
+                <span class="control-value" id="freq-val-2">100 krad/s</span>
+            </div>
+        </div>
+
         <div class="readout-bar">
-            <div class="readout-item">Gain: <span class="val" id="phase-gain-pct">70.7%</span></div>
+            <div class="readout-item">|H| = <span class="val" id="phase-gain-pct">70.7</span></div>
+            <div class="readout-item">|H|/A<sub>v</sub> = <span class="val" id="phase-gain-ratio">70.7%</span></div>
             <div class="readout-item">Phase lag: <span class="val" id="phase-lag-val">&#8722;45.0°</span></div>
         </div>
 
@@ -1308,17 +1317,23 @@ function drawPhase() {
 
     const w0 = omega0();
     const ratio = testFreq / w0;
-    const gf = 1 / Math.sqrt(1 + ratio * ratio);
+    const gf = 1 / Math.sqrt(1 + ratio * ratio);  // gain relative to Av
     const phaseLag = -Math.atan(ratio);
     const phaseDeg = phaseLag * 180 / Math.PI;
 
-    const pad = { left: 20, right: 20, top: 30, bottom: 24 };
+    const pad = { left: 50, right: 20, top: 30, bottom: 24 };
     const plotW = W - pad.left - pad.right;
     const plotH = H - pad.top - pad.bottom;
     const midY = pad.top + plotH / 2;
-    const amp = plotH * 0.38;
+    const maxAmp = plotH * 0.42;
 
-    const wt = animTime * 3; // slow constant animation
+    // Scale: Av maps to maxAmp (mid-band output fills the plot)
+    // Input amplitude is 1, so input pixel height = maxAmp / Av
+    const inAmp = maxAmp / Av;
+    // Output amplitude = Av * gf * (maxAmp / Av) = gf * maxAmp
+    const outAmp = gf * maxAmp;
+
+    const wt = animTime * 3;
     const cycles = 2.5;
 
     // ── Center line ──
@@ -1326,34 +1341,44 @@ function drawPhase() {
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(pad.left, midY); ctx.lineTo(W - pad.right, midY); ctx.stroke();
 
-    // ── Input sine (yellow) ──
-    ctx.strokeStyle = 'rgba(255,204,68,0.7)';
-    ctx.lineWidth = 2;
+    // ── Y-axis scale labels ──
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = "9px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    // Show +Av and -Av on the axis
+    ctx.fillText('+A\u1D65', pad.left - 6, midY - maxAmp);
+    ctx.fillText('0', pad.left - 6, midY);
+    ctx.fillText('\u2212A\u1D65', pad.left - 6, midY + maxAmp);
+    // Faint lines at +/- Av
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.beginPath(); ctx.moveTo(pad.left, midY - maxAmp); ctx.lineTo(W - pad.right, midY - maxAmp); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.left, midY + maxAmp); ctx.lineTo(W - pad.right, midY + maxAmp); ctx.stroke();
+
+    // ── Input sine (yellow, small) ──
+    ctx.strokeStyle = 'rgba(255,204,68,0.6)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let i = 0; i <= plotW; i++) {
         const t = (i / plotW) * Math.PI * 2 * cycles;
         const px = pad.left + i;
-        const py = midY - Math.sin(t + wt) * amp;
+        const py = midY - Math.sin(t + wt) * Math.max(inAmp, 2);
         i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.stroke();
 
-    // ── Output sine (green, attenuated + lagged) ──
+    // ── Output sine (green, amplified + lagged) ──
     ctx.strokeStyle = 'rgba(106,170,142,0.9)';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i <= plotW; i++) {
         const t = (i / plotW) * Math.PI * 2 * cycles;
         const px = pad.left + i;
-        const py = midY - Math.sin(t + wt + phaseLag) * amp * gf;
+        const py = midY - Math.sin(t + wt + phaseLag) * outAmp;
         i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.stroke();
 
-    // ── Phase lag annotation ──
-    // Find a peak of the input to mark the lag visually
-    // Input peak when sin(t + wt) = 1, i.e. t + wt = pi/2
-    // Solve for t: t = pi/2 - wt, pick one that's on screen
+    // ── Phase lag bracket annotation ──
     const peakT = Math.PI / 2 - (wt % (Math.PI * 2));
     const normT = ((peakT % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
     const peakFrac = normT / (Math.PI * 2 * cycles);
@@ -1364,32 +1389,27 @@ function drawPhase() {
 
         if (outPeakFrac > 0 && outPeakFrac < 1) {
             const outPeakX = pad.left + outPeakFrac * plotW;
-            const outPeakY = midY - amp * gf;
+            const bracketY = midY - maxAmp - 12;
 
-            // Arrow between peaks
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            // Vertical dashed lines from peaks up to bracket
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
             ctx.lineWidth = 1;
             ctx.setLineDash([3, 2]);
-            // Vertical dashed from input peak down
-            ctx.beginPath(); ctx.moveTo(inPeakX, midY - amp); ctx.lineTo(inPeakX, midY - amp - 18); ctx.stroke();
-            // Vertical dashed from output peak down
-            ctx.beginPath(); ctx.moveTo(outPeakX, outPeakY); ctx.lineTo(outPeakX, midY - amp - 18); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(inPeakX, midY - Math.max(inAmp, 2)); ctx.lineTo(inPeakX, bracketY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(outPeakX, midY - outAmp); ctx.lineTo(outPeakX, bracketY); ctx.stroke();
             ctx.setLineDash([]);
 
             // Horizontal bracket
             ctx.strokeStyle = 'rgba(255,200,100,0.6)';
             ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(inPeakX, midY - amp - 14);
-            ctx.lineTo(outPeakX, midY - amp - 14);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(inPeakX, bracketY + 4); ctx.lineTo(outPeakX, bracketY + 4); ctx.stroke();
 
-            // Arrowhead on bracket
+            // Arrowhead
             const dir = outPeakX > inPeakX ? 1 : -1;
             ctx.beginPath();
-            ctx.moveTo(outPeakX, midY - amp - 14);
-            ctx.lineTo(outPeakX - dir * 5, midY - amp - 18);
-            ctx.lineTo(outPeakX - dir * 5, midY - amp - 10);
+            ctx.moveTo(outPeakX, bracketY + 4);
+            ctx.lineTo(outPeakX - dir * 5, bracketY);
+            ctx.lineTo(outPeakX - dir * 5, bracketY + 8);
             ctx.closePath();
             ctx.fillStyle = 'rgba(255,200,100,0.6)';
             ctx.fill();
@@ -1398,49 +1418,28 @@ function drawPhase() {
             ctx.fillStyle = 'rgba(255,200,100,0.8)';
             ctx.font = "11px 'IBM Plex Mono', monospace";
             ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-            ctx.fillText(phaseDeg.toFixed(1) + '\u00B0', (inPeakX + outPeakX) / 2, midY - amp - 18);
+            ctx.fillText('lag: ' + phaseDeg.toFixed(1) + '\u00B0', (inPeakX + outPeakX) / 2, bracketY - 2);
         }
     }
-
-    // ── Amplitude annotations ──
-    // Input amplitude bracket (left side)
-    const bracketX = pad.left + 8;
-    ctx.strokeStyle = 'rgba(255,204,68,0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(bracketX, midY - amp); ctx.lineTo(bracketX, midY + amp);
-    ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(bracketX - 3, midY - amp); ctx.lineTo(bracketX + 3, midY - amp); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(bracketX - 3, midY + amp); ctx.lineTo(bracketX + 3, midY + amp); ctx.stroke();
-
-    // Output amplitude bracket
-    const bracketX2 = W - pad.right - 8;
-    ctx.strokeStyle = 'rgba(106,170,142,0.3)';
-    ctx.beginPath();
-    ctx.moveTo(bracketX2, midY - amp * gf); ctx.lineTo(bracketX2, midY + amp * gf);
-    ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(bracketX2 - 3, midY - amp * gf); ctx.lineTo(bracketX2 + 3, midY - amp * gf); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(bracketX2 - 3, midY + amp * gf); ctx.lineTo(bracketX2 + 3, midY + amp * gf); ctx.stroke();
 
     // ── Legend ──
     ctx.font = "11px 'IBM Plex Mono', monospace";
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
 
-    // Input legend
-    ctx.strokeStyle = 'rgba(255,204,68,0.7)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,204,68,0.6)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(pad.left + 10, pad.top - 20); ctx.lineTo(pad.left + 30, pad.top - 20); ctx.stroke();
-    ctx.fillStyle = 'rgba(255,204,68,0.8)';
-    ctx.fillText('Input (V\u1D62\u2099)', pad.left + 34, pad.top - 25);
+    ctx.fillStyle = 'rgba(255,204,68,0.7)';
+    ctx.fillText('Input (amplitude = 1)', pad.left + 34, pad.top - 25);
 
-    // Output legend
     ctx.strokeStyle = 'rgba(106,170,142,0.9)';
     ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(pad.left + 160, pad.top - 20); ctx.lineTo(pad.left + 180, pad.top - 20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.left + 220, pad.top - 20); ctx.lineTo(pad.left + 240, pad.top - 20); ctx.stroke();
     ctx.fillStyle = 'rgba(106,170,142,0.9)';
-    ctx.fillText('Output (V\u2092\u1D64\u209C) ' + (gf * 100).toFixed(0) + '%', pad.left + 184, pad.top - 25);
+    const absGain = Av * gf;
+    ctx.fillText('Output (amplitude = ' + absGain.toPrecision(3) + ')', pad.left + 244, pad.top - 25);
 
-    // ── Time axis label ──
+    // ── Time axis ──
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.font = "10px 'IBM Plex Sans', sans-serif";
     ctx.textAlign = 'center'; ctx.textBaseline = 'top';
@@ -1649,7 +1648,9 @@ function updateReadouts() {
 
     // Phase lag readout
     document.getElementById('phase-lag-val').textContent = '\u2212' + angle.toFixed(1) + '\u00B0';
-    document.getElementById('phase-gain-pct').textContent = (gain / Av * 100).toFixed(1) + '%';
+    document.getElementById('phase-gain-pct').textContent = gain.toPrecision(3);
+    document.getElementById('phase-gain-ratio').textContent = (gain / Av * 100).toFixed(1) + '%';
+    document.getElementById('freq-val-2').textContent = fmtFreq(testFreq);
 
     // Section 3 readouts
     document.getElementById('bode-gain-val').textContent = gain.toPrecision(4);
@@ -1681,8 +1682,11 @@ function init() {
     const rSlider2 = document.getElementById('r-slider-2');
     const cSlider2 = document.getElementById('c-slider-2');
     const avSlider2 = document.getElementById('av-slider-2');
+    const freqSlider2 = document.getElementById('freq-slider-2');
 
-    // Pair sliders: changing one updates the other
+    // All freq sliders that need syncing
+    const allFreqSliders = [freqSlider, freqSlider2];
+
     function syncFromPrimary() {
         R = logMap(parseFloat(rSlider.value), R_MIN, R_MAX);
         C = logMap(parseFloat(cSlider.value), C_MIN, C_MAX);
@@ -1691,6 +1695,7 @@ function init() {
         rSlider2.value = rSlider.value;
         cSlider2.value = cSlider.value;
         avSlider2.value = avSlider.value;
+        freqSlider2.value = freqSlider.value;
         updateReadouts();
     }
 
@@ -1704,6 +1709,12 @@ function init() {
         updateReadouts();
     }
 
+    function syncFreqFromSecondary() {
+        testFreq = logMap(parseFloat(freqSlider2.value), FREQ_MIN, FREQ_MAX);
+        freqSlider.value = freqSlider2.value;
+        updateReadouts();
+    }
+
     rSlider.addEventListener('input', syncFromPrimary);
     cSlider.addEventListener('input', syncFromPrimary);
     avSlider.addEventListener('input', syncFromPrimary);
@@ -1712,6 +1723,7 @@ function init() {
     rSlider2.addEventListener('input', syncFromSecondary);
     cSlider2.addEventListener('input', syncFromSecondary);
     avSlider2.addEventListener('input', syncFromSecondary);
+    freqSlider2.addEventListener('input', syncFreqFromSecondary);
 
     function setSliders() {
         const rv = logUnmap(R, R_MIN, R_MAX);
@@ -1721,7 +1733,7 @@ function init() {
         rSlider.value = rv;  rSlider2.value = rv;
         cSlider.value = cv;  cSlider2.value = cv;
         avSlider.value = av; avSlider2.value = av;
-        freqSlider.value = fv;
+        freqSlider.value = fv; freqSlider2.value = fv;
         updateReadouts();
     }
 

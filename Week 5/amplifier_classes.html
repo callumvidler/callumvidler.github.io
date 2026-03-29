@@ -812,6 +812,142 @@ function drawGround(ctx, x, y) {
     ctx.moveTo(x - w * 0.25, y + 8); ctx.lineTo(x + w * 0.25, y + 8); ctx.stroke();
 }
 
+// NMOS enhancement-mode MOSFET symbol
+// Gate on the left, Drain top-right, Source bottom-right (same pin layout as NPN)
+function drawNMOS(ctx, x, y, scale, labelColor, labelFont) {
+    const s = scale || 1;
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+
+    // Gate line (left)
+    ctx.beginPath();
+    ctx.moveTo(x - 16 * s, y);
+    ctx.lineTo(x - 8 * s, y);
+    ctx.stroke();
+
+    // Gate plate (vertical, with gap from channel)
+    ctx.beginPath();
+    ctx.moveTo(x - 8 * s, y - 10 * s);
+    ctx.lineTo(x - 8 * s, y + 10 * s);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // Channel (three dashes — enhancement mode)
+    const chX = x - 4 * s;
+    ctx.beginPath();
+    ctx.moveTo(chX, y - 10 * s); ctx.lineTo(chX, y - 4 * s); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(chX, y - 2 * s); ctx.lineTo(chX, y + 2 * s); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(chX, y + 4 * s); ctx.lineTo(chX, y + 10 * s); ctx.stroke();
+
+    // Drain (top-right): from top of channel to right
+    ctx.beginPath();
+    ctx.moveTo(chX, y - 10 * s);
+    ctx.lineTo(x + 10 * s, y - 10 * s);
+    ctx.lineTo(x + 10 * s, y - 14 * s);
+    ctx.stroke();
+
+    // Source (bottom-right): from bottom of channel to right
+    ctx.beginPath();
+    ctx.moveTo(chX, y + 10 * s);
+    ctx.lineTo(x + 10 * s, y + 10 * s);
+    ctx.lineTo(x + 10 * s, y + 14 * s);
+    ctx.stroke();
+
+    // Arrow on source (pointing inward = N-channel)
+    const ax = chX + 3 * s, ay = y + 10 * s;
+    ctx.beginPath();
+    ctx.moveTo(x + 10 * s, y + 10 * s);
+    ctx.lineTo(x + 4 * s, y + 8 * s);
+    ctx.lineTo(x + 4 * s, y + 12 * s);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+
+    // Labels
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('G', x - 22 * s, y + 4);
+    ctx.fillText('D', x + 16 * s, y - 14 * s);
+    ctx.fillText('S', x + 16 * s, y + 18 * s);
+    ctx.restore();
+}
+
+// PMOS enhancement-mode MOSFET symbol
+// Gate on the left, Source top-right, Drain bottom-right
+function drawPMOS(ctx, x, y, scale, labelColor, labelFont) {
+    const s = scale || 1;
+    ctx.beginPath();
+    ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+
+    // Gate line (left)
+    ctx.beginPath();
+    ctx.moveTo(x - 16 * s, y);
+    ctx.lineTo(x - 8 * s, y);
+    ctx.stroke();
+
+    // Gate plate
+    ctx.beginPath();
+    ctx.moveTo(x - 8 * s, y - 10 * s);
+    ctx.lineTo(x - 8 * s, y + 10 * s);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // Channel (three dashes)
+    const chX = x - 4 * s;
+    ctx.beginPath();
+    ctx.moveTo(chX, y - 10 * s); ctx.lineTo(chX, y - 4 * s); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(chX, y - 2 * s); ctx.lineTo(chX, y + 2 * s); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(chX, y + 4 * s); ctx.lineTo(chX, y + 10 * s); ctx.stroke();
+
+    // Source (top-right): from top of channel to right
+    ctx.beginPath();
+    ctx.moveTo(chX, y - 10 * s);
+    ctx.lineTo(x + 10 * s, y - 10 * s);
+    ctx.lineTo(x + 10 * s, y - 14 * s);
+    ctx.stroke();
+
+    // Drain (bottom-right): from bottom of channel to right
+    ctx.beginPath();
+    ctx.moveTo(chX, y + 10 * s);
+    ctx.lineTo(x + 10 * s, y + 10 * s);
+    ctx.lineTo(x + 10 * s, y + 14 * s);
+    ctx.stroke();
+
+    // Arrow on source (pointing outward = P-channel)
+    ctx.beginPath();
+    ctx.moveTo(chX, y - 10 * s);
+    ctx.lineTo(chX + 6 * s, y - 8 * s);
+    ctx.lineTo(chX + 6 * s, y - 12 * s);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fill();
+
+    // Labels
+    ctx.save();
+    ctx.font = labelFont;
+    ctx.fillStyle = labelColor;
+    ctx.textAlign = 'center';
+    ctx.fillText('G', x - 22 * s, y + 4);
+    ctx.fillText('S', x + 16 * s, y - 14 * s);
+    ctx.fillText('D', x + 16 * s, y + 18 * s);
+    ctx.restore();
+}
+
 // ─── Class A: Common-Emitter ───
 function drawClassACircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont) {
     ctx.strokeStyle = lineColor;
@@ -1282,27 +1418,28 @@ function drawClassDCircuit(ctx, w, h, lineColor, activeColor, componentColor, la
     ctx.lineWidth = 1.5;
     ctx.restore();
 
-    // Comparator output to base junction
-    const baseX = colQ - 16;
+    // Comparator output to gate junction
+    const gateX = colQ - 16;
     ctx.beginPath();
     ctx.moveTo(compX + compW/2, compY);
-    ctx.lineTo(baseX, compY);
+    ctx.lineTo(gateX, compY);
     ctx.stroke();
 
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = labelColor;
     ctx.textAlign = 'center';
-    ctx.fillText('PWM', (compX + compW/2 + baseX) / 2, compY - 8);
+    ctx.fillText('PWM', (compX + compW/2 + gateX) / 2, compY - 8);
     ctx.restore();
 
-    // Switching transistors
-    drawNPNTransistor(ctx, colQ, rowNPN, 1, labelColor, labelFont);
-    drawPNPTransistor(ctx, colQ, rowPNP, 1, labelColor, labelFont);
+    // Switching MOSFETs (half-bridge)
+    drawNMOS(ctx, colQ, rowNPN, 1, labelColor, labelFont);
+    drawPMOS(ctx, colQ, rowPNP, 1, labelColor, labelFont);
 
+    // Gate join
     ctx.beginPath();
-    ctx.moveTo(baseX, rowNPN);
-    ctx.lineTo(baseX, rowPNP);
+    ctx.moveTo(gateX, rowNPN);
+    ctx.lineTo(gateX, rowPNP);
     ctx.stroke();
 
     ctx.beginPath();
@@ -1916,10 +2053,10 @@ function drawClassDCurrentFlow(ctx, w, h) {
     ctx.textAlign = 'left';
     if (pwmHigh) {
         ctx.fillStyle = 'rgba(106,170,142,0.8)';
-        ctx.fillText('PWM HIGH \u2014 NPN switch ON', 8, 14);
+        ctx.fillText('PWM HIGH \u2014 NMOS switch ON', 8, 14);
     } else {
         ctx.fillStyle = 'rgba(80,128,208,0.8)';
-        ctx.fillText('PWM LOW \u2014 PNP switch ON', 8, 14);
+        ctx.fillText('PWM LOW \u2014 PMOS switch ON', 8, 14);
     }
     ctx.restore();
 }
@@ -2221,12 +2358,14 @@ function updateExplanation() {
         }
     } else if (ampClass === 'D') {
         html += '<h3>Class D \u2014 Switching (PWM) Amplifier</h3>';
-        html += '<p>Class D is fundamentally different from linear amplifiers. Instead of controlling how much the transistors conduct, ';
+        html += '<p>Class D is fundamentally different from linear amplifiers. Instead of controlling how much the MOSFETs conduct, ';
         html += 'it switches them <strong>fully ON or fully OFF</strong> at a high frequency. The input signal is compared with a triangle wave carrier ';
         html += 'to produce a pulse-width modulated (PWM) signal.</p>';
         html += '<p>An LC low-pass filter then extracts the average value of the PWM signal, recovering a clean amplified replica of the input. ';
-        html += 'Since the transistors are either fully on (near-zero voltage drop, V<sub>CE</sub> \u2248 0) or fully off (zero current), ';
+        html += 'Since the MOSFETs are either fully on (near-zero R<sub>DS(on)</sub>) or fully off (zero current), ';
         html += 'very little power is wasted as heat.</p>';
+        html += '<p>Class D uses <strong>MOSFETs</strong> rather than BJTs because they switch faster, have lower on-resistance, ';
+        html += 'and require virtually zero gate drive current \u2014 all critical for high-frequency switching efficiency.</p>';
 
         if (isClipping) {
             html += '<div class="physics-note"><strong>Clipping detected:</strong> The input amplitude exceeds the PWM modulation range. ';

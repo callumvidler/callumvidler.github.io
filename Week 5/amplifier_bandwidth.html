@@ -3,423 +3,556 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMEN90033: Amplifier Bandwidth</title>
+    <title>BMEN90033: Amplifier Bandwidth — Interactive Explainer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-deep: #1a1a1e;
-            --bg-panel: #222226;
-            --bg-card: #2a2a2f;
-            --border: rgba(255,255,255,0.08);
+            --bg: #0a0e14;
+            --bg-panel: rgba(16, 20, 28, 0.92);
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.15);
+            --text: #e2e8f0;
+            --text-dim: #8892a4;
+            --text-muted: #505868;
             --accent: #6aaa8e;
-            --text: #ffffff;
-            --text-dim: #a0a0a0;
-            --text-muted: #606060;
+            --yellow: #ffcc44;
+            --red: #e06050;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-            background: var(--bg-deep);
+            background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
         }
-
-        header {
-            padding: 0.55rem 1.25rem;
-            border-bottom: 1px solid var(--border);
-            background: var(--bg-panel);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 10;
-        }
-
-        .header-left { display: flex; align-items: center; gap: 12px; }
 
         .back-btn {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 4px 10px; border-radius: 3px;
-            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-            color: var(--text-dim); text-decoration: none;
-            font-size: 11px; font-weight: 500; transition: all 0.15s;
-        }
-        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
-
-        h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
-        .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
-
-        .main-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            grid-template-rows: 1.2fr 1fr;
-            height: calc(100vh - 42px);
-            gap: 0;
-        }
-
-        .panel {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 100;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 4px;
             background: var(--bg-panel);
             border: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+
+        .explainer {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 72px 24px 120px;
+        }
+
+        .title-block {
+            margin-bottom: 56px;
+        }
+        .title-block h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        .title-block .sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 12px;
+        }
+        .title-block p {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.7;
+            max-width: 640px;
+        }
+
+        /* ── Section headings ── */
+        .section {
+            margin-bottom: 72px;
+        }
+        .section-number {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .section h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.3px;
+            margin-bottom: 16px;
+        }
+        .section p, .section li {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+        .section ul {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        /* ── Canvas containers ── */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 24px 0 28px;
             overflow: hidden;
         }
-
-        .panel-header {
-            padding: 0.4rem 0.75rem;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.72rem;
-            color: var(--text-dim);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--bg-card);
-            flex-shrink: 0;
+        .canvas-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
-        .panel-header strong { color: var(--text); font-weight: 500; font-size: 0.75rem; }
+        .canvas-tall { height: 420px; }
+        .canvas-medium { height: 360px; }
 
-        .panel-body {
-            flex: 1;
+        /* ── Key equations ── */
+        .eq-block {
+            display: block;
+            margin: 16px 0;
+            padding: 12px 20px;
+            background: rgba(106,170,142,0.06);
+            border: 1px solid rgba(106,170,142,0.15);
+            border-radius: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 15px;
+            color: var(--accent);
+            line-height: 1.8;
+            text-align: center;
+        }
+        .eq-block .dim {
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+        .eq-block .hl {
+            color: var(--yellow);
+            transition: color 0.3s;
+        }
+
+        /* ── Derivation steps ── */
+        .derivation {
+            margin: 20px 0;
+            padding: 0;
+            list-style: none;
+            counter-reset: step;
+        }
+        .derivation li {
+            counter-increment: step;
             position: relative;
-            min-height: 0;
-        }
-        .panel-body canvas { display: block; width: 100%; height: 100%; }
-
-        /* Controls panel */
-        .controls-panel {
-            background: var(--bg-deep);
+            padding: 12px 16px 12px 48px;
+            margin-bottom: 4px;
+            background: rgba(255,255,255,0.02);
             border: 1px solid var(--border);
-            overflow-y: auto;
-            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .derivation li::before {
+            content: counter(step);
+            position: absolute;
+            left: 16px;
+            top: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .derivation .math {
+            display: inline-block;
+            font-family: 'IBM Plex Mono', monospace;
+            color: #fff;
+            margin: 4px 0;
+        }
+
+        /* ── Controls ── */
+        .controls-row {
             display: flex;
-            flex-direction: column;
-            gap: 0.4rem;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 20px 0;
         }
-
-        .ctrl-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 0.45rem 0.55rem;
-        }
-
-        .ctrl-title {
-            font-size: 0.65rem;
-            font-weight: 500;
-            color: var(--text-dim);
-            margin-bottom: 0.35rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .ctrl-row {
+        .control-group {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 0.3rem;
+            gap: 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 16px;
         }
-        .ctrl-row:last-child { margin-bottom: 0; }
-
-        .ctrl-row label {
-            font-size: 0.68rem;
+        .control-group label {
+            font-size: 12px;
             color: var(--text-dim);
-            min-width: 55px;
-            flex-shrink: 0;
+            font-weight: 500;
+            white-space: nowrap;
         }
-
-        .ctrl-row input[type=range] {
-            flex: 1;
+        .control-group input[type=range] {
+            width: 120px;
             -webkit-appearance: none;
             background: rgba(255,255,255,0.1);
             height: 3px;
             border-radius: 2px;
             outline: none;
         }
-        .ctrl-row input[type=range]::-webkit-slider-thumb {
+        .control-group input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 12px; height: 12px;
+            width: 14px; height: 14px;
             border-radius: 50%;
             background: #fff;
             cursor: pointer;
         }
-
-        .ctrl-val {
+        .control-value {
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.68rem;
+            font-size: 12px;
             color: #fff;
-            min-width: 56px;
-            width: 80px;
+            min-width: 72px;
             text-align: right;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 3px;
-            padding: 2px 6px;
         }
 
-        .btn-group {
-            display: flex;
-            gap: 3px;
-        }
-        .toggle-btn {
-            flex: 1;
-            padding: 5px 10px;
-            background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border);
+        /* ── Info callouts ── */
+        .callout {
+            padding: 14px 18px;
+            background: rgba(106,170,142,0.06);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            margin: 16px 0;
+            font-size: 13px;
             color: var(--text-dim);
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.65rem;
-            font-weight: 500;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: all 0.15s;
-            text-align: center;
+            line-height: 1.7;
         }
-        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
-        .toggle-btn.active {
-            background: rgba(255,255,255,0.12);
-            border-color: rgba(255,255,255,0.18);
-            color: #fff;
+        .callout strong { color: #fff; }
+        .callout.warn {
+            background: rgba(255,200,100,0.06);
+            border-left-color: var(--yellow);
         }
 
-        /* Equations panel */
-        .eq-panel {
-            background: var(--bg-deep);
-            border: 1px solid var(--border);
-            overflow-y: auto;
-            padding: 0.5rem;
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-            grid-column: 2 / 4;
-        }
-
-        .eq-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            padding: 0.45rem 0.55rem;
-            flex: 1 1 140px;
-        }
-
-        .eq-title {
-            font-size: 0.65rem;
-            font-weight: 500;
-            color: var(--text-dim);
-            margin-bottom: 0.35rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .equation {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.82rem;
-            color: #fff;
-            line-height: 1.8;
-            padding: 0.3rem 0;
-        }
-
-        .equation .dim {
-            color: var(--text-muted);
-            transition: color 0.3s;
-        }
-
-        .equation .highlight {
-            color: var(--accent);
-            transition: color 0.3s;
-        }
-
-        .regime-label {
+        /* ── Regime indicator ── */
+        .regime-tag {
             display: inline-block;
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.7rem;
+            font-size: 12px;
             font-weight: 500;
-            padding: 3px 10px;
-            border-radius: 3px;
+            padding: 4px 12px;
+            border-radius: 4px;
+            margin: 4px 4px 4px 0;
+        }
+        .regime-tag.passband {
             background: rgba(106,170,142,0.15);
             color: var(--accent);
             border: 1px solid rgba(106,170,142,0.3);
         }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            padding: 0.15rem 0;
+        .regime-tag.cutoff {
+            background: rgba(255,200,100,0.15);
+            color: var(--yellow);
+            border: 1px solid rgba(255,200,100,0.3);
         }
-        .info-row .val {
+        .regime-tag.rolloff {
+            background: rgba(224,96,80,0.15);
+            color: var(--red);
+            border: 1px solid rgba(224,96,80,0.3);
+        }
+
+        /* ── Readout bar ── */
+        .readout-bar {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            padding: 12px 16px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            margin: 16px 0;
+        }
+        .readout-item {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+        .readout-item .val {
             font-family: 'IBM Plex Mono', monospace;
             color: #fff;
+            margin-left: 4px;
         }
 
-        .derived-readout {
+        /* ── Presets ── */
+        .preset-btn {
+            padding: 6px 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
             font-family: 'IBM Plex Mono', monospace;
-            font-size: 0.78rem;
-            color: var(--accent);
-            text-align: center;
-            padding: 0.4rem;
-            background: rgba(106,170,142,0.08);
-            border: 1px solid rgba(106,170,142,0.2);
-            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .preset-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .preset-btn.active {
+            background: rgba(255,255,255,0.12);
+            border-color: var(--border-hover);
+            color: #fff;
         }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="header-left">
-        <a href="../index.html" class="back-btn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round">
-                <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
-            </svg>
-            Back
-        </a>
-        <div>
-            <h1>Amplifier Bandwidth</h1>
-            <div class="header-sub">BMEN90033 · Week 5</div>
-        </div>
-    </div>
-</header>
+<a class="back-btn" href="../index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
 
-<div class="main-layout">
-    <!-- Top-left: Animated RC Circuit -->
-    <div class="panel">
-        <div class="panel-header"><strong>RC Circuit Model</strong><span id="circuit-freq-label">—</span></div>
-        <div class="panel-body"><canvas id="circuit-canvas"></canvas></div>
+<div class="explainer">
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- TITLE -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div class="title-block">
+        <div class="sub">BMEN90033 · Week 5</div>
+        <h1>Amplifier Bandwidth</h1>
+        <p>Every real amplifier has a frequency limit. We'll derive where that limit comes from by modelling
+           the amplifier's output as a simple RC low-pass filter, visualise the result on the complex plane,
+           and build up to the Bode magnitude plot that engineers use to characterise bandwidth.</p>
     </div>
-    <!-- Top-middle: Complex Plane / Phasor -->
-    <div class="panel">
-        <div class="panel-header"><strong>Complex Plane</strong><span id="phasor-mag-label">—</span></div>
-        <div class="panel-body"><canvas id="phasor-canvas"></canvas></div>
-    </div>
-    <!-- Top-right: Bode Plot -->
-    <div class="panel">
-        <div class="panel-header"><strong>Bode Magnitude Plot</strong><span id="bode-gain-label">—</span></div>
-        <div class="panel-body"><canvas id="bode-canvas"></canvas></div>
-    </div>
-    <!-- Bottom-left: Controls -->
-    <div class="controls-panel" id="controls-panel">
-        <div class="ctrl-section">
-            <div class="ctrl-title">Component Values</div>
-            <div class="ctrl-row">
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- SECTION 1: THE TRANSFER FUNCTION -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div class="section" id="sec-transfer">
+        <div class="section-number">Part 01</div>
+        <h2>Deriving the Transfer Function</h2>
+
+        <p>An ideal amplifier multiplies its input by a constant gain A<sub>v</sub> at all frequencies.
+           But real amplifiers have parasitic capacitance — stray capacitance in transistors, wiring,
+           and load — that shunts high-frequency signals to ground. We can model this with a single
+           resistor R and capacitor C at the output.</p>
+
+        <div class="canvas-container canvas-tall">
+            <canvas id="circuit-canvas"></canvas>
+        </div>
+
+        <div class="controls-row">
+            <div class="control-group">
                 <label>R</label>
                 <input type="range" id="r-slider" min="0" max="1" step="0.001" value="0.5">
-                <span class="ctrl-val" id="r-val">10 k&#8486;</span>
+                <span class="control-value" id="r-val">10.0 kΩ</span>
             </div>
-            <div class="ctrl-row">
+            <div class="control-group">
                 <label>C</label>
                 <input type="range" id="c-slider" min="0" max="1" step="0.001" value="0.5">
-                <span class="ctrl-val" id="c-val">1.0 nF</span>
+                <span class="control-value" id="c-val">1.00 nF</span>
             </div>
-        </div>
-
-        <div class="ctrl-section">
-            <div class="ctrl-title">Amplifier</div>
-            <div class="ctrl-row">
+            <div class="control-group">
                 <label>A<sub>v</sub></label>
                 <input type="range" id="av-slider" min="0" max="1" step="0.001" value="0.667">
-                <span class="ctrl-val" id="av-val">100 (40 dB)</span>
+                <span class="control-value" id="av-val">100</span>
             </div>
         </div>
 
-        <div class="ctrl-section">
-            <div class="ctrl-title">Test Signal</div>
-            <div class="ctrl-row">
-                <label>&#969;</label>
+        <p>The output is a voltage divider between R and the capacitor impedance Z<sub>C</sub> = 1/(j&#969;C).
+           Working through the algebra:</p>
+
+        <ol class="derivation">
+            <li>Start with the voltage divider: <span class="math">V<sub>out</sub>/V<sub>amp</sub> = Z<sub>C</sub> / (R + Z<sub>C</sub>)</span></li>
+            <li>Substitute Z<sub>C</sub> = 1/(j&#969;C): <span class="math">= [1/(j&#969;C)] / [R + 1/(j&#969;C)]</span></li>
+            <li>Multiply top and bottom by j&#969;C: <span class="math">= 1 / (1 + j&#969;RC)</span></li>
+            <li>Define <strong>&#969;<sub>0</sub> = 1/RC</strong>, the cutoff frequency: <span class="math">= 1 / (1 + j(&#969;/&#969;<sub>0</sub>))</span></li>
+            <li>Include the amplifier gain A<sub>v</sub>: <span class="math">H(j&#969;) = A<sub>v</sub> / (1 + j(&#969;/&#969;<sub>0</sub>))</span></li>
+        </ol>
+
+        <div class="eq-block">
+            H(j&#969;) = A<sub>v</sub> / (1 + j(&#969;/&#969;<sub>0</sub>)) &nbsp;&nbsp;where&nbsp;&nbsp; &#969;<sub>0</sub> = 1/RC
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">&#969;<sub>0</sub> = <span class="val" id="omega0-val">100 krad/s</span></div>
+            <div class="readout-item">f<sub>0</sub> = <span class="val" id="f0-val">15.9 kHz</span></div>
+            <div class="readout-item">A<sub>v</sub> = <span class="val" id="av-db-val">40.0 dB</span></div>
+        </div>
+
+        <div class="callout">
+            <strong>The key insight:</strong> the denominator (1 + j(&#969;/&#969;<sub>0</sub>)) is a complex number
+            that grows larger as frequency increases. Since it's in the denominator, the gain <em>decreases</em>.
+            But how exactly? That's what the complex plane shows us.
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- SECTION 2: THE COMPLEX PLANE -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div class="section" id="sec-complex">
+        <div class="section-number">Part 02</div>
+        <h2>Visualising on the Complex Plane</h2>
+
+        <p>The denominator <strong>1 + j(&#969;/&#969;<sub>0</sub>)</strong> is a point in the complex plane.
+           The real part is always 1. The imaginary part is &#969;/&#969;<sub>0</sub>, which grows with frequency.
+           Sweep the test frequency below to watch the phasor grow:</p>
+
+        <div class="canvas-container canvas-tall">
+            <canvas id="phasor-canvas"></canvas>
+        </div>
+
+        <div class="controls-row">
+            <div class="control-group">
+                <label>Test &#969;</label>
                 <input type="range" id="freq-slider" min="0" max="1" step="0.001" value="0.5">
-                <span class="ctrl-val" id="freq-val">100 krad/s</span>
+                <span class="control-value" id="freq-val">100 krad/s</span>
             </div>
-            <div class="info-row">
-                <span>Frequency</span>
-                <span class="val" id="freq-hz-val">15.9 kHz</span>
+            <div class="control-group">
+                <label style="min-width:0">= </label>
+                <span class="control-value" id="freq-hz-val">15.9 kHz</span>
             </div>
+            <button class="preset-btn" id="preset-audio">Audio Amp</button>
+            <button class="preset-btn" id="preset-rf">RF Stage</button>
         </div>
 
-        <div class="derived-readout" id="omega0-readout">
-            &#969;<sub>0</sub> = 1/RC = 100 krad/s
+        <div class="readout-bar" id="phasor-readouts">
+            <div class="readout-item">&#969;/&#969;<sub>0</sub> = <span class="val" id="ratio-val">1.00</span></div>
+            <div class="readout-item">|denominator| = <span class="val" id="mag-val">1.41</span></div>
+            <div class="readout-item">&#8736; = <span class="val" id="angle-val">45.0°</span></div>
+            <div class="readout-item">|H| = <span class="val" id="gain-val">70.7</span></div>
+            <div class="readout-item">|H| = <span class="val" id="gain-db-val">37.0 dB</span></div>
         </div>
 
-        <div class="ctrl-section">
-            <div class="ctrl-title">Presets</div>
-            <div class="btn-group">
-                <button class="toggle-btn" id="preset-audio">Audio Amp</button>
-                <button class="toggle-btn" id="preset-rf">RF Stage</button>
-            </div>
+        <p>Three things to notice as you increase &#969;:</p>
+        <ul>
+            <li><strong>The phasor gets longer.</strong> Its magnitude is &#8730;(1 + (&#969;/&#969;<sub>0</sub>)&#178;).
+                Since this is in the denominator of H, the gain drops.</li>
+            <li><strong>The phasor tilts upward.</strong> The angle is arctan(&#969;/&#969;<sub>0</sub>).
+                This angle becomes the phase lag of the output signal.</li>
+            <li><strong>At &#969; = &#969;<sub>0</sub></strong>, the imaginary part equals the real part (both = 1),
+                so the magnitude is &#8730;2 &#8776; 1.414. The gain is A<sub>v</sub>/&#8730;2, which is exactly <strong>&#8722;3 dB</strong> below the mid-band gain.</li>
+        </ul>
+
+        <div class="eq-block">
+            |H(j&#969;)| = A<sub>v</sub> / &#8730;(1 + (&#969;/&#969;<sub>0</sub>)&#178;)
+        </div>
+
+        <div class="callout">
+            <strong>Why &#8722;3 dB matters:</strong> &#8722;3 dB corresponds to the half-power point — the output power
+            is exactly half of its mid-band value. Engineers define this as the <em>bandwidth</em> of the amplifier:
+            the frequency range where the gain stays within 3 dB of its maximum.
         </div>
     </div>
-    <!-- Bottom-right: Equations -->
-    <div class="eq-panel" id="eq-panel">
-        <div class="eq-section">
-            <div class="eq-title">Transfer Function</div>
-            <div class="equation" id="eq-transfer">
-                H(j&#969;) = A<sub>v</sub> / (1 + j(<span class="highlight" id="eq-ratio">&#969;/&#969;<sub>0</sub></span>))
-            </div>
+
+    <!-- ════════════════════════════════════════════════ -->
+    <!-- SECTION 3: THE BODE PLOT -->
+    <!-- ════════════════════════════════════════════════ -->
+    <div class="section" id="sec-bode">
+        <div class="section-number">Part 03</div>
+        <h2>The Bode Magnitude Plot</h2>
+
+        <p>If we compute |H| in decibels at every frequency and plot it on a log-frequency axis,
+           we get the <strong>Bode magnitude plot</strong> — the standard way engineers visualise
+           an amplifier's frequency response. The plot below is generated from the same transfer function.</p>
+
+        <div class="canvas-container canvas-tall">
+            <canvas id="bode-canvas"></canvas>
         </div>
 
-        <div class="eq-section">
-            <div class="eq-title">Magnitude</div>
-            <div class="equation" id="eq-magnitude">
-                |H(j&#969;)| = <span id="eq-av-term">A<sub>v</sub></span> / &#8730;(<span id="eq-one-term">1</span> + (<span id="eq-ratio2">&#969;/&#969;<sub>0</sub></span>)&#178;)
-            </div>
+        <p>The curve has three distinct regimes:</p>
+
+        <div style="margin: 16px 0;">
+            <span class="regime-tag passband" id="tag-passband">Passband</span>
+            <span style="font-size:13px; color:var(--text-dim); margin: 0 4px;">&#969; &#8810; &#969;<sub>0</sub> — gain &#8776; A<sub>v</sub> (flat)</span>
+        </div>
+        <div style="margin: 8px 0;">
+            <span class="regime-tag cutoff" id="tag-cutoff">&#8722;3 dB Cutoff</span>
+            <span style="font-size:13px; color:var(--text-dim); margin: 0 4px;">&#969; = &#969;<sub>0</sub> — gain = A<sub>v</sub>/&#8730;2</span>
+        </div>
+        <div style="margin: 8px 0 16px;">
+            <span class="regime-tag rolloff" id="tag-rolloff">Rolloff</span>
+            <span style="font-size:13px; color:var(--text-dim); margin: 0 4px;">&#969; &#8811; &#969;<sub>0</sub> — gain drops at &#8722;20 dB/decade</span>
         </div>
 
-        <div class="eq-section">
-            <div class="eq-title">Frequency Response</div>
-            <div class="info-row">
-                <span>Gain at &#969;</span>
-                <span class="val" id="eq-gain-linear">—</span>
-            </div>
-            <div class="info-row">
-                <span>Gain (dB)</span>
-                <span class="val" id="eq-gain-db">—</span>
-            </div>
-            <div class="info-row">
-                <span>&#969; / &#969;<sub>0</sub></span>
-                <span class="val" id="eq-ratio-val">—</span>
-            </div>
-            <div class="info-row" style="margin-top: 0.3rem;">
-                <span>Regime</span>
-                <span class="regime-label" id="eq-regime">—</span>
-            </div>
+        <p>The <strong>&#8722;20 dB/decade</strong> slope means that for every 10&#215; increase in frequency
+           above &#969;<sub>0</sub>, the gain drops by 20 dB (a factor of 10 in voltage). This is the signature
+           of a single-pole system — one RC time constant limiting the bandwidth.</p>
+
+        <div class="callout">
+            <strong>Reading the Bode plot:</strong> The yellow marker shows your current test frequency.
+            Everything to its left (below &#969;<sub>0</sub>) is the useful bandwidth where the amplifier
+            works as intended. The green dot marks the &#8722;3 dB point — the boundary.
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">Regime: <span class="val" id="regime-label">—</span></div>
+            <div class="readout-item">Gain at &#969;: <span class="val" id="bode-gain-val">—</span></div>
+            <div class="readout-item">Gain: <span class="val" id="bode-db-val">—</span></div>
         </div>
     </div>
+
 </div>
 
 <script>
 // ── State ──────────────────────────────────────────────
-let R = 10000;          // Ohms (default 10k)
-let C = 1e-9;           // Farads (default 1nF)
-let Av = 100;           // mid-band gain (linear)
-let testFreq = 1e5;     // rad/s
+let R = 10000;
+let C = 1e-9;
+let Av = 100;
+let testFreq = 1e5;
 
 function omega0() { return 1 / (R * C); }
 function gainAt(w) { return Av / Math.sqrt(1 + (w / omega0()) ** 2); }
 function gainDb(w) { return 20 * Math.log10(gainAt(w)); }
 
-// ── Canvas references ──────────────────────────────────
-let circuitCanvas, phasorCanvas, bodeCanvas;
+// ── Log-scale helpers ──────────────────────────────────
+function logMap(t, min, max) { return min * Math.pow(max / min, t); }
+function logUnmap(val, min, max) { return Math.log(val / min) / Math.log(max / min); }
 
-// ── Resize helper ──────────────────────────────────────
-// Cache canvas sizes to avoid layout thrashing every frame
-const canvasSizes = new Map();
+const R_MIN = 100, R_MAX = 100000;
+const C_MIN = 1e-12, C_MAX = 100e-9;
+const AV_MIN = 1, AV_MAX = 1000;
+const FREQ_MIN = 1, FREQ_MAX = 1e9;
 
-function sizeCanvas(canvas, forceResize) {
-    const cached = canvasSizes.get(canvas);
-    if (cached && !forceResize) {
-        const ctx = canvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.clearRect(0, 0, cached.w, cached.h);
-        return { w: cached.w, h: cached.h, ctx };
-    }
+// ── Formatting ─────────────────────────────────────────
+function fmtR(v) {
+    if (v >= 1e6) return (v/1e6).toPrecision(3) + ' M\u2126';
+    if (v >= 1e3) return (v/1e3).toPrecision(3) + ' k\u2126';
+    return v.toPrecision(3) + ' \u2126';
+}
+function fmtC(v) {
+    if (v >= 1e-6) return (v*1e6).toPrecision(3) + ' \u00B5F';
+    if (v >= 1e-9) return (v*1e9).toPrecision(3) + ' nF';
+    return (v*1e12).toPrecision(3) + ' pF';
+}
+function fmtFreq(v) {
+    if (v >= 1e9) return (v/1e9).toPrecision(3) + ' Grad/s';
+    if (v >= 1e6) return (v/1e6).toPrecision(3) + ' Mrad/s';
+    if (v >= 1e3) return (v/1e3).toPrecision(3) + ' krad/s';
+    return v.toPrecision(3) + ' rad/s';
+}
+function fmtHz(w) {
+    const hz = w / (2 * Math.PI);
+    if (hz >= 1e9) return (hz/1e9).toPrecision(3) + ' GHz';
+    if (hz >= 1e6) return (hz/1e6).toPrecision(3) + ' MHz';
+    if (hz >= 1e3) return (hz/1e3).toPrecision(3) + ' kHz';
+    return hz.toPrecision(3) + ' Hz';
+}
+
+// ── Canvas helper ──────────────────────────────────────
+function sizeCanvas(canvas) {
     const rect = canvas.parentElement.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
     canvas.width = rect.width * dpr;
@@ -428,16 +561,160 @@ function sizeCanvas(canvas, forceResize) {
     canvas.style.height = rect.height + 'px';
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    canvasSizes.set(canvas, { w: rect.width, h: rect.height });
     return { w: rect.width, h: rect.height, ctx };
 }
 
-function resizeAllCanvases() {
-    canvasSizes.clear();
+// ════════════════════════════════════════════════════════
+// SECTION 1: Circuit diagram
+// ════════════════════════════════════════════════════════
+function drawCircuit() {
+    const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('circuit-canvas'));
+    ctx.clearRect(0, 0, W, H);
+
+    const midY = H * 0.42;
+    const gndY = H * 0.68;
+    const pad = 50;
+
+    // Key x positions
+    const xSrc  = pad + 30;
+    const xAmp  = W * 0.25;
+    const xR1   = W * 0.42;
+    const xR2   = W * 0.60;
+    const xOut  = W * 0.70;
+    const xEnd  = W - pad - 30;
+
+    // ── Wires ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1.5;
+
+    // Source → amp
+    ctx.beginPath(); ctx.moveTo(xSrc, midY); ctx.lineTo(xAmp - 24, midY); ctx.stroke();
+    // Amp → resistor
+    ctx.beginPath(); ctx.moveTo(xAmp + 24, midY); ctx.lineTo(xR1, midY); ctx.stroke();
+    // Resistor → end
+    ctx.beginPath(); ctx.moveTo(xR2, midY); ctx.lineTo(xEnd, midY); ctx.stroke();
+
+    // Output node → capacitor top plate
+    const capY = gndY - 16;
+    const capGap = 7;
+    ctx.beginPath(); ctx.moveTo(xOut, midY); ctx.lineTo(xOut, capY - capGap / 2); ctx.stroke();
+    // Capacitor bottom plate → ground
+    const gndTop = gndY + 8;
+    ctx.beginPath(); ctx.moveTo(xOut, capY + capGap / 2); ctx.lineTo(xOut, gndTop); ctx.stroke();
+
+    // ── Ground ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.moveTo(xOut - 12, gndTop); ctx.lineTo(xOut + 12, gndTop); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xOut - 7, gndTop + 5); ctx.lineTo(xOut + 7, gndTop + 5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xOut - 3, gndTop + 10); ctx.lineTo(xOut + 3, gndTop + 10); ctx.stroke();
+
+    // ── Input source (circle + sine) ──
+    const srcCx = xSrc - 16;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(srcCx, midY, 14, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = '#ffcc44';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+        const t = (i / 10) * Math.PI * 2;
+        const px = srcCx - 8 + (i / 10) * 16;
+        const py = midY - Math.sin(t) * 5;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('V\u1D62\u2099', srcCx, midY - 22);
+
+    // ── Amplifier triangle ──
+    ctx.beginPath();
+    ctx.moveTo(xAmp - 24, midY - 22);
+    ctx.lineTo(xAmp + 24, midY);
+    ctx.lineTo(xAmp - 24, midY + 22);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(106,170,142,0.12)';
+    ctx.fill();
+    ctx.strokeStyle = '#6aaa8e';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('A\u1D65', xAmp - 4, midY + 5);
+
+    // ── Resistor (zig-zag) ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xR1, midY);
+    const rLen = xR2 - xR1;
+    const zags = 6;
+    const zagW = rLen / zags;
+    const zagA = 9;
+    for (let i = 0; i < zags; i++) {
+        const x0 = xR1 + i * zagW;
+        ctx.lineTo(x0 + zagW * 0.25, midY - zagA);
+        ctx.lineTo(x0 + zagW * 0.75, midY + zagA);
+        ctx.lineTo(x0 + zagW, midY);
+    }
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('R', (xR1 + xR2) / 2, midY - zagA - 8);
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillText(fmtR(R), (xR1 + xR2) / 2, midY + zagA + 18);
+
+    // ── Capacitor ──
+    const capW = 20;
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(xOut - capW/2, capY - capGap/2); ctx.lineTo(xOut + capW/2, capY - capGap/2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xOut - capW/2, capY + capGap/2); ctx.lineTo(xOut + capW/2, capY + capGap/2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.fillText('C', xOut + capW/2 + 6, capY + 5);
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.fillText(fmtC(C), xOut + capW/2 + 6, capY + 19);
+
+    // ── Output label + dot ──
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('V\u2092\u1D64\u209C', xEnd, midY - 14);
+    ctx.beginPath(); ctx.arc(xOut, midY, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    // ── Animated sine waves ──
+    const w0 = omega0();
+    const ratio = testFreq / w0;
+    const gf = 1 / Math.sqrt(1 + ratio * ratio);
+    const phase = -Math.atan(ratio);
+    const wt = animTime * testFreq;
+
+    // Input sine
+    drawSineWave(ctx, xSrc + 10, midY + 50, 50, 18, 1.0, 0, wt, '#ffcc44', 'Input');
+    // Output sine
+    drawSineWave(ctx, xOut - 25, midY + 50, 50, 18, gf, phase, wt, '#6aaa8e', 'Output');
+
+    // Animated pulses
+    drawPulses(ctx, xAmp + 24, xR1, midY, wt, 1.0, '#ffcc44');
+    drawPulses(ctx, xR2, xEnd, midY, wt, gf, '#6aaa8e');
+
+    // ── Voltage divider annotation ──
+    // Brace between R and C showing "Vout is taken here"
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = "11px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.fillText('Z\u1D9C = 1/(j\u03C9C)', xOut + 60, capY + 5);
 }
 
-// ── Drawing helpers ───────────────────────────────────
-function drawSineWave(ctx, x, y, width, amp, gainFrac, phaseShift, wt, color) {
+function drawSineWave(ctx, x, y, width, amp, gainFrac, phaseShift, wt, color, label) {
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.globalAlpha = 0.8;
@@ -446,686 +723,438 @@ function drawSineWave(ctx, x, y, width, amp, gainFrac, phaseShift, wt, color) {
         const t = (i / width) * Math.PI * 2;
         const px = x + i;
         const py = y - Math.sin(t + wt + phaseShift) * amp * gainFrac;
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.stroke();
     ctx.globalAlpha = 1.0;
-
-    // Label amplitude percentage
-    ctx.fillStyle = color;
-    ctx.globalAlpha = 0.6;
-    ctx.font = '9px IBM Plex Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText((gainFrac * 100).toFixed(0) + '%', x + width / 2, y + amp + 12);
-    ctx.globalAlpha = 1.0;
+    if (label) {
+        ctx.fillStyle = color;
+        ctx.globalAlpha = 0.5;
+        ctx.font = "9px 'IBM Plex Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.fillText(label + ' (' + (gainFrac * 100).toFixed(0) + '%)', x + width / 2, y + amp + 14);
+        ctx.globalAlpha = 1.0;
+    }
 }
 
-function drawSignalPulses(ctx, x1, x2, y, wt, gainFrac, color) {
-    ctx.globalAlpha = 0.4 * gainFrac + 0.1;
+function drawPulses(ctx, x1, x2, y, wt, gainFrac, color) {
+    ctx.globalAlpha = 0.35 * gainFrac + 0.1;
     const len = x2 - x1;
-    const numPulses = 3;
-    for (let i = 0; i < numPulses; i++) {
-        const phase = (wt * 0.5 + i * (Math.PI * 2 / numPulses)) % (Math.PI * 2);
+    for (let i = 0; i < 3; i++) {
+        const phase = (wt * 0.5 + i * (Math.PI * 2 / 3)) % (Math.PI * 2);
         const t = phase / (Math.PI * 2);
         const px = x1 + t * len;
-        const radius = 3 * gainFrac + 1;
         ctx.beginPath();
-        ctx.arc(px, y, radius, 0, Math.PI * 2);
+        ctx.arc(px, y, 3 * gainFrac + 1, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.fill();
     }
     ctx.globalAlpha = 1.0;
 }
 
-// ── Circuit diagram ──────────────────────────────────
-function drawCircuit() {
-    const { w: W, h: H, ctx } = sizeCanvas(circuitCanvas);
-    ctx.clearRect(0, 0, W, H);
-
-    const pad = 40;
-    const midY = H / 2;
-    const gndY = H * 0.75;
-    const xSrc = pad + 20;
-    const xAmp = W * 0.28;
-    const xR1 = W * 0.45;
-    const xR2 = W * 0.62;
-    const xOut = W * 0.72;
-    const xEnd = W - pad - 20;
-
-    const w0 = omega0();
-    const gainFrac = 1 / Math.sqrt(1 + (testFreq / w0) ** 2);
-    const phase = -Math.atan(testFreq / w0);
-    const wt = animTime * testFreq;
-
-    // ── Wires ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-    ctx.lineWidth = 1.5;
-    // Input wire: xSrc -> amp
-    ctx.beginPath(); ctx.moveTo(xSrc, midY); ctx.lineTo(xAmp - 20, midY); ctx.stroke();
-    // Amp output -> resistor
-    ctx.beginPath(); ctx.moveTo(xAmp + 20, midY); ctx.lineTo(xR1, midY); ctx.stroke();
-    // After resistor -> end
-    ctx.beginPath(); ctx.moveTo(xR2, midY); ctx.lineTo(xEnd, midY); ctx.stroke();
-    // Output node down to capacitor top plate
-    const capY = gndY - 20;
-    const capGap = 6;
-    ctx.beginPath(); ctx.moveTo(xOut, midY); ctx.lineTo(xOut, capY - capGap / 2); ctx.stroke();
-    // Capacitor bottom plate to ground
-    const gndTop = gndY - 10;
-    ctx.beginPath(); ctx.moveTo(xOut, capY + capGap / 2); ctx.lineTo(xOut, gndTop); ctx.stroke();
-
-    // ── Ground symbol ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(xOut - 10, gndTop); ctx.lineTo(xOut + 10, gndTop); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(xOut - 6, gndTop + 5); ctx.lineTo(xOut + 6, gndTop + 5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(xOut - 3, gndTop + 10); ctx.lineTo(xOut + 3, gndTop + 10); ctx.stroke();
-
-    // ── Input source (circle with sine) ──
-    const srcX = xSrc - 14;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.arc(srcX, midY, 12, 0, Math.PI * 2);
-    ctx.stroke();
-    // Tiny sine inside
-    ctx.strokeStyle = '#ffcc44';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let i = 0; i <= 8; i++) {
-        const t = (i / 8) * Math.PI * 2;
-        const px = srcX - 7 + (i / 8) * 14;
-        const py = midY - Math.sin(t) * 4;
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-    // Label
-    ctx.fillStyle = '#ffcc44';
-    ctx.font = '11px IBM Plex Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('V\u1D62\u2099', srcX, midY - 18);
-
-    // ── Amplifier triangle ──
-    ctx.beginPath();
-    ctx.moveTo(xAmp - 20, midY - 20);
-    ctx.lineTo(xAmp + 20, midY);
-    ctx.lineTo(xAmp - 20, midY + 20);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(106,170,142,0.15)';
-    ctx.fill();
-    ctx.strokeStyle = '#6aaa8e';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    // Label
-    ctx.fillStyle = '#6aaa8e';
-    ctx.font = '12px IBM Plex Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('A\u1D65', xAmp - 4, midY + 5);
-
-    // ── Resistor (zig-zag) ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(xR1, midY);
-    const rLen = xR2 - xR1;
-    const zags = 6;
-    const zagW = rLen / zags;
-    const zagAmp = 8;
-    for (let i = 0; i < zags; i++) {
-        const x0 = xR1 + i * zagW;
-        ctx.lineTo(x0 + zagW * 0.25, midY - zagAmp);
-        ctx.lineTo(x0 + zagW * 0.75, midY + zagAmp);
-        ctx.lineTo(x0 + zagW, midY);
-    }
-    ctx.stroke();
-    // Labels
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = '11px IBM Plex Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('R', (xR1 + xR2) / 2, midY - zagAmp - 6);
-    ctx.font = '9px IBM Plex Mono, monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText(fmtR(R), (xR1 + xR2) / 2, midY + zagAmp + 14);
-
-    // ── Capacitor (two plates) ──
-    const capW = 16;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(xOut - capW / 2, capY - capGap / 2);
-    ctx.lineTo(xOut + capW / 2, capY - capGap / 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(xOut - capW / 2, capY + capGap / 2);
-    ctx.lineTo(xOut + capW / 2, capY + capGap / 2);
-    ctx.stroke();
-    // Labels
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.font = '11px IBM Plex Mono, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('C', xOut + capW / 2 + 4, capY + 4);
-    ctx.font = '9px IBM Plex Mono, monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.fillText(fmtC(C), xOut + capW / 2 + 4, capY + 16);
-
-    // ── Vout label and output dot ──
-    ctx.fillStyle = '#6aaa8e';
-    ctx.font = '11px IBM Plex Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('Vout', xEnd, midY - 12);
-    // Output dot at xOut
-    ctx.beginPath();
-    ctx.arc(xOut, midY, 3, 0, Math.PI * 2);
-    ctx.fillStyle = '#6aaa8e';
-    ctx.fill();
-
-    // ── Animated sine waves ──
-    const sineW = 30;
-    const sineAmp = 14;
-    // Input sine
-    drawSineWave(ctx, xSrc + 6, midY - 28, sineW, sineAmp, 1.0, 0, wt, '#ffcc44');
-    // Output sine (attenuated + phase shifted)
-    drawSineWave(ctx, xOut - sineW / 2, midY - 28, sineW, sineAmp, gainFrac, phase, wt, '#6aaa8e');
-
-    // ── Animated signal pulses ──
-    // Amp to resistor (full amplitude, yellow)
-    drawSignalPulses(ctx, xAmp + 20, xR1, midY, wt, 1.0, '#ffcc44');
-    // Resistor to end (attenuated, green)
-    drawSignalPulses(ctx, xR2, xEnd, midY, wt, gainFrac, '#6aaa8e');
-
-    // ── Update frequency label ──
-    const freqLabel = document.getElementById('circuit-freq-label');
-    if (freqLabel) {
-        freqLabel.textContent = '\u03C9 = ' + fmtFreq(testFreq);
-    }
-}
-// ── Complex Plane / Phasor diagram ───────────────────
+// ════════════════════════════════════════════════════════
+// SECTION 2: Complex plane / phasor
+// ════════════════════════════════════════════════════════
 function drawPhasor() {
-    const { w: W, h: H, ctx } = sizeCanvas(phasorCanvas);
+    const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('phasor-canvas'));
+    ctx.clearRect(0, 0, W, H);
 
     const ratio = testFreq / omega0();
     const mag = Math.sqrt(1 + ratio * ratio);
     const angle = Math.atan(ratio);
 
-    // Use square region centered in panel
+    // Square region
     const size = Math.min(W, H);
-    const cx = W / 2;
-    const cy = H / 2;
-    const axisLen = size * 0.38;
+    const cx = W * 0.4;
+    const cy = H * 0.55;
+    const axisLen = size * 0.35;
 
-    // Scale: the phasor tip is at (1, ratio). We need to fit it.
-    // Use a scale that keeps the phasor visible but maxes out reasonably
-    const maxExtent = Math.max(mag, 1.5);
+    // Scale to fit phasor
+    const maxExtent = Math.max(mag, 1.8);
     const scale = axisLen / maxExtent;
 
     // ── Axes ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 1;
-
-    // Real axis
-    ctx.beginPath();
-    ctx.moveTo(cx - axisLen - 10, cy);
-    ctx.lineTo(cx + axisLen + 10, cy);
-    ctx.stroke();
-
-    // Imaginary axis
-    ctx.beginPath();
-    ctx.moveTo(cx, cy + axisLen + 10);
-    ctx.lineTo(cx, cy - axisLen - 10);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - axisLen * 0.3, cy); ctx.lineTo(cx + axisLen + 20, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy + axisLen * 0.3); ctx.lineTo(cx, cy - axisLen - 20); ctx.stroke();
 
     // Axis labels
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.font = "10px 'IBM Plex Sans', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Re', cx + axisLen + 10, cy + 4);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Im', cx + 6, cy - axisLen - 10);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = "11px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('Real', cx + axisLen + 6, cy + 1);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('Imaginary', cx, cy - axisLen - 24);
 
-    // ── Unit circle arc (faint reference) ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.arc(cx, cy, scale, 0, Math.PI * 2);
-    ctx.stroke();
+    // ── Tick marks ──
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    // Real tick at 1
+    const oneX = cx + 1 * scale;
+    ctx.beginPath(); ctx.moveTo(oneX, cy - 3); ctx.lineTo(oneX, cy + 3); ctx.stroke();
+    ctx.fillText('1', oneX, cy + 6);
 
-    // ── Real component: "1" on the real axis ──
-    const realEndX = cx + 1 * scale;
-    const realEndY = cy;
-
-    // Draw "1" vector along real axis
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(realEndX, realEndY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // "1" label
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('1', cx + 0.5 * scale, cy + 6);
-
-    // ── Imaginary component: j(ω/ω₀) from tip of real to phasor tip ──
-    const tipX = cx + 1 * scale;
-    const tipY = cy - ratio * scale;  // negative because canvas y is inverted
-
-    // Draw vertical dashed line for imaginary part
-    ctx.strokeStyle = '#ffcc44';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 3]);
-    ctx.beginPath();
-    ctx.moveTo(realEndX, realEndY);
-    ctx.lineTo(tipX, tipY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // j(ω/ω₀) label
-    if (ratio > 0.05) {
-        ctx.fillStyle = '#ffcc44';
-        ctx.font = "10px 'IBM Plex Mono', monospace";
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        const labelY = cy - ratio * scale * 0.5;
-        ctx.fillText('j\u00B7' + ratio.toPrecision(2), tipX + 6, labelY);
+    // Imaginary ticks
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let v = 1; v <= Math.ceil(maxExtent); v++) {
+        const iy = cy - v * scale;
+        if (iy > cy - axisLen - 10) {
+            ctx.beginPath(); ctx.moveTo(cx - 3, iy); ctx.lineTo(cx + 3, iy); ctx.stroke();
+            ctx.fillText(v + '', cx - 6, iy);
+        }
     }
 
-    // ── Main phasor: 1 + j(ω/ω₀) ──
+    // ── Unit circle reference ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.beginPath(); ctx.arc(cx, cy, scale, 0, Math.PI * 2); ctx.stroke();
+
+    // ── Real component "1" ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 3]);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(oneX, cy); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // ── Imaginary component ──
+    const tipX = oneX;
+    const tipY = cy - ratio * scale;
+
+    if (ratio > 0.02) {
+        ctx.strokeStyle = 'rgba(255,200,100,0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath(); ctx.moveTo(oneX, cy); ctx.lineTo(tipX, tipY); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label
+        ctx.fillStyle = '#ffcc44';
+        ctx.font = "12px 'IBM Plex Mono', monospace";
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const labelY = Math.max(tipY, cy - ratio * scale * 0.5);
+        ctx.fillText('j\u00B7' + ratio.toPrecision(3), tipX + 10, (cy + tipY) / 2);
+    }
+
+    // ── Main phasor ──
     ctx.strokeStyle = '#6aaa8e';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(tipX, tipY);
-    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tipX, tipY); ctx.stroke();
 
     // Arrowhead
-    const arrowLen = 8;
-    const phasorAngle = Math.atan2(cy - tipY, tipX - cx);
+    const aLen = 10;
+    const pAngle = Math.atan2(cy - tipY, tipX - cx);
     ctx.fillStyle = '#6aaa8e';
     ctx.beginPath();
     ctx.moveTo(tipX, tipY);
-    ctx.lineTo(
-        tipX - arrowLen * Math.cos(phasorAngle - 0.35),
-        tipY + arrowLen * Math.sin(phasorAngle - 0.35)
-    );
-    ctx.lineTo(
-        tipX - arrowLen * Math.cos(phasorAngle + 0.35),
-        tipY + arrowLen * Math.sin(phasorAngle + 0.35)
-    );
-    ctx.closePath();
-    ctx.fill();
+    ctx.lineTo(tipX - aLen * Math.cos(pAngle - 0.3), tipY + aLen * Math.sin(pAngle - 0.3));
+    ctx.lineTo(tipX - aLen * Math.cos(pAngle + 0.3), tipY + aLen * Math.sin(pAngle + 0.3));
+    ctx.closePath(); ctx.fill();
 
     // Phasor tip dot
-    ctx.beginPath();
-    ctx.arc(tipX, tipY, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#6aaa8e';
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(tipX, tipY, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#6aaa8e'; ctx.fill();
+
+    // Origin dot
+    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
 
     // ── Magnitude label on phasor ──
     const midPx = (cx + tipX) / 2;
     const midPy = (cy + tipY) / 2;
     ctx.fillStyle = '#6aaa8e';
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('|1 + j\u03C9/\u03C9\u2080| = ' + mag.toPrecision(3), midPx - 6, midPy - 4);
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('|1 + j\u03C9/\u03C9\u2080| = ' + mag.toPrecision(4), midPx - 8, midPy - 6);
 
     // ── Angle arc ──
     if (ratio > 0.05) {
-        const arcRadius = Math.min(scale * 0.3, 30);
-        ctx.strokeStyle = 'rgba(255,200,100,0.6)';
+        const arcR = Math.min(scale * 0.35, 40);
+        ctx.strokeStyle = 'rgba(255,200,100,0.5)';
         ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(cx, cy, arcRadius, -angle, 0);
-        ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx, cy, arcR, -angle, 0); ctx.stroke();
 
-        // Angle label
         const angleDeg = (angle * 180 / Math.PI).toFixed(1);
-        const labelAngle = -angle / 2;
-        ctx.fillStyle = 'rgba(255,200,100,0.8)';
-        ctx.font = "10px 'IBM Plex Mono', monospace";
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(angleDeg + '\u00B0', cx + arcRadius * Math.cos(labelAngle) + 4, cy + arcRadius * Math.sin(labelAngle));
+        const la = -angle / 2;
+        ctx.fillStyle = 'rgba(255,200,100,0.7)';
+        ctx.font = "11px 'IBM Plex Mono', monospace";
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(angleDeg + '\u00B0', cx + arcR * Math.cos(la) + 6, cy + arcR * Math.sin(la));
     }
 
-    // ── Result: |H| = Av / magnitude ──
-    const gainResult = Av / mag;
-    const gainDbResult = 20 * Math.log10(gainResult);
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.font = "11px 'IBM Plex Sans', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('|H| = A\u1D65 / ' + mag.toPrecision(3) + ' = ' + gainDbResult.toFixed(1) + ' dB', cx, H - 8);
+    // ── Right-side annotations ──
+    const annX = W * 0.72;
+    let annY = H * 0.15;
+    const lineH = 22;
 
-    // ── Update header ──
-    document.getElementById('phasor-mag-label').textContent =
-        '|1 + j\u03C9/\u03C9\u2080| = ' + mag.toPrecision(3);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('Denominator phasor:', annX, annY);
+    annY += lineH;
+
+    ctx.font = "14px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#6aaa8e';
+    ctx.fillText('1 + j(\u03C9/\u03C9\u2080)', annX, annY);
+    annY += lineH * 1.5;
+
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('Real part:', annX, annY);
+    annY += lineH * 0.8;
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#fff';
+    ctx.fillText('1', annX + 8, annY);
+    annY += lineH * 1.2;
+
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,200,100,0.6)';
+    ctx.fillText('Imaginary part:', annX, annY);
+    annY += lineH * 0.8;
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#ffcc44';
+    ctx.fillText('\u03C9/\u03C9\u2080 = ' + ratio.toPrecision(3), annX + 8, annY);
+    annY += lineH * 1.2;
+
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(106,170,142,0.7)';
+    ctx.fillText('Magnitude:', annX, annY);
+    annY += lineH * 0.8;
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#6aaa8e';
+    ctx.fillText('\u221A(1 + ' + (ratio*ratio).toPrecision(3) + ') = ' + mag.toPrecision(4), annX + 8, annY);
+    annY += lineH * 1.5;
+
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('Therefore:', annX, annY);
+    annY += lineH * 0.8;
+    ctx.font = "14px 'IBM Plex Mono', monospace";
+    const gainLin = Av / mag;
+    const gainDbVal = 20 * Math.log10(gainLin);
+    ctx.fillStyle = '#fff';
+    ctx.fillText('|H| = ' + Av.toPrecision(3) + ' / ' + mag.toPrecision(3), annX + 8, annY);
+    annY += lineH;
+    ctx.fillText('    = ' + gainLin.toPrecision(4), annX + 8, annY);
+    annY += lineH;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.fillText('    = ' + gainDbVal.toFixed(1) + ' dB', annX + 8, annY);
 }
 
+// ════════════════════════════════════════════════════════
+// SECTION 3: Bode magnitude plot
+// ════════════════════════════════════════════════════════
 function drawBode() {
-    const { w, h, ctx } = sizeCanvas(bodeCanvas);
+    const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('bode-canvas'));
+    ctx.clearRect(0, 0, W, H);
 
-    const pad = { top: 30, right: 30, bottom: 45, left: 60 };
-    const plotW = w - pad.left - pad.right;
-    const plotH = h - pad.top - pad.bottom;
+    const pad = { top: 35, right: 35, bottom: 50, left: 65 };
+    const plotW = W - pad.left - pad.right;
+    const plotH = H - pad.top - pad.bottom;
 
-    // Frequency range: 3 decades below to 3 decades above omega_0
     const w0 = omega0();
     const logCenter = Math.log10(w0);
     const logMin = logCenter - 3;
     const logMax = logCenter + 3;
 
-    // dB range — fixed so axis doesn't jump when Av changes
     const avDb = 20 * Math.log10(Av);
-    const dbMax = 70;   // covers Av up to 1000 (60 dB) with headroom
-    const dbMin = -30;  // covers rolloff well below 0 dB
+    const dbMax = 70;
+    const dbMin = -30;
 
-    // Helper closures: data -> pixel
-    function xPx(freq) {
-        return pad.left + (Math.log10(freq) - logMin) / (logMax - logMin) * plotW;
-    }
-    function yPx(db) {
-        return pad.top + (dbMax - db) / (dbMax - dbMin) * plotH;
-    }
+    function xPx(f) { return pad.left + (Math.log10(f) - logMin) / (logMax - logMin) * plotW; }
+    function yPx(db) { return pad.top + (dbMax - db) / (dbMax - dbMin) * plotH; }
 
-    // ── Grid lines ──
+    // ── Grid ──
     ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([]);
-
-    // Vertical grid at each decade
     for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
         const x = xPx(Math.pow(10, d));
-        ctx.beginPath();
-        ctx.moveTo(x, pad.top);
-        ctx.lineTo(x, pad.top + plotH);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
     }
-
-    // Horizontal grid every 10 dB
     for (let db = dbMin; db <= dbMax; db += 10) {
         const y = yPx(db);
-        ctx.beginPath();
-        ctx.moveTo(pad.left, y);
-        ctx.lineTo(pad.left + plotW, y);
-        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
     }
 
-    // ── Mid-band gain dashed line ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    // ── Mid-band gain line ──
     ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
     ctx.lineWidth = 1;
-    const yMid = yPx(avDb);
-    ctx.beginPath();
-    ctx.moveTo(pad.left, yMid);
-    ctx.lineTo(pad.left + plotW, yMid);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(pad.left, yPx(avDb)); ctx.lineTo(pad.left + plotW, yPx(avDb)); ctx.stroke();
     ctx.setLineDash([]);
-
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
     ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('Mid-band: ' + avDb.toFixed(1) + ' dB', pad.left + plotW - 4, yMid - 3);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('Mid-band: ' + avDb.toFixed(1) + ' dB', pad.left + plotW - 4, yPx(avDb) - 4);
 
-    // ── omega_0 vertical dashed line ──
+    // ── omega_0 vertical ──
     const xW0 = xPx(w0);
-    ctx.strokeStyle = '#6aaa8e';
     ctx.setLineDash([6, 4]);
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(xW0, pad.top);
-    ctx.lineTo(xW0, pad.top + plotH);
-    ctx.stroke();
+    ctx.strokeStyle = 'rgba(106,170,142,0.5)';
+    ctx.beginPath(); ctx.moveTo(xW0, pad.top); ctx.lineTo(xW0, pad.top + plotH); ctx.stroke();
     ctx.setLineDash([]);
-
     ctx.fillStyle = '#6aaa8e';
     ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillText('\u03C9\u2080 = ' + fmtFreq(w0), xW0, pad.top - 4);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('\u03C9\u2080', xW0, pad.top + plotH + 4);
 
-    // ── -20 dB/decade asymptotic slope (dotted) ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    // ── -20 dB/decade asymptote ──
     ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(xW0, yPx(avDb));
-    // Extend right to edge: slope is -20 dB/decade
-    const decadesRight = logMax - logCenter;
-    const endDb = avDb - 20 * decadesRight;
-    ctx.lineTo(pad.left + plotW, yPx(endDb));
+    const asymEnd = Math.pow(10, logMax);
+    ctx.lineTo(xPx(asymEnd), yPx(avDb - 20 * (logMax - logCenter)));
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // ── Main gain curve ──
+    // Slope label
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = "10px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    const slopeLabelX = xPx(Math.pow(10, logCenter + 1.5));
+    const slopeLabelY = yPx(avDb - 30);
+    ctx.fillText('\u221220 dB/dec', slopeLabelX + 4, slopeLabelY - 4);
+
+    // ── Main curve ──
     ctx.strokeStyle = '#6aaa8e';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    const N = 400;
-    for (let i = 0; i <= N; i++) {
-        const logW = logMin + (logMax - logMin) * i / N;
-        const freq = Math.pow(10, logW);
-        const db = gainDb(freq);
-        const x = xPx(freq);
+    const steps = 500;
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const w = Math.pow(10, logMin + t * (logMax - logMin));
+        const db = gainDb(w);
+        const x = xPx(w);
         const y = yPx(db);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
     }
     ctx.stroke();
 
-    // ── -3 dB point dot at omega_0 ──
+    // ── -3dB point ──
     const db3 = avDb - 3;
-    ctx.fillStyle = '#6aaa8e';
-    ctx.beginPath();
-    ctx.arc(xW0, yPx(db3), 4, 0, 2 * Math.PI);
-    ctx.fill();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = "10px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('-3 dB', xW0 + 7, yPx(db3));
+    ctx.beginPath(); ctx.arc(xW0, yPx(db3), 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#6aaa8e'; ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('\u22123 dB', xW0 + 10, yPx(db3));
 
     // ── Test frequency marker ──
     const testDb = gainDb(testFreq);
-    const xTest = xPx(testFreq);
-    const yTest = yPx(testDb);
+    const tx = xPx(Math.max(Math.pow(10, logMin), Math.min(Math.pow(10, logMax), testFreq)));
+    const ty = yPx(testDb);
 
-    // Vertical dashed line to x-axis
-    ctx.strokeStyle = '#ffcc44';
-    ctx.setLineDash([6, 4]);
+    // Vertical dashed to x-axis
+    ctx.setLineDash([2, 2]);
+    ctx.strokeStyle = 'rgba(255,200,100,0.3)';
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(xTest, yTest);
-    ctx.lineTo(xTest, pad.top + plotH);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx, pad.top + plotH); ctx.stroke();
+    // Horizontal dashed to y-axis
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(pad.left, ty); ctx.stroke();
     ctx.setLineDash([]);
 
-    // Yellow dot
-    ctx.fillStyle = '#ffcc44';
-    ctx.beginPath();
-    ctx.arc(xTest, yTest, 6, 0, 2 * Math.PI);
-    ctx.fill();
+    // Marker dot
+    ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffcc44'; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
 
-    // Gain readout label — flip alignment based on position
-    const inLeftHalf = xTest < pad.left + plotW / 2;
+    // Gain label at marker
     ctx.fillStyle = '#ffcc44';
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = inLeftHalf ? 'left' : 'right';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = tx > pad.left + plotW / 2 ? 'right' : 'left';
+    const lx = tx > pad.left + plotW / 2 ? -12 : 12;
     ctx.textBaseline = 'bottom';
-    const labelOffset = inLeftHalf ? 9 : -9;
-    ctx.fillText(testDb.toFixed(1) + ' dB', xTest + labelOffset, yTest - 7);
+    ctx.fillText(testDb.toFixed(1) + ' dB', tx + lx, ty - 10);
 
-    // ── X-axis tick labels (decade powers) ──
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    // ── Axis labels ──
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
     ctx.font = "10px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
     for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
-        const x = xPx(Math.pow(10, d));
-        ctx.fillText('10' + (d < 0 ? '\u207B' : '') + superscriptDigits(Math.abs(d)), x, pad.top + plotH + 5);
+        ctx.fillText('10' + superscript(d), xPx(Math.pow(10, d)), pad.top + plotH + 4);
     }
-
-    // ── Y-axis tick labels (dB values) ──
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = "10px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
     for (let db = dbMin; db <= dbMax; db += 10) {
         ctx.fillText(db + '', pad.left - 6, yPx(db));
     }
 
-    // ── Axis titles ──
-    // X-axis
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = "12px 'IBM Plex Sans', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Frequency (rad/s)', pad.left + plotW / 2, pad.top + plotH + 25);
+    // Axis titles
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = "11px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('Frequency \u03C9 (rad/s)', pad.left + plotW / 2, H - 8);
 
-    // Y-axis (rotated)
     ctx.save();
     ctx.translate(14, pad.top + plotH / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.font = "12px 'IBM Plex Sans', sans-serif";
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Gain (dB)', 0, 0);
+    ctx.fillText('|H(j\u03C9)| (dB)', 0, 0);
     ctx.restore();
-
-    // ── Update header label ──
-    const bodeLabel = document.getElementById('bode-gain-label');
-    if (bodeLabel) {
-        bodeLabel.textContent = 'Gain @ \u03C9 = ' + fmtFreq(testFreq) + ': ' + testDb.toFixed(1) + ' dB';
-    }
 }
 
-// Helper: convert digits to Unicode superscript
-function superscriptDigits(n) {
-    const sup = ['\u2070', '\u00B9', '\u00B2', '\u00B3', '\u2074', '\u2075', '\u2076', '\u2077', '\u2078', '\u2079'];
-    return String(n).split('').map(d => sup[parseInt(d)]).join('');
+function superscript(n) {
+    const sup = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻' };
+    return String(n).split('').map(c => sup[c] || c).join('');
 }
 
-// ── Log-scale slider helpers ───────────────────────────
-function logMap(t, min, max) {
-    return min * Math.pow(max / min, t);
-}
-function logUnmap(val, min, max) {
-    return Math.log(val / min) / Math.log(max / min);
-}
-
-// Slider ranges
-const R_MIN = 100, R_MAX = 100000;
-const C_MIN = 1e-12, C_MAX = 100e-9;
-const AV_MIN = 1, AV_MAX = 1000;
-const FREQ_MIN = 1, FREQ_MAX = 1e9;
-
-// ── Formatting helpers ─────────────────────────────────
-function fmtR(val) {
-    if (val >= 1e6) return (val / 1e6).toPrecision(3) + ' M\u2126';
-    if (val >= 1e3) return (val / 1e3).toPrecision(3) + ' k\u2126';
-    return val.toPrecision(3) + ' \u2126';
-}
-
-function fmtC(val) {
-    if (val >= 1e-6) return (val * 1e6).toPrecision(3) + ' \u00B5F';
-    if (val >= 1e-9) return (val * 1e9).toPrecision(3) + ' nF';
-    return (val * 1e12).toPrecision(3) + ' pF';
-}
-
-function fmtFreq(val) {
-    if (val >= 1e9) return (val / 1e9).toPrecision(3) + ' Grad/s';
-    if (val >= 1e6) return (val / 1e6).toPrecision(3) + ' Mrad/s';
-    if (val >= 1e3) return (val / 1e3).toPrecision(3) + ' krad/s';
-    return val.toPrecision(3) + ' rad/s';
-}
-
-function fmtHz(wVal) {
-    const hz = wVal / (2 * Math.PI);
-    if (hz >= 1e9) return (hz / 1e9).toPrecision(3) + ' GHz';
-    if (hz >= 1e6) return (hz / 1e6).toPrecision(3) + ' MHz';
-    if (hz >= 1e3) return (hz / 1e3).toPrecision(3) + ' kHz';
-    return hz.toPrecision(3) + ' Hz';
-}
-
-function fmtAv(val) {
-    const db = 20 * Math.log10(val);
-    return val.toPrecision(3) + ' (' + db.toFixed(1) + ' dB)';
-}
-
-function updateEquations() {
+// ════════════════════════════════════════════════════════
+// Readouts + wiring
+// ════════════════════════════════════════════════════════
+function updateReadouts() {
     const w0 = omega0();
     const ratio = testFreq / w0;
     const gain = gainAt(testFreq);
     const db = gainDb(testFreq);
+    const mag = Math.sqrt(1 + ratio * ratio);
+    const angle = Math.atan(ratio) * 180 / Math.PI;
 
-    document.getElementById('eq-gain-linear').textContent = gain.toPrecision(4);
-    document.getElementById('eq-gain-db').textContent = db.toFixed(2) + ' dB';
-    document.getElementById('eq-ratio-val').textContent = ratio.toPrecision(3);
+    // Section 1 readouts
+    document.getElementById('r-val').textContent = fmtR(R);
+    document.getElementById('c-val').textContent = fmtC(C);
+    document.getElementById('av-val').textContent = Av.toPrecision(3);
+    document.getElementById('omega0-val').textContent = fmtFreq(w0);
+    document.getElementById('f0-val').textContent = fmtHz(w0);
+    document.getElementById('av-db-val').textContent = (20 * Math.log10(Av)).toFixed(1) + ' dB';
 
-    const oneTermEl = document.getElementById('eq-one-term');
-    const ratioEl = document.getElementById('eq-ratio');
-    const ratio2El = document.getElementById('eq-ratio2');
-    const regimeEl = document.getElementById('eq-regime');
+    // Section 2 readouts
+    document.getElementById('freq-val').textContent = fmtFreq(testFreq);
+    document.getElementById('freq-hz-val').textContent = fmtHz(testFreq);
+    document.getElementById('ratio-val').textContent = ratio.toPrecision(3);
+    document.getElementById('mag-val').textContent = mag.toPrecision(4);
+    document.getElementById('angle-val').textContent = angle.toFixed(1) + '\u00B0';
+    document.getElementById('gain-val').textContent = gain.toPrecision(4);
+    document.getElementById('gain-db-val').textContent = db.toFixed(1) + ' dB';
 
+    // Section 3 readouts
+    document.getElementById('bode-gain-val').textContent = gain.toPrecision(4);
+    document.getElementById('bode-db-val').textContent = db.toFixed(1) + ' dB';
+
+    // Regime label
+    const regimeEl = document.getElementById('regime-label');
     if (ratio < 0.1) {
-        // Passband
-        oneTermEl.className = 'highlight';
-        ratioEl.className = 'dim';
-        ratio2El.className = 'dim';
         regimeEl.textContent = 'Passband';
-        regimeEl.style.background = 'rgba(106,170,142,0.15)';
         regimeEl.style.color = 'var(--accent)';
-        regimeEl.style.borderColor = 'rgba(106,170,142,0.3)';
     } else if (ratio > 10) {
-        // Rolloff
-        oneTermEl.className = 'dim';
-        ratioEl.className = 'highlight';
-        ratio2El.className = 'highlight';
         regimeEl.textContent = 'Rolloff (\u221220 dB/dec)';
-        regimeEl.style.background = 'rgba(224,96,80,0.15)';
-        regimeEl.style.color = '#e06050';
-        regimeEl.style.borderColor = 'rgba(224,96,80,0.3)';
+        regimeEl.style.color = 'var(--red)';
     } else {
-        // Cutoff
-        oneTermEl.className = 'highlight';
-        ratioEl.className = 'highlight';
-        ratio2El.className = 'highlight';
         regimeEl.textContent = 'Cutoff (\u22123 dB)';
-        regimeEl.style.background = 'rgba(255,200,100,0.15)';
-        regimeEl.style.color = '#ffcc44';
-        regimeEl.style.borderColor = 'rgba(255,200,100,0.3)';
+        regimeEl.style.color = 'var(--yellow)';
     }
 }
 
-// ── Init ───────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// Init + animate
+// ════════════════════════════════════════════════════════
 function init() {
-    circuitCanvas = document.getElementById('circuit-canvas');
-    phasorCanvas = document.getElementById('phasor-canvas');
-    bodeCanvas = document.getElementById('bode-canvas');
-    // Force initial canvas sizing
-    resizeAllCanvases();
-
-    window.addEventListener('resize', () => {
-        resizeAllCanvases();
-    });
-
     const rSlider = document.getElementById('r-slider');
     const cSlider = document.getElementById('c-slider');
     const avSlider = document.getElementById('av-slider');
     const freqSlider = document.getElementById('freq-slider');
 
-    function updateFromSliders() {
+    function sync() {
         R = logMap(parseFloat(rSlider.value), R_MIN, R_MAX);
         C = logMap(parseFloat(cSlider.value), C_MIN, C_MAX);
         Av = logMap(parseFloat(avSlider.value), AV_MIN, AV_MAX);
@@ -1133,60 +1162,29 @@ function init() {
         updateReadouts();
     }
 
-    function updateReadouts() {
-        document.getElementById('r-val').textContent = fmtR(R);
-        document.getElementById('c-val').textContent = fmtC(C);
-        document.getElementById('av-val').textContent = fmtAv(Av);
-        document.getElementById('freq-val').textContent = fmtFreq(testFreq);
-        document.getElementById('freq-hz-val').textContent = fmtHz(testFreq);
-        document.getElementById('omega0-readout').innerHTML =
-            '\u03C9<sub>0</sub> = 1/RC = ' + fmtFreq(omega0());
+    rSlider.addEventListener('input', sync);
+    cSlider.addEventListener('input', sync);
+    avSlider.addEventListener('input', sync);
+    freqSlider.addEventListener('input', sync);
+
+    function setSliders() {
+        rSlider.value = logUnmap(R, R_MIN, R_MAX);
+        cSlider.value = logUnmap(C, C_MIN, C_MAX);
+        avSlider.value = logUnmap(Av, AV_MIN, AV_MAX);
+        freqSlider.value = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
+        updateReadouts();
     }
 
-    rSlider.addEventListener('input', updateFromSliders);
-    cSlider.addEventListener('input', updateFromSliders);
-    avSlider.addEventListener('input', updateFromSliders);
-    freqSlider.addEventListener('input', updateFromSliders);
-
-    // Preset buttons
-    const presetAudio = document.getElementById('preset-audio');
-    const presetRf = document.getElementById('preset-rf');
-
-    function clearPresetActive() {
-        presetAudio.classList.remove('active');
-        presetRf.classList.remove('active');
-    }
-
-    // Clear active preset when any slider is manually adjusted
-    rSlider.addEventListener('input', clearPresetActive);
-    cSlider.addEventListener('input', clearPresetActive);
-    avSlider.addEventListener('input', clearPresetActive);
-
-    presetAudio.addEventListener('click', () => {
+    document.getElementById('preset-audio').addEventListener('click', () => {
         R = 10000; C = 10e-9; Av = 100; testFreq = omega0();
-        rSlider.value = logUnmap(R, R_MIN, R_MAX);
-        cSlider.value = logUnmap(C, C_MIN, C_MAX);
-        avSlider.value = logUnmap(Av, AV_MIN, AV_MAX);
-        freqSlider.value = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
-        clearPresetActive();
-        presetAudio.classList.add('active');
-        updateReadouts();
+        setSliders();
     });
-
-    presetRf.addEventListener('click', () => {
+    document.getElementById('preset-rf').addEventListener('click', () => {
         R = 500; C = 5e-12; Av = 20; testFreq = omega0();
-        rSlider.value = logUnmap(R, R_MIN, R_MAX);
-        cSlider.value = logUnmap(C, C_MIN, C_MAX);
-        avSlider.value = logUnmap(Av, AV_MIN, AV_MAX);
-        freqSlider.value = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
-        clearPresetActive();
-        presetRf.classList.add('active');
-        updateReadouts();
+        setSliders();
     });
 
     updateReadouts();
-    updateEquations();
-
     requestAnimationFrame(animate);
 }
 
@@ -1195,13 +1193,11 @@ let lastTime = 0;
 function animate(now) {
     const dt = (now - lastTime) / 1000;
     lastTime = now;
-    if (dt < 0.1) {
-        animTime += dt;
-    }
-    drawBode();
-    drawPhasor();
+    if (dt > 0 && dt < 0.1) animTime += dt;
+
     drawCircuit();
-    updateEquations();
+    drawPhasor();
+    drawBode();
     requestAnimationFrame(animate);
 }
 

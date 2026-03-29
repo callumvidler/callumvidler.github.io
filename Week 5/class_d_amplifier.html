@@ -362,8 +362,8 @@
             </div>
             <div class="control-group">
                 <label>f<sub>sw</sub> / f<sub>sig</sub></label>
-                <input type="range" id="slider-ratio" min="5" max="60" step="1" value="15">
-                <span class="control-value" id="val-ratio">15x</span>
+                <input type="range" id="slider-ratio" min="5" max="60" step="1" value="8">
+                <span class="control-value" id="val-ratio">8x</span>
             </div>
             <button class="pause-btn active" id="btn-pause" onclick="togglePause()">&#9646;&#9646;</button>
         </div>
@@ -539,7 +539,7 @@ let lastFrameTime = 0;
 const VCC = 12;
 const VCE_SAT = 0.2;
 const GAIN = 20;
-let carrierFreqRatio = 15;  // carrier frequency relative to signal (adjustable)
+let carrierFreqRatio = 8;  // carrier frequency relative to signal (adjustable)
 const RC = 1000;               // load resistance in ohms
 const RESISTOR_BODY = 30;
 const RESISTOR_W = 7;

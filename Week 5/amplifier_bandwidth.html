@@ -881,8 +881,13 @@ function drawCircuit() {
     const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('circuit-canvas'));
     ctx.clearRect(0, 0, W, H);
 
-    const midY = H * 0.42;
-    const gndY = H * 0.68;
+    // Layout: circuit in top 55%, waveforms in bottom 35%, gap between
+    const circuitH = H * 0.52;
+    const waveTop = H * 0.62;
+    const waveH = H * 0.32;
+
+    const midY = circuitH * 0.45;
+    const gndY = circuitH * 0.82;
     const pad = 50;
 
     // Key x positions
@@ -1000,66 +1005,109 @@ function drawCircuit() {
     ctx.beginPath(); ctx.arc(xOut, midY, 3.5, 0, Math.PI * 2);
     ctx.fillStyle = '#fff'; ctx.fill();
 
-    // ── Animated sine waves ──
-    const w0 = omega0();
-    const ratio = testFreq / w0;
-    const gf = 1 / Math.sqrt(1 + ratio * ratio);
-    const phase = -Math.atan(ratio);
-    const wt = animTime * testFreq;
-
-    // Input sine
-    drawSineWave(ctx, xSrc + 10, midY + 50, 50, 18, 1.0, 0, wt, '#ffcc44', 'Input');
-    // Output sine
-    drawSineWave(ctx, xOut - 25, midY + 50, 50, 18, gf, phase, wt, '#6aaa8e', 'Output');
-
-    // Animated pulses
-    drawPulses(ctx, xAmp + 24, xR1, midY, wt, 1.0, '#ffcc44');
-    drawPulses(ctx, xR2, xEnd, midY, wt, gf, '#6aaa8e');
-
-    // ── Voltage divider annotation ──
-    // Brace between R and C showing "Vout is taken here"
+    // ── Impedance annotation ──
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.font = "11px 'IBM Plex Sans', sans-serif";
     ctx.textAlign = 'center';
     ctx.fillText('Z\u1D9C = 1/(j\u03C9C)', xOut + 60, capY + 5);
-}
 
-function drawSineWave(ctx, x, y, width, amp, gainFrac, phaseShift, wt, color, label) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.5;
-    ctx.globalAlpha = 0.8;
+    // ── Signal flow arrows on wires ──
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    const arrowSize = 5;
+    // Arrow between source and amp
+    drawArrow(ctx, (xSrc + xAmp) / 2 - 10, midY, arrowSize, 0);
+    // Arrow between amp and resistor
+    drawArrow(ctx, (xAmp + 24 + xR1) / 2, midY, arrowSize, 0);
+    // Arrow between resistor and output
+    drawArrow(ctx, (xR2 + xOut) / 2, midY, arrowSize, 0);
+
+    // ── Waveform display (bottom section) ──
+    const w0 = omega0();
+    const ratio = testFreq / w0;
+    const gf = 1 / Math.sqrt(1 + ratio * ratio);
+    const phase = -Math.atan(ratio);
+    // Cap animation speed so waveforms are always readable
+    const animSpeed = Math.min(testFreq, 20);
+    const wt = animTime * animSpeed;
+
+    const wavePad = 40;
+    const inWaveX = wavePad;
+    const inWaveW = W * 0.38 - wavePad;
+    const outWaveX = W * 0.52;
+    const outWaveW = W * 0.38 - wavePad / 2;
+    const waveMidY = waveTop + waveH / 2;
+    const waveAmp = waveH * 0.38;
+
+    // Divider line
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(wavePad, waveTop - 6); ctx.lineTo(W - wavePad, waveTop - 6); ctx.stroke();
+
+    // Input waveform
+    ctx.strokeStyle = '#ffcc44';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    for (let i = 0; i <= width; i++) {
-        const t = (i / width) * Math.PI * 2;
-        const px = x + i;
-        const py = y - Math.sin(t + wt + phaseShift) * amp * gainFrac;
+    for (let i = 0; i <= inWaveW; i++) {
+        const t = (i / inWaveW) * Math.PI * 4;
+        const px = inWaveX + i;
+        const py = waveMidY - Math.sin(t + wt) * waveAmp;
         i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.stroke();
-    ctx.globalAlpha = 1.0;
-    if (label) {
-        ctx.fillStyle = color;
-        ctx.globalAlpha = 0.5;
-        ctx.font = "9px 'IBM Plex Mono', monospace";
-        ctx.textAlign = 'center';
-        ctx.fillText(label + ' (' + (gainFrac * 100).toFixed(0) + '%)', x + width / 2, y + amp + 14);
-        ctx.globalAlpha = 1.0;
+
+    // Input label
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.fillText('V\u1D62\u2099', inWaveX, waveTop + 8);
+
+    // Center line for input
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(inWaveX, waveMidY); ctx.lineTo(inWaveX + inWaveW, waveMidY); ctx.stroke();
+
+    // Arrow between waveforms
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = "16px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center';
+    ctx.fillText('\u2192', W * 0.46, waveMidY + 4);
+
+    // Output waveform
+    ctx.strokeStyle = '#6aaa8e';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= outWaveW; i++) {
+        const t = (i / outWaveW) * Math.PI * 4;
+        const px = outWaveX + i;
+        const py = waveMidY - Math.sin(t + wt + phase) * waveAmp * gf;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
+    ctx.stroke();
+
+    // Output label
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.fillText('V\u2092\u1D64\u209C  (' + (gf * 100).toFixed(0) + '%)', outWaveX, waveTop + 8);
+
+    // Center line for output
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(outWaveX, waveMidY); ctx.lineTo(outWaveX + outWaveW, waveMidY); ctx.stroke();
 }
 
-function drawPulses(ctx, x1, x2, y, wt, gainFrac, color) {
-    ctx.globalAlpha = 0.35 * gainFrac + 0.1;
-    const len = x2 - x1;
-    for (let i = 0; i < 3; i++) {
-        const phase = (wt * 0.5 + i * (Math.PI * 2 / 3)) % (Math.PI * 2);
-        const t = phase / (Math.PI * 2);
-        const px = x1 + t * len;
-        ctx.beginPath();
-        ctx.arc(px, y, 3 * gainFrac + 1, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-    }
-    ctx.globalAlpha = 1.0;
+// Small rightward arrow helper
+function drawArrow(ctx, x, y, size, angle) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(size, 0);
+    ctx.lineTo(-size, -size * 0.7);
+    ctx.lineTo(-size, size * 0.7);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
 }
 
 // ════════════════════════════════════════════════════════

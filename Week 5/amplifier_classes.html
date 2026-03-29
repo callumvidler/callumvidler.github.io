@@ -315,6 +315,7 @@
                 <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.35)"></div>V<sub>in</sub></div>
                 <div class="legend-item"><div class="legend-dot" style="background:#6aaa8e"></div>NPN</div>
                 <div class="legend-item"><div class="legend-dot" style="background:#5080d0"></div>PNP</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#e06050"></div>Crossover</div>
             </div>
         </div>
         <div class="panel-body"><canvas id="waveform-canvas"></canvas></div>
@@ -1246,9 +1247,11 @@ function drawFlowArrow(ctx, x, y, dx, dy, color, alpha) {
 
 function drawClassACurrentFlow(ctx, w, h) {
     const mx = w / 2, my = h / 2, s = Math.min(w, h);
+    const colIn   = mx - s * 0.32;
     const colBias = mx - s * 0.16;
     const colQ    = mx + s * 0.02;
     const colRC   = mx + s * 0.18;
+    const colOut  = mx + s * 0.36;
     const rowVCC  = my - s * 0.32;
     const rowBase = my - s * 0.06;
     const rowQ    = my + s * 0.02;
@@ -1259,20 +1262,19 @@ function drawClassACurrentFlow(ctx, w, h) {
     const qCollX  = colQ + 10;
     const qEmitX  = colQ + 10;
 
-    // Class A: transistor always conducts — current always flows through collector path
-    // Intensity varies with signal: more current on positive input half, less on negative
     const normalizedVin = vinPeak > 0 ? instantVin / vinPeak : 0;
-    const baseIntensity = 0.5 + normalizedVin * 0.4;  // 0.1 to 0.9
+    const baseIntensity = 0.5 + normalizedVin * 0.4;
     const collectorIntensity = baseIntensity;
+    const signalIntensity = Math.abs(normalizedVin);
 
-    const flowColor = 'rgb(106,170,142)';  // accent green
+    const flowColor = 'rgb(106,170,142)';
 
     // Collector current path: VCC → RC → collector → emitter → RE → GND
     const collectorPath = [
         [colRC, rowVCC],
         [colRC, qCollY],
         [qCollX, qCollY],
-        [colQ, rowQ],        // through transistor (approximate)
+        [colQ, rowQ],
         [qEmitX, qEmitY],
         [colRC, qEmitY],
         [colRC, rowGnd]
@@ -1288,6 +1290,20 @@ function drawClassACurrentFlow(ctx, w, h) {
     ];
     drawCurrentFlow(ctx, basePath, 'rgb(204,168,85)', baseIntensity * 0.4);
 
+    // V_in signal path: input → Cin → base junction
+    const vinPath = [
+        [colIn, rowBase],
+        [colBias, rowBase]
+    ];
+    drawCurrentFlow(ctx, vinPath, 'rgb(255,255,255)', signalIntensity * 0.6);
+
+    // V_out signal path: collector node → Cout → output
+    const voutPath = [
+        [colRC, qCollY],
+        [colOut, qCollY]
+    ];
+    drawCurrentFlow(ctx, voutPath, flowColor, signalIntensity * 0.8);
+
     // Signal state label
     ctx.save();
     ctx.font = '600 9px "IBM Plex Mono", monospace';
@@ -1296,10 +1312,10 @@ function drawClassACurrentFlow(ctx, w, h) {
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
         ctx.fillText('v_in ≈ 0  (quiescent)', 8, 14);
     } else if (normalizedVin > 0) {
-        ctx.fillStyle = 'rgba(80,128,208,0.8)';
+        ctx.fillStyle = 'rgba(106,170,142,0.8)';
         ctx.fillText('v_in > 0  (I_C increasing)', 8, 14);
     } else {
-        ctx.fillStyle = 'rgba(224,96,80,0.8)';
+        ctx.fillStyle = 'rgba(80,128,208,0.8)';
         ctx.fillText('v_in < 0  (I_C decreasing)', 8, 14);
     }
     ctx.restore();
@@ -1307,14 +1323,19 @@ function drawClassACurrentFlow(ctx, w, h) {
 
 function drawClassBCurrentFlow(ctx, w, h) {
     const mx = w / 2, my = h / 2, s = Math.min(w, h);
+    const colIn   = mx - s * 0.30;
     const colQ    = mx + s * 0.08;
     const colRail = mx + s * 0.22;
+    const colCout = mx + s * 0.36;
+    const colRL   = mx + s * 0.36;
     const rowVCC  = my - s * 0.32;
     const rowNPN  = my - s * 0.12;
     const rowMid  = my;
     const rowPNP  = my + s * 0.12;
     const rowVEE  = my + s * 0.32;
+    const rowGnd  = my + s * 0.28;
     const pinOutX = colQ + 10;
+    const baseX   = colQ - 16;
     const npnCollY = rowNPN - 14;
     const npnEmitY = rowNPN + 14;
     const pnpCollY = rowPNP + 14;
@@ -1325,9 +1346,17 @@ function drawClassBCurrentFlow(ctx, w, h) {
 
     const npnColor = 'rgb(106,170,142)';   // green for NPN path
     const pnpColor = 'rgb(80,128,208)';    // blue for PNP path
+    const deadColor = 'rgb(224,96,80)';    // red for dead zone
+
+    // V_in signal path: input → Cin → base junction
+    const signalIntensity = Math.abs(normalizedVin);
+    const vinPath = [
+        [colIn, rowMid],
+        [baseX, rowMid]
+    ];
+    drawCurrentFlow(ctx, vinPath, 'rgb(255,255,255)', signalIntensity * 0.6);
 
     if (normalizedVin > deadZone) {
-        // Positive half: NPN conducts — VCC → NPN collector → emitter → output
         const intensity = Math.min(1, (normalizedVin - deadZone) / (1 - deadZone));
         const npnPath = [
             [colRail, rowVCC],
@@ -1339,8 +1368,16 @@ function drawClassBCurrentFlow(ctx, w, h) {
             [colRail, rowMid]
         ];
         drawCurrentFlow(ctx, npnPath, npnColor, intensity);
+
+        // V_out path: output node → Cout → RL → GND
+        const voutPath = [
+            [colRail, rowMid],
+            [colCout, rowMid],
+            [colRL, rowGnd]
+        ];
+        drawCurrentFlow(ctx, voutPath, npnColor, intensity * 0.8);
+
     } else if (normalizedVin < -deadZone) {
-        // Negative half: PNP conducts — output → PNP emitter → collector → VEE
         const intensity = Math.min(1, (-normalizedVin - deadZone) / (1 - deadZone));
         const pnpPath = [
             [colRail, rowMid],
@@ -1352,20 +1389,31 @@ function drawClassBCurrentFlow(ctx, w, h) {
             [colRail, rowVEE]
         ];
         drawCurrentFlow(ctx, pnpPath, pnpColor, intensity);
+
+        // V_out path
+        const voutPath = [
+            [colRail, rowMid],
+            [colCout, rowMid],
+            [colRL, rowGnd]
+        ];
+        drawCurrentFlow(ctx, voutPath, pnpColor, intensity * 0.8);
+
+    } else if (vinPeak > 0) {
+        // Dead zone — show red pulsing on base path to indicate blocked signal
+        drawCurrentFlow(ctx, vinPath, deadColor, 0.5);
     }
-    // else: dead zone — neither conducts, no current flow shown
 
     // Signal state label
     ctx.save();
     ctx.font = '600 9px "IBM Plex Mono", monospace';
     ctx.textAlign = 'left';
-    if (Math.abs(normalizedVin) <= deadZone) {
-        ctx.fillStyle = 'rgba(224,96,80,0.8)';
-        ctx.fillText('v_in ≈ 0  (dead zone — no conduction)', 8, 14);
+    if (Math.abs(normalizedVin) <= deadZone && vinPeak > 0) {
+        ctx.fillStyle = 'rgba(224,96,80,0.9)';
+        ctx.fillText('v_in ≈ 0  (crossover — no conduction)', 8, 14);
     } else if (normalizedVin > 0) {
         ctx.fillStyle = 'rgba(106,170,142,0.8)';
         ctx.fillText('v_in > 0  (NPN conducts)', 8, 14);
-    } else {
+    } else if (normalizedVin < 0) {
         ctx.fillStyle = 'rgba(80,128,208,0.8)';
         ctx.fillText('v_in < 0  (PNP conducts)', 8, 14);
     }
@@ -1374,28 +1422,39 @@ function drawClassBCurrentFlow(ctx, w, h) {
 
 function drawClassABCurrentFlow(ctx, w, h) {
     const mx = w / 2, my = h / 2, s = Math.min(w, h);
+    const colIn   = mx - s * 0.30;
     const colQ    = mx + s * 0.08;
     const colRail = mx + s * 0.22;
+    const colCout = mx + s * 0.36;
+    const colRL   = mx + s * 0.36;
     const rowVCC  = my - s * 0.34;
     const rowNPN  = my - s * 0.14;
     const rowMid  = my;
     const rowPNP  = my + s * 0.14;
     const rowVEE  = my + s * 0.34;
+    const rowGnd  = my + s * 0.28;
     const pinOutX = colQ + 10;
+    const baseX   = colQ - 16;
     const npnCollY = rowNPN - 14;
     const npnEmitY = rowNPN + 14;
     const pnpCollY = rowPNP + 14;
     const pnpEmitY = rowPNP - 14;
 
     const normalizedVin = vinPeak > 0 ? instantVin / vinPeak : 0;
+    const signalIntensity = Math.abs(normalizedVin);
 
     const npnColor = 'rgb(106,170,142)';
     const pnpColor = 'rgb(80,128,208)';
 
-    // Class AB: both transistors conduct near zero crossing due to diode bias
-    // NPN dominates on positive, PNP on negative, both conduct a little at zero
     const npnIntensity = Math.max(0.15, Math.min(1, 0.5 + normalizedVin * 0.6));
     const pnpIntensity = Math.max(0.15, Math.min(1, 0.5 - normalizedVin * 0.6));
+
+    // V_in signal path: input → Cin → diode junction
+    const vinPath = [
+        [colIn, rowMid],
+        [baseX, rowMid]
+    ];
+    drawCurrentFlow(ctx, vinPath, 'rgb(255,255,255)', Math.max(signalIntensity * 0.6, 0.15));
 
     // NPN path
     const npnPath = [
@@ -1420,6 +1479,15 @@ function drawClassABCurrentFlow(ctx, w, h) {
         [colRail, rowVEE]
     ];
     drawCurrentFlow(ctx, pnpPath, pnpColor, pnpIntensity);
+
+    // V_out path: output node → Cout → RL → GND
+    const dominantColor = normalizedVin >= 0 ? npnColor : pnpColor;
+    const voutPath = [
+        [colRail, rowMid],
+        [colCout, rowMid],
+        [colRL, rowGnd]
+    ];
+    drawCurrentFlow(ctx, voutPath, dominantColor, Math.max(signalIntensity * 0.8, 0.15));
 
     // Signal state label
     ctx.save();
@@ -1565,7 +1633,7 @@ function drawWaveforms() {
         ctx.lineWidth = 2;
         const npnCol = '#6aaa8e';   // green — matches NPN current flow
         const pnpCol = '#5080d0';   // blue — matches PNP current flow
-        const deadCol = 'rgba(255,255,255,0.15)';
+        const deadCol = '#e06050';   // red for crossover distortion
 
         for (let i = 1; i < waveHistory.length; i++) {
             const x0 = padL + ((i - 1) / WAVEFORM_HISTORY) * plotW;

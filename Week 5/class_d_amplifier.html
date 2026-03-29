@@ -292,11 +292,11 @@
     <div class="title-block">
         <div class="sub">BMEN90033 &middot; Week 5</div>
         <h1>Class D Amplifier</h1>
-        <p>Class D amplifiers work fundamentally differently from linear amplifiers (Class A, B, AB).
-           Instead of controlling how much a transistor conducts, Class D switches transistors fully ON
-           or fully OFF at high frequency. This makes them extremely efficient &mdash; typically 90&ndash;95%.
-           We'll build up the concept step by step: how the PWM signal is generated, what it looks like,
-           and how a low-pass filter recovers the original audio.</p>
+        <p>Class D amplifiers take a completely different approach to amplification compared to their linear
+           cousins (Class A, B, AB). Rather than controlling how much a transistor conducts, Class D switches
+           transistors fully ON or fully OFF at high frequency. The result is typical efficiencies of 90&ndash;95%.
+           This page walks through the concept step by step: how the PWM signal is generated, what it looks like,
+           and how a low-pass filter recovers the original signal.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════ -->
@@ -306,7 +306,7 @@
         <div class="section-number">Part 01</div>
         <h2>The Input Signal</h2>
 
-        <p>We start with an analog input signal &mdash; a sine wave representing audio or a sensor reading.</p>
+        <p>We start with an analog input signal, here a sine wave representing audio or a sensor reading.</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="canvas-input"></canvas>
@@ -322,20 +322,21 @@
 
         <div class="callout">
             <strong>In a linear amplifier,</strong> this signal directly controls how much current flows through
-            the transistor. In Class D, we'll use it differently &mdash; as a reference for switching.
+            the transistor. In Class D, we use it differently: as a reference for switching.
         </div>
     </div>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- SECTION 2: THE COMPARATOR — GENERATING PWM -->
+    <!-- SECTION 2: THE COMPARATOR -->
     <!-- ════════════════════════════════════════════════ -->
     <div class="section" id="sec-comparator">
         <div class="section-number">Part 02</div>
-        <h2>The Comparator &mdash; Generating PWM</h2>
+        <h2>The Comparator: Generating PWM</h2>
 
-        <p>The core of a Class D amplifier is a comparator. It compares the input signal against a
-           high-frequency triangle wave (the carrier). When the input is above the carrier, the output
-           goes HIGH. When below, it goes LOW. This creates a pulse-width modulated (PWM) signal.</p>
+        <p>At the heart of every Class D amplifier is a comparator. It takes the input signal on one
+           terminal and a high-frequency triangle wave (the "carrier") on the other. Whenever the input
+           sits above the carrier, the output goes HIGH. Whenever it falls below, the output goes LOW.
+           The result is a pulse-width modulated (PWM) signal.</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="canvas-comp-circuit"></canvas>
@@ -380,15 +381,15 @@
     </div>
 
     <!-- ════════════════════════════════════════════════ -->
-    <!-- SECTION 3: THE SWITCHING STAGE — MOSFET HALF-BRIDGE -->
+    <!-- SECTION 3: THE SWITCHING STAGE -->
     <!-- ════════════════════════════════════════════════ -->
     <div class="section" id="sec-mosfet">
         <div class="section-number">Part 03</div>
-        <h2>The Switching Stage &mdash; MOSFET Half-Bridge</h2>
+        <h2>The Switching Stage: MOSFET Half-Bridge</h2>
 
         <p>The PWM signal drives a pair of complementary MOSFETs (NMOS and PMOS) arranged in a half-bridge.
-           Unlike BJTs in linear amplifiers, these MOSFETs operate as digital switches &mdash; fully ON or
-           fully OFF.</p>
+           Unlike BJTs in linear amplifiers, these MOSFETs operate as digital switches: they are either
+           fully ON or fully OFF, with nothing in between.</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-circuit"></canvas>
@@ -410,7 +411,7 @@
     <!-- ════════════════════════════════════════════════ -->
     <div class="section" id="sec-filter">
         <div class="section-number">Part 04</div>
-        <h2>The LC Low-Pass Filter &mdash; Recovering the Signal</h2>
+        <h2>The LC Low-Pass Filter: Recovering the Signal</h2>
 
         <p>The PWM output is a high-frequency square wave that rapidly switches between V<sub>CC</sub> and GND.
            To recover the original analog signal, we pass it through an LC low-pass filter. The inductor
@@ -431,7 +432,7 @@
         <div class="callout">
             <strong>The LC filter averages the PWM signal.</strong> During HIGH periods, current flows through the
             inductor into the capacitor and load. During LOW periods, the inductor's stored energy maintains the
-            current. The result is a voltage proportional to the duty cycle &mdash; but not perfectly smooth.
+            current. The output voltage ends up proportional to the duty cycle, but it is not perfectly smooth.
             <strong>Try dragging the f<sub>sw</sub>/f<sub>sig</sub> slider above.</strong> At low ratios (5&ndash;10x), you can
             clearly see the switching ripple riding on top of the output. At high ratios (40x+), the ripple
             becomes negligible. A 2nd-order LC filter attenuates ripple by the ratio squared (&minus;40 dB/decade).
@@ -448,9 +449,9 @@
     <!-- ════════════════════════════════════════════════ -->
     <div class="section" id="sec-full">
         <div class="section-number">Part 05</div>
-        <h2>Putting It All Together &mdash; Efficiency</h2>
+        <h2>Putting It All Together: Efficiency</h2>
 
-        <p>Now we can see the complete Class D signal chain — from the input signal through the
+        <p>Here is the complete Class D signal chain, from the input signal through the
            comparator, half-bridge, and LC filter to the output.</p>
 
         <div class="canvas-container" style="height: 280px;">
@@ -499,25 +500,28 @@
         <div class="section-number">Part 06</div>
         <h2>Why MOSFETs?</h2>
 
-        <p>Class D amplifiers require transistors that can switch very fast with minimal loss. MOSFETs are
-           the clear choice over BJTs for several reasons:</p>
+        <p>Class D needs transistors that switch fast with minimal loss. MOSFETs win over BJTs here
+           for a few practical reasons:</p>
 
         <ul>
-            <li><strong>Switching speed:</strong> BJTs suffer from storage time &mdash; minority carriers in the
-                base must be swept out before the transistor turns off. MOSFETs are majority-carrier devices with
-                no storage time, so they switch much faster.</li>
-            <li><strong>Voltage-driven gate:</strong> BJTs need continuous base current to stay on. MOSFETs are
-                voltage-driven &mdash; once the gate capacitance is charged, zero steady-state current flows
-                into the gate. This simplifies the gate driver circuit.</li>
+            <li><strong>Switching speed:</strong> BJTs have storage time. Minority carriers in the base region
+                need to be swept out before the device turns off. MOSFETs are majority-carrier devices with
+                no storage time, so they switch significantly faster.</li>
+            <li><strong>Voltage-driven gate:</strong> A BJT requires continuous base current to stay on. A MOSFET
+                only needs its gate capacitance charged. Once charged, zero steady-state current flows into the
+                gate, which simplifies the driver circuit considerably.</li>
             <li><strong>Lower on-resistance:</strong> Modern power MOSFETs achieve R<sub>DS(on)</sub> in the
-                low milliohm range, producing less voltage drop than a BJT's V<sub>CE(sat)</sub> at high currents.</li>
-            <li><strong>Modern applications:</strong> Class D is used in audio amplifiers, motor drivers (H-bridges),
-                DC-DC power converters, and biomedical devices wherever efficiency matters.</li>
+                low milliohm range. That is less voltage drop than a BJT's V<sub>CE(sat)</sub> at high currents,
+                which translates directly to lower conduction losses.</li>
+            <li><strong>Where you will see them:</strong> Audio amplifiers, motor drivers (H-bridges),
+                DC-DC power converters, and biomedical devices. Anywhere efficiency matters, Class D with
+                MOSFETs is the default choice.</li>
         </ul>
 
         <div class="callout">
-            <strong>Class D is now the dominant amplifier topology</strong> for portable and battery-powered biomedical
-            devices, where power efficiency directly impacts battery life and thermal management.
+            Class D is the dominant amplifier topology in portable and battery-powered biomedical
+            devices. Power efficiency directly determines battery life and how much heat the device
+            generates, both of which are critical constraints in wearable and implantable systems.
         </div>
     </div>
 
@@ -1546,10 +1550,10 @@ function drawLCCircuit() {
     ctx.textAlign = 'center';
     if (pwmHigh) {
         ctx.fillStyle = 'rgba(106,170,142,0.8)';
-        ctx.fillText('PWM HIGH \u2014 inductor charges, capacitor charges', W / 2, H - 16);
+        ctx.fillText('PWM HIGH: inductor charges, capacitor charges', W / 2, H - 16);
     } else {
         ctx.fillStyle = 'rgba(80,128,208,0.8)';
-        ctx.fillText('PWM LOW \u2014 inductor releases stored energy', W / 2, H - 16);
+        ctx.fillText('PWM LOW: inductor releases stored energy', W / 2, H - 16);
     }
     ctx.restore();
 }

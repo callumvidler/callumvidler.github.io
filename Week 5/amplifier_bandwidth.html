@@ -881,13 +881,8 @@ function drawCircuit() {
     const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('circuit-canvas'));
     ctx.clearRect(0, 0, W, H);
 
-    // Layout: circuit in top 55%, waveforms in bottom 35%, gap between
-    const circuitH = H * 0.52;
-    const waveTop = H * 0.62;
-    const waveH = H * 0.32;
-
-    const midY = circuitH * 0.45;
-    const gndY = circuitH * 0.82;
+    const midY = H * 0.38;
+    const gndY = H * 0.70;
     const pad = 50;
 
     // Key x positions
@@ -1012,88 +1007,55 @@ function drawCircuit() {
     ctx.fillText('Z\u1D9C = 1/(j\u03C9C)', xOut + 60, capY + 5);
 
     // ── Signal flow arrows on wires ──
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
     const arrowSize = 5;
-    // Arrow between source and amp
     drawArrow(ctx, (xSrc + xAmp) / 2 - 10, midY, arrowSize, 0);
-    // Arrow between amp and resistor
     drawArrow(ctx, (xAmp + 24 + xR1) / 2, midY, arrowSize, 0);
-    // Arrow between resistor and output
     drawArrow(ctx, (xR2 + xOut) / 2, midY, arrowSize, 0);
 
-    // ── Waveform display (bottom section) ──
+    // ── Small waveform below Vin ──
     const w0 = omega0();
     const ratio = testFreq / w0;
     const gf = 1 / Math.sqrt(1 + ratio * ratio);
     const phase = -Math.atan(ratio);
-    // Cap animation speed so waveforms are always readable
-    const animSpeed = Math.min(testFreq, 20);
-    const wt = animTime * animSpeed;
+    const wt = animTime * 3;  // slow, constant speed
 
-    const wavePad = 40;
-    const inWaveX = wavePad;
-    const inWaveW = W * 0.38 - wavePad;
-    const outWaveX = W * 0.52;
-    const outWaveW = W * 0.38 - wavePad / 2;
-    const waveMidY = waveTop + waveH / 2;
-    const waveAmp = waveH * 0.38;
+    const miniW = 44;
+    const miniAmp = 12;
 
-    // Divider line
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(wavePad, waveTop - 6); ctx.lineTo(W - wavePad, waveTop - 6); ctx.stroke();
-
-    // Input waveform
-    ctx.strokeStyle = '#ffcc44';
-    ctx.lineWidth = 2;
+    // Input mini-wave below Vin label
+    const inCx = srcCx;
+    const inCy = midY + 34;
+    ctx.strokeStyle = 'rgba(255,204,68,0.6)';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    for (let i = 0; i <= inWaveW; i++) {
-        const t = (i / inWaveW) * Math.PI * 4;
-        const px = inWaveX + i;
-        const py = waveMidY - Math.sin(t + wt) * waveAmp;
+    for (let i = 0; i <= miniW; i++) {
+        const t = (i / miniW) * Math.PI * 2;
+        const px = inCx - miniW / 2 + i;
+        const py = inCy - Math.sin(t + wt) * miniAmp;
         i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.stroke();
 
-    // Input label
-    ctx.fillStyle = '#ffcc44';
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'left';
-    ctx.fillText('V\u1D62\u2099', inWaveX, waveTop + 8);
+    // ── Small waveform below Vout ──
+    const outCx = xEnd;
+    const outCy = midY + 34;
+    ctx.strokeStyle = 'rgba(106,170,142,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= miniW; i++) {
+        const t = (i / miniW) * Math.PI * 2;
+        const px = outCx - miniW / 2 + i;
+        const py = outCy - Math.sin(t + wt + phase) * miniAmp * gf;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
 
-    // Center line for input
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(inWaveX, waveMidY); ctx.lineTo(inWaveX + inWaveW, waveMidY); ctx.stroke();
-
-    // Arrow between waveforms
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.font = "16px 'IBM Plex Sans', sans-serif";
+    // Gain label below output wave
+    ctx.fillStyle = 'rgba(106,170,142,0.5)';
+    ctx.font = "9px 'IBM Plex Mono', monospace";
     ctx.textAlign = 'center';
-    ctx.fillText('\u2192', W * 0.46, waveMidY + 4);
-
-    // Output waveform
-    ctx.strokeStyle = '#6aaa8e';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let i = 0; i <= outWaveW; i++) {
-        const t = (i / outWaveW) * Math.PI * 4;
-        const px = outWaveX + i;
-        const py = waveMidY - Math.sin(t + wt + phase) * waveAmp * gf;
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-
-    // Output label
-    ctx.fillStyle = '#6aaa8e';
-    ctx.font = "11px 'IBM Plex Mono', monospace";
-    ctx.textAlign = 'left';
-    ctx.fillText('V\u2092\u1D64\u209C  (' + (gf * 100).toFixed(0) + '%)', outWaveX, waveTop + 8);
-
-    // Center line for output
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(outWaveX, waveMidY); ctx.lineTo(outWaveX + outWaveW, waveMidY); ctx.stroke();
+    ctx.fillText((gf * 100).toFixed(0) + '%', outCx, outCy + miniAmp + 12);
 }
 
 // Small rightward arrow helper

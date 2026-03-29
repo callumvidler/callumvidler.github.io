@@ -635,11 +635,41 @@
             |H(j&#969;)| = A<sub>v</sub> / &#8730;(1 + (&#969;/&#969;<sub>0</sub>)&#178;)
         </div>
 
+        <h3 style="font-size: 16px; color: #fff; margin: 32px 0 16px;">What the angle means: phase lag</h3>
+
+        <p>Dividing by a complex number with angle &#952; rotates the result by &#8722;&#952;.
+           So the angle of the denominator phasor becomes a <strong>phase lag</strong> on the
+           output signal. Physically, the capacitor can't charge instantaneously through the
+           resistor. At low frequencies it has plenty of time to track the input, so the output
+           stays in phase. At higher frequencies the input changes faster than the RC circuit
+           can follow, so the output falls behind.</p>
+
+        <div class="eq-line">
+            <span>&#8736;H(j&#969;) = &#8722;arctan(&#969;/&#969;<sub>0</sub>)</span>
+        </div>
+
+        <ul>
+            <li><strong>&#969; &#8810; &#969;<sub>0</sub></strong>: the angle is near 0&#176;, output tracks the input with almost no delay.</li>
+            <li><strong>&#969; = &#969;<sub>0</sub></strong>: the angle is &#8722;45&#176;, the output lags the input by one-eighth of a cycle.</li>
+            <li><strong>&#969; &#8811; &#969;<sub>0</sub></strong>: the angle approaches &#8722;90&#176;. The capacitor dominates and current leads voltage by 90&#176;.</li>
+        </ul>
+
+        <p>The plot below shows this phase relationship across frequency. The yellow marker
+           tracks your current test frequency:</p>
+
+        <div class="canvas-container canvas-medium">
+            <canvas id="phase-canvas"></canvas>
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">Output phase lag: <span class="val" id="phase-lag-val">&#8722;45.0°</span></div>
+        </div>
+
         <div class="callout">
             <strong>Why &#8722;3 dB matters:</strong> &#8722;3 dB is the half-power point. The output power
             (proportional to V&#178;) is exactly half of its mid-band value. This defines the
             <em>bandwidth</em> of the amplifier: the frequency range where the gain stays within
-            3 dB of its maximum.
+            3 dB of its maximum. At this same frequency, the phase lag is exactly &#8722;45&#176;.
         </div>
     </div>
 
@@ -1268,6 +1298,141 @@ function drawPhasor() {
 }
 
 // ════════════════════════════════════════════════════════
+// SECTION 2b: Phase plot
+// ════════════════════════════════════════════════════════
+function drawPhase() {
+    const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('phase-canvas'));
+    ctx.clearRect(0, 0, W, H);
+
+    const pad = { top: 30, right: 30, bottom: 45, left: 60 };
+    const plotW = W - pad.left - pad.right;
+    const plotH = H - pad.top - pad.bottom;
+
+    const w0 = omega0();
+    const logMin = Math.log10(FREQ_MIN);
+    const logMax = Math.log10(FREQ_MAX);
+
+    // Phase axis: 0 to -90 degrees
+    const phaseMax = 0;
+    const phaseMin = -90;
+
+    function xPx(f) { return pad.left + (Math.log10(f) - logMin) / (logMax - logMin) * plotW; }
+    function yPx(deg) { return pad.top + (phaseMax - deg) / (phaseMax - phaseMin) * plotH; }
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
+        const x = xPx(Math.pow(10, d));
+        ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + plotH); ctx.stroke();
+    }
+    for (let deg = phaseMin; deg <= phaseMax; deg += 15) {
+        const y = yPx(deg);
+        ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + plotW, y); ctx.stroke();
+    }
+
+    // -45 degree line (at omega_0)
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath(); ctx.moveTo(pad.left, yPx(-45)); ctx.lineTo(pad.left + plotW, yPx(-45)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('\u221245\u00B0', pad.left + plotW - 4, yPx(-45) - 3);
+
+    // omega_0 vertical
+    const xW0 = xPx(w0);
+    ctx.setLineDash([6, 4]);
+    ctx.strokeStyle = 'rgba(106,170,142,0.5)';
+    ctx.beginPath(); ctx.moveTo(xW0, pad.top); ctx.lineTo(xW0, pad.top + plotH); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#6aaa8e';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('\u03C9\u2080', xW0, pad.top + plotH + 4);
+
+    // Clip to plot area
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(pad.left, pad.top, plotW, plotH);
+    ctx.clip();
+
+    // Phase curve
+    ctx.strokeStyle = '#6aaa8e';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    const steps = 500;
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const w = Math.pow(10, logMin + t * (logMax - logMin));
+        const deg = -Math.atan(w / w0) * 180 / Math.PI;
+        const x = xPx(w);
+        const y = yPx(deg);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // -45 degree point dot
+    ctx.beginPath(); ctx.arc(xW0, yPx(-45), 6, 0, Math.PI * 2);
+    ctx.fillStyle = '#6aaa8e'; ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('\u221245\u00B0', xW0 + 10, yPx(-45));
+
+    // Test frequency marker
+    const testPhase = -Math.atan(testFreq / w0) * 180 / Math.PI;
+    const tx = xPx(Math.max(Math.pow(10, logMin), Math.min(Math.pow(10, logMax), testFreq)));
+    const ty = yPx(testPhase);
+
+    ctx.setLineDash([2, 2]);
+    ctx.strokeStyle = 'rgba(255,200,100,0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(tx, pad.top + plotH); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(pad.left, ty); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.beginPath(); ctx.arc(tx, ty, 7, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffcc44'; ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = tx > pad.left + plotW / 2 ? 'right' : 'left';
+    const lx = tx > pad.left + plotW / 2 ? -12 : 12;
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(testPhase.toFixed(1) + '\u00B0', tx + lx, ty - 10);
+
+    ctx.restore();
+
+    // Axis labels
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let d = Math.ceil(logMin); d <= Math.floor(logMax); d++) {
+        ctx.fillText('10' + superscript(d), xPx(Math.pow(10, d)), pad.top + plotH + 4);
+    }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let deg = phaseMin; deg <= phaseMax; deg += 15) {
+        ctx.fillText(deg + '\u00B0', pad.left - 6, yPx(deg));
+    }
+
+    // Axis titles
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = "11px 'IBM Plex Sans', sans-serif";
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('Frequency \u03C9 (rad/s)', pad.left + plotW / 2, H - 8);
+
+    ctx.save();
+    ctx.translate(14, pad.top + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.fillText('Phase (\u00B0)', 0, 0);
+    ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════
 // SECTION 3: Bode magnitude plot
 // ════════════════════════════════════════════════════════
 function drawBode() {
@@ -1467,6 +1632,9 @@ function updateReadouts() {
     document.getElementById('gain-val').textContent = gain.toPrecision(4);
     document.getElementById('gain-db-val').textContent = db.toFixed(1) + ' dB';
 
+    // Phase lag readout
+    document.getElementById('phase-lag-val').textContent = '\u2212' + angle.toFixed(1) + '\u00B0';
+
     // Section 3 readouts
     document.getElementById('bode-gain-val').textContent = gain.toPrecision(4);
     document.getElementById('bode-db-val').textContent = db.toFixed(1) + ' dB';
@@ -1563,6 +1731,7 @@ function animate(now) {
 
     drawCircuit();
     drawPhasor();
+    drawPhase();
     drawBode();
     requestAnimationFrame(animate);
 }

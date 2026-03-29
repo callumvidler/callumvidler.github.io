@@ -862,45 +862,71 @@
         <div class="section-number">Part 04</div>
         <h2>Gain-Bandwidth Product</h2>
 
-        <p>In Parts 01&#8211;03 we treated R, C, and A<sub>v</sub> as independent. In a real
-           op-amp or transistor amplifier, they are not. The internal parasitic capacitance C
-           is fixed by the silicon, and when you use negative feedback to set the closed-loop
-           gain, you are effectively trading gain for bandwidth.</p>
+        <p>In Parts 01 to 03 we treated the gain A<sub>v</sub> and the cutoff frequency
+           &#969;<sub>0</sub> as independent parameters. In a real amplifier, they are linked.
+           To see why, we need to understand how amplifiers are used in practice.</p>
 
-        <p>Consider the open-loop gain A<sub>OL</sub> of the amplifier (gain with no feedback).
-           It has its own cutoff frequency &#969;<sub>OL</sub>. The <strong>gain-bandwidth product</strong>
-           (GBP) is:</p>
+        <h3 style="font-size: 16px; color: #fff; margin: 28px 0 14px;">Open-loop vs closed-loop</h3>
 
-        <div class="eq-block" style="font-size: 16px; padding: 16px 24px;">
-            GBP = A<sub>v</sub> &#215; &#969;<sub>0</sub> = constant
+        <p>An op-amp on its own (no external components) has a very high <strong>open-loop gain</strong>
+           A<sub>OL</sub>, typically 100,000 or more. But this gain is unstable, temperature-dependent,
+           and varies between chips. It is not usable directly.</p>
+
+        <div class="canvas-container" style="height: 260px;">
+            <canvas id="opamp-open-canvas"></canvas>
         </div>
 
-        <p>When you apply feedback to reduce the gain from A<sub>OL</sub> down to some
-           closed-loop value A<sub>CL</sub>, the bandwidth extends by the same factor.
-           The product stays the same.</p>
+        <p>To get a precise, predictable gain, we connect a <strong>feedback network</strong>
+           (usually two resistors) from the output back to the inverting input. This is called
+           <strong>negative feedback</strong>. The resistor ratio sets the
+           <strong>closed-loop gain</strong> A<sub>CL</sub>:</p>
 
-        <ol class="derivation">
-            <li>
-                <strong>High gain, narrow bandwidth.</strong> Set A<sub>v</sub> = 1000. The amplifier
-                amplifies a lot, but the &#8722;3 dB frequency is low.
-                <span class="step-note">All the amplifier's "resources" go to gain, leaving little room for speed.</span>
-            </li>
-            <li>
-                <strong>Low gain, wide bandwidth.</strong> Set A<sub>v</sub> = 10. The gain is modest,
-                but the &#8722;3 dB frequency is 100&#215; higher than the previous case.
-                <span class="step-note">Less gain means the feedback loop can correct errors faster, extending the bandwidth.</span>
-            </li>
-            <li>
-                <strong>Unity gain, maximum bandwidth.</strong> Set A<sub>v</sub> = 1. The &#8722;3 dB
-                frequency equals the GBP itself. This is the widest bandwidth the amplifier can achieve.
-                <span class="step-note">This is why datasheets specify "unity-gain bandwidth" as the key speed metric.</span>
-            </li>
-        </ol>
+        <div class="canvas-container" style="height: 300px;">
+            <canvas id="opamp-feedback-canvas"></canvas>
+        </div>
 
-        <p>The plot below shows this visually. Each curve is the Bode plot for a different
-           closed-loop gain, all from the same amplifier (same GBP). Use the slider to set the
-           GBP, then see how increasing A<sub>v</sub> shifts the curve up but pushes the
-           cutoff left:</p>
+        <div class="eq-line">
+            <span>A<sub>CL</sub> = </span>
+            <span class="frac frac-lg">
+                <span class="num">R<sub>f</sub></span>
+                <span class="den">R<sub>in</sub></span>
+            </span>
+        </div>
+
+        <p>The closed-loop gain depends only on the external resistors, not on the op-amp's
+           internal gain (as long as A<sub>OL</sub> is much larger than A<sub>CL</sub>).
+           This is what makes op-amp circuits reliable.</p>
+
+        <h3 style="font-size: 16px; color: #fff; margin: 28px 0 14px;">The tradeoff: gain vs bandwidth</h3>
+
+        <p>Here is the catch. The op-amp has internal parasitic capacitance (from its transistors)
+           that creates a single dominant pole, just like the RC model in Part 01. This gives the
+           open-loop response a fixed <strong>gain-bandwidth product</strong> (GBP):</p>
+
+        <div class="eq-block" style="font-size: 16px; padding: 16px 24px;">
+            GBP = A<sub>CL</sub> &#215; &#969;<sub>0</sub> = constant
+        </div>
+
+        <p>When you use feedback to reduce the gain from A<sub>OL</sub> down to A<sub>CL</sub>,
+           the bandwidth extends by the same factor. The product is fixed by the silicon.
+           You can have high gain or wide bandwidth, but not both.</p>
+
+        <ul>
+            <li><strong>High gain (A<sub>CL</sub> = 1000)</strong>: strong amplification, but
+                &#969;<sub>0</sub> is low. The amplifier can only handle slow signals.</li>
+            <li><strong>Low gain (A<sub>CL</sub> = 10)</strong>: modest amplification, but
+                &#969;<sub>0</sub> is 100&#215; higher. The amplifier responds to much faster signals.</li>
+            <li><strong>Unity gain (A<sub>CL</sub> = 1)</strong>: no amplification, but
+                &#969;<sub>0</sub> equals the GBP itself. This is the maximum bandwidth
+                the amplifier can achieve, which is why datasheets call it the
+                "unity-gain bandwidth".</li>
+        </ul>
+
+        <h3 style="font-size: 16px; color: #fff; margin: 28px 0 14px;">Seeing the tradeoff</h3>
+
+        <p>The plot below overlays the Bode magnitude curves for several closed-loop gains,
+           all from the same amplifier (same GBP). The dashed line is the open-loop envelope.
+           Increasing A<sub>CL</sub> shifts the curve up but pushes &#969;<sub>0</sub> to the left:</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="gbp-canvas"></canvas>
@@ -1700,6 +1726,230 @@ function superscript(n) {
 }
 
 // ════════════════════════════════════════════════════════
+// SECTION 4: Op-amp circuit diagrams
+// ════════════════════════════════════════════════════════
+function drawOpampOpen() {
+    const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('opamp-open-canvas'));
+    ctx.clearRect(0, 0, W, H);
+
+    const cx = W * 0.45;
+    const cy = H * 0.5;
+    const lineColor = 'rgba(255,255,255,0.5)';
+
+    // Op-amp triangle
+    const tw = 60, th = 70;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - tw/2, cy - th/2);
+    ctx.lineTo(cx + tw/2, cy);
+    ctx.lineTo(cx - tw/2, cy + th/2);
+    ctx.closePath();
+    ctx.stroke();
+
+    // + and - labels
+    ctx.font = "14px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('+', cx - tw/2 + 14, cy + th/4 + 5);
+    ctx.fillText('\u2212', cx - tw/2 + 14, cy - th/4 + 5);
+
+    // Input wires
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(cx - tw/2 - 80, cy - th/4); ctx.lineTo(cx - tw/2, cy - th/4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - tw/2 - 80, cy + th/4); ctx.lineTo(cx - tw/2, cy + th/4); ctx.stroke();
+
+    // Output wire
+    ctx.beginPath(); ctx.moveTo(cx + tw/2, cy); ctx.lineTo(cx + tw/2 + 80, cy); ctx.stroke();
+
+    // Labels
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffcc44';
+    ctx.fillText('V\u1D62\u2099', cx - tw/2 - 86, cy - th/4 + 4);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillText('GND', cx - tw/2 - 86, cy + th/4 + 4);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#6aaa8e';
+    ctx.fillText('V\u2092\u1D64\u209C', cx + tw/2 + 86, cy + 4);
+
+    // Gain label inside
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#6aaa8e';
+    ctx.textAlign = 'center';
+    ctx.fillText('A\u2092\u2097', cx - 4, cy + 4);
+
+    // Annotation
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Open-loop: V\u2092\u1D64\u209C = A\u2092\u2097 \u00D7 V\u1D62\u2099', cx, H - 16);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillText('A\u2092\u2097 \u2248 100,000+    (unstable, not directly usable)', cx, H - 2);
+}
+
+function drawOpampFeedback() {
+    const { w: W, h: H, ctx } = sizeCanvas(document.getElementById('opamp-feedback-canvas'));
+    ctx.clearRect(0, 0, W, H);
+
+    const cx = W * 0.45;
+    const cy = H * 0.45;
+    const lineColor = 'rgba(255,255,255,0.5)';
+
+    // Op-amp triangle
+    const tw = 60, th = 70;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx - tw/2, cy - th/2);
+    ctx.lineTo(cx + tw/2, cy);
+    ctx.lineTo(cx - tw/2, cy + th/2);
+    ctx.closePath();
+    ctx.stroke();
+
+    // + and - labels
+    ctx.font = "14px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.textAlign = 'center';
+    ctx.fillText('+', cx - tw/2 + 14, cy + th/4 + 5);
+    ctx.fillText('\u2212', cx - tw/2 + 14, cy - th/4 + 5);
+
+    // Gain label
+    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = '#6aaa8e';
+    ctx.textAlign = 'center';
+    ctx.fillText('A\u2092\u2097', cx - 4, cy + 4);
+
+    // ── Input resistor Rin ──
+    const rinStartX = cx - tw/2 - 100;
+    const rinEndX = cx - tw/2;
+    const rinY = cy - th/4;
+
+    // Wire to Rin
+    ctx.strokeStyle = lineColor;
+    ctx.beginPath(); ctx.moveTo(rinStartX - 30, rinY); ctx.lineTo(rinStartX, rinY); ctx.stroke();
+
+    // Zig-zag resistor
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(rinStartX, rinY);
+    const rLen = rinEndX - rinStartX;
+    const zags = 5, zagW = rLen / zags, zagA = 7;
+    for (let i = 0; i < zags; i++) {
+        const x0 = rinStartX + i * zagW;
+        ctx.lineTo(x0 + zagW * 0.25, rinY - zagA);
+        ctx.lineTo(x0 + zagW * 0.75, rinY + zagA);
+        ctx.lineTo(x0 + zagW, rinY);
+    }
+    ctx.stroke();
+
+    // Rin label
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('R\u1D62\u2099', (rinStartX + rinEndX) / 2, rinY - zagA - 8);
+
+    // ── + input to GND ──
+    const plusY = cy + th/4;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx - tw/2, plusY); ctx.lineTo(cx - tw/2 - 20, plusY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx - tw/2 - 20, plusY); ctx.lineTo(cx - tw/2 - 20, plusY + 20); ctx.stroke();
+    // Ground symbol
+    const gx = cx - tw/2 - 20, gy = plusY + 20;
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.moveTo(gx - 8, gy); ctx.lineTo(gx + 8, gy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx - 5, gy + 4); ctx.lineTo(gx + 5, gy + 4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(gx - 2, gy + 8); ctx.lineTo(gx + 2, gy + 8); ctx.stroke();
+
+    // ── Output wire ──
+    const outX = cx + tw/2 + 100;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(cx + tw/2, cy); ctx.lineTo(outX, cy); ctx.stroke();
+
+    // Junction dot where feedback taps off
+    const juncX = cx + tw/2 + 40;
+    ctx.beginPath(); ctx.arc(juncX, cy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+
+    // ── Feedback resistor Rf (arching over the top) ──
+    const fbY = cy - th/2 - 30;  // feedback wire height
+    const fbStartX = cx - tw/2;  // connects to - input node
+    const fbEndX = juncX;
+
+    // Wire up from - input junction
+    const minusJuncX = cx - tw/2;
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    // Vertical from - input up to feedback height
+    ctx.beginPath(); ctx.moveTo(minusJuncX, rinY); ctx.lineTo(minusJuncX, fbY); ctx.stroke();
+    // Horizontal along feedback path to Rf start
+    const rfStartX = minusJuncX + 10;
+    const rfEndX = fbEndX - 10;
+    ctx.beginPath(); ctx.moveTo(minusJuncX, fbY); ctx.lineTo(rfStartX, fbY); ctx.stroke();
+
+    // Zig-zag Rf
+    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.moveTo(rfStartX, fbY);
+    const rfLen = rfEndX - rfStartX;
+    const rfZags = 6, rfZagW = rfLen / rfZags, rfZagA = 7;
+    for (let i = 0; i < rfZags; i++) {
+        const x0 = rfStartX + i * rfZagW;
+        ctx.lineTo(x0 + rfZagW * 0.25, fbY - rfZagA);
+        ctx.lineTo(x0 + rfZagW * 0.75, fbY + rfZagA);
+        ctx.lineTo(x0 + rfZagW, fbY);
+    }
+    ctx.stroke();
+
+    // Rf label
+    ctx.fillStyle = '#ffcc44';
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText('R\u2082 (feedback)', (rfStartX + rfEndX) / 2, fbY - rfZagA - 8);
+
+    // Wire from Rf end down to output junction
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(rfEndX, fbY); ctx.lineTo(fbEndX, fbY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(fbEndX, fbY); ctx.lineTo(fbEndX, cy); ctx.stroke();
+
+    // ── Labels ──
+    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#ffcc44';
+    ctx.fillText('V\u1D62\u2099', rinStartX - 36, rinY + 4);
+
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#6aaa8e';
+    ctx.fillText('V\u2092\u1D64\u209C', outX + 6, cy + 4);
+
+    // ── Closed-loop gain equation ──
+    ctx.font = "12px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Closed-loop: A_CL = R\u2082 / R\u1D62\u2099', cx, H - 28);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fillText('Feedback trades open-loop gain for predictability and bandwidth', cx, H - 12);
+
+    // ── Feedback arrow annotation ──
+    ctx.strokeStyle = 'rgba(255,200,100,0.3)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
+    const arrowMidX = (rfStartX + rfEndX) / 2;
+    ctx.beginPath(); ctx.moveTo(arrowMidX + 40, fbY + rfZagA + 6); ctx.lineTo(arrowMidX - 40, fbY + rfZagA + 6); ctx.stroke();
+    ctx.setLineDash([]);
+    // Arrowhead pointing left (feedback direction)
+    ctx.fillStyle = 'rgba(255,200,100,0.3)';
+    ctx.beginPath();
+    ctx.moveTo(arrowMidX - 40, fbY + rfZagA + 6);
+    ctx.lineTo(arrowMidX - 34, fbY + rfZagA + 2);
+    ctx.lineTo(arrowMidX - 34, fbY + rfZagA + 10);
+    ctx.closePath(); ctx.fill();
+}
+
+// ════════════════════════════════════════════════════════
 // SECTION 4: Gain-Bandwidth Product plot
 // ════════════════════════════════════════════════════════
 let GBP = 10e6 * 2 * Math.PI;  // rad/s, default ~62.8 Mrad/s (10 MHz)
@@ -2048,6 +2298,8 @@ function animate(now) {
     if (dt > 0 && dt < 0.1) animTime += dt;
 
     drawCircuit();
+    drawOpampOpen();
+    drawOpampFeedback();
     drawPhasor();
     drawPhase();
     drawBode();

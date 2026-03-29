@@ -395,6 +395,7 @@ let biasPoint = 50;
 let simTime = 0;
 
 // ─── Derived state ───
+let instantVin = 0;      // current instantaneous input voltage (updated each frame)
 let vinPeak = 0;
 let icq = 0;
 let vceq = 0;
@@ -1168,6 +1169,274 @@ function drawLoadLineInset(ctx, w, h) {
     ctx.restore();
 }
 
+// ─── Current flow animation ───
+// Draws animated dots ("marching ants") along a polyline path
+function drawCurrentFlow(ctx, path, color, intensity) {
+    if (intensity <= 0 || path.length < 2) return;
+    const alpha = Math.min(1, intensity);
+
+    // Draw glowing path
+    ctx.save();
+    ctx.strokeStyle = color.replace(')', ',' + (alpha * 0.3) + ')').replace('rgb', 'rgba');
+    ctx.lineWidth = 4;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(path[0][0], path[0][1]);
+    for (let i = 1; i < path.length; i++) {
+        ctx.lineTo(path[i][0], path[i][1]);
+    }
+    ctx.stroke();
+
+    // Compute total path length
+    let totalLen = 0;
+    for (let i = 1; i < path.length; i++) {
+        const dx = path[i][0] - path[i-1][0];
+        const dy = path[i][1] - path[i-1][1];
+        totalLen += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Draw marching dots
+    const dotSpacing = 18;
+    const dotCount = Math.floor(totalLen / dotSpacing);
+    const speed = simTime * 80;  // pixels per second
+
+    ctx.fillStyle = color.replace(')', ',' + alpha + ')').replace('rgb', 'rgba');
+    for (let d = 0; d < dotCount; d++) {
+        let targetDist = ((d * dotSpacing + speed) % totalLen + totalLen) % totalLen;
+        // Walk along the path to find the position
+        let walked = 0;
+        for (let i = 1; i < path.length; i++) {
+            const dx = path[i][0] - path[i-1][0];
+            const dy = path[i][1] - path[i-1][1];
+            const segLen = Math.sqrt(dx * dx + dy * dy);
+            if (walked + segLen >= targetDist) {
+                const t = (targetDist - walked) / segLen;
+                const px = path[i-1][0] + dx * t;
+                const py = path[i-1][1] + dy * t;
+                ctx.beginPath();
+                ctx.arc(px, py, 2, 0, Math.PI * 2);
+                ctx.fill();
+                break;
+            }
+            walked += segLen;
+        }
+    }
+    ctx.restore();
+}
+
+// Draw a small arrow head at a point along a path to show direction
+function drawFlowArrow(ctx, x, y, dx, dy, color, alpha) {
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len === 0) return;
+    const ux = dx / len, uy = dy / len;
+    const px = -uy, py = ux;
+    const sz = 5;
+    ctx.save();
+    ctx.fillStyle = color.replace(')', ',' + alpha + ')').replace('rgb', 'rgba');
+    ctx.beginPath();
+    ctx.moveTo(x + ux * sz, y + uy * sz);
+    ctx.lineTo(x - ux * sz + px * sz * 0.6, y - uy * sz + py * sz * 0.6);
+    ctx.lineTo(x - ux * sz - px * sz * 0.6, y - uy * sz - py * sz * 0.6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawClassACurrentFlow(ctx, w, h) {
+    const mx = w / 2, my = h / 2, s = Math.min(w, h);
+    const colBias = mx - s * 0.16;
+    const colQ    = mx + s * 0.02;
+    const colRC   = mx + s * 0.18;
+    const rowVCC  = my - s * 0.32;
+    const rowBase = my - s * 0.06;
+    const rowQ    = my + s * 0.02;
+    const rowGnd  = my + s * 0.30;
+    const qBaseX  = colQ - 16;
+    const qCollY  = rowQ - 14;
+    const qEmitY  = rowQ + 14;
+    const qCollX  = colQ + 10;
+    const qEmitX  = colQ + 10;
+
+    // Class A: transistor always conducts — current always flows through collector path
+    // Intensity varies with signal: more current on positive input half, less on negative
+    const normalizedVin = vinPeak > 0 ? instantVin / vinPeak : 0;
+    const baseIntensity = 0.5 + normalizedVin * 0.4;  // 0.1 to 0.9
+    const collectorIntensity = baseIntensity;
+
+    const flowColor = 'rgb(106,170,142)';  // accent green
+
+    // Collector current path: VCC → RC → collector → emitter → RE → GND
+    const collectorPath = [
+        [colRC, rowVCC],
+        [colRC, qCollY],
+        [qCollX, qCollY],
+        [colQ, rowQ],        // through transistor (approximate)
+        [qEmitX, qEmitY],
+        [colRC, qEmitY],
+        [colRC, rowGnd]
+    ];
+    drawCurrentFlow(ctx, collectorPath, flowColor, collectorIntensity);
+
+    // Base current path (small): bias junction → base
+    const basePath = [
+        [colBias, rowVCC],
+        [colBias, rowBase],
+        [qBaseX, rowBase],
+        [qBaseX, rowQ]
+    ];
+    drawCurrentFlow(ctx, basePath, 'rgb(204,168,85)', baseIntensity * 0.4);
+
+    // Signal state label
+    ctx.save();
+    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+    if (Math.abs(normalizedVin) < 0.05) {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText('v_in ≈ 0  (quiescent)', 8, 14);
+    } else if (normalizedVin > 0) {
+        ctx.fillStyle = 'rgba(80,128,208,0.8)';
+        ctx.fillText('v_in > 0  (I_C increasing)', 8, 14);
+    } else {
+        ctx.fillStyle = 'rgba(224,96,80,0.8)';
+        ctx.fillText('v_in < 0  (I_C decreasing)', 8, 14);
+    }
+    ctx.restore();
+}
+
+function drawClassBCurrentFlow(ctx, w, h) {
+    const mx = w / 2, my = h / 2, s = Math.min(w, h);
+    const colQ    = mx + s * 0.08;
+    const colRail = mx + s * 0.22;
+    const rowVCC  = my - s * 0.32;
+    const rowNPN  = my - s * 0.12;
+    const rowMid  = my;
+    const rowPNP  = my + s * 0.12;
+    const rowVEE  = my + s * 0.32;
+    const pinOutX = colQ + 10;
+    const npnCollY = rowNPN - 14;
+    const npnEmitY = rowNPN + 14;
+    const pnpCollY = rowPNP + 14;
+    const pnpEmitY = rowPNP - 14;
+
+    const normalizedVin = vinPeak > 0 ? instantVin / vinPeak : 0;
+    const deadZone = 0.6 / (vinPeak * GAIN + 0.001);
+
+    const npnColor = 'rgb(106,170,142)';   // green for NPN path
+    const pnpColor = 'rgb(80,128,208)';    // blue for PNP path
+
+    if (normalizedVin > deadZone) {
+        // Positive half: NPN conducts — VCC → NPN collector → emitter → output
+        const intensity = Math.min(1, (normalizedVin - deadZone) / (1 - deadZone));
+        const npnPath = [
+            [colRail, rowVCC],
+            [colRail, npnCollY],
+            [pinOutX, npnCollY],
+            [colQ, rowNPN],
+            [pinOutX, npnEmitY],
+            [colRail, npnEmitY],
+            [colRail, rowMid]
+        ];
+        drawCurrentFlow(ctx, npnPath, npnColor, intensity);
+    } else if (normalizedVin < -deadZone) {
+        // Negative half: PNP conducts — output → PNP emitter → collector → VEE
+        const intensity = Math.min(1, (-normalizedVin - deadZone) / (1 - deadZone));
+        const pnpPath = [
+            [colRail, rowMid],
+            [colRail, pnpEmitY],
+            [pinOutX, pnpEmitY],
+            [colQ, rowPNP],
+            [pinOutX, pnpCollY],
+            [colRail, pnpCollY],
+            [colRail, rowVEE]
+        ];
+        drawCurrentFlow(ctx, pnpPath, pnpColor, intensity);
+    }
+    // else: dead zone — neither conducts, no current flow shown
+
+    // Signal state label
+    ctx.save();
+    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+    if (Math.abs(normalizedVin) <= deadZone) {
+        ctx.fillStyle = 'rgba(224,96,80,0.8)';
+        ctx.fillText('v_in ≈ 0  (dead zone — no conduction)', 8, 14);
+    } else if (normalizedVin > 0) {
+        ctx.fillStyle = 'rgba(106,170,142,0.8)';
+        ctx.fillText('v_in > 0  (NPN conducts)', 8, 14);
+    } else {
+        ctx.fillStyle = 'rgba(80,128,208,0.8)';
+        ctx.fillText('v_in < 0  (PNP conducts)', 8, 14);
+    }
+    ctx.restore();
+}
+
+function drawClassABCurrentFlow(ctx, w, h) {
+    const mx = w / 2, my = h / 2, s = Math.min(w, h);
+    const colQ    = mx + s * 0.08;
+    const colRail = mx + s * 0.22;
+    const rowVCC  = my - s * 0.34;
+    const rowNPN  = my - s * 0.14;
+    const rowMid  = my;
+    const rowPNP  = my + s * 0.14;
+    const rowVEE  = my + s * 0.34;
+    const pinOutX = colQ + 10;
+    const npnCollY = rowNPN - 14;
+    const npnEmitY = rowNPN + 14;
+    const pnpCollY = rowPNP + 14;
+    const pnpEmitY = rowPNP - 14;
+
+    const normalizedVin = vinPeak > 0 ? instantVin / vinPeak : 0;
+
+    const npnColor = 'rgb(106,170,142)';
+    const pnpColor = 'rgb(80,128,208)';
+
+    // Class AB: both transistors conduct near zero crossing due to diode bias
+    // NPN dominates on positive, PNP on negative, both conduct a little at zero
+    const npnIntensity = Math.max(0.15, Math.min(1, 0.5 + normalizedVin * 0.6));
+    const pnpIntensity = Math.max(0.15, Math.min(1, 0.5 - normalizedVin * 0.6));
+
+    // NPN path
+    const npnPath = [
+        [colRail, rowVCC],
+        [colRail, npnCollY],
+        [pinOutX, npnCollY],
+        [colQ, rowNPN],
+        [pinOutX, npnEmitY],
+        [colRail, npnEmitY],
+        [colRail, rowMid]
+    ];
+    drawCurrentFlow(ctx, npnPath, npnColor, npnIntensity);
+
+    // PNP path
+    const pnpPath = [
+        [colRail, rowMid],
+        [colRail, pnpEmitY],
+        [pinOutX, pnpEmitY],
+        [colQ, rowPNP],
+        [pinOutX, pnpCollY],
+        [colRail, pnpCollY],
+        [colRail, rowVEE]
+    ];
+    drawCurrentFlow(ctx, pnpPath, pnpColor, pnpIntensity);
+
+    // Signal state label
+    ctx.save();
+    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'left';
+    if (Math.abs(normalizedVin) < 0.05) {
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillText('v_in ≈ 0  (both conduct — no dead zone)', 8, 14);
+    } else if (normalizedVin > 0) {
+        ctx.fillStyle = 'rgba(106,170,142,0.8)';
+        ctx.fillText('v_in > 0  (NPN dominates, PNP assists)', 8, 14);
+    } else {
+        ctx.fillStyle = 'rgba(80,128,208,0.8)';
+        ctx.fillText('v_in < 0  (PNP dominates, NPN assists)', 8, 14);
+    }
+    ctx.restore();
+}
+
 function drawCircuit() {
     const ctx = circuitCtx;
     const { w, h } = circuitSize;
@@ -1187,10 +1456,13 @@ function drawCircuit() {
 
     if (ampClass === 'A') {
         drawClassACircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+        drawClassACurrentFlow(ctx, w, h);
     } else if (ampClass === 'B') {
         drawClassBCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+        drawClassBCurrentFlow(ctx, w, h);
     } else {
         drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, labelColor, labelFont, titleFont);
+        drawClassABCurrentFlow(ctx, w, h);
     }
 
     drawLoadLineInset(ctx, w, h);
@@ -1415,12 +1687,14 @@ function animate(timestamp) {
 
     const freq = 1;
     const vin = vinPeak * Math.sin(2 * Math.PI * freq * simTime);
+    instantVin = vin;
     const vout = computeOutputSample(vin);
     waveHistory.push({ vin, vout });
     if (waveHistory.length > WAVEFORM_HISTORY) {
         waveHistory.shift();
     }
 
+    drawCircuit();
     drawWaveforms();
     requestAnimationFrame(animate);
 }

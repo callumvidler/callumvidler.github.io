@@ -912,12 +912,18 @@
                 <input type="range" id="gbp-slider" min="0" max="1" step="0.001" value="0.5">
                 <span class="control-value" id="gbp-val">10.0 MHz</span>
             </div>
+            <div class="control-group">
+                <label>A<sub>v</sub></label>
+                <input type="range" id="av-slider-3" min="0" max="1" step="0.001" value="0.667">
+                <span class="control-value" id="av-val-3">100</span>
+            </div>
         </div>
 
         <div class="readout-bar">
             <div class="readout-item">GBP = <span class="val" id="gbp-readout">10.0 MHz</span></div>
-            <div class="readout-item">At A<sub>v</sub> = <span class="val" id="gbp-av-val">100</span>:</div>
+            <div class="readout-item">A<sub>v</sub> = <span class="val" id="gbp-av-val">100</span></div>
             <div class="readout-item">f<sub>0</sub> = <span class="val" id="gbp-f0-val">100 kHz</span></div>
+            <div class="readout-item">BW = <span class="val" id="gbp-bw-val">100 kHz</span></div>
         </div>
 
         <div class="callout">
@@ -1940,8 +1946,10 @@ function updateReadouts() {
     document.getElementById('gbp-val').textContent = fmtHzShort(GBP);
     document.getElementById('gbp-readout').textContent = fmtHzShort(GBP);
     document.getElementById('gbp-av-val').textContent = Av.toPrecision(3);
+    document.getElementById('av-val-3').textContent = Av.toPrecision(3);
     const gbpF0 = GBP / Av;
     document.getElementById('gbp-f0-val').textContent = fmtHzShort(gbpF0);
+    document.getElementById('gbp-bw-val').textContent = fmtHzShort(gbpF0);
 }
 
 // ════════════════════════════════════════════════════════
@@ -2006,7 +2014,7 @@ function init() {
         const fv = logUnmap(testFreq, FREQ_MIN, FREQ_MAX);
         rSlider.value = rv;  rSlider2.value = rv;
         cSlider.value = cv;  cSlider2.value = cv;
-        avSlider.value = av; avSlider2.value = av;
+        avSlider.value = av; avSlider2.value = av; avSlider3.value = av;
         freqSlider.value = fv; freqSlider2.value = fv;
         updateReadouts();
     }
@@ -2020,12 +2028,27 @@ function init() {
         setSliders();
     });
 
-    // GBP slider
+    // GBP sliders
     const gbpSlider = document.getElementById('gbp-slider');
+    const avSlider3 = document.getElementById('av-slider-3');
+
     gbpSlider.addEventListener('input', () => {
         GBP = logMap(parseFloat(gbpSlider.value), GBP_MIN, GBP_MAX);
         updateReadouts();
     });
+
+    avSlider3.addEventListener('input', () => {
+        Av = logMap(parseFloat(avSlider3.value), AV_MIN, AV_MAX);
+        avSlider.value = avSlider3.value;
+        avSlider2.value = avSlider3.value;
+        updateReadouts();
+    });
+
+    // Keep avSlider3 in sync when other Av sliders change
+    rSlider.addEventListener('input', () => { avSlider3.value = avSlider.value; });
+    cSlider.addEventListener('input', () => { avSlider3.value = avSlider.value; });
+    avSlider.addEventListener('input', () => { avSlider3.value = avSlider.value; });
+    avSlider2.addEventListener('input', () => { avSlider3.value = avSlider2.value; });
 
     updateReadouts();
     requestAnimationFrame(animate);

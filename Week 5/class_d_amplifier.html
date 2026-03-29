@@ -337,6 +337,13 @@
            high-frequency triangle wave (the carrier). When the input is above the carrier, the output
            goes HIGH. When below, it goes LOW. This creates a pulse-width modulated (PWM) signal.</p>
 
+        <div class="canvas-container canvas-medium">
+            <canvas id="canvas-comp-circuit"></canvas>
+        </div>
+
+        <p>The waveforms below show this in action. The white trace is the input signal, the gold trace is the
+           triangle carrier, and the coloured square wave is the resulting PWM output:</p>
+
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-pwm"></canvas>
         </div>
@@ -409,6 +416,13 @@
            To recover the original analog signal, we pass it through an LC low-pass filter. The inductor
            resists rapid current changes, and the capacitor smooths the voltage. The filter's cutoff frequency
            is set above the signal bandwidth but well below the switching frequency.</p>
+
+        <div class="canvas-container canvas-medium">
+            <canvas id="canvas-lc-circuit"></canvas>
+        </div>
+
+        <p>The result: the high-frequency PWM is smoothed into a clean analog output. Compare the raw PWM (faint)
+           with the filtered signal (bright green):</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-filter"></canvas>
@@ -523,7 +537,7 @@ const RESISTOR_W = 7;
 const EFFICIENCY = 0.92;       // Class D typical efficiency
 
 // ─── Canvas refs ───
-const canvasIds = ['canvas-input', 'canvas-pwm', 'canvas-circuit', 'canvas-filter', 'canvas-full'];
+const canvasIds = ['canvas-input', 'canvas-comp-circuit', 'canvas-pwm', 'canvas-circuit', 'canvas-lc-circuit', 'canvas-filter', 'canvas-full'];
 const canvases = {};
 const contexts = {};
 
@@ -1112,6 +1126,383 @@ function drawPWM() {
     ctx.fillText('PWM Output', padL + 8, botTop + botH - 8);
 }
 
+// ─── Draw: Part 02 circuit — Comparator schematic ───
+function drawCompCircuit() {
+    const c = canvases['canvas-comp-circuit'];
+    const ctx = contexts['canvas-comp-circuit'];
+    if (!c || !ctx) return;
+    const W = c.width / (window.devicePixelRatio || 1);
+    const H = c.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, W, H);
+
+    const cx = W / 2;
+    const cy = H / 2;
+    const lineColor = 'rgba(255,255,255,0.5)';
+    const labelColor = '#8892a4';
+    const labelFont = '11px "IBM Plex Mono", monospace';
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // ── Comparator triangle (large, centered) ──
+    const compW = 80;
+    const compH = 100;
+    const compX = cx;
+    const compY = cy;
+
+    ctx.beginPath();
+    ctx.moveTo(compX - compW / 2, compY - compH / 2);
+    ctx.lineTo(compX + compW / 2, compY);
+    ctx.lineTo(compX - compW / 2, compY + compH / 2);
+    ctx.closePath();
+    ctx.stroke();
+
+    // + and - input labels inside
+    ctx.save();
+    ctx.font = '600 16px "IBM Plex Sans", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.textAlign = 'center';
+    ctx.fillText('+', compX - compW / 2 + 16, compY - compH / 4 + 6);
+    ctx.fillText('\u2212', compX - compW / 2 + 16, compY + compH / 4 + 6);
+    ctx.restore();
+
+    // ── V_in input (+ terminal, top) ──
+    const vinEndX = compX - compW / 2;
+    const vinY = compY - compH / 4;
+    const vinStartX = vinEndX - 120;
+
+    ctx.beginPath();
+    ctx.moveTo(vinStartX, vinY);
+    ctx.lineTo(vinEndX, vinY);
+    ctx.stroke();
+
+    // V_in label
+    ctx.save();
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'right';
+    ctx.fillText('v_in (signal)', vinStartX - 8, vinY + 4);
+    ctx.restore();
+
+    // Small sine wave icon
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 20; i++) {
+        const t = i / 20;
+        const sx = vinStartX + 10 + t * 30;
+        const sy = vinY - 12 + Math.sin(t * Math.PI * 2) * 5;
+        if (i === 0) ctx.moveTo(sx, sy); else ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Triangle carrier input (- terminal, bottom) ──
+    const triY = compY + compH / 4;
+    const triStartX = vinStartX;
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(triStartX, triY);
+    ctx.lineTo(vinEndX, triY);
+    ctx.stroke();
+
+    // Carrier label
+    ctx.save();
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    ctx.textAlign = 'right';
+    ctx.fillText('carrier (triangle)', triStartX - 8, triY + 4);
+    ctx.restore();
+
+    // Small triangle wave icon
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,204,68,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    const twStart = triStartX + 10;
+    ctx.moveTo(twStart, triY - 12);
+    ctx.lineTo(twStart + 8, triY - 12 - 5);
+    ctx.lineTo(twStart + 16, triY - 12 + 5);
+    ctx.lineTo(twStart + 24, triY - 12 - 5);
+    ctx.lineTo(twStart + 30, triY - 12);
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Output (right side) ──
+    const outStartX = compX + compW / 2;
+    const outEndX = outStartX + 120;
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(outStartX, compY);
+    ctx.lineTo(outEndX, compY);
+    ctx.stroke();
+
+    // PWM output label
+    ctx.save();
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#6aaa8e';
+    ctx.textAlign = 'left';
+    ctx.fillText('PWM output', outEndX + 8, compY + 4);
+    ctx.restore();
+
+    // Small PWM wave icon
+    ctx.save();
+    ctx.strokeStyle = 'rgba(106,170,142,0.6)';
+    ctx.lineWidth = 1.5;
+    const pwmX = outEndX + 12;
+    const pwmY = compY - 14;
+    ctx.beginPath();
+    ctx.moveTo(pwmX, pwmY + 8);
+    ctx.lineTo(pwmX, pwmY);
+    ctx.lineTo(pwmX + 10, pwmY);
+    ctx.lineTo(pwmX + 10, pwmY + 8);
+    ctx.lineTo(pwmX + 14, pwmY + 8);
+    ctx.lineTo(pwmX + 14, pwmY);
+    ctx.lineTo(pwmX + 28, pwmY);
+    ctx.lineTo(pwmX + 28, pwmY + 8);
+    ctx.stroke();
+    ctx.restore();
+
+    // ── Animated comparison indicator ──
+    const normalizedVin = amplitude > 0 ? inputSignal(simTime) : 0;
+    const carrier = triangleCarrier(simTime);
+    const pwmHigh = normalizedVin > carrier;
+
+    // Show current comparison result
+    ctx.save();
+    ctx.font = '600 13px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'center';
+    if (pwmHigh) {
+        ctx.fillStyle = 'rgba(106,170,142,0.9)';
+        ctx.fillText('v_in > carrier \u2192 OUTPUT HIGH', cx, H - 20);
+    } else {
+        ctx.fillStyle = 'rgba(80,128,208,0.9)';
+        ctx.fillText('v_in < carrier \u2192 OUTPUT LOW', cx, H - 20);
+    }
+    ctx.restore();
+
+    // Animated dot on output showing state
+    ctx.beginPath();
+    ctx.arc(outStartX + 20, compY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = pwmHigh ? '#6aaa8e' : '#5080d0';
+    ctx.fill();
+
+    // Component label
+    ctx.save();
+    ctx.font = '600 13px "IBM Plex Sans", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.textAlign = 'center';
+    ctx.fillText('COMPARATOR', compX, compY + 4);
+    ctx.restore();
+}
+
+// ─── Draw: Part 04 circuit — LC Low-Pass Filter schematic ───
+function drawLCCircuit() {
+    const c = canvases['canvas-lc-circuit'];
+    const ctx = contexts['canvas-lc-circuit'];
+    if (!c || !ctx) return;
+    const W = c.width / (window.devicePixelRatio || 1);
+    const H = c.height / (window.devicePixelRatio || 1);
+    ctx.clearRect(0, 0, W, H);
+
+    const cy = H / 2;
+    const lineColor = 'rgba(255,255,255,0.5)';
+    const labelColor = '#8892a4';
+    const labelFont = '11px "IBM Plex Mono", monospace';
+
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Layout: PWM input → inductor → node → capacitor to GND + output wire → RL to GND
+    const padL = 60;
+    const padR = 60;
+    const usableW = W - padL - padR;
+
+    const pwmInX = padL;
+    const indStartX = padL + usableW * 0.15;
+    const indEndX = padL + usableW * 0.5;
+    const nodeX = indEndX + 20;
+    const capX = nodeX;
+    const outX = padL + usableW * 0.75;
+    const rlX = outX;
+    const gndY = cy + 80;
+    const wireY = cy - 20;
+
+    // ── Input wire (PWM in) ──
+    ctx.beginPath();
+    ctx.moveTo(pwmInX, wireY);
+    ctx.lineTo(indStartX, wireY);
+    ctx.stroke();
+
+    // PWM input label
+    ctx.save();
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    ctx.textAlign = 'right';
+    ctx.fillText('PWM in', pwmInX - 8, wireY + 4);
+    ctx.restore();
+
+    // ── Inductor (bumps) ──
+    const bumps = 5;
+    const bumpW = (indEndX - indStartX) / bumps;
+    ctx.beginPath();
+    ctx.moveTo(indStartX, wireY);
+    for (let i = 0; i < bumps; i++) {
+        const bx = indStartX + i * bumpW;
+        ctx.arc(bx + bumpW / 2, wireY, bumpW / 2, Math.PI, 0, false);
+    }
+    ctx.stroke();
+
+    // Inductor label
+    ctx.save();
+    ctx.font = '600 13px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'center';
+    ctx.fillText('L', (indStartX + indEndX) / 2, wireY - 18);
+    ctx.restore();
+
+    // ── Wire from inductor to node ──
+    ctx.beginPath();
+    ctx.moveTo(indEndX, wireY);
+    ctx.lineTo(nodeX, wireY);
+    ctx.stroke();
+
+    // ── Capacitor (node to ground) ──
+    const capTopY = wireY + 15;
+    const capBotY = wireY + 25;
+    const plateW = 14;
+
+    // Wire from node down to cap
+    ctx.beginPath();
+    ctx.moveTo(capX, wireY);
+    ctx.lineTo(capX, capTopY);
+    ctx.stroke();
+
+    // Top plate
+    ctx.beginPath();
+    ctx.moveTo(capX - plateW, capTopY);
+    ctx.lineTo(capX + plateW, capTopY);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // Bottom plate
+    ctx.beginPath();
+    ctx.moveTo(capX - plateW, capBotY);
+    ctx.lineTo(capX + plateW, capBotY);
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.lineWidth = 1.5;
+
+    // Wire from cap to ground
+    ctx.beginPath();
+    ctx.moveTo(capX, capBotY);
+    ctx.lineTo(capX, gndY);
+    ctx.stroke();
+    drawGround(ctx, capX, gndY);
+
+    // Capacitor label
+    ctx.save();
+    ctx.font = '600 13px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#e2e8f0';
+    ctx.textAlign = 'left';
+    ctx.fillText('C', capX + plateW + 8, (capTopY + capBotY) / 2 + 4);
+    ctx.restore();
+
+    // ── Wire from node to output / RL ──
+    ctx.beginPath();
+    ctx.moveTo(nodeX, wireY);
+    ctx.lineTo(rlX, wireY);
+    ctx.stroke();
+
+    // ── RL (load resistor to ground) ──
+    drawResistor(ctx, rlX, wireY, rlX, gndY, 'RL', labelColor, labelFont);
+    drawGround(ctx, rlX, gndY);
+
+    // ── Output label ──
+    const outLabelX = rlX + 30;
+    ctx.beginPath();
+    ctx.moveTo(rlX, wireY);
+    ctx.lineTo(outLabelX, wireY);
+    ctx.stroke();
+
+    ctx.save();
+    ctx.font = '12px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#6aaa8e';
+    ctx.textAlign = 'left';
+    ctx.fillText('v_out', outLabelX + 8, wireY + 4);
+    ctx.restore();
+
+    // ── Ground return wire (bottom) ──
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(pwmInX, gndY);
+    ctx.lineTo(rlX, gndY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.strokeStyle = lineColor;
+
+    // GND label on left
+    ctx.save();
+    ctx.font = '11px "IBM Plex Mono", monospace';
+    ctx.fillStyle = '#505868';
+    ctx.textAlign = 'right';
+    ctx.fillText('GND', pwmInX - 8, gndY + 4);
+    ctx.restore();
+
+    // ── Animated current flow ──
+    const normalizedVin = amplitude > 0 ? inputSignal(simTime) : 0;
+    const carrier = triangleCarrier(simTime);
+    const pwmHigh = normalizedVin > carrier;
+
+    // Current through inductor (always flowing, direction depends on state)
+    const inductorPath = [
+        [pwmInX, wireY],
+        [indStartX, wireY],
+        [indEndX, wireY],
+        [nodeX, wireY]
+    ];
+    drawCurrentFlow(ctx, inductorPath, pwmHigh ? 'rgb(106,170,142)' : 'rgb(80,128,208)', 0.7);
+
+    // Current through load
+    const loadPath = [
+        [nodeX, wireY],
+        [rlX, wireY],
+        [rlX, gndY]
+    ];
+    drawCurrentFlow(ctx, loadPath, 'rgb(106,170,142)', 0.4);
+
+    // Capacitor charge/discharge
+    const capPath = [
+        [capX, wireY],
+        [capX, capTopY]
+    ];
+    drawCurrentFlow(ctx, capPath, 'rgb(255,204,68)', pwmHigh ? 0.5 : 0.2);
+
+    // ── Explanation labels ──
+    ctx.save();
+    ctx.font = '600 12px "IBM Plex Mono", monospace';
+    ctx.textAlign = 'center';
+    if (pwmHigh) {
+        ctx.fillStyle = 'rgba(106,170,142,0.8)';
+        ctx.fillText('PWM HIGH \u2014 inductor charges, capacitor charges', W / 2, H - 16);
+    } else {
+        ctx.fillStyle = 'rgba(80,128,208,0.8)';
+        ctx.fillText('PWM LOW \u2014 inductor releases stored energy', W / 2, H - 16);
+    }
+    ctx.restore();
+}
+
 // ─── Draw: Part 03 — MOSFET Half-Bridge Circuit ───
 function drawCircuit() {
     const c = canvases['canvas-circuit'];
@@ -1493,8 +1884,10 @@ function animate(now) {
     }
 
     drawInput();
+    drawCompCircuit();
     drawPWM();
     drawCircuit();
+    drawLCCircuit();
     drawFilter();
     drawFull();
 

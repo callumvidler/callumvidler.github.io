@@ -1087,8 +1087,26 @@ function drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, l
     ctx.fillText('v_out', colCout + 5, rowMid + 4);
     ctx.restore();
 
-    // ── Diodes between bases ──
+    // ── Bias network: VCC → Rb1 → D1 → D2 → Rb2 → VEE ──
     const baseX = colQ - 16;
+    const colBias = baseX;  // bias chain runs vertically on the base line
+
+    // Rb1: VCC to top of diode chain
+    // Wire from VCC rail across to bias column, then down through Rb1
+    ctx.beginPath();
+    ctx.moveTo(colRail, rowVCC);
+    ctx.lineTo(colBias, rowVCC);
+    ctx.stroke();
+    const rb1Bot = rowNPN - 2;
+    drawResistor(ctx, colBias, rowVCC, colBias, rb1Bot, 'Rb1', labelColor, labelFont);
+
+    // Wire from Rb1 to NPN base
+    ctx.beginPath();
+    ctx.moveTo(colBias, rb1Bot);
+    ctx.lineTo(colBias, rowNPN);
+    ctx.stroke();
+
+    // Diodes between NPN base and PNP base
     const d1Top = rowMid - 14;
     const d1Bot = rowMid - 2;
     const d2Top = rowMid + 2;
@@ -1116,7 +1134,20 @@ function drawClassABCircuit(ctx, w, h, lineColor, activeColor, componentColor, l
     ctx.lineTo(baseX, rowPNP);
     ctx.stroke();
 
-    // Diode labels (offset to the right to avoid wire overlap)
+    // Rb2: PNP base to VEE
+    const rb2Top = rowPNP + 2;
+    ctx.beginPath();
+    ctx.moveTo(colBias, rowPNP);
+    ctx.lineTo(colBias, rb2Top);
+    ctx.stroke();
+    drawResistor(ctx, colBias, rb2Top, colBias, rowVEE, 'Rb2', labelColor, labelFont);
+    // Wire from Rb2 to VEE rail
+    ctx.beginPath();
+    ctx.moveTo(colBias, rowVEE);
+    ctx.lineTo(colRail, rowVEE);
+    ctx.stroke();
+
+    // Diode labels
     ctx.save();
     ctx.font = labelFont;
     ctx.fillStyle = labelColor;
@@ -1504,9 +1535,20 @@ function drawClassABCurrentFlow(ctx, w, h) {
 
     const npnColor = 'rgb(106,170,142)';
     const pnpColor = 'rgb(80,128,208)';
+    const biasColor = 'rgb(204,168,85)';  // gold for DC bias current
 
     const npnIntensity = Math.max(0.15, Math.min(1, 0.5 + normalizedVin * 0.6));
     const pnpIntensity = Math.max(0.15, Math.min(1, 0.5 - normalizedVin * 0.6));
+
+    // DC bias current path: VCC → Rb1 → D1 → D2 → Rb2 → VEE (always flowing)
+    const biasPath = [
+        [baseX, rowVCC],
+        [baseX, rowNPN],
+        [baseX, rowMid],
+        [baseX, rowPNP],
+        [baseX, rowVEE]
+    ];
+    drawCurrentFlow(ctx, biasPath, biasColor, 0.3);
 
     // V_in signal path: input → Cin → diode junction
     const vinToJunction = [
@@ -1515,7 +1557,7 @@ function drawClassABCurrentFlow(ctx, w, h) {
     ];
     drawCurrentFlow(ctx, vinToJunction, 'rgb(255,255,255)', Math.max(signalIntensity * 0.6, 0.15));
 
-    // Signal flows through diodes to NPN base (upward)
+    // Signal modulates base voltages — show flow toward the conducting transistor's base
     const vinToNPN = [
         [baseX, rowMid],
         [baseX, rowNPN]

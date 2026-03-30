@@ -1222,6 +1222,115 @@ function drawFourier() {
     }
 }
 
+// DRAWING: Section 5 — Frequency Spectrum
+function drawSpectrum() {
+    const canvas = canvases['canvas-spectrum'];
+    const ctx = contexts['canvas-spectrum'];
+    if (!canvas || !ctx) return;
+
+    const W = canvas.parentElement.getBoundingClientRect().width;
+    const H = canvas.parentElement.getBoundingClientRect().height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const marginLeft = 60;
+    const marginRight = 40;
+    const marginTop = 30;
+    const marginBottom = 50;
+    const plotW = W - marginLeft - marginRight;
+    const plotH = H - marginTop - marginBottom;
+
+    // Axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, marginTop);
+    ctx.lineTo(marginLeft, marginTop + plotH);
+    ctx.lineTo(marginLeft + plotW, marginTop + plotH);
+    ctx.stroke();
+
+    // Y-axis: dB scale (0 to -60 dB)
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px IBM Plex Mono';
+    ctx.textAlign = 'right';
+    const dbMin = -60;
+    for (let db = 0; db >= dbMin; db -= 20) {
+        const y = marginTop + (-db / -dbMin) * plotH;
+        ctx.fillText(db + ' dB', marginLeft - 8, y + 3);
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.beginPath();
+        ctx.moveTo(marginLeft, y);
+        ctx.lineTo(marginLeft + plotW, y);
+        ctx.stroke();
+    }
+    ctx.textAlign = 'left';
+
+    // Bars
+    const barLabels = ['f', '2f', '3f', '4f', '5f', '6f', '7f', '8f'];
+    const barAmplitudes = [
+        1,
+        state.harmonics[2],
+        state.harmonics[3],
+        state.harmonics[4],
+        state.harmonics[5],
+        0.001,
+        0.001,
+        0.001,
+    ];
+    const barColors = [
+        'rgba(255,255,255,0.7)',
+        HARMONIC_COLORS[2] + '0.8)',
+        HARMONIC_COLORS[3] + '0.8)',
+        HARMONIC_COLORS[4] + '0.8)',
+        HARMONIC_COLORS[5] + '0.8)',
+        'rgba(255,255,255,0.08)',
+        'rgba(255,255,255,0.08)',
+        'rgba(255,255,255,0.08)',
+    ];
+
+    const barCount = barLabels.length;
+    const barGap = plotW * 0.08 / barCount;
+    const barWidth = (plotW - barGap * (barCount + 1)) / barCount;
+
+    for (let i = 0; i < barCount; i++) {
+        const x = marginLeft + barGap + i * (barWidth + barGap);
+        const amplitude = Math.max(barAmplitudes[i], 0.001);
+        const db = 20 * Math.log10(amplitude);
+        const clampedDb = Math.max(db, dbMin);
+        const barH = (1 - clampedDb / dbMin) * plotH;
+        const y = marginTop + plotH - barH;
+
+        // Glow effect for active harmonics
+        if (barAmplitudes[i] > 0.01) {
+            ctx.shadowColor = barColors[i];
+            ctx.shadowBlur = 8;
+        }
+
+        ctx.fillStyle = barColors[i];
+        ctx.fillRect(x, y, barWidth, barH);
+        ctx.shadowBlur = 0;
+
+        // Frequency label
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '11px IBM Plex Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(barLabels[i], x + barWidth / 2, marginTop + plotH + 16);
+
+        // Hz value
+        const freqHz = state.fundamentalFreq * (i + 1);
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.font = '9px IBM Plex Mono';
+        ctx.fillText(freqHz + '', x + barWidth / 2, marginTop + plotH + 30);
+
+        ctx.textAlign = 'left';
+    }
+
+    // Title
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '500 11px IBM Plex Mono';
+    ctx.fillText('FREQUENCY SPECTRUM (dB)', marginLeft, marginTop - 10);
+}
+
 // ANIMATION LOOP
 let lastFrameTime = 0;
 

@@ -667,7 +667,198 @@
 
 </div><!-- .explainer -->
 
-<!-- JavaScript will be added in subsequent tasks -->
+<script>
+// SHARED STATE
+const state = {
+    fundamentalFreq: 440,
+    harmonics: { 2: 0, 3: 0, 4: 0, 5: 0 },
+    selectedHarmonic: 2,
+    decomposing: false,
+    decomposeProgress: 0,
+    simTime: 0,
+};
+
+const PRESETS = {
+    A:     { 2: 2,  3: 1,   4: 0.5, 5: 0.2 },
+    AB:    { 2: 5,  3: 3,   4: 1,   5: 0.5 },
+    B:     { 2: 3,  3: 8,   4: 1,   5: 4   },
+    clear: { 2: 0,  3: 0,   4: 0,   5: 0   },
+};
+
+const HARMONIC_COLORS = {
+    2: 'rgba(80,128,208,',
+    3: 'rgba(106,170,142,',
+    4: 'rgba(255,204,68,',
+    5: 'rgba(224,96,80,',
+};
+
+// CANVAS SETUP
+const canvasIds = [
+    'canvas-fundamental',
+    'canvas-harmonics',
+    'canvas-combined',
+    'canvas-spectrum-sec3',
+    'canvas-fourier',
+    'canvas-spectrum',
+];
+
+const canvases = {};
+const contexts = {};
+
+function initCanvases() {
+    for (const id of canvasIds) {
+        const c = document.getElementById(id);
+        if (c) {
+            canvases[id] = c;
+            contexts[id] = c.getContext('2d');
+            resizeCanvas(c);
+        }
+    }
+}
+
+function resizeCanvas(canvas) {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function resizeAll() {
+    for (const id of canvasIds) {
+        if (canvases[id]) resizeCanvas(canvases[id]);
+    }
+}
+
+// SLIDER WIRING
+function wireSlider(sliderId, valueId, suffix, callback) {
+    const slider = document.getElementById(sliderId);
+    const display = document.getElementById(valueId);
+    if (!slider || !display) return;
+    slider.addEventListener('input', () => {
+        const v = +slider.value;
+        display.textContent = v + suffix;
+        callback(v);
+        updateTHDReadout();
+    });
+}
+
+function wireFrequencySlider() {
+    wireSlider('slider-freq', 'val-freq', ' Hz', (v) => {
+        state.fundamentalFreq = v;
+    });
+}
+
+function wireHarmonicSliders() {
+    wireSlider('slider-h2', 'val-h2', '%', (v) => { state.harmonics[2] = v / 100; });
+    wireSlider('slider-h3', 'val-h3', '%', (v) => { state.harmonics[3] = v / 100; });
+    wireSlider('slider-h4', 'val-h4', '%', (v) => { state.harmonics[4] = v / 100; });
+    wireSlider('slider-h5', 'val-h5', '%', (v) => { state.harmonics[5] = v / 100; });
+}
+
+// HARMONIC TOGGLE (Section 2)
+function selectHarmonic(n) {
+    state.selectedHarmonic = n;
+    for (let h = 2; h <= 5; h++) {
+        const btn = document.getElementById('btn-h' + h);
+        if (btn) btn.classList.toggle('active', h === n);
+    }
+}
+
+// PRESETS (Section 3)
+function loadPreset(name) {
+    const p = PRESETS[name];
+    if (!p) return;
+    for (let h = 2; h <= 5; h++) {
+        state.harmonics[h] = p[h] / 100;
+        const slider = document.getElementById('slider-h' + h);
+        const display = document.getElementById('val-h' + h);
+        if (slider) slider.value = p[h];
+        if (display) display.textContent = p[h] + '%';
+    }
+    ['A', 'AB', 'B', 'clear'].forEach(key => {
+        const btn = document.getElementById('preset-' + key.toLowerCase());
+        if (btn) btn.classList.toggle('active', key === name);
+    });
+    updateTHDReadout();
+}
+
+// FOURIER DECOMPOSITION (Section 4)
+function toggleDecomposition() {
+    state.decomposing = !state.decomposing;
+    const btn = document.getElementById('btn-decompose');
+    if (btn) btn.textContent = state.decomposing ? '\u25A0 Stop' : '\u25B6 Decompose';
+}
+
+function resetDecomposition() {
+    state.decomposing = false;
+    state.decomposeProgress = 0;
+    const btn = document.getElementById('btn-decompose');
+    if (btn) btn.textContent = '\u25B6 Decompose';
+}
+
+// THD CALCULATION
+function calculateTHD() {
+    const h = state.harmonics;
+    const sumSq = h[2]*h[2] + h[3]*h[3] + h[4]*h[4] + h[5]*h[5];
+    return Math.sqrt(sumSq) * 100;
+}
+
+function updateTHDReadout() {
+    const thd = calculateTHD();
+    const el = document.getElementById('thd-value');
+    if (el) el.textContent = thd.toFixed(2);
+
+    const h = state.harmonics;
+    const maxContrib = Math.max(h[2]*h[2], h[3]*h[3], h[4]*h[4], h[5]*h[5], 0.001);
+    for (let n = 2; n <= 5; n++) {
+        const sq = h[n] * h[n];
+        const pct = (sq / maxContrib) * 100;
+        const fill = document.getElementById('contrib-h' + n);
+        const val = document.getElementById('contrib-val-h' + n);
+        if (fill) fill.style.width = pct + '%';
+        if (val) val.textContent = (h[n] * 100).toFixed(1) + '%';
+    }
+}
+
+// ANIMATION LOOP
+let lastFrameTime = 0;
+
+function animate(timestamp) {
+    const dt = lastFrameTime ? (timestamp - lastFrameTime) / 1000 : 0;
+    lastFrameTime = timestamp;
+    state.simTime += dt;
+
+    if (state.decomposing && state.decomposeProgress < 1) {
+        state.decomposeProgress = Math.min(1, state.decomposeProgress + dt * 0.5);
+    }
+
+    if (typeof drawFundamental === 'function') drawFundamental();
+    if (typeof drawHarmonics === 'function') drawHarmonics();
+    if (typeof drawCombined === 'function') drawCombined();
+    if (typeof drawSpectrumSec3 === 'function') drawSpectrumSec3();
+    if (typeof drawFourier === 'function') drawFourier();
+    if (typeof drawSpectrum === 'function') drawSpectrum();
+
+    requestAnimationFrame(animate);
+}
+
+// INIT
+function init() {
+    initCanvases();
+    wireFrequencySlider();
+    wireHarmonicSliders();
+    updateTHDReadout();
+
+    window.addEventListener('resize', resizeAll);
+    new ResizeObserver(resizeAll).observe(document.querySelector('.explainer'));
+
+    requestAnimationFrame(animate);
+}
+
+init();
+</script>
 
 </body>
 </html>

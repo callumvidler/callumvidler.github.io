@@ -822,6 +822,113 @@ function updateTHDReadout() {
     }
 }
 
+// DRAWING: Section 1 — Pure Fundamental
+function drawFundamental() {
+    const canvas = canvases['canvas-fundamental'];
+    const ctx = contexts['canvas-fundamental'];
+    if (!canvas || !ctx) return;
+
+    const W = canvas.parentElement.getBoundingClientRect().width;
+    const H = canvas.parentElement.getBoundingClientRect().height;
+    const midY = H / 2;
+    const amp = H * 0.35;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid line
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, midY); ctx.lineTo(W, midY);
+    ctx.stroke();
+
+    // Axis label
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = '10px IBM Plex Mono';
+    ctx.fillText('0', 8, midY - 4);
+
+    // Draw sine wave
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const cycles = 3;
+    for (let x = 0; x < W; x++) {
+        const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+        const y = midY - amp * Math.sin(t);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Frequency label
+    ctx.fillStyle = 'rgba(106,170,142,0.8)';
+    ctx.font = '500 11px IBM Plex Mono';
+    ctx.fillText('f = ' + state.fundamentalFreq + ' Hz', W - 120, 20);
+}
+
+// DRAWING: Section 2 — What Are Harmonics?
+function drawHarmonics() {
+    const canvas = canvases['canvas-harmonics'];
+    const ctx = contexts['canvas-harmonics'];
+    if (!canvas || !ctx) return;
+
+    const W = canvas.parentElement.getBoundingClientRect().width;
+    const H = canvas.parentElement.getBoundingClientRect().height;
+    const midY = H / 2;
+    const amp = H * 0.3;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, midY); ctx.lineTo(W, midY);
+    ctx.stroke();
+
+    const cycles = 3;
+    const n = state.selectedHarmonic;
+    const colorBase = HARMONIC_COLORS[n];
+
+    // Draw fundamental (dimmed)
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (let x = 0; x < W; x++) {
+        const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+        const y = midY - amp * Math.sin(t);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Draw selected harmonic
+    ctx.strokeStyle = colorBase + '1)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x < W; x++) {
+        const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+        const y = midY - amp * 0.5 * Math.sin(n * t);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.font = '500 11px IBM Plex Mono';
+    ctx.fillText('fundamental (f)', 12, 20);
+
+    ctx.fillStyle = colorBase + '0.9)';
+    ctx.fillText(n + getOrdinalSuffix(n) + ' harmonic (' + n + 'f)', 12, 36);
+}
+
+function getOrdinalSuffix(n) {
+    if (n === 2) return 'nd';
+    if (n === 3) return 'rd';
+    return 'th';
+}
+
 // ANIMATION LOOP
 let lastFrameTime = 0;
 

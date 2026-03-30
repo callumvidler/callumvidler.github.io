@@ -1093,6 +1093,135 @@ function drawSpectrumSec3() {
     ctx.fillText('AMPLITUDE', marginLeft, marginTop - 10);
 }
 
+// DRAWING: Section 4 — Fourier Decomposition
+function drawFourier() {
+    const canvas = canvases['canvas-fourier'];
+    const ctx = contexts['canvas-fourier'];
+    if (!canvas || !ctx) return;
+
+    const W = canvas.parentElement.getBoundingClientRect().width;
+    const H = canvas.parentElement.getBoundingClientRect().height;
+    const cycles = 3;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Count active harmonics
+    const activeHarmonics = [];
+    for (let n = 2; n <= 5; n++) {
+        if (state.harmonics[n] > 0.001) activeHarmonics.push(n);
+    }
+
+    const laneCount = 1 + activeHarmonics.length;
+    const p = state.decomposeProgress;
+
+    if (laneCount === 1 && p < 0.01) {
+        // No harmonics — just show fundamental
+        const midY = H / 2;
+        const amp = H * 0.35;
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+            const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+            const y = midY - amp * Math.sin(t);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.font = '11px IBM Plex Mono';
+        ctx.fillText('Add harmonics in Part 03, then press Decompose', 12, 20);
+        return;
+    }
+
+    // Calculate lane positions
+    const laneH = H / laneCount;
+    const lanes = [];
+
+    // Fundamental lane
+    lanes.push({
+        midY: laneH / 2,
+        label: 'fundamental (f)',
+        color: '#ffffff',
+        multiplier: 1,
+        amplitude: 1,
+    });
+
+    // Harmonic lanes
+    activeHarmonics.forEach((n, i) => {
+        lanes.push({
+            midY: laneH * (i + 1) + laneH / 2,
+            label: n + getOrdinalSuffix(n) + ' harmonic (' + n + 'f)',
+            color: HARMONIC_COLORS[n] + '1)',
+            multiplier: n,
+            amplitude: state.harmonics[n],
+        });
+    });
+
+    const stackedMidY = H / 2;
+    const stackedAmp = H * 0.3;
+
+    // Draw lane separators (fade in)
+    if (p > 0.01) {
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.06 * p) + ')';
+        ctx.lineWidth = 1;
+        for (let i = 1; i < laneCount; i++) {
+            const y = i * laneH;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+        }
+    }
+
+    // Draw each component
+    lanes.forEach((lane, i) => {
+        const targetMidY = lane.midY;
+        const currentMidY = stackedMidY + (targetMidY - stackedMidY) * p;
+        const targetAmp = (laneH * 0.35) * lane.amplitude;
+        const stackedAmpVal = stackedAmp * lane.amplitude;
+        const currentAmp = stackedAmpVal + (targetAmp - stackedAmpVal) * p;
+
+        ctx.strokeStyle = i === 0 ? 'rgba(255,255,255,' + (0.4 + 0.6 * p) + ')' : lane.color;
+        ctx.lineWidth = i === 0 ? 2 : 1.5;
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+            const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+            const y = currentMidY - currentAmp * Math.sin(lane.multiplier * t);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Lane labels (fade in)
+        if (p > 0.1) {
+            ctx.fillStyle = (i === 0 ? 'rgba(255,255,255,' : lane.color.replace('1)', '')) + (0.7 * p) + ')';
+            ctx.font = '500 10px IBM Plex Mono';
+            ctx.fillText(lane.label, 12, currentMidY - (laneH * 0.35) * lane.amplitude - 6);
+        }
+    });
+
+    // When not decomposed, draw combined wave prominently
+    if (p < 0.99) {
+        ctx.strokeStyle = 'rgba(255,255,255,' + (1 - p) * 0.8 + ')';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+            const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+            let val = Math.sin(t);
+            for (let n = 2; n <= 5; n++) {
+                val += state.harmonics[n] * Math.sin(n * t);
+            }
+            const y = stackedMidY - stackedAmp * val;
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+}
+
 // ANIMATION LOOP
 let lastFrameTime = 0;
 

@@ -929,6 +929,170 @@ function getOrdinalSuffix(n) {
     return 'th';
 }
 
+// DRAWING: Section 3 — Combined Waveform
+function drawCombined() {
+    const canvas = canvases['canvas-combined'];
+    const ctx = contexts['canvas-combined'];
+    if (!canvas || !ctx) return;
+
+    const W = canvas.parentElement.getBoundingClientRect().width;
+    const H = canvas.parentElement.getBoundingClientRect().height;
+    const midY = H / 2;
+    const amp = H * 0.3;
+    const cycles = 3;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, midY); ctx.lineTo(W, midY);
+    ctx.stroke();
+
+    // Draw individual harmonics (faint)
+    for (let n = 2; n <= 5; n++) {
+        if (state.harmonics[n] < 0.001) continue;
+        const colorBase = HARMONIC_COLORS[n];
+        ctx.strokeStyle = colorBase + '0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x < W; x++) {
+            const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+            const y = midY - amp * state.harmonics[n] * Math.sin(n * t);
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // Draw fundamental (dimmed dashed)
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    for (let x = 0; x < W; x++) {
+        const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+        const y = midY - amp * Math.sin(t);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw combined signal (bright white)
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let x = 0; x < W; x++) {
+        const t = (x / W) * cycles * 2 * Math.PI + state.simTime * 3;
+        let val = Math.sin(t);
+        for (let n = 2; n <= 5; n++) {
+            val += state.harmonics[n] * Math.sin(n * t);
+        }
+        const y = midY - amp * val;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Legend
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.font = '10px IBM Plex Mono';
+    ctx.fillText('\u2014 combined', 12, 20);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillText('--- fundamental', 12, 34);
+}
+
+// DRAWING: Section 3 — Amplitude vs Frequency Bar Chart
+function drawSpectrumSec3() {
+    const canvas = canvases['canvas-spectrum-sec3'];
+    const ctx = contexts['canvas-spectrum-sec3'];
+    if (!canvas || !ctx) return;
+
+    const W = canvas.parentElement.getBoundingClientRect().width;
+    const H = canvas.parentElement.getBoundingClientRect().height;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const marginLeft = 60;
+    const marginRight = 40;
+    const marginTop = 30;
+    const marginBottom = 50;
+    const plotW = W - marginLeft - marginRight;
+    const plotH = H - marginTop - marginBottom;
+
+    // Axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, marginTop);
+    ctx.lineTo(marginLeft, marginTop + plotH);
+    ctx.lineTo(marginLeft + plotW, marginTop + plotH);
+    ctx.stroke();
+
+    // Y-axis labels
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '10px IBM Plex Mono';
+    ctx.textAlign = 'right';
+    for (let pct = 0; pct <= 100; pct += 25) {
+        const y = marginTop + plotH - (pct / 100) * plotH;
+        ctx.fillText(pct + '%', marginLeft - 8, y + 3);
+        if (pct > 0) {
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            ctx.beginPath();
+            ctx.moveTo(marginLeft, y);
+            ctx.lineTo(marginLeft + plotW, y);
+            ctx.stroke();
+        }
+    }
+    ctx.textAlign = 'left';
+
+    // Bars
+    const barLabels = ['f', '2f', '3f', '4f', '5f'];
+    const barValues = [1, state.harmonics[2], state.harmonics[3], state.harmonics[4], state.harmonics[5]];
+    const barColors = ['rgba(255,255,255,0.6)', HARMONIC_COLORS[2] + '0.7)', HARMONIC_COLORS[3] + '0.7)', HARMONIC_COLORS[4] + '0.7)', HARMONIC_COLORS[5] + '0.7)'];
+
+    const barCount = barLabels.length;
+    const barGap = plotW * 0.15 / barCount;
+    const barWidth = (plotW - barGap * (barCount + 1)) / barCount;
+
+    for (let i = 0; i < barCount; i++) {
+        const x = marginLeft + barGap + i * (barWidth + barGap);
+        const barH = barValues[i] * plotH;
+        const y = marginTop + plotH - barH;
+
+        ctx.fillStyle = barColors[i];
+        ctx.fillRect(x, y, barWidth, barH);
+
+        // Label
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.font = '11px IBM Plex Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText(barLabels[i], x + barWidth / 2, marginTop + plotH + 16);
+
+        // Hz value
+        const freqHz = state.fundamentalFreq * (i + 1);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.font = '9px IBM Plex Mono';
+        ctx.fillText(freqHz + ' Hz', x + barWidth / 2, marginTop + plotH + 30);
+
+        // Value on top of bar
+        if (barValues[i] > 0.005) {
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.font = '10px IBM Plex Mono';
+            ctx.fillText((barValues[i] * 100).toFixed(1) + '%', x + barWidth / 2, y - 6);
+        }
+
+        ctx.textAlign = 'left';
+    }
+
+    // Title
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '500 11px IBM Plex Mono';
+    ctx.fillText('AMPLITUDE', marginLeft, marginTop - 10);
+}
+
 // ANIMATION LOOP
 let lastFrameTime = 0;
 

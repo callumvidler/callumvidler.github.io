@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMEN90033: Total Harmonic Distortion — Interactive Explainer</title>
+    <title>BMEN90033: Total Harmonic Distortion</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -385,10 +385,10 @@
     <div class="title-block">
         <div class="sub">BMEN90033 &middot; Week 5</div>
         <h1>Total Harmonic Distortion</h1>
-        <p>When an amplifier's output isn't a perfect copy of its input, the difference is called distortion.
-           Total Harmonic Distortion (THD) quantifies this by measuring how much unwanted harmonic content
-           has been added to the signal. This page walks through harmonics, how they combine to distort a
-           waveform, how engineers measure them, and why it matters for bioinstrumentation.</p>
+        <p>If an amplifier's output doesn't perfectly match its input, the difference is distortion.
+           Total Harmonic Distortion (THD) puts a number on how much unwanted harmonic content
+           has crept into the signal. Below, we look at what harmonics are, how they add up to
+           distort a waveform, how you measure them, and why any of this matters for bioinstrumentation.</p>
     </div>
 
     <!-- SECTION 1: The Pure Fundamental -->
@@ -398,9 +398,9 @@
             <h2>The Pure Fundamental</h2>
         </summary>
 
-        <p>Every periodic signal has a fundamental frequency — the lowest frequency component, and the one
-           that defines the signal's pitch or repetition rate. Here is a pure sine wave at a single frequency.
-           This is what a perfect, undistorted signal looks like.</p>
+        <p>Every periodic signal has a fundamental frequency: the lowest frequency component, and the one
+           that sets the signal's pitch or repetition rate. Below is a pure sine wave at a single frequency.
+           This is what a clean, undistorted signal looks like.</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="canvas-fundamental"></canvas>
@@ -415,8 +415,8 @@
         </div>
 
         <div class="callout">
-            <strong>This is our reference.</strong> Any deviation from this pure shape means distortion has been introduced.
-            The question is: how do we measure that deviation?
+            <strong>This is the reference.</strong> Any deviation from this pure shape means distortion.
+            So how do we measure it?
         </div>
     </details>
 
@@ -455,12 +455,12 @@
     <details class="section" id="sec-combining" open>
         <summary>
             <span class="section-number">Part 03</span>
-            <h2>Combining Harmonics — Building Distortion</h2>
+            <h2>Combining Harmonics</h2>
         </summary>
 
-        <p>Now let's see what happens when harmonics are added to the fundamental. Drag the sliders to add
-           harmonic content and watch the waveform distort in real-time. The faint coloured traces show
-           individual harmonics; the bright white trace is the combined (distorted) signal.</p>
+        <p>What happens when you add harmonics to the fundamental? Drag the sliders below to find out.
+           The faint coloured traces are the individual harmonics; the bright white trace is everything
+           summed together.</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-combined"></canvas>
@@ -499,7 +499,7 @@
             </div>
         </div>
 
-        <p>Amplitude vs frequency — the harmonic spectrum of the current signal:</p>
+        <p>Amplitude vs frequency for the current signal:</p>
         <div class="canvas-container canvas-medium">
             <canvas id="canvas-spectrum-sec3"></canvas>
         </div>
@@ -514,14 +514,14 @@
     <details class="section" id="sec-fourier" open>
         <summary>
             <span class="section-number">Part 04</span>
-            <h2>Fourier Decomposition — Pulling Apart a Signal</h2>
+            <h2>Fourier Decomposition</h2>
         </summary>
 
-        <p>In 1807, Joseph Fourier showed that any periodic signal can be expressed as a sum of sinusoids.
-           This means we can take a distorted waveform and decompose it back into its individual frequency
-           components — the fundamental and each harmonic.</p>
+        <p>In 1807, Joseph Fourier showed that any periodic signal can be written as a sum of sinusoids.
+           That means you can take a distorted waveform and break it back down into the fundamental
+           and each of its harmonics.</p>
 
-        <p>Press play to see the current distorted waveform separate into its constituent sine waves:</p>
+        <p>Hit Decompose to watch the current waveform split into its individual sine waves:</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-fourier"></canvas>
@@ -533,9 +533,8 @@
         </div>
 
         <div class="callout">
-            <strong>This is the conceptual foundation.</strong> Any periodic signal, no matter how complex,
-            is just a sum of simple sine waves. The next section shows the practical tool engineers use to
-            perform this decomposition.
+            <strong>The core idea:</strong> any periodic signal, no matter how messy, is just a pile of sine waves
+            added together. The next section covers the practical tool engineers use to pull them apart.
         </div>
     </details>
 
@@ -543,25 +542,24 @@
     <details class="section" id="sec-spectrum" open>
         <summary>
             <span class="section-number">Part 05</span>
-            <h2>The Frequency Spectrum — Measuring Harmonics</h2>
+            <h2>The Frequency Spectrum</h2>
         </summary>
 
-        <p>In practice, engineers use the Fast Fourier Transform (FFT) to convert a time-domain signal into
-           its frequency-domain representation. The result is a spectrum: a plot of amplitude vs frequency
-           that reveals every harmonic component present in the signal.</p>
+        <p>In practice, the Fast Fourier Transform (FFT) converts a time-domain signal into its
+           frequency-domain representation. The output is a spectrum: amplitude vs frequency, showing
+           every harmonic component sitting inside the signal.</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="canvas-spectrum"></canvas>
         </div>
 
-        <p>This spectrum updates live as you adjust the harmonic sliders in Part 03. Each bar represents
-           a frequency component. The tallest bar at <em>f</em> is the fundamental; any bars at
-           2<em>f</em>, 3<em>f</em>, etc. are harmonics that shouldn't be there.</p>
+        <p>This spectrum updates as you move the sliders in Part 03. The tallest bar at <em>f</em> is the
+           fundamental. Anything at 2<em>f</em>, 3<em>f</em>, etc. is a harmonic that shouldn't be there.</p>
 
         <div class="callout">
-            <strong>This is how engineers measure distortion in practice</strong> — feed a pure sine into
-            the amplifier input, look at the output spectrum, and measure what shouldn't be there. The ratio
-            of unwanted harmonics to the fundamental gives us THD.
+            <strong>How distortion is measured in practice:</strong> feed a pure sine into the amplifier,
+            look at the output spectrum, and see what showed up that shouldn't be there. The ratio of
+            those unwanted harmonics to the fundamental is THD.
         </div>
     </details>
 
@@ -572,8 +570,7 @@
             <h2>The THD Formula</h2>
         </summary>
 
-        <p>Total Harmonic Distortion is defined as the ratio of the root-sum-square of all harmonic amplitudes
-           to the fundamental amplitude:</p>
+        <p>THD is the root-sum-square of all the harmonic amplitudes, divided by the fundamental:</p>
 
         <div class="eq-block">
             THD = <span class="dim">&radic;(</span>V<sub>2</sub><sup>2</sup> + V<sub>3</sub><sup>2</sup>
@@ -638,30 +635,30 @@
             <h2>Why It Matters</h2>
         </summary>
 
-        <p>Distortion means the amplifier's output is not a faithful copy of its input. For audio, this
-           might sound unpleasant. For bioinstrumentation, it can be dangerous.</p>
+        <p>Distortion means the output doesn't faithfully reproduce the input. In audio that sounds bad.
+           In bioinstrumentation it can be dangerous.</p>
 
-        <p>Biosignals like ECG, EEG, and EMG contain critical diagnostic information in their shape and
-           timing. Harmonic distortion can:</p>
+        <p>Biosignals like ECG, EEG, and EMG carry diagnostic information in their shape and timing.
+           Harmonic distortion can:</p>
         <ul>
             <li>Introduce false peaks that mimic pathological waveforms</li>
             <li>Smooth out sharp features needed for accurate diagnosis</li>
             <li>Shift the apparent amplitude of signal components</li>
         </ul>
 
-        <p>This is the fundamental tradeoff in amplifier design:</p>
+        <p>The tradeoff in amplifier design:</p>
         <ul>
-            <li><strong>Class A</strong> — lowest THD (~1–2%), but only ~25% power efficient</li>
-            <li><strong>Class AB</strong> — moderate THD (~3–5%), ~55% efficient</li>
-            <li><strong>Class B</strong> — higher THD from crossover distortion (~5–10%), ~78% efficient</li>
-            <li><strong>Class D</strong> — THD depends on filter design, but ~90–95% efficient</li>
+            <li><strong>Class A</strong> has the lowest THD (~1-2%) but only ~25% efficiency</li>
+            <li><strong>Class AB</strong> sits in the middle: ~3-5% THD, ~55% efficiency</li>
+            <li><strong>Class B</strong> suffers from crossover distortion (~5-10% THD) but reaches ~78% efficiency</li>
+            <li><strong>Class D</strong> gets 90-95% efficiency; THD depends on the output filter</li>
         </ul>
 
         <div class="callout">
-            <strong>In bioinstrumentation, fidelity usually wins.</strong> A device that distorts an ECG
-            waveform is worse than one that uses more battery. But in portable/wearable devices, power
-            efficiency matters too — which is why Class D amplifiers with careful filter design are
-            increasingly used, achieving both high efficiency and low THD.
+            <strong>For bioinstrumentation, fidelity usually wins.</strong> A device that distorts an ECG
+            waveform is worse than one that drains the battery faster. That said, portable and wearable
+            devices still need good efficiency, which is why Class D amplifiers with well-designed output
+            filters are becoming more common: high efficiency and low THD at the same time.
         </div>
     </details>
 
@@ -822,7 +819,7 @@ function updateTHDReadout() {
     }
 }
 
-// DRAWING: Section 1 — Pure Fundamental
+// DRAWING: Section 1 - Pure Fundamental
 function drawFundamental() {
     const canvas = canvases['canvas-fundamental'];
     const ctx = contexts['canvas-fundamental'];
@@ -866,7 +863,7 @@ function drawFundamental() {
     ctx.fillText('f = ' + state.fundamentalFreq + ' Hz', W - 120, 20);
 }
 
-// DRAWING: Section 2 — What Are Harmonics?
+// DRAWING: Section 2 - What Are Harmonics?
 function drawHarmonics() {
     const canvas = canvases['canvas-harmonics'];
     const ctx = contexts['canvas-harmonics'];
@@ -929,7 +926,7 @@ function getOrdinalSuffix(n) {
     return 'th';
 }
 
-// DRAWING: Section 3 — Combined Waveform
+// DRAWING: Section 3 - Combined Waveform
 function drawCombined() {
     const canvas = canvases['canvas-combined'];
     const ctx = contexts['canvas-combined'];
@@ -1004,7 +1001,7 @@ function drawCombined() {
     ctx.fillText('--- fundamental', 12, 34);
 }
 
-// DRAWING: Section 3 — Amplitude vs Frequency Bar Chart
+// DRAWING: Section 3 - Amplitude vs Frequency Bar Chart
 function drawSpectrumSec3() {
     const canvas = canvases['canvas-spectrum-sec3'];
     const ctx = contexts['canvas-spectrum-sec3'];
@@ -1093,7 +1090,7 @@ function drawSpectrumSec3() {
     ctx.fillText('AMPLITUDE', marginLeft, marginTop - 10);
 }
 
-// DRAWING: Section 4 — Fourier Decomposition
+// DRAWING: Section 4 - Fourier Decomposition
 function drawFourier() {
     const canvas = canvases['canvas-fourier'];
     const ctx = contexts['canvas-fourier'];
@@ -1115,7 +1112,7 @@ function drawFourier() {
     const p = state.decomposeProgress;
 
     if (laneCount === 1 && p < 0.01) {
-        // No harmonics — just show fundamental
+        // No harmonics - just show fundamental
         const midY = H / 2;
         const amp = H * 0.35;
 
@@ -1222,7 +1219,7 @@ function drawFourier() {
     }
 }
 
-// DRAWING: Section 5 — Frequency Spectrum
+// DRAWING: Section 5 - Frequency Spectrum
 function drawSpectrum() {
     const canvas = canvases['canvas-spectrum'];
     const ctx = contexts['canvas-spectrum'];

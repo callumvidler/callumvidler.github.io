@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Total Harmonic Distortion — Interactive Explainer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --bg-panel: rgba(16, 20, 28, 0.92);
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.15);
+            --text: #e2e8f0;
+            --text-dim: #8892a4;
+            --text-muted: #505868;
+            --accent: #6aaa8e;
+            --yellow: #ffcc44;
+            --red: #e06050;
+            --blue: #5080d0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 100;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+
+        .explainer {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 72px 24px 120px;
+        }
+
+        .title-block {
+            margin-bottom: 56px;
+        }
+        .title-block h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        .title-block .sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 12px;
+        }
+        .title-block p {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.7;
+            max-width: 640px;
+        }
+
+        /* Collapsible sections */
+        .section {
+            margin-bottom: 72px;
+        }
+        .section summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 12px 0;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            transition: border-color 0.15s;
+        }
+        .section summary:hover { border-bottom-color: var(--border-hover); }
+        .section summary::-webkit-details-marker { display: none; }
+        .section summary::after {
+            content: '\25B6';
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+        .section[open] summary::after {
+            transform: rotate(90deg);
+        }
+        .section-number {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .section h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.3px;
+        }
+        .section p, .section li {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+        .section ul {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        /* Canvas containers */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 24px 0 28px;
+            overflow: hidden;
+        }
+        .canvas-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .canvas-tall { height: 420px; }
+        .canvas-medium { height: 280px; }
+        .canvas-short { height: 200px; }
+
+        /* Equation blocks */
+        .eq-block {
+            display: block;
+            margin: 16px 0;
+            padding: 12px 20px;
+            background: rgba(106,170,142,0.06);
+            border: 1px solid rgba(106,170,142,0.15);
+            border-radius: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 15px;
+            color: var(--accent);
+            line-height: 1.8;
+            text-align: center;
+        }
+        .eq-block .dim { color: var(--text-muted); }
+        .eq-block .hl { color: var(--yellow); }
+
+        /* Controls */
+        .controls-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 16px;
+        }
+        .control-group label {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .control-group input[type=range] {
+            width: 120px;
+            -webkit-appearance: none;
+            background: rgba(255,255,255,0.1);
+            height: 3px;
+            border-radius: 2px;
+            outline: none;
+        }
+        .control-group input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+        }
+        .control-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: #fff;
+            min-width: 52px;
+            text-align: right;
+        }
+
+        /* Toggle buttons */
+        .btn-group {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .toggle-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn.active {
+            background: rgba(106,170,142,0.15);
+            border-color: rgba(106,170,142,0.4);
+            color: var(--accent);
+        }
+
+        /* Preset buttons */
+        .preset-btn {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .preset-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .preset-btn.active {
+            background: rgba(80,128,208,0.15);
+            border-color: rgba(80,128,208,0.4);
+            color: var(--blue);
+        }
+
+        /* Callouts */
+        .callout {
+            padding: 14px 18px;
+            background: rgba(106,170,142,0.06);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            margin: 16px 0;
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.7;
+        }
+        .callout strong { color: #fff; }
+        .callout.warn {
+            background: rgba(255,200,100,0.06);
+            border-left-color: var(--yellow);
+        }
+
+        /* THD readout */
+        .thd-readout {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--accent);
+            text-align: center;
+            margin: 24px 0;
+            letter-spacing: -1px;
+        }
+        .thd-readout .unit {
+            font-size: 24px;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        /* Contribution bars */
+        .contrib-bars {
+            margin: 24px 0;
+        }
+        .contrib-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .contrib-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            min-width: 100px;
+            text-align: right;
+            font-weight: 500;
+        }
+        .contrib-track {
+            flex: 1;
+            height: 22px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .contrib-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.2s;
+        }
+        .contrib-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: #fff;
+            min-width: 60px;
+        }
+
+        /* Reference table */
+        .ref-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13px;
+        }
+        .ref-table th {
+            text-align: left;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dim);
+            font-weight: 500;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .ref-table td {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dim);
+        }
+        .ref-table td:first-child {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--accent);
+        }
+
+        /* Action button */
+        .action-btn {
+            padding: 10px 20px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-dim);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .action-btn:hover { color: #fff; border-color: var(--border-hover); }
+    </style>
+</head>
+<body>
+
+<a class="back-btn" href="../index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
+
+<div class="explainer">
+
+    <!-- TITLE -->
+    <div class="title-block">
+        <div class="sub">BMEN90033 &middot; Week 5</div>
+        <h1>Total Harmonic Distortion</h1>
+        <p>When an amplifier's output isn't a perfect copy of its input, the difference is called distortion.
+           Total Harmonic Distortion (THD) quantifies this by measuring how much unwanted harmonic content
+           has been added to the signal. This page walks through harmonics, how they combine to distort a
+           waveform, how engineers measure them, and why it matters for bioinstrumentation.</p>
+    </div>
+
+    <!-- SECTION 1: The Pure Fundamental -->
+    <details class="section" id="sec-fundamental" open>
+        <summary>
+            <span class="section-number">Part 01</span>
+            <h2>The Pure Fundamental</h2>
+        </summary>
+
+        <p>Every periodic signal has a fundamental frequency — the lowest frequency component, and the one
+           that defines the signal's pitch or repetition rate. Here is a pure sine wave at a single frequency.
+           This is what a perfect, undistorted signal looks like.</p>
+
+        <div class="canvas-container canvas-medium">
+            <canvas id="canvas-fundamental"></canvas>
+        </div>
+
+        <div class="controls-row">
+            <div class="control-group">
+                <label>Frequency</label>
+                <input type="range" id="slider-freq" min="50" max="2000" step="10" value="440">
+                <span class="control-value" id="val-freq">440 Hz</span>
+            </div>
+        </div>
+
+        <div class="callout">
+            <strong>This is our reference.</strong> Any deviation from this pure shape means distortion has been introduced.
+            The question is: how do we measure that deviation?
+        </div>
+    </details>
+
+    <!-- SECTION 2: What Are Harmonics? -->
+    <details class="section" id="sec-harmonics" open>
+        <summary>
+            <span class="section-number">Part 02</span>
+            <h2>What Are Harmonics?</h2>
+        </summary>
+
+        <p>Harmonics are sine waves at exact integer multiples of the fundamental frequency. The 2nd harmonic
+           is at 2&times; the fundamental, the 3rd at 3&times;, and so on. Each harmonic has its own amplitude
+           and phase.</p>
+
+        <div class="canvas-container canvas-medium">
+            <canvas id="canvas-harmonics"></canvas>
+        </div>
+
+        <div class="controls-row">
+            <div class="btn-group">
+                <button class="toggle-btn active" id="btn-h2" onclick="selectHarmonic(2)">2nd</button>
+                <button class="toggle-btn" id="btn-h3" onclick="selectHarmonic(3)">3rd</button>
+                <button class="toggle-btn" id="btn-h4" onclick="selectHarmonic(4)">4th</button>
+                <button class="toggle-btn" id="btn-h5" onclick="selectHarmonic(5)">5th</button>
+            </div>
+        </div>
+
+        <div class="callout">
+            <strong>Even vs odd harmonics:</strong> Push-pull amplifier topologies (Class B, AB) tend to cancel
+            even harmonics (2nd, 4th) due to symmetry, leaving predominantly odd harmonics (3rd, 5th). Single-ended
+            designs (Class A) produce both even and odd harmonics.
+        </div>
+    </details>
+
+    <!-- SECTION 3: Combining Harmonics -->
+    <details class="section" id="sec-combining" open>
+        <summary>
+            <span class="section-number">Part 03</span>
+            <h2>Combining Harmonics — Building Distortion</h2>
+        </summary>
+
+        <p>Now let's see what happens when harmonics are added to the fundamental. Drag the sliders to add
+           harmonic content and watch the waveform distort in real-time. The faint coloured traces show
+           individual harmonics; the bright white trace is the combined (distorted) signal.</p>
+
+        <div class="canvas-container canvas-tall">
+            <canvas id="canvas-combined"></canvas>
+        </div>
+
+        <div class="controls-row">
+            <div class="control-group">
+                <label>2nd</label>
+                <input type="range" id="slider-h2" min="0" max="100" step="1" value="0">
+                <span class="control-value" id="val-h2">0%</span>
+            </div>
+            <div class="control-group">
+                <label>3rd</label>
+                <input type="range" id="slider-h3" min="0" max="100" step="1" value="0">
+                <span class="control-value" id="val-h3">0%</span>
+            </div>
+            <div class="control-group">
+                <label>4th</label>
+                <input type="range" id="slider-h4" min="0" max="100" step="1" value="0">
+                <span class="control-value" id="val-h4">0%</span>
+            </div>
+            <div class="control-group">
+                <label>5th</label>
+                <input type="range" id="slider-h5" min="0" max="100" step="1" value="0">
+                <span class="control-value" id="val-h5">0%</span>
+            </div>
+        </div>
+
+        <p>Load a typical amplifier harmonic profile:</p>
+        <div class="controls-row">
+            <div class="btn-group">
+                <button class="preset-btn" id="preset-a" onclick="loadPreset('A')">Class A</button>
+                <button class="preset-btn" id="preset-ab" onclick="loadPreset('AB')">Class AB</button>
+                <button class="preset-btn" id="preset-b" onclick="loadPreset('B')">Class B</button>
+                <button class="preset-btn" id="preset-clear" onclick="loadPreset('clear')">Clear</button>
+            </div>
+        </div>
+
+        <p>Amplitude vs frequency — the harmonic spectrum of the current signal:</p>
+        <div class="canvas-container canvas-medium">
+            <canvas id="canvas-spectrum-sec3"></canvas>
+        </div>
+
+        <div class="callout">
+            <strong>Try the presets.</strong> Notice how Class B has prominent odd harmonics (3rd, 5th) from
+            crossover distortion, while Class A shows lower, more evenly distributed harmonics.
+        </div>
+    </details>
+
+    <!-- SECTION 4: Fourier Decomposition -->
+    <details class="section" id="sec-fourier" open>
+        <summary>
+            <span class="section-number">Part 04</span>
+            <h2>Fourier Decomposition — Pulling Apart a Signal</h2>
+        </summary>
+
+        <p>In 1807, Joseph Fourier showed that any periodic signal can be expressed as a sum of sinusoids.
+           This means we can take a distorted waveform and decompose it back into its individual frequency
+           components — the fundamental and each harmonic.</p>
+
+        <p>Press play to see the current distorted waveform separate into its constituent sine waves:</p>
+
+        <div class="canvas-container canvas-tall">
+            <canvas id="canvas-fourier"></canvas>
+        </div>
+
+        <div class="controls-row">
+            <button class="action-btn" id="btn-decompose" onclick="toggleDecomposition()">&#9654; Decompose</button>
+            <button class="action-btn" id="btn-reset-fourier" onclick="resetDecomposition()">Reset</button>
+        </div>
+
+        <div class="callout">
+            <strong>This is the conceptual foundation.</strong> Any periodic signal, no matter how complex,
+            is just a sum of simple sine waves. The next section shows the practical tool engineers use to
+            perform this decomposition.
+        </div>
+    </details>
+
+    <!-- SECTION 5: The Frequency Spectrum -->
+    <details class="section" id="sec-spectrum" open>
+        <summary>
+            <span class="section-number">Part 05</span>
+            <h2>The Frequency Spectrum — Measuring Harmonics</h2>
+        </summary>
+
+        <p>In practice, engineers use the Fast Fourier Transform (FFT) to convert a time-domain signal into
+           its frequency-domain representation. The result is a spectrum: a plot of amplitude vs frequency
+           that reveals every harmonic component present in the signal.</p>
+
+        <div class="canvas-container canvas-medium">
+            <canvas id="canvas-spectrum"></canvas>
+        </div>
+
+        <p>This spectrum updates live as you adjust the harmonic sliders in Part 03. Each bar represents
+           a frequency component. The tallest bar at <em>f</em> is the fundamental; any bars at
+           2<em>f</em>, 3<em>f</em>, etc. are harmonics that shouldn't be there.</p>
+
+        <div class="callout">
+            <strong>This is how engineers measure distortion in practice</strong> — feed a pure sine into
+            the amplifier input, look at the output spectrum, and measure what shouldn't be there. The ratio
+            of unwanted harmonics to the fundamental gives us THD.
+        </div>
+    </details>
+
+    <!-- SECTION 6: The THD Formula -->
+    <details class="section" id="sec-thd" open>
+        <summary>
+            <span class="section-number">Part 06</span>
+            <h2>The THD Formula</h2>
+        </summary>
+
+        <p>Total Harmonic Distortion is defined as the ratio of the root-sum-square of all harmonic amplitudes
+           to the fundamental amplitude:</p>
+
+        <div class="eq-block">
+            THD = <span class="dim">&radic;(</span>V<sub>2</sub><sup>2</sup> + V<sub>3</sub><sup>2</sup>
+            + V<sub>4</sub><sup>2</sup> + V<sub>5</sub><sup>2</sup><span class="dim">)</span>
+            / V<sub>1</sub> <span class="dim">&times;</span> <span class="hl">100%</span>
+        </div>
+
+        <div class="thd-readout">
+            <span id="thd-value">0.00</span><span class="unit">%</span>
+        </div>
+
+        <p>Each harmonic's contribution to the total:</p>
+
+        <div class="contrib-bars">
+            <div class="contrib-row">
+                <span class="contrib-label">2nd harmonic</span>
+                <div class="contrib-track">
+                    <div class="contrib-fill" id="contrib-h2" style="width:0%; background: rgba(80,128,208,0.7);"></div>
+                </div>
+                <span class="contrib-value" id="contrib-val-h2">0%</span>
+            </div>
+            <div class="contrib-row">
+                <span class="contrib-label">3rd harmonic</span>
+                <div class="contrib-track">
+                    <div class="contrib-fill" id="contrib-h3" style="width:0%; background: rgba(106,170,142,0.7);"></div>
+                </div>
+                <span class="contrib-value" id="contrib-val-h3">0%</span>
+            </div>
+            <div class="contrib-row">
+                <span class="contrib-label">4th harmonic</span>
+                <div class="contrib-track">
+                    <div class="contrib-fill" id="contrib-h4" style="width:0%; background: rgba(255,204,68,0.7);"></div>
+                </div>
+                <span class="contrib-value" id="contrib-val-h4">0%</span>
+            </div>
+            <div class="contrib-row">
+                <span class="contrib-label">5th harmonic</span>
+                <div class="contrib-track">
+                    <div class="contrib-fill" id="contrib-h5" style="width:0%; background: rgba(224,96,80,0.7);"></div>
+                </div>
+                <span class="contrib-value" id="contrib-val-h5">0%</span>
+            </div>
+        </div>
+
+        <table class="ref-table">
+            <thead>
+                <tr><th>THD</th><th>Quality</th><th>Typical Application</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>&lt; 0.1%</td><td>Excellent</td><td>Hi-fi audio, precision instrumentation</td></tr>
+                <tr><td>&lt; 1%</td><td>Good</td><td>Biomedical instruments (ECG, EEG)</td></tr>
+                <tr><td>1 – 5%</td><td>Noticeable</td><td>May affect signal integrity</td></tr>
+                <tr><td>&gt; 10%</td><td>Heavy</td><td>Unsuitable for most measurement</td></tr>
+            </tbody>
+        </table>
+    </details>
+
+    <!-- SECTION 7: Why It Matters -->
+    <details class="section" id="sec-context" open>
+        <summary>
+            <span class="section-number">Part 07</span>
+            <h2>Why It Matters</h2>
+        </summary>
+
+        <p>Distortion means the amplifier's output is not a faithful copy of its input. For audio, this
+           might sound unpleasant. For bioinstrumentation, it can be dangerous.</p>
+
+        <p>Biosignals like ECG, EEG, and EMG contain critical diagnostic information in their shape and
+           timing. Harmonic distortion can:</p>
+        <ul>
+            <li>Introduce false peaks that mimic pathological waveforms</li>
+            <li>Smooth out sharp features needed for accurate diagnosis</li>
+            <li>Shift the apparent amplitude of signal components</li>
+        </ul>
+
+        <p>This is the fundamental tradeoff in amplifier design:</p>
+        <ul>
+            <li><strong>Class A</strong> — lowest THD (~1–2%), but only ~25% power efficient</li>
+            <li><strong>Class AB</strong> — moderate THD (~3–5%), ~55% efficient</li>
+            <li><strong>Class B</strong> — higher THD from crossover distortion (~5–10%), ~78% efficient</li>
+            <li><strong>Class D</strong> — THD depends on filter design, but ~90–95% efficient</li>
+        </ul>
+
+        <div class="callout">
+            <strong>In bioinstrumentation, fidelity usually wins.</strong> A device that distorts an ECG
+            waveform is worse than one that uses more battery. But in portable/wearable devices, power
+            efficiency matters too — which is why Class D amplifiers with careful filter design are
+            increasingly used, achieving both high efficiency and low THD.
+        </div>
+    </details>
+
+</div><!-- .explainer -->
+
+<!-- JavaScript will be added in subsequent tasks -->
+
+</body>
+</html>

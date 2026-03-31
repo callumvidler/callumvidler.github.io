@@ -562,7 +562,729 @@
 
     <script src="../theme.js"></script>
     <script>
-        // Nodal analysis tool — interactive logic will be added in subsequent tasks.
+        (function() {
+            'use strict';
+
+            // ── Constants ──
+            const GRID = 40;
+            const COMP_LEN = 2; // in grid units
+            const NODE_COLORS = [
+                '#e06050', '#5b9bd5', '#6aaa8e', '#ffcc44', '#c77dba',
+                '#e8915a', '#6ec8c8', '#d46e9a', '#8fbc5a', '#b0a0d8'
+            ];
+
+            // ── Canvas & Context ──
+            const canvas = document.getElementById('circuit-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // ── State ──
+            let components = [];
+            let wires = [];
+            let nextId = 1;
+            let activeTool = null;
+            let selectedId = null;
+            let dragging = null; // { x1, y1, x2, y2 } grid coords for wire in progress
+            let hoverGrid = null; // { gx, gy }
+
+            // ── Defaults ──
+            const DEFAULTS = {
+                resistor:  { value: 1000, unit: '\u03A9',  units: [{label:'\u03A9',mult:1},{label:'k\u03A9',mult:1e3},{label:'M\u03A9',mult:1e6}] },
+                capacitor: { value: 10,   unit: '\u03BCF', units: [{label:'pF',mult:1e-12},{label:'nF',mult:1e-9},{label:'\u03BCF',mult:1e-6},{label:'mF',mult:1e-3}] },
+                inductor:  { value: 10,   unit: 'mH', units: [{label:'\u03BCH',mult:1e-6},{label:'mH',mult:1e-3},{label:'H',mult:1}] },
+                vsource:   { value: 5,    unit: 'V',  units: [{label:'mV',mult:1e-3},{label:'V',mult:1}] },
+                isource:   { value: 1,    unit: 'mA', units: [{label:'\u03BCA',mult:1e-6},{label:'mA',mult:1e-3},{label:'A',mult:1}] }
+            };
+
+            // ── Helpers ──
+            function gridToPixel(gx, gy) {
+                return { x: gx * GRID, y: gy * GRID };
+            }
+
+            function pixelToGrid(px, py) {
+                return { gx: Math.round(px / GRID), gy: Math.round(py / GRID) };
+            }
+
+            function getMousePos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return {
+                    x: (e.clientX - rect.left) * scaleX,
+                    y: (e.clientY - rect.top) * scaleY
+                };
+            }
+
+            function getTerminals(comp) {
+                if (comp.type === 'gnd') {
+                    return [{ gx: comp.gx, gy: comp.gy }];
+                }
+                if (comp.rotation === 1) {
+                    // vertical
+                    return [
+                        { gx: comp.gx, gy: comp.gy },
+                        { gx: comp.gx, gy: comp.gy + COMP_LEN }
+                    ];
+                }
+                // horizontal (default)
+                return [
+                    { gx: comp.gx, gy: comp.gy },
+                    { gx: comp.gx + COMP_LEN, gy: comp.gy }
+                ];
+            }
+
+            // ── Drawing: Grid ──
+            function drawGrid() {
+                ctx.fillStyle = T.canvasBg;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = T.gridLight;
+                const cols = Math.floor(canvas.width / GRID);
+                const rows = Math.floor(canvas.height / GRID);
+                for (let x = 0; x <= cols; x++) {
+                    for (let y = 0; y <= rows; y++) {
+                        ctx.beginPath();
+                        ctx.arc(x * GRID, y * GRID, 1.5, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // ── Drawing: Component type-specific drawers ──
+            function drawResistor(len, color) {
+                const leadLen = len * 0.2;
+                const bodyLen = len * 0.6;
+                const amp = 8;
+                const segs = 6;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                // left lead
+                ctx.moveTo(-len / 2, 0);
+                ctx.lineTo(-len / 2 + leadLen, 0);
+                // zigzag
+                const segW = bodyLen / segs;
+                let sx = -len / 2 + leadLen;
+                for (let i = 0; i < segs; i++) {
+                    const midX = sx + segW / 2;
+                    const endX = sx + segW;
+                    const dir = (i % 2 === 0) ? -1 : 1;
+                    ctx.lineTo(midX, dir * amp);
+                    ctx.lineTo(endX, 0);
+                    sx = endX;
+                }
+                // right lead
+                ctx.lineTo(len / 2, 0);
+                ctx.stroke();
+            }
+
+            function drawCapacitor(len, color) {
+                const gap = 8;
+                const plateH = 16;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                // left lead
+                ctx.beginPath();
+                ctx.moveTo(-len / 2, 0);
+                ctx.lineTo(-gap / 2, 0);
+                ctx.stroke();
+                // right lead
+                ctx.beginPath();
+                ctx.moveTo(gap / 2, 0);
+                ctx.lineTo(len / 2, 0);
+                ctx.stroke();
+                // left plate
+                ctx.beginPath();
+                ctx.moveTo(-gap / 2, -plateH);
+                ctx.lineTo(-gap / 2, plateH);
+                ctx.stroke();
+                // right plate
+                ctx.beginPath();
+                ctx.moveTo(gap / 2, -plateH);
+                ctx.lineTo(gap / 2, plateH);
+                ctx.stroke();
+            }
+
+            function drawInductor(len, color) {
+                const leadLen = len * 0.2;
+                const bodyLen = len * 0.6;
+                const bumps = 4;
+                const bumpW = bodyLen / bumps;
+                const r = bumpW / 2;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                // left lead
+                ctx.beginPath();
+                ctx.moveTo(-len / 2, 0);
+                ctx.lineTo(-len / 2 + leadLen, 0);
+                ctx.stroke();
+                // bumps (semicircles)
+                let bx = -len / 2 + leadLen;
+                for (let i = 0; i < bumps; i++) {
+                    ctx.beginPath();
+                    ctx.arc(bx + r, 0, r, Math.PI, 0, false);
+                    ctx.stroke();
+                    bx += bumpW;
+                }
+                // right lead
+                ctx.beginPath();
+                ctx.moveTo(bx, 0);
+                ctx.lineTo(len / 2, 0);
+                ctx.stroke();
+            }
+
+            function drawVSource(len, color) {
+                const r = 14;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                // left lead
+                ctx.beginPath();
+                ctx.moveTo(-len / 2, 0);
+                ctx.lineTo(-r, 0);
+                ctx.stroke();
+                // right lead
+                ctx.beginPath();
+                ctx.moveTo(r, 0);
+                ctx.lineTo(len / 2, 0);
+                ctx.stroke();
+                // circle
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.stroke();
+                // + and - labels
+                ctx.fillStyle = color;
+                ctx.font = 'bold 12px IBM Plex Mono';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('+', -r / 2 - 1, 0);
+                ctx.fillText('\u2212', r / 2 + 1, 0);
+            }
+
+            function drawISource(len, color) {
+                const r = 14;
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                // left lead
+                ctx.beginPath();
+                ctx.moveTo(-len / 2, 0);
+                ctx.lineTo(-r, 0);
+                ctx.stroke();
+                // right lead
+                ctx.beginPath();
+                ctx.moveTo(r, 0);
+                ctx.lineTo(len / 2, 0);
+                ctx.stroke();
+                // circle
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.stroke();
+                // arrow pointing right
+                ctx.beginPath();
+                ctx.moveTo(-6, 0);
+                ctx.lineTo(6, 0);
+                ctx.moveTo(3, -4);
+                ctx.lineTo(6, 0);
+                ctx.lineTo(3, 4);
+                ctx.stroke();
+            }
+
+            function drawGround(color) {
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                const h = 20;
+                // vertical line down
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, h);
+                ctx.stroke();
+                // three horizontal lines
+                const widths = [16, 10, 4];
+                for (let i = 0; i < 3; i++) {
+                    const y = h + i * 5;
+                    ctx.beginPath();
+                    ctx.moveTo(-widths[i], y);
+                    ctx.lineTo(widths[i], y);
+                    ctx.stroke();
+                }
+            }
+
+            // ── Format Value ──
+            function formatValue(val, unit) {
+                if (val >= 1e6) return (val / 1e6).toFixed(val % 1e6 === 0 ? 0 : 1) + 'M' + unit;
+                if (val >= 1e3) return (val / 1e3).toFixed(val % 1e3 === 0 ? 0 : 1) + 'k' + unit;
+                if (val >= 1) return val.toFixed(val === Math.floor(val) ? 0 : 1) + unit;
+                if (val >= 1e-3) return (val * 1e3).toFixed(val * 1e3 === Math.floor(val * 1e3) ? 0 : 1) + 'm' + unit;
+                if (val >= 1e-6) return (val * 1e6).toFixed(val * 1e6 === Math.floor(val * 1e6) ? 0 : 1) + '\u03BC' + unit;
+                if (val >= 1e-9) return (val * 1e9).toFixed(val * 1e9 === Math.floor(val * 1e9) ? 0 : 1) + 'n' + unit;
+                if (val >= 1e-12) return (val * 1e12).toFixed(val * 1e12 === Math.floor(val * 1e12) ? 0 : 1) + 'p' + unit;
+                return val.toExponential(1) + unit;
+            }
+
+            // ── Draw Component ──
+            function drawComponent(comp) {
+                const len = COMP_LEN * GRID;
+                const p = gridToPixel(comp.gx, comp.gy);
+                const isSelected = comp.id === selectedId;
+                const color = isSelected ? '#ffcc44' : T.wire;
+
+                ctx.save();
+
+                if (comp.type === 'gnd') {
+                    ctx.translate(p.x, p.y);
+                    drawGround(color);
+                } else {
+                    // translate to midpoint of component
+                    if (comp.rotation === 1) {
+                        ctx.translate(p.x, p.y + len / 2);
+                        ctx.rotate(Math.PI / 2);
+                    } else {
+                        ctx.translate(p.x + len / 2, p.y);
+                    }
+
+                    switch (comp.type) {
+                        case 'resistor':  drawResistor(len, color); break;
+                        case 'capacitor': drawCapacitor(len, color); break;
+                        case 'inductor':  drawInductor(len, color); break;
+                        case 'vsource':   drawVSource(len, color); break;
+                        case 'isource':   drawISource(len, color); break;
+                    }
+                }
+
+                ctx.restore();
+
+                // Draw terminal dots
+                const terms = getTerminals(comp);
+                terms.forEach(function(t) {
+                    const tp = gridToPixel(t.gx, t.gy);
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(tp.x, tp.y, 3.5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Draw value label
+                if (comp.type !== 'gnd' && comp.value !== undefined) {
+                    const baseUnit = DEFAULTS[comp.type] ? DEFAULTS[comp.type].unit : '';
+                    const label = formatValue(comp.value, comp.baseUnit || '');
+                    ctx.fillStyle = T.textDim;
+                    ctx.font = '11px IBM Plex Mono';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'top';
+                    if (comp.rotation === 1) {
+                        ctx.fillText(label, p.x + 16, p.y + len / 2 - 6);
+                    } else {
+                        ctx.fillText(label, p.x + len / 2, p.y - 16);
+                    }
+                }
+            }
+
+            // ── Main Draw ──
+            function draw() {
+                drawGrid();
+
+                // Draw wires
+                wires.forEach(function(w) {
+                    const p1 = gridToPixel(w.x1, w.y1);
+                    const p2 = gridToPixel(w.x2, w.y2);
+                    ctx.strokeStyle = (w.id === selectedId) ? '#ffcc44' : T.wire;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([]);
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                });
+
+                // Draw wire in progress (dashed)
+                if (dragging) {
+                    const p1 = gridToPixel(dragging.x1, dragging.y1);
+                    const p2 = gridToPixel(dragging.x2, dragging.y2);
+                    ctx.strokeStyle = T.wire;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                // Draw components
+                components.forEach(function(c) {
+                    drawComponent(c);
+                });
+
+                // Draw placement preview
+                if (activeTool && activeTool !== 'wire' && hoverGrid) {
+                    ctx.globalAlpha = 0.4;
+                    const preview = {
+                        type: activeTool,
+                        gx: hoverGrid.gx,
+                        gy: hoverGrid.gy,
+                        rotation: 0,
+                        id: -1
+                    };
+                    if (DEFAULTS[activeTool]) {
+                        preview.value = DEFAULTS[activeTool].value;
+                        preview.baseUnit = DEFAULTS[activeTool].unit.replace(/[kMm\u03BC\u03A9]/g, '');
+                    }
+                    drawComponent(preview);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+
+            // ── Find terminal at grid position ──
+            function findTerminalAt(gx, gy) {
+                for (let i = 0; i < components.length; i++) {
+                    const terms = getTerminals(components[i]);
+                    for (let j = 0; j < terms.length; j++) {
+                        if (terms[j].gx === gx && terms[j].gy === gy) {
+                            return { comp: components[i], termIndex: j };
+                        }
+                    }
+                }
+                return null;
+            }
+
+            // ── Find component at pixel position (hit test) ──
+            function findComponentAt(px, py) {
+                const g = pixelToGrid(px, py);
+                // Check components in reverse order (top-most first)
+                for (let i = components.length - 1; i >= 0; i--) {
+                    const c = components[i];
+                    if (c.type === 'gnd') {
+                        const p = gridToPixel(c.gx, c.gy);
+                        if (Math.abs(px - p.x) < 20 && py >= p.y - 5 && py <= p.y + 35) {
+                            return c;
+                        }
+                    } else {
+                        const terms = getTerminals(c);
+                        const t0 = gridToPixel(terms[0].gx, terms[0].gy);
+                        const t1 = gridToPixel(terms[1].gx, terms[1].gy);
+                        const minX = Math.min(t0.x, t1.x) - 10;
+                        const maxX = Math.max(t0.x, t1.x) + 10;
+                        const minY = Math.min(t0.y, t1.y) - 15;
+                        const maxY = Math.max(t0.y, t1.y) + 15;
+                        if (px >= minX && px <= maxX && py >= minY && py <= maxY) {
+                            return c;
+                        }
+                    }
+                }
+                // Check wires
+                for (let i = wires.length - 1; i >= 0; i--) {
+                    const w = wires[i];
+                    const p1 = gridToPixel(w.x1, w.y1);
+                    const p2 = gridToPixel(w.x2, w.y2);
+                    const dist = pointToSegmentDist(px, py, p1.x, p1.y, p2.x, p2.y);
+                    if (dist < 8) {
+                        return w;
+                    }
+                }
+                return null;
+            }
+
+            function pointToSegmentDist(px, py, x1, y1, x2, y2) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const lenSq = dx * dx + dy * dy;
+                if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+                let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+                t = Math.max(0, Math.min(1, t));
+                const projX = x1 + t * dx;
+                const projY = y1 + t * dy;
+                return Math.hypot(px - projX, py - projY);
+            }
+
+            // ── Value Editor ──
+            const veContainer = document.getElementById('value-editor');
+            const veInput = document.getElementById('ve-input');
+            const veOk = document.getElementById('ve-ok');
+            const veCancel = document.getElementById('ve-cancel');
+            let editingComp = null;
+
+            function showValueEditor(comp) {
+                editingComp = comp;
+                const terms = getTerminals(comp);
+                let cx, cy;
+                if (comp.type === 'gnd') {
+                    cx = terms[0].gx * GRID;
+                    cy = terms[0].gy * GRID;
+                } else {
+                    cx = (terms[0].gx + terms[1].gx) / 2 * GRID;
+                    cy = (terms[0].gy + terms[1].gy) / 2 * GRID;
+                }
+                // Convert canvas coords to container-relative coords
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = rect.width / canvas.width;
+                const scaleY = rect.height / canvas.height;
+                veContainer.style.left = (cx * scaleX + 10) + 'px';
+                veContainer.style.top = (cy * scaleY - 20) + 'px';
+
+                // Format current value for display
+                const def = DEFAULTS[comp.type];
+                if (def) {
+                    veInput.value = formatValue(comp.value, def.unit);
+                } else {
+                    veInput.value = comp.value || '';
+                }
+                veContainer.classList.add('visible');
+                veInput.focus();
+                veInput.select();
+            }
+
+            function hideValueEditor() {
+                veContainer.classList.remove('visible');
+                editingComp = null;
+            }
+
+            function parseSIValue(str) {
+                // Parse strings like "1k", "100u", "4.7M", "10", "2.2m"
+                str = str.trim();
+                // Remove trailing unit characters (ohm, F, H, V, A, etc.)
+                str = str.replace(/[\u03A9FHVAs]+$/i, '').trim();
+                const match = str.match(/^([0-9]*\.?[0-9]+)\s*([pnu\u03BCmkMG]?)$/);
+                if (!match) return NaN;
+                const num = parseFloat(match[1]);
+                const suffix = match[2];
+                const multipliers = {
+                    'p': 1e-12, 'n': 1e-9, 'u': 1e-6, '\u03BC': 1e-6,
+                    'm': 1e-3, '': 1, 'k': 1e3, 'M': 1e6, 'G': 1e9
+                };
+                return num * (multipliers[suffix] || 1);
+            }
+
+            veOk.addEventListener('click', function() {
+                if (!editingComp) return;
+                const parsed = parseSIValue(veInput.value);
+                if (!isNaN(parsed) && parsed > 0) {
+                    editingComp.value = parsed;
+                }
+                hideValueEditor();
+                draw();
+            });
+
+            veCancel.addEventListener('click', function() {
+                hideValueEditor();
+            });
+
+            veInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    veOk.click();
+                } else if (e.key === 'Escape') {
+                    hideValueEditor();
+                }
+            });
+
+            // ── Toolbar Button Handlers ──
+            const toolBtns = document.querySelectorAll('.tool-btn');
+            toolBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    const tool = btn.getAttribute('data-tool');
+                    if (activeTool === tool) {
+                        // Toggle off
+                        activeTool = null;
+                        btn.classList.remove('active');
+                    } else {
+                        // Deactivate all, activate this
+                        toolBtns.forEach(function(b) { b.classList.remove('active'); });
+                        activeTool = tool;
+                        btn.classList.add('active');
+                    }
+                    hideValueEditor();
+                    selectedId = null;
+                    draw();
+                });
+            });
+
+            // ── Clear All ──
+            document.getElementById('btn-clear').addEventListener('click', function() {
+                components = [];
+                wires = [];
+                nextId = 1;
+                selectedId = null;
+                activeTool = null;
+                dragging = null;
+                toolBtns.forEach(function(b) { b.classList.remove('active'); });
+                hideValueEditor();
+                document.getElementById('walkthrough').classList.remove('visible');
+                document.getElementById('walkthrough').innerHTML = '';
+                draw();
+            });
+
+            // ── Delete Selected ──
+            function deleteSelected() {
+                if (selectedId === null) return;
+                // Check if it's a component
+                const compIdx = components.findIndex(function(c) { return c.id === selectedId; });
+                if (compIdx !== -1) {
+                    const comp = components[compIdx];
+                    const terms = getTerminals(comp);
+                    // Remove wires connected to this component's terminals
+                    wires = wires.filter(function(w) {
+                        return !terms.some(function(t) {
+                            return (w.x1 === t.gx && w.y1 === t.gy) || (w.x2 === t.gx && w.y2 === t.gy);
+                        });
+                    });
+                    components.splice(compIdx, 1);
+                } else {
+                    // Check if it's a wire
+                    const wireIdx = wires.findIndex(function(w) { return w.id === selectedId; });
+                    if (wireIdx !== -1) {
+                        wires.splice(wireIdx, 1);
+                    }
+                }
+                selectedId = null;
+                hideValueEditor();
+                draw();
+            }
+
+            document.getElementById('btn-delete').addEventListener('click', deleteSelected);
+
+            // ── Keyboard Handlers ──
+            document.addEventListener('keydown', function(e) {
+                // Skip if focused on an input
+                if (e.target.tagName === 'INPUT') return;
+
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    e.preventDefault();
+                    deleteSelected();
+                } else if (e.key === 'r' || e.key === 'R') {
+                    // Rotate selected component
+                    if (selectedId !== null) {
+                        const comp = components.find(function(c) { return c.id === selectedId; });
+                        if (comp && comp.type !== 'gnd') {
+                            comp.rotation = comp.rotation === 0 ? 1 : 0;
+                            draw();
+                        }
+                    }
+                } else if (e.key === 'Escape') {
+                    activeTool = null;
+                    selectedId = null;
+                    dragging = null;
+                    toolBtns.forEach(function(b) { b.classList.remove('active'); });
+                    hideValueEditor();
+                    draw();
+                }
+            });
+
+            // ── Canvas: Mouse Down ──
+            canvas.addEventListener('mousedown', function(e) {
+                const pos = getMousePos(e);
+                const g = pixelToGrid(pos.x, pos.y);
+
+                if (activeTool === 'wire') {
+                    // Start wire drag
+                    dragging = { x1: g.gx, y1: g.gy, x2: g.gx, y2: g.gy };
+                    selectedId = null;
+                    hideValueEditor();
+                } else if (activeTool && activeTool !== 'wire') {
+                    // Place component
+                    const comp = {
+                        id: nextId++,
+                        type: activeTool,
+                        gx: g.gx,
+                        gy: g.gy,
+                        rotation: 0
+                    };
+                    if (DEFAULTS[activeTool]) {
+                        comp.value = DEFAULTS[activeTool].value;
+                        comp.baseUnit = DEFAULTS[activeTool].unit;
+                    }
+                    components.push(comp);
+                    selectedId = comp.id;
+                    hideValueEditor();
+                    draw();
+                } else {
+                    // No tool active: try to select
+                    hideValueEditor();
+                    const hit = findComponentAt(pos.x, pos.y);
+                    if (hit) {
+                        selectedId = hit.id;
+                        // Double-click handled separately
+                    } else {
+                        selectedId = null;
+                    }
+                    draw();
+                }
+            });
+
+            // ── Canvas: Mouse Move ──
+            canvas.addEventListener('mousemove', function(e) {
+                const pos = getMousePos(e);
+                const g = pixelToGrid(pos.x, pos.y);
+                hoverGrid = g;
+
+                if (dragging) {
+                    dragging.x2 = g.gx;
+                    dragging.y2 = g.gy;
+                }
+                draw();
+            });
+
+            // ── Canvas: Mouse Up ──
+            canvas.addEventListener('mouseup', function(e) {
+                if (dragging) {
+                    const pos = getMousePos(e);
+                    const g = pixelToGrid(pos.x, pos.y);
+                    dragging.x2 = g.gx;
+                    dragging.y2 = g.gy;
+
+                    // Only add wire if it has nonzero length
+                    if (dragging.x1 !== dragging.x2 || dragging.y1 !== dragging.y2) {
+                        wires.push({
+                            id: nextId++,
+                            x1: dragging.x1,
+                            y1: dragging.y1,
+                            x2: dragging.x2,
+                            y2: dragging.y2
+                        });
+                    }
+                    dragging = null;
+                    draw();
+                }
+            });
+
+            // ── Canvas: Double Click to edit value ──
+            canvas.addEventListener('dblclick', function(e) {
+                const pos = getMousePos(e);
+                const hit = findComponentAt(pos.x, pos.y);
+                if (hit && hit.type && hit.type !== 'gnd' && DEFAULTS[hit.type]) {
+                    selectedId = hit.id;
+                    showValueEditor(hit);
+                    draw();
+                }
+            });
+
+            // ── Canvas: Right Click to rotate ──
+            canvas.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                const pos = getMousePos(e);
+                const hit = findComponentAt(pos.x, pos.y);
+                if (hit && hit.type && hit.type !== 'gnd') {
+                    hit.rotation = hit.rotation === 0 ? 1 : 0;
+                    selectedId = hit.id;
+                    draw();
+                }
+            });
+
+            // ── Canvas: Mouse Leave ──
+            canvas.addEventListener('mouseleave', function() {
+                hoverGrid = null;
+                if (!dragging) draw();
+            });
+
+            // ── Compute Button (placeholder for Task 5) ──
+            document.getElementById('btn-compute').addEventListener('click', function() {
+                // Will be implemented in a later task
+                console.log('Compute: components=', components, 'wires=', wires);
+            });
+
+            // ── Theme Change Listener ──
+            window.addEventListener('themechange', function() {
+                draw();
+            });
+
+            // ── Initial Draw ──
+            draw();
+        })();
     </script>
 </body>
 </html>

@@ -1530,7 +1530,8 @@
                             A[ni(n2)][ni(n1)] = cSub(A[ni(n2)][ni(n1)], G);
                         }
                     } else if (comp.type === 'capacitor') {
-                        var Y = [0, omega * baseVal]; // jωC
+                        // jωC: at DC (ω=0) this is [0,0], correctly modeling an open circuit
+                        var Y = [0, omega * baseVal];
                         if (n1 > 0) A[ni(n1)][ni(n1)] = cAdd(A[ni(n1)][ni(n1)], Y);
                         if (n2 > 0) A[ni(n2)][ni(n2)] = cAdd(A[ni(n2)][ni(n2)], Y);
                         if (n1 > 0 && n2 > 0) {
@@ -1937,6 +1938,9 @@
                 // Draw node labels on canvas
                 draw();
                 drawNodeLabels(nodeData);
+
+                // Scroll walkthrough into view
+                wt.scrollIntoView({behavior:'smooth'});
             });
 
             // ── Theme Change Listener ──
@@ -1944,8 +1948,18 @@
                 draw();
             });
 
-            // ── Initial Draw ──
-            draw();
+            // ── Canvas Resize ──
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                const w = container.clientWidth;
+                canvas.width = Math.max(w, 800);
+                canvas.height = 500;
+                draw();
+            }
+            window.addEventListener('resize', resizeCanvas);
+
+            // ── Initial Setup ──
+            resizeCanvas();
         })();
     </script>
 </body>

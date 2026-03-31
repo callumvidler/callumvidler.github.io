@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Nodal Analysis Tool</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../theme.css">
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --bg-panel: rgba(16, 20, 28, 0.92);
+            --bg-card: #1a1e26;
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.15);
+            --text: #e2e8f0;
+            --text-dim: #8892a4;
+            --text-muted: #505868;
+            --accent: #6aaa8e;
+            --accent-dim: #5a9a7e;
+            --red: #e06050;
+            --blue: #5b9bd5;
+            --yellow: #ffcc44;
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --bg-panel: rgba(255,255,255,0.92);
+            --bg-card: #eeeef0;
+            --border: rgba(0,0,0,0.1);
+            --border-hover: rgba(0,0,0,0.2);
+            --accent: #3d8b6e;
+            --accent-dim: #357a60;
+            --text: #1a1a1e;
+            --text-dim: #555555;
+            --text-muted: #888888;
+            --yellow: #b8860b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Back button ── */
+        .back-btn {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 100;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
+
+        /* ── Explainer container ── */
+        .explainer {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 72px 24px 120px;
+        }
+
+        /* ── Title block ── */
+        .title-block {
+            margin-bottom: 32px;
+        }
+        .title-block h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        .title-block .sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 12px;
+        }
+        .title-block p {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.7;
+            max-width: 640px;
+        }
+
+        /* ── Toolbar ── */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 14px;
+            margin-bottom: 16px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .toolbar .group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .toolbar .sep {
+            width: 1px;
+            height: 24px;
+            background: var(--border);
+            margin: 0 6px;
+        }
+
+        /* ── Tool buttons (component palette) ── */
+        .tool-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 11px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .tool-btn:hover {
+            color: var(--text);
+            border-color: var(--border-hover);
+            background: rgba(255,255,255,0.03);
+        }
+        .tool-btn.active {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: rgba(106,170,142,0.08);
+        }
+        [data-theme="light"] .tool-btn:hover {
+            background: rgba(0,0,0,0.04);
+        }
+        [data-theme="light"] .tool-btn.active {
+            color: var(--accent);
+            border-color: var(--accent);
+            background: rgba(61,139,110,0.1);
+        }
+
+        /* ── Action buttons (compute, clear, delete) ── */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 13px;
+            border-radius: 4px;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: #fff;
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .action-btn:hover {
+            filter: brightness(1.1);
+        }
+        .action-btn.secondary {
+            background: transparent;
+            color: var(--text-dim);
+            border-color: var(--border);
+        }
+        .action-btn.secondary:hover {
+            color: var(--text);
+            border-color: var(--border-hover);
+        }
+        [data-theme="light"] .action-btn.secondary:hover {
+            color: var(--text);
+        }
+
+        /* ── Frequency input ── */
+        .freq-input {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .freq-input input[type="number"] {
+            width: 72px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            text-align: right;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .freq-input input[type="number"]:focus {
+            border-color: var(--accent);
+        }
+        .freq-input input[type="number"]::-webkit-inner-spin-button,
+        .freq-input input[type="number"]::-webkit-outer-spin-button {
+            opacity: 0.5;
+        }
+
+        /* ── Canvas container ── */
+        .canvas-container {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--bg);
+            margin-bottom: 4px;
+        }
+        .canvas-container canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* ── Canvas hint ── */
+        .canvas-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 32px;
+            padding-left: 2px;
+        }
+
+        /* ── Value editor popup ── */
+        .value-editor {
+            display: none;
+            position: absolute;
+            z-index: 200;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-hover);
+            border-radius: 6px;
+            padding: 12px 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            min-width: 180px;
+        }
+        .value-editor.visible {
+            display: block;
+        }
+        .value-editor label {
+            display: block;
+            font-size: 11px;
+            color: var(--text-dim);
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 6px;
+        }
+        .value-editor input {
+            width: 100%;
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            outline: none;
+        }
+        .value-editor input:focus {
+            border-color: var(--accent);
+        }
+        .value-editor .ve-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            justify-content: flex-end;
+        }
+        .value-editor .ve-actions button {
+            padding: 3px 10px;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-dim);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .value-editor .ve-actions button.ve-ok {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        /* ── Walkthrough ── */
+        .walkthrough {
+            display: none;
+            margin-top: 32px;
+        }
+        .walkthrough.visible {
+            display: block;
+        }
+        .walkthrough h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 20px;
+            letter-spacing: -0.3px;
+        }
+
+        /* ── Walk step card ── */
+        .walk-step {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin-bottom: 16px;
+        }
+        .walk-step h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 10px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .walk-step p {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.65;
+            margin-bottom: 8px;
+        }
+
+        /* ── Walk table ── */
+        .walk-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            margin: 12px 0;
+        }
+        .walk-table th {
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+        .walk-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text);
+        }
+        .walk-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ── Matrix display ── */
+        .matrix-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+            overflow-x: auto;
+            padding: 8px 0;
+        }
+        .matrix {
+            display: inline-flex;
+            flex-direction: column;
+            border-left: 2px solid var(--text-dim);
+            border-right: 2px solid var(--text-dim);
+            border-radius: 2px;
+            padding: 4px 2px;
+        }
+        .matrix-row {
+            display: flex;
+            gap: 0;
+        }
+        .matrix-row span {
+            display: inline-block;
+            min-width: 64px;
+            text-align: center;
+            padding: 4px 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        /* ── Vector display ── */
+        .vector {
+            display: inline-flex;
+            flex-direction: column;
+            border-left: 2px solid var(--text-dim);
+            border-right: 2px solid var(--text-dim);
+            border-radius: 2px;
+            padding: 4px 2px;
+        }
+        .vector-entry {
+            display: block;
+            min-width: 48px;
+            text-align: center;
+            padding: 4px 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        /* ── Equation block ── */
+        .equation {
+            background: var(--bg-panel);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 4px 4px 0;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.7;
+            overflow-x: auto;
+        }
+
+        /* ── Error message ── */
+        .error-msg {
+            background: rgba(224,96,80,0.1);
+            border: 1px solid rgba(224,96,80,0.3);
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin: 12px 0;
+            font-size: 13px;
+            color: var(--red);
+            line-height: 1.5;
+        }
+
+        /* ── Node badge ── */
+        .node-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+            background: var(--accent);
+            vertical-align: middle;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 640px) {
+            .explainer {
+                padding: 56px 12px 80px;
+            }
+            .title-block h1 {
+                font-size: 22px;
+            }
+            .toolbar {
+                padding: 8px 10px;
+                gap: 4px;
+            }
+            .toolbar .sep {
+                display: none;
+            }
+            .toolbar .group {
+                flex-wrap: wrap;
+            }
+            .tool-btn, .action-btn {
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+            .canvas-container canvas {
+                min-height: 300px;
+            }
+            .walk-step {
+                padding: 14px 16px;
+            }
+            .matrix-row span,
+            .vector-entry {
+                min-width: 48px;
+                font-size: 11px;
+                padding: 3px 4px;
+            }
+            .equation {
+                font-size: 12px;
+                padding: 10px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-btn">&#8592; Back</a>
+
+    <div class="explainer">
+        <div class="title-block">
+            <h1>Nodal Analysis Tool</h1>
+            <div class="sub">Interactive Circuit Solver</div>
+            <p>
+                Build a circuit on the grid below by placing components, wiring them together,
+                and assigning a ground node. Click <strong>Compute</strong> to run Modified Nodal Analysis
+                and see a step-by-step walkthrough of the solution.
+            </p>
+        </div>
+
+        <div class="toolbar">
+            <div class="group">
+                <button class="tool-btn" data-tool="resistor">R Resistor</button>
+                <button class="tool-btn" data-tool="capacitor">C Capacitor</button>
+                <button class="tool-btn" data-tool="inductor">L Inductor</button>
+                <button class="tool-btn" data-tool="vsource">V Source</button>
+                <button class="tool-btn" data-tool="isource">I Source</button>
+                <button class="tool-btn" data-tool="gnd">GND</button>
+            </div>
+            <div class="sep"></div>
+            <div class="group">
+                <button class="tool-btn" data-tool="wire">Wire</button>
+            </div>
+            <div class="sep"></div>
+            <div class="group freq-input">
+                <label>&omega;</label>
+                <input type="number" id="freq-input" value="1000" min="0" step="100">
+                <span>rad/s</span>
+            </div>
+            <div class="sep"></div>
+            <div class="group">
+                <button class="action-btn" id="btn-compute">Compute</button>
+                <button class="action-btn secondary" id="btn-clear">Clear All</button>
+                <button class="action-btn secondary" id="btn-delete">Delete</button>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="circuit-canvas" width="960" height="500"></canvas>
+            <div class="value-editor" id="value-editor">
+                <label>Component Value</label>
+                <input type="text" id="ve-input" placeholder="e.g. 1k, 100u">
+                <div class="ve-actions">
+                    <button id="ve-cancel">Cancel</button>
+                    <button class="ve-ok" id="ve-ok">OK</button>
+                </div>
+            </div>
+        </div>
+        <div class="canvas-hint">Click a component to edit its value. Right-click to rotate.</div>
+
+        <div class="walkthrough" id="walkthrough">
+            <!-- Walkthrough steps will be generated by the solver -->
+        </div>
+    </div>
+
+    <script src="../theme.js"></script>
+    <script>
+        // Nodal analysis tool — interactive logic will be added in subsequent tasks.
+    </script>
+</body>
+</html>

@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026 Week 2: Action Potential Dipole Propagation</title>
   <style>
+    :root { --text: #ffffff; }
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * {
       margin: 0;
       padding: 0;
@@ -43,7 +46,7 @@
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 8px;
-      color: #fff;
+      color: var(--text);
     }
 
     #info .legend {
@@ -125,8 +128,8 @@
     #controls input[type=range] {
       width: 120px;
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.1);
-      height: 3px;
+      background: rgba(255,255,255,0.18);
+      height: 4px;
       border-radius: 2px;
       outline: none;
     }
@@ -160,7 +163,7 @@
 
     button.ctrl-btn:hover {
       background: rgba(255, 255, 255, 0.12);
-      color: #fff;
+      color: var(--text);
     }
 
     button.ctrl-btn.active {
@@ -204,7 +207,7 @@
     #voltage-readout .diff {
       font-size: 18px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       letter-spacing: 0.5px;
     }
 
@@ -214,6 +217,31 @@
       margin-top: 2px;
     }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] canvas#signalCanvas { background: rgba(0,0,0,0.06) !important; }
+    [data-theme="light"] #signal-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #info { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #info h2 { color: #1a1a1e; }
+    [data-theme="light"] #info p { color: #777; }
+    [data-theme="light"] #info .legend { color: #555; }
+    [data-theme="light"] #voltage-readout { background: rgba(255,255,255,0.85); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #voltage-readout .diff { color: #1a1a1e; }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -325,8 +353,8 @@
 
     // --- Scene ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.FogExp2(0x111111, 0.008);
+    scene.background = new THREE.Color(T.sceneBg);
+    scene.fog = new THREE.FogExp2(T.sceneBg, 0.008);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
     camera.position.set(30, 25, 40);
@@ -656,11 +684,11 @@
       sigCtx.save();
       sigCtx.scale(dpr, dpr);
 
-      sigCtx.fillStyle = 'rgba(0,0,0,0.85)';
+      sigCtx.fillStyle = T.plotBg;
       sigCtx.fillRect(0, 0, W, H);
 
       // Grid lines
-      sigCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+      sigCtx.strokeStyle = T.overlay05;
       sigCtx.lineWidth = 0.5;
       for (let y = 0; y <= H; y += 25) {
         sigCtx.beginPath(); sigCtx.moveTo(0, y); sigCtx.lineTo(W, y); sigCtx.stroke();
@@ -670,7 +698,7 @@
       }
 
       // Zero line
-      sigCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+      sigCtx.strokeStyle = T.gridStrong;
       sigCtx.lineWidth = 1;
       sigCtx.beginPath();
       sigCtx.moveTo(0, H / 2);
@@ -714,12 +742,12 @@
       sigCtx.fillRect(W - 80, legendY - 7, 10, 3);
       sigCtx.fillText('V_B', W - 66, legendY);
       // Diff
-      sigCtx.fillStyle = '#fff';
+      sigCtx.fillStyle = T.text;
       sigCtx.fillRect(W - 42, legendY - 7, 10, 3);
       sigCtx.fillText('\u0394V', W - 28, legendY);
 
       // Axis labels
-      sigCtx.fillStyle = '#666';
+      sigCtx.fillStyle = T.textQuiet;
       sigCtx.font = '11px sans-serif';
       sigCtx.fillText('+', 4, 14);
       sigCtx.fillText('\u2212', 4, H - 6);
@@ -727,7 +755,7 @@
 
       // Mode label
       if (frozen) {
-        sigCtx.fillStyle = '#ffc832';
+        sigCtx.fillStyle = T.yellow2;
         sigCtx.font = '10px sans-serif';
         sigCtx.fillText('Frozen', 4, H / 2 - 8);
       }
@@ -995,6 +1023,12 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('themechange', function() {
+      scene.background = new THREE.Color(T.sceneBg);
+      scene.fog.color.set(T.sceneBg);
+      drawSignal();
     });
   </script>
 </body>

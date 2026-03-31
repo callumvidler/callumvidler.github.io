@@ -21,6 +21,21 @@
             --red: #e06050;
         }
 
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --bg-deep: #f5f5f7;
+            --bg-panel: rgba(255,255,255,0.92);
+            --bg-card: #eeeef0;
+            --border: rgba(0,0,0,0.1);
+            --border-hover: rgba(0,0,0,0.2);
+            --accent: #3d8b6e;
+            --accent-dim: #357a60;
+            --text: #1a1a1e;
+            --text-dim: #555555;
+            --text-muted: #888888;
+            --yellow: #b8860b;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
@@ -49,7 +64,7 @@
             font-weight: 500;
             transition: all 0.15s;
         }
-        .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+        .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
 
         .explainer {
             max-width: 880px;
@@ -63,7 +78,7 @@
         .title-block h1 {
             font-size: 28px;
             font-weight: 700;
-            color: #fff;
+            color: var(--text);
             letter-spacing: -0.5px;
             margin-bottom: 8px;
         }
@@ -95,7 +110,7 @@
         .section h2 {
             font-size: 22px;
             font-weight: 700;
-            color: #fff;
+            color: var(--text);
             letter-spacing: -0.3px;
             margin-bottom: 16px;
         }
@@ -176,8 +191,8 @@
         .control-group input[type=range] {
             width: 120px;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
-            height: 3px;
+            background: rgba(255,255,255,0.18);
+            height: 4px;
             border-radius: 2px;
             outline: none;
         }
@@ -191,7 +206,7 @@
         .control-value {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 12px;
-            color: #fff;
+            color: var(--text);
             min-width: 52px;
             text-align: right;
         }
@@ -205,8 +220,8 @@
             cursor: pointer;
             transition: all 0.15s;
         }
-        .pause-btn:hover { color: #fff; border-color: var(--border-hover); }
-        .pause-btn.active { color: #fff; }
+        .pause-btn:hover { color: var(--text); border-color: var(--border-hover); }
+        .pause-btn.active { color: var(--text); }
 
         /* ── Info callouts ── */
         .callout {
@@ -219,7 +234,7 @@
             color: var(--text-dim);
             line-height: 1.7;
         }
-        .callout strong { color: #fff; }
+        .callout strong { color: var(--text); }
         .callout.warn {
             background: rgba(255,200,100,0.06);
             border-left-color: var(--yellow);
@@ -262,7 +277,7 @@
         .power-bar-value {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 12px;
-            color: #fff;
+            color: var(--text);
             min-width: 72px;
         }
         .efficiency-readout {
@@ -273,7 +288,22 @@
             text-align: center;
             margin: 16px 0;
         }
+        [data-theme="light"] .back-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+        [data-theme="light"] .back-btn:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.2); }
+        [data-theme="light"] .title-block h1 { color: #1a1a1e; }
+        [data-theme="light"] .section h2 { color: #1a1a1e; }
+        [data-theme="light"] .control-value { color: #1a1a1e; }
+        [data-theme="light"] .pause-btn:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.2); }
+        [data-theme="light"] .pause-btn.active { color: #1a1a1e; }
+        [data-theme="light"] .callout strong { color: #1a1a1e; }
+        [data-theme="light"] .power-bar-value { color: #1a1a1e; }
+        [data-theme="light"] .canvas-container { background: rgba(0,0,0,0.03); }
+        [data-theme="light"] .power-bar-track { background: rgba(0,0,0,0.04); }
+        [data-theme="light"] .control-group input[type=range] { background: rgba(0,0,0,0.15); }
+        [data-theme="light"] .control-group input[type=range]::-webkit-slider-thumb { background: #333; }
     </style>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 <body>
 
@@ -827,9 +857,9 @@ function drawNMOS(ctx, x, y, scale, labelColor, labelFont) {
     const s = scale || 1;
     ctx.beginPath();
     ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = T.overlay30;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
 
     ctx.beginPath();
     ctx.moveTo(x - 16 * s, y);
@@ -868,7 +898,7 @@ function drawNMOS(ctx, x, y, scale, labelColor, labelFont) {
     ctx.lineTo(x + 4 * s, y + 8 * s);
     ctx.lineTo(x + 4 * s, y + 12 * s);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = T.overlay50;
     ctx.fill();
 
     ctx.save();
@@ -885,9 +915,9 @@ function drawPMOS(ctx, x, y, scale, labelColor, labelFont) {
     const s = scale || 1;
     ctx.beginPath();
     ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = T.overlay30;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
 
     ctx.beginPath();
     ctx.moveTo(x - 16 * s, y);
@@ -926,7 +956,7 @@ function drawPMOS(ctx, x, y, scale, labelColor, labelFont) {
     ctx.lineTo(chX + 6 * s, y - 8 * s);
     ctx.lineTo(chX + 6 * s, y - 12 * s);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = T.overlay50;
     ctx.fill();
 
     ctx.save();
@@ -1005,7 +1035,7 @@ function drawInput() {
     const midY = padT + plotH / 2;
 
     // Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.strokeStyle = T.overlay05;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padL, midY); ctx.lineTo(W - padR, midY);
@@ -1019,7 +1049,7 @@ function drawInput() {
 
     // Axis labels
     ctx.font = '10px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#505868';
+    ctx.fillStyle = T.textGray;
     ctx.textAlign = 'right';
     ctx.fillText('+1', padL - 8, padT + 4);
     ctx.fillText('0', padL - 8, midY + 4);
@@ -1028,7 +1058,7 @@ function drawInput() {
     // Draw sine wave
     const windowT = 4 * Math.PI; // show 2 full cycles
     ctx.beginPath();
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = T.textLight;
     ctx.lineWidth = 2;
     for (let px = 0; px <= plotW; px++) {
         const t = simTime + (px / plotW) * windowT;
@@ -1041,7 +1071,7 @@ function drawInput() {
 
     // Label
     ctx.font = '11px "IBM Plex Sans", sans-serif';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.textAlign = 'left';
     ctx.fillText('Input Signal', padL + 8, padT + 16);
 }
@@ -1069,7 +1099,7 @@ function drawPWM() {
     const windowT = 4 * Math.PI;
 
     // Grid lines for top
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.strokeStyle = T.overlay05;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padL, topMid); ctx.lineTo(W - padR, topMid);
@@ -1091,7 +1121,7 @@ function drawPWM() {
 
     // Axis labels
     ctx.font = '10px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#505868';
+    ctx.fillStyle = T.textGray;
     ctx.textAlign = 'right';
     ctx.fillText('+1', padL - 8, padT + 4);
     ctx.fillText('0', padL - 8, topMid + 4);
@@ -1101,7 +1131,7 @@ function drawPWM() {
 
     // Draw carrier (triangle wave) - gold — supersample to catch peaks at high freq
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255,204,68,0.6)';
+    ctx.strokeStyle = T.yellowA(0.6);
     ctx.lineWidth = 1.5;
     const carrierCycles = windowT / (2 * Math.PI) * carrierFreqRatio;
     const carrierSamples = Math.max(plotW, Math.ceil(carrierCycles * 8));
@@ -1117,7 +1147,7 @@ function drawPWM() {
 
     // Draw input signal - white
     ctx.beginPath();
-    ctx.strokeStyle = '#e2e8f0';
+    ctx.strokeStyle = T.textLight;
     ctx.lineWidth = 2;
     for (let px = 0; px <= plotW; px++) {
         const t = simTime + (px / plotW) * windowT;
@@ -1155,7 +1185,7 @@ function drawPWM() {
             ctx.stroke();
             // Vertical transition line
             ctx.beginPath();
-            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.strokeStyle = T.overlay30;
             ctx.moveTo(x, prevPwm ? yHigh : yLow);
             ctx.lineTo(x, p ? yHigh : yLow);
             ctx.stroke();
@@ -1173,9 +1203,9 @@ function drawPWM() {
     // Labels
     ctx.font = '11px "IBM Plex Sans", sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.fillText('Input Signal', padL + 8, padT + 14);
-    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    ctx.fillStyle = T.yellowA(0.8);
     ctx.fillText('Triangle Carrier', padL + 100, padT + 14);
     ctx.fillStyle = 'rgba(106,170,142,0.9)';
     ctx.fillText('PWM Output', padL + 8, botTop + botH - 8);
@@ -1192,8 +1222,8 @@ function drawCompCircuit() {
 
     const cx = W / 2;
     const cy = H / 2;
-    const lineColor = 'rgba(255,255,255,0.5)';
-    const labelColor = '#8892a4';
+    const lineColor = T.overlay50;
+    const labelColor = T.textSlate;
     const labelFont = '11px "IBM Plex Mono", monospace';
 
     ctx.strokeStyle = lineColor;
@@ -1217,7 +1247,7 @@ function drawCompCircuit() {
     // + and - input labels inside
     ctx.save();
     ctx.font = '600 16px "IBM Plex Sans", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillStyle = T.overlay60;
     ctx.textAlign = 'center';
     ctx.fillText('+', compX - compW / 2 + 16, compY - compH / 4 + 6);
     ctx.fillText('\u2212', compX - compW / 2 + 16, compY + compH / 4 + 6);
@@ -1236,14 +1266,14 @@ function drawCompCircuit() {
     // V_in label
     ctx.save();
     ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.textAlign = 'right';
     ctx.fillText('v_in (signal)', vinStartX - 8, vinY + 4);
     ctx.restore();
 
     // Small sine wave icon
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.strokeStyle = T.overlay40;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let i = 0; i <= 20; i++) {
@@ -1269,14 +1299,14 @@ function drawCompCircuit() {
     // Carrier label
     ctx.save();
     ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    ctx.fillStyle = T.yellowA(0.8);
     ctx.textAlign = 'right';
     ctx.fillText('carrier (triangle)', triStartX - 8, triY + 4);
     ctx.restore();
 
     // Small triangle wave icon
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,204,68,0.5)';
+    ctx.strokeStyle = T.yellowA(0.5);
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     const twStart = triStartX + 10;
@@ -1352,7 +1382,7 @@ function drawCompCircuit() {
     // Component label
     ctx.save();
     ctx.font = '600 13px "IBM Plex Sans", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillStyle = T.overlay30;
     ctx.textAlign = 'center';
     ctx.fillText('COMPARATOR', compX, compY + 4);
     ctx.restore();
@@ -1368,8 +1398,8 @@ function drawLCCircuit() {
     ctx.clearRect(0, 0, W, H);
 
     const cy = H / 2;
-    const lineColor = 'rgba(255,255,255,0.5)';
-    const labelColor = '#8892a4';
+    const lineColor = T.overlay50;
+    const labelColor = T.textSlate;
     const labelFont = '11px "IBM Plex Mono", monospace';
 
     ctx.strokeStyle = lineColor;
@@ -1401,7 +1431,7 @@ function drawLCCircuit() {
     // PWM input label
     ctx.save();
     ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    ctx.fillStyle = T.yellowA(0.8);
     ctx.textAlign = 'right';
     ctx.fillText('PWM in', pwmInX - 8, wireY + 4);
     ctx.restore();
@@ -1420,7 +1450,7 @@ function drawLCCircuit() {
     // Inductor label
     ctx.save();
     ctx.font = '600 13px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.textAlign = 'center';
     ctx.fillText('L', (indStartX + indEndX) / 2, wireY - 18);
     ctx.restore();
@@ -1468,7 +1498,7 @@ function drawLCCircuit() {
     // Capacitor label
     ctx.save();
     ctx.font = '600 13px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.textAlign = 'left';
     ctx.fillText('C', capX + plateW + 8, (capTopY + capBotY) / 2 + 4);
     ctx.restore();
@@ -1498,7 +1528,7 @@ function drawLCCircuit() {
     ctx.restore();
 
     // ── Ground return wire (bottom) ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+    ctx.strokeStyle = T.overlay20;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
     ctx.moveTo(pwmInX, gndY);
@@ -1510,7 +1540,7 @@ function drawLCCircuit() {
     // GND label on left
     ctx.save();
     ctx.font = '11px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#505868';
+    ctx.fillStyle = T.textGray;
     ctx.textAlign = 'right';
     ctx.fillText('GND', pwmInX - 8, gndY + 4);
     ctx.restore();
@@ -1574,9 +1604,9 @@ function drawCircuit() {
     // Current PWM state
     const pwmNow = pwmSignal(simTime);
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.lineWidth = 1.5;
-    ctx.fillStyle = '#8892a4';
+    ctx.fillStyle = T.textSlate;
 
     // VCC rail at top
     const railY = cy - 130;
@@ -1585,31 +1615,31 @@ function drawCircuit() {
 
     // VCC label
     ctx.font = 'bold 13px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.textAlign = 'center';
     ctx.fillText('VCC = +12V', cx, railY - 16);
 
     // VCC rail line
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = T.overlay30;
     ctx.beginPath();
     ctx.moveTo(cx - 60, railY);
     ctx.lineTo(cx + 60, railY);
     ctx.stroke();
 
-    // Wire from VCC to PMOS
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    // Wire from VCC to PMOS source
+    ctx.strokeStyle = T.overlay50;
     ctx.beginPath();
-    ctx.moveTo(mosX + 10, railY);
-    ctx.lineTo(mosX + 10, cy - 74);
+    ctx.moveTo(mosX + 14, railY);
+    ctx.lineTo(mosX + 14, pmosY - 14 * 1.4);
     ctx.stroke();
 
     // PMOS (top)
     const pmosY = cy - 60;
-    drawPMOS(ctx, mosX, pmosY, 1.4, '#8892a4', '11px "IBM Plex Mono", monospace');
+    drawPMOS(ctx, mosX, pmosY, 1.4, T.textSlate, '11px "IBM Plex Mono", monospace');
 
     // Wire from PMOS drain to midpoint
     const midPointY = cy;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.beginPath();
     ctx.moveTo(mosX + 14, pmosY + 20);
     ctx.lineTo(mosX + 14, midPointY);
@@ -1626,7 +1656,7 @@ function drawCircuit() {
     ctx.fillText('V_out (PWM)', mosX + 86, midPointY + 4);
 
     // Wire from midpoint to NMOS
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.beginPath();
     ctx.moveTo(mosX + 14, midPointY);
     ctx.lineTo(mosX + 14, cy + 40);
@@ -1634,10 +1664,10 @@ function drawCircuit() {
 
     // NMOS (bottom)
     const nmosY = cy + 60;
-    drawNMOS(ctx, mosX, nmosY, 1.4, '#8892a4', '11px "IBM Plex Mono", monospace');
+    drawNMOS(ctx, mosX, nmosY, 1.4, T.textSlate, '11px "IBM Plex Mono", monospace');
 
     // Wire from NMOS source to GND
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.beginPath();
     ctx.moveTo(mosX + 14, nmosY + 20);
     ctx.lineTo(mosX + 14, gndY);
@@ -1646,33 +1676,46 @@ function drawCircuit() {
     // GND
     drawGround(ctx, mosX + 14, gndY);
     ctx.font = '11px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#505868';
+    ctx.fillStyle = T.textGray;
     ctx.textAlign = 'center';
     ctx.fillText('GND', mosX + 14, gndY + 22);
 
-    // PWM input label
+    // PWM input — signal goes to each gate individually
+    ctx.strokeStyle = T.yellowA(0.5);
+
+    // PWM wire to PMOS gate
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.moveTo(mosX - 80, cy);
-    ctx.lineTo(mosX - 60, pmosY);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(mosX - 80, cy);
-    ctx.lineTo(mosX - 60, nmosY);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(mosX - 130, cy);
-    ctx.lineTo(mosX - 80, cy);
+    ctx.moveTo(mosX - 130, pmosY);
+    ctx.lineTo(mosX - 16 * 1.4, pmosY);
     ctx.stroke();
 
+    // PWM wire to NMOS gate
+    ctx.beginPath();
+    ctx.moveTo(mosX - 130, nmosY);
+    ctx.lineTo(mosX - 16 * 1.4, nmosY);
+    ctx.stroke();
+
+    // Vertical line connecting the two PWM wires
+    ctx.beginPath();
+    ctx.moveTo(mosX - 130, pmosY);
+    ctx.lineTo(mosX - 130, nmosY);
+    ctx.stroke();
+
+    // Horizontal PWM input line
+    ctx.beginPath();
+    ctx.moveTo(mosX - 170, cy);
+    ctx.lineTo(mosX - 130, cy);
+    ctx.stroke();
+
+    // PWM In label
     ctx.font = '12px "IBM Plex Mono", monospace';
-    ctx.fillStyle = 'rgba(255,204,68,0.8)';
+    ctx.fillStyle = T.yellowA(0.8);
     ctx.textAlign = 'right';
-    ctx.fillText('PWM In', mosX - 134, cy + 4);
+    ctx.fillText('PWM In', mosX - 174, cy + 4);
 
-    // State indicators
-    const pmosOn = pwmNow === 1;
-    const nmosOn = pwmNow === 0;
+    // State indicators — HIGH turns on NMOS, LOW turns on PMOS
+    const nmosOn = pwmNow === 1;
+    const pmosOn = pwmNow === 0;
 
     // PMOS state
     ctx.font = 'bold 12px "IBM Plex Mono", monospace';
@@ -1688,8 +1731,8 @@ function drawCircuit() {
     if (pmosOn) {
         // Current from VCC through PMOS to output
         drawCurrentFlow(ctx, [
-            [mosX + 10, railY],
-            [mosX + 10, pmosY - 20],
+            [mosX + 14, railY],
+            [mosX + 14, pmosY - 14 * 1.4],
             [mosX + 14, pmosY + 20],
             [mosX + 14, midPointY],
             [mosX + 80, midPointY]
@@ -1732,7 +1775,7 @@ function drawFilter() {
     const windowT = 4 * Math.PI;
 
     // Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.strokeStyle = T.overlay05;
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
         const y = padT + (plotH / 4) * i;
@@ -1743,7 +1786,7 @@ function drawFilter() {
 
     // Axis labels
     ctx.font = '10px "IBM Plex Mono", monospace';
-    ctx.fillStyle = '#505868';
+    ctx.fillStyle = T.textGray;
     ctx.textAlign = 'right';
     ctx.fillText('VCC', padL - 8, padT + 4);
     ctx.fillText('VCC/2', padL - 8, midY + 4);
@@ -1755,7 +1798,7 @@ function drawFilter() {
     const yLowF = padT + plotH * 0.95;
     drawPWMTrace(ctx, simTime, windowT, plotW, padL,
         yHighF, yLowF,
-        'rgba(106,170,142,0.2)', 'rgba(80,128,208,0.15)', 'rgba(255,255,255,0.1)');
+        'rgba(106,170,142,0.2)', 'rgba(80,128,208,0.15)', T.overlay10);
 
     // Draw filtered output (smooth bright green)
     ctx.beginPath();
@@ -1788,8 +1831,8 @@ function drawFullCircuit() {
     const H = c.height / (window.devicePixelRatio || 1);
     ctx.clearRect(0, 0, W, H);
 
-    const lineColor = 'rgba(255,255,255,0.5)';
-    const labelColor = '#8892a4';
+    const lineColor = T.overlay50;
+    const labelColor = T.textSlate;
     const labelFont = '11px "IBM Plex Mono", monospace';
     ctx.strokeStyle = lineColor;
     ctx.lineWidth = 1.5;
@@ -1797,8 +1840,8 @@ function drawFullCircuit() {
     ctx.lineJoin = 'round';
 
     const pwmNow = pwmSignal(simTime);
-    const pmosOn = pwmNow === 1;
-    const nmosOn = pwmNow === 0;
+    const nmosOn = pwmNow === 1;
+    const pmosOn = pwmNow === 0;
 
     // ── Layout ──
     const padL = 40, padR = 30;
@@ -1822,7 +1865,7 @@ function drawFullCircuit() {
     const waveW = 40, waveH = 20;
     const waveY = wireY - 10;
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeStyle = T.overlay70;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let i = 0; i <= 30; i++) {
@@ -1834,7 +1877,7 @@ function drawFullCircuit() {
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.font = '11px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillText('v_in', srcX, waveY - waveH / 2 - 8);
@@ -1854,7 +1897,7 @@ function drawFullCircuit() {
     // ── Triangle carrier: animated triangle wave ──
     const carrierWaveY = wireY + compH / 2 + 30;
     ctx.save();
-    ctx.strokeStyle = 'rgba(255,204,68,0.7)';
+    ctx.strokeStyle = T.yellowA(0.7);
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let i = 0; i <= 30; i++) {
@@ -1867,13 +1910,13 @@ function drawFullCircuit() {
     ctx.stroke();
     ctx.restore();
 
-    ctx.fillStyle = 'rgba(255,204,68,0.7)';
+    ctx.fillStyle = T.yellowA(0.7);
     ctx.font = '11px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillText('carrier', srcX, carrierWaveY + waveH / 2 + 14);
 
     // Wire: carrier to comparator - terminal
-    ctx.strokeStyle = 'rgba(255,204,68,0.4)';
+    ctx.strokeStyle = T.yellowA(0.4);
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(srcX + waveW / 2 + 4, carrierWaveY);
@@ -1883,7 +1926,7 @@ function drawFullCircuit() {
     ctx.strokeStyle = lineColor;
 
     // ── Comparator triangle ──
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.beginPath();
     ctx.moveTo(compX - compW / 2, wireY - compH / 2);
     ctx.lineTo(compX + compW / 2, wireY);
@@ -1892,24 +1935,25 @@ function drawFullCircuit() {
     ctx.stroke();
 
     ctx.font = '12px "IBM Plex Sans", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = T.overlay50;
     ctx.textAlign = 'center';
     ctx.fillText('+', compX - compW / 2 + 10, compPlusY + 5);
     ctx.fillText('\u2212', compX - compW / 2 + 10, compMinusY + 5);
 
-    // Wire: comparator → MOSFET gates
+    // Wire: comparator → junction point
+    const juncX = mosX - 28;
     ctx.strokeStyle = lineColor;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(compX + compW / 2, wireY);
-    ctx.lineTo(mosX - 20, wireY);
+    ctx.lineTo(juncX, wireY);
     ctx.stroke();
 
     // PWM label
     ctx.font = '9px "IBM Plex Mono", monospace';
     ctx.fillStyle = pmosOn ? 'rgba(106,170,142,0.7)' : 'rgba(80,128,208,0.7)';
     ctx.textAlign = 'center';
-    ctx.fillText('PWM', (compX + compW / 2 + mosX - 20) / 2, wireY - 10);
+    ctx.fillText('PWM', (compX + compW / 2 + juncX) / 2, wireY - 10);
 
     // ── Half-bridge (PMOS + NMOS) ──
     const mosScale = 0.9;
@@ -1917,7 +1961,7 @@ function drawFullCircuit() {
     const nmosY = wireY + 34;
 
     // VCC rail
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = T.overlay25;
     ctx.beginPath(); ctx.moveTo(mosX - 20, railY); ctx.lineTo(mosX + 40, railY); ctx.stroke();
     ctx.fillStyle = '#e06050';
     ctx.font = '10px "IBM Plex Mono", monospace';
@@ -1925,36 +1969,42 @@ function drawFullCircuit() {
     ctx.fillText('VCC = +' + VCC + 'V', mosX + 10, railY - 6);
 
     // Wire: VCC → PMOS source
+    const mosPin = mosX + 10 * mosScale;
     ctx.strokeStyle = lineColor;
-    ctx.beginPath(); ctx.moveTo(mosX + 10, railY); ctx.lineTo(mosX + 10, pmosY - 16); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mosPin, railY); ctx.lineTo(mosPin, pmosY - 14 * mosScale); ctx.stroke();
 
     drawPMOS(ctx, mosX, pmosY, mosScale, labelColor, '9px "IBM Plex Mono", monospace');
 
     // Wire: PMOS drain → midpoint → NMOS drain
     ctx.strokeStyle = lineColor;
-    ctx.beginPath(); ctx.moveTo(mosX + 10, pmosY + 14); ctx.lineTo(mosX + 10, wireY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(mosX + 10, wireY); ctx.lineTo(mosX + 10, nmosY - 14); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mosPin, pmosY + 14 * mosScale); ctx.lineTo(mosPin, wireY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mosPin, wireY); ctx.lineTo(mosPin, nmosY - 14 * mosScale); ctx.stroke();
 
     drawNMOS(ctx, mosX, nmosY, mosScale, labelColor, '9px "IBM Plex Mono", monospace');
 
     // Wire: NMOS source → GND
     ctx.strokeStyle = lineColor;
-    ctx.beginPath(); ctx.moveTo(mosX + 10, nmosY + 14); ctx.lineTo(mosX + 10, gndY); ctx.stroke();
-    drawGround(ctx, mosX + 10, gndY);
-    ctx.fillStyle = '#505868';
+    ctx.beginPath(); ctx.moveTo(mosPin, nmosY + 14 * mosScale); ctx.lineTo(mosPin, gndY); ctx.stroke();
+    drawGround(ctx, mosPin, gndY);
+    ctx.fillStyle = T.textGray;
     ctx.font = '10px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('GND', mosX + 10, gndY + 16);
+    ctx.fillText('GND', mosPin, gndY + 16);
 
-    // Gate wires
+    // Gate wires — PWM goes to each gate individually
+    const gateX = mosX - 16 * mosScale;
     ctx.strokeStyle = lineColor;
+    // Junction to PMOS gate
     ctx.beginPath();
-    ctx.moveTo(mosX - 20, wireY);
-    ctx.lineTo(mosX - 20, pmosY);
+    ctx.moveTo(juncX, wireY);
+    ctx.lineTo(juncX, pmosY);
+    ctx.lineTo(gateX, pmosY);
     ctx.stroke();
+    // Junction to NMOS gate
     ctx.beginPath();
-    ctx.moveTo(mosX - 20, wireY);
-    ctx.lineTo(mosX - 20, nmosY);
+    ctx.moveTo(juncX, wireY);
+    ctx.lineTo(juncX, nmosY);
+    ctx.lineTo(gateX, nmosY);
     ctx.stroke();
 
     // State indicators
@@ -1966,24 +2016,24 @@ function drawFullCircuit() {
     ctx.fillText(nmosOn ? 'ON' : 'OFF', mosX + 24, nmosY + 4);
 
     // Node dot at half-bridge output
-    ctx.beginPath(); ctx.arc(mosX + 10, wireY, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(mosPin, wireY, 2.5, 0, Math.PI * 2);
+    ctx.fillStyle = T.text; ctx.fill();
 
     // ── Wire: half-bridge → inductor ──
     ctx.strokeStyle = lineColor;
-    ctx.beginPath(); ctx.moveTo(mosX + 10, wireY); ctx.lineTo(indStartX, wireY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(mosPin, wireY); ctx.lineTo(indStartX, wireY); ctx.stroke();
 
     // ── Inductor ──
     const bumps = 5;
     const bumpW = (indEndX - indStartX) / bumps;
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.strokeStyle = T.overlay60;
     ctx.beginPath();
     ctx.moveTo(indStartX, wireY);
     for (let i = 0; i < bumps; i++) {
         ctx.arc(indStartX + i * bumpW + bumpW / 2, wireY, bumpW / 2, Math.PI, 0, false);
     }
     ctx.stroke();
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.font = '12px "IBM Plex Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillText('L', (indStartX + indEndX) / 2, wireY - 16);
@@ -1993,7 +2043,7 @@ function drawFullCircuit() {
     ctx.beginPath(); ctx.moveTo(indEndX, wireY); ctx.lineTo(nodeX, wireY); ctx.stroke();
 
     ctx.beginPath(); ctx.arc(nodeX, wireY, 2.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.fillStyle = T.text; ctx.fill();
 
     // ── Capacitor (node to GND) ──
     const capTopY = wireY + 22;
@@ -2001,7 +2051,7 @@ function drawFullCircuit() {
     const capPlateW = 14;
     ctx.strokeStyle = lineColor;
     ctx.beginPath(); ctx.moveTo(nodeX, wireY); ctx.lineTo(nodeX, capTopY); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.strokeStyle = T.overlay60;
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(nodeX - capPlateW / 2, capTopY); ctx.lineTo(nodeX + capPlateW / 2, capTopY); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(nodeX - capPlateW / 2, capTopY + capGap); ctx.lineTo(nodeX + capPlateW / 2, capTopY + capGap); ctx.stroke();
@@ -2009,7 +2059,7 @@ function drawFullCircuit() {
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(nodeX, capTopY + capGap); ctx.lineTo(nodeX, gndY); ctx.stroke();
     drawGround(ctx, nodeX, gndY);
-    ctx.fillStyle = '#e2e8f0';
+    ctx.fillStyle = T.textLight;
     ctx.font = '12px "IBM Plex Mono", monospace';
     ctx.textAlign = 'left';
     ctx.fillText('C', nodeX + capPlateW / 2 + 4, capTopY + capGap / 2 + 4);
@@ -2020,7 +2070,7 @@ function drawFullCircuit() {
     ctx.beginPath(); ctx.moveTo(nodeX, wireY); ctx.lineTo(outX, wireY); ctx.stroke();
 
     // ── Load resistor ──
-    drawResistor(ctx, loadX, wireY, loadX, gndY - 8, 'RL', '#e2e8f0', '12px "IBM Plex Mono", monospace');
+    drawResistor(ctx, loadX, wireY, loadX, gndY - 8, 'RL', T.textLight, '12px "IBM Plex Mono", monospace');
     ctx.strokeStyle = lineColor;
     ctx.beginPath(); ctx.moveTo(loadX, gndY - 8); ctx.lineTo(loadX, gndY); ctx.stroke();
     drawGround(ctx, loadX, gndY);
@@ -2092,7 +2142,7 @@ function drawFullCircuit() {
 
     // ── Stage labels along the bottom ──
     ctx.font = '10px "IBM Plex Sans", sans-serif';
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.fillStyle = T.overlay20;
     ctx.textAlign = 'center';
     const stageY = H - 6;
     ctx.fillText('Input', srcX, stageY);
@@ -2119,14 +2169,14 @@ function drawFull() {
     const windowT = 4 * Math.PI;
 
     const traces = [
-        { label: 'Input Signal', color: '#e2e8f0', y0: padT + traceH / 2, h: traceH },
+        { label: 'Input Signal', color: T.textLight, y0: padT + traceH / 2, h: traceH },
         { label: 'PWM Output', color: '#6aaa8e', y0: padT + traceH + 20 + traceH / 2, h: traceH },
         { label: 'Filtered Output', color: '#6aaa8e', y0: padT + 2 * (traceH + 20) + traceH / 2, h: traceH }
     ];
 
     for (const tr of traces) {
         // Center line
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.strokeStyle = T.overlay05;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(padL, tr.y0);
@@ -2159,7 +2209,7 @@ function drawFull() {
     const yLowFull = traces[1].y0 + traces[1].h / 2 * 0.85;
     drawPWMTrace(ctx, simTime, windowT, plotW, padL,
         yHighFull, yLowFull,
-        'rgba(106,170,142,0.9)', 'rgba(80,128,208,0.7)', 'rgba(255,255,255,0.3)');
+        'rgba(106,170,142,0.9)', 'rgba(80,128,208,0.7)', T.overlay30);
 
     // Trace 3: filtered output
     ctx.beginPath();
@@ -2223,6 +2273,7 @@ function animate(now) {
 
 // ─── Init ───
 window.addEventListener('resize', resizeAll);
+window.addEventListener('themechange', function() { resizeAll(); });
 initCanvases();
 requestAnimationFrame(animate);
 </script>

@@ -1,0 +1,211 @@
+/* ══════════════════════════════════════════════════════════
+   Global light-mode overrides — shared across all pages
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Light-mode body ─── */
+[data-theme="light"] body {
+    background: #f5f5f7;
+    color: #333;
+}
+
+/* ─── Panels (floating info/control overlays) ─── */
+[data-theme="light"] .panel {
+    background: rgba(255,255,255,0.92);
+    border-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] .panel h2 { color: #1a1a1e; }
+[data-theme="light"] .panel h3 { color: #555; }
+[data-theme="light"] .panel p  { color: #777; }
+
+/* ─── Back button ─── */
+[data-theme="light"] .back-btn {
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.1);
+    color: #555;
+}
+[data-theme="light"] .back-btn:hover {
+    color: #1a1a1e;
+    border-color: rgba(0,0,0,0.2);
+}
+
+/* ─── Controls panel ─── */
+[data-theme="light"] #controls {
+    background: rgba(255,255,255,0.92);
+    border-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] #controls label { color: #555; }
+
+/* ─── Range sliders ─── */
+[data-theme="light"] #controls input[type=range],
+[data-theme="light"] .ctrl-row input[type=range],
+[data-theme="light"] .ctrl-row input[type="range"],
+[data-theme="light"] .control-group input[type=range],
+[data-theme="light"] .transport-bar input[type=range] {
+    background: rgba(0,0,0,0.15);
+}
+[data-theme="light"] #controls input[type=range]::-webkit-slider-thumb,
+[data-theme="light"] .ctrl-row input[type=range]::-webkit-slider-thumb,
+[data-theme="light"] .ctrl-row input[type="range"]::-webkit-slider-thumb,
+[data-theme="light"] .control-group input[type=range]::-webkit-slider-thumb,
+[data-theme="light"] .transport-bar input[type=range]::-webkit-slider-thumb {
+    background: #333;
+}
+
+/* ─── Buttons: ctrl-btn ─── */
+[data-theme="light"] button.ctrl-btn {
+    background: rgba(0,0,0,0.06);
+    border-color: rgba(0,0,0,0.12);
+    color: #444;
+}
+[data-theme="light"] button.ctrl-btn:hover {
+    background: rgba(0,0,0,0.1);
+    color: #222;
+}
+[data-theme="light"] button.ctrl-btn.active {
+    background: rgba(60,139,110,0.15);
+    border-color: rgba(60,139,110,0.4);
+    color: #3d8b6e;
+}
+
+/* ─── Buttons: toggle-btn ─── */
+[data-theme="light"] .toggle-btn {
+    background: rgba(0,0,0,0.04);
+}
+[data-theme="light"] .toggle-btn:hover {
+    background: rgba(0,0,0,0.08);
+    color: #1a1a1e;
+}
+[data-theme="light"] .toggle-btn.active {
+    background: rgba(0,0,0,0.10);
+    border-color: rgba(0,0,0,0.18);
+    color: #1a1a1e;
+}
+
+/* ─── Control values (editable number inputs) ─── */
+[data-theme="light"] .ctrl-val {
+    color: #1a1a1e;
+    background: rgba(0,0,0,0.04);
+    border-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] .ctrl-val:focus {
+    border-color: rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.06);
+}
+
+/* ─── Control value displays ─── */
+[data-theme="light"] .control-value { color: #1a1a1e; }
+
+/* ─── Legend ─── */
+[data-theme="light"] .legend { color: #555; }
+[data-theme="light"] .legend-item { color: #555; }
+
+/* ─── Canvas containers ─── */
+[data-theme="light"] .canvas-container {
+    background: rgba(0,0,0,0.03);
+}
+
+/* ─── Preset / action buttons ─── */
+[data-theme="light"] .preset-btn:hover {
+    background: rgba(0,0,0,0.06);
+    color: #1a1a1e;
+}
+[data-theme="light"] .preset-btn.active {
+    color: #1a1a1e;
+}
+[data-theme="light"] .action-btn:hover { color: #1a1a1e; }
+[data-theme="light"] .pause-btn:hover  { color: #1a1a1e; }
+[data-theme="light"] .pause-btn.active { color: #1a1a1e; }
+
+/* ─── Headings ─── */
+[data-theme="light"] .title-block h1 { color: #1a1a1e; }
+
+/* ─── Callouts ─── */
+[data-theme="light"] .callout strong { color: #1a1a1e; }
+
+/* ─── Equations / math ─── */
+[data-theme="light"] .eq-block .wh     { color: #1a1a1e; }
+[data-theme="light"] .derivation .math { color: #1a1a1e; }
+[data-theme="light"] .frac             { color: #1a1a1e; }
+[data-theme="light"] .frac .num        { border-bottom-color: rgba(0,0,0,0.25); }
+[data-theme="light"] .eq-line          { color: #1a1a1e; }
+
+/* ─── Derivation steps ─── */
+[data-theme="light"] .derivation li { background: rgba(0,0,0,0.02); }
+[data-theme="light"] .sub-section   { background: rgba(0,0,0,0.02); }
+
+/* ─── Readouts ─── */
+[data-theme="light"] .readout-bar span   { color: #1a1a1e; }
+[data-theme="light"] .readout-item .val  { color: #1a1a1e; }
+
+/* ─── Tables ─── */
+[data-theme="light"] .param-table td:first-child { color: #1a1a1e; }
+
+/* ─── Inline style overrides ─── */
+[data-theme="light"] .panel h3[style*="color:#fff"],
+[data-theme="light"] #controls .panel h3[style*="color:#fff"] {
+    color: #1a1a1e !important;
+}
+[data-theme="light"] h3[style*="color: #fff"],
+[data-theme="light"] .section h3[style] {
+    color: #1a1a1e !important;
+}
+[data-theme="light"] strong[style*="color:#fff"] {
+    color: #1a1a1e !important;
+}
+[data-theme="light"] [style*="color:white"] {
+    color: #1a1a1e !important;
+}
+[data-theme="light"] [style*="color:#fff"] {
+    color: #1a1a1e !important;
+}
+
+/* ─── Nav buttons (led/photodiode/laser) ─── */
+[data-theme="light"] .nav-btn:hover {
+    background: rgba(0,0,0,0.08);
+    color: #1a1a1e;
+}
+[data-theme="light"] .mat-btn:hover {
+    background: rgba(0,0,0,0.06);
+    color: #1a1a1e;
+}
+
+/* ─── Step navigation (led/photodiode/laser) ─── */
+[data-theme="light"] .step-description {
+    background: rgba(255,255,255,0.95);
+    border-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] .step-nav {
+    background: rgba(255,255,255,0.95);
+    border-color: rgba(0,0,0,0.1);
+}
+[data-theme="light"] .step-tab {
+    color: #555;
+}
+[data-theme="light"] .legend-bar {
+    background: rgba(255,255,255,0.95);
+    border-color: rgba(0,0,0,0.1);
+}
+
+/* ─── 3D/WebGL back buttons with inline styles ─── */
+[data-theme="light"] #back-btn,
+[data-theme="light"] [id="back-btn"] {
+    background: rgba(255,255,255,0.9) !important;
+    border-color: rgba(0,0,0,0.1) !important;
+    color: #555 !important;
+}
+[data-theme="light"] #back-btn:hover,
+[data-theme="light"] [id="back-btn"]:hover {
+    color: #1a1a1e !important;
+}
+
+/* ─── Controls panel headings / reset buttons ─── */
+[data-theme="light"] .controls-panel {
+    background: rgba(0,0,0,0.02);
+}
+[data-theme="light"] .ctrl-reset {
+    background: rgba(0,0,0,0.04);
+    color: #555;
+}
+[data-theme="light"] .ctrl-reset:hover {
+    color: #1a1a1e;
+}

@@ -26,6 +26,19 @@
             --col-depletion: rgba(255,255,255,0.08);
         }
 
+        [data-theme="light"] {
+            --bg-deep: #f5f5f7;
+            --bg-panel: #ffffff;
+            --bg-card: #eeeef0;
+            --border: rgba(0,0,0,0.1);
+            --border-hover: rgba(0,0,0,0.2);
+            --accent: #3d8b6e;
+            --accent-dim: #357a60;
+            --text: #1a1a1e;
+            --text-dim: #555555;
+            --text-muted: #888888;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -55,7 +68,7 @@
             color: var(--text-dim); text-decoration: none;
             font-size: 11px; font-weight: 500; transition: all 0.15s;
         }
-        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+        .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
 
         h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
         .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
@@ -141,8 +154,8 @@
         .ctrl-row input[type=range] {
             flex: 1;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
-            height: 3px;
+            background: rgba(255,255,255,0.18);
+            height: 4px;
             border-radius: 2px;
             outline: none;
         }
@@ -157,7 +170,7 @@
         .ctrl-val {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 0.68rem;
-            color: #fff;
+            color: var(--text);
             min-width: 56px;
             width: 72px;
             text-align: right;
@@ -191,11 +204,11 @@
             transition: all 0.15s;
             text-align: center;
         }
-        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
         .toggle-btn.active {
             background: rgba(255,255,255,0.12);
             border-color: rgba(255,255,255,0.18);
-            color: #fff;
+            color: var(--text);
         }
 
         /* Explanation panel */
@@ -218,7 +231,18 @@
             padding-left: 8px;
             margin-top: 0.3rem;
         }
+        [data-theme="light"] .back-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+        [data-theme="light"] .back-btn:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.2); }
+        [data-theme="light"] .toggle-btn { background: rgba(0,0,0,0.04); }
+        [data-theme="light"] .toggle-btn:hover { background: rgba(0,0,0,0.08); color: #1a1a1e; }
+        [data-theme="light"] .toggle-btn.active { background: rgba(0,0,0,0.10); border-color: rgba(0,0,0,0.18); color: #1a1a1e; }
+        [data-theme="light"] .ctrl-val { color: #1a1a1e; background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] .ctrl-val:focus { border-color: rgba(0,0,0,0.3); background: rgba(0,0,0,0.06); }
+        [data-theme="light"] .ctrl-row input[type=range] { background: rgba(0,0,0,0.15); }
+        [data-theme="light"] .ctrl-row input[type=range]::-webkit-slider-thumb { background: #1a1a1e; }
     </style>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 <body>
 
@@ -465,20 +489,20 @@
         ctx.fillRect(r.collector.x, r.top, r.collector.w, regionH);
 
         // Region borders
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.strokeStyle = T.gridStrong;
         ctx.lineWidth = 1;
         ctx.strokeRect(r.emitter.x, r.top, r.emitter.w, regionH);
         ctx.strokeRect(r.base.x, r.top, r.base.w, regionH);
         ctx.strokeRect(r.collector.x, r.top, r.collector.w, regionH);
 
         // Depletion regions
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillStyle = T.gridLight;
         ctx.fillRect(r.base.x - r.beDepl, r.top, r.beDepl * 2, regionH);
         ctx.setLineDash([3, 3]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.strokeStyle = T.overlay20;
         ctx.strokeRect(r.base.x - r.beDepl, r.top, r.beDepl * 2, regionH);
         const bcX = r.base.x + r.base.w;
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillStyle = T.gridLight;
         ctx.fillRect(bcX - r.bcDepl, r.top, r.bcDepl * 2, regionH);
         ctx.strokeRect(bcX - r.bcDepl, r.top, r.bcDepl * 2, regionH);
         ctx.setLineDash([]);
@@ -491,7 +515,7 @@
         ctx.textAlign = 'center';
         const labelY = r.top - 20;
 
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.fillText('Emitter (E)', r.emitter.x + r.emitter.w / 2, labelY);
         ctx.font = '11px "IBM Plex Mono"';
         const eDoping = isNPN ? 'N\u207A  Phosphorus' : 'P\u207A  Boron';
@@ -499,7 +523,7 @@
         ctx.fillText(eDoping, r.emitter.x + r.emitter.w / 2, labelY + 14);
 
         ctx.font = '600 13px "IBM Plex Sans"';
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.fillText('Base (B)', r.base.x + r.base.w / 2, labelY);
         ctx.font = '11px "IBM Plex Mono"';
         const bDoping = isNPN ? 'P  Boron' : 'N  Phosphorus';
@@ -507,7 +531,7 @@
         ctx.fillText(bDoping, r.base.x + r.base.w / 2, labelY + 14);
 
         ctx.font = '600 13px "IBM Plex Sans"';
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.fillText('Collector (C)', r.collector.x + r.collector.w / 2, labelY);
         ctx.font = '11px "IBM Plex Mono"';
         const cDoping = isNPN ? 'N  Phosphorus' : 'P  Boron';
@@ -522,7 +546,7 @@
         const regionH = r.height;
         const wireBottom = r.top + regionH;
         const wireEnd = ch - 8;  // near bottom of canvas
-        const wireColor = 'rgba(255,255,255,0.35)';
+        const wireColor = T.overlay35;
 
         const eCx = r.emitter.x + r.emitter.w / 2;
         const bCx = r.base.x + r.base.w / 2;
@@ -551,7 +575,7 @@
         ctx.stroke();
 
         // Terminal labels
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.font = '600 11px "IBM Plex Mono"';
         ctx.textAlign = 'center';
         ctx.fillText('E', eCx - 10, wireEnd - 4);
@@ -560,8 +584,8 @@
 
         // Conventional current direction arrows alongside wires (when I_B > 0)
         if (baseCurrent >= 15) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.strokeStyle = T.overlay50;
+            ctx.fillStyle = T.overlay50;
             ctx.lineWidth = 1;
             ctx.font = '500 9px "IBM Plex Mono"';
 
@@ -685,7 +709,7 @@
     }
 
     function drawWireElectrons(ctx) {
-        ctx.fillStyle = '#ffcc44';
+        ctx.fillStyle = T.yellow;
         for (const e of wireElectrons) {
             ctx.beginPath();
             ctx.arc(e.x, e.y, 2.5, 0, Math.PI * 2);
@@ -808,7 +832,7 @@
 
         // Junction lines
         ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+        ctx.strokeStyle = T.overlay20;
         ctx.lineWidth = 1;
         [beJunc, bcJunc].forEach(frac => {
             ctx.beginPath();
@@ -824,12 +848,12 @@
         const bcDeplWiden = 0.04 * (1 + baseCurrent / 200);
         const bcDeplNarrow = 0.012 + (1 - satBlendPlot) * 0.028;
         const bcFracDepl = baseCurrent === 0 ? 0.04 : ((1 - satBlendPlot) * bcDeplWiden + satBlendPlot * bcDeplNarrow);
-        ctx.fillStyle = 'rgba(255,255,255,0.07)';
+        ctx.fillStyle = T.grid;
         ctx.fillRect(xForFrac(beJunc - beFracDepl), margin.top, xForFrac(beFracDepl * 2) - xForFrac(0), plotH);
         ctx.fillRect(xForFrac(bcJunc - bcFracDepl), margin.top, xForFrac(bcFracDepl * 2) - xForFrac(0), plotH);
 
         // Axes
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.strokeStyle = T.overlay30;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(margin.left, margin.top);
@@ -838,14 +862,14 @@
         ctx.stroke();
 
         // Y-axis labels
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillStyle = T.overlay40;
         ctx.font = '10px "IBM Plex Mono"';
         ctx.textAlign = 'right';
         if (isLog) {
             for (let logV = logMin; logV <= logMax; logV += 2) {
                 const y = yForVal(logV);
                 ctx.fillText('10' + superscript(logV), margin.left - 5, y + 3);
-                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.strokeStyle = T.overlay05;
                 ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
             }
         } else {
@@ -859,16 +883,16 @@
                 else if (val >= 1e15) label = (val / 1e15).toFixed(1) + '\u00d710' + superscript(15);
                 else if (val >= 1e12) label = (val / 1e12).toFixed(1) + '\u00d710' + superscript(12);
                 else label = val.toExponential(0);
-                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.fillStyle = T.overlay40;
                 ctx.fillText(label, margin.left - 5, y + 3);
-                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.strokeStyle = T.overlay05;
                 ctx.beginPath(); ctx.moveTo(margin.left, y); ctx.lineTo(margin.left + plotW, y); ctx.stroke();
             }
         }
 
         // X-axis labels
         ctx.textAlign = 'center';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = T.overlay50;
         ctx.font = '11px "IBM Plex Sans"';
         ctx.fillText('Emitter', xForFrac(emitterFrac / 2), margin.top + plotH + 20);
         ctx.fillText('Base', xForFrac(beJunc + baseFrac / 2), margin.top + plotH + 20);
@@ -880,7 +904,7 @@
         ctx.rotate(-Math.PI / 2);
         ctx.textAlign = 'center';
         ctx.font = '11px "IBM Plex Sans"';
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = T.overlay50;
         ctx.fillText('Concentration (cm\u207B\u00B3)' + (isLog ? ' \u2014 log' : ' \u2014 linear'), 0, 0);
         ctx.restore();
 
@@ -891,7 +915,7 @@
 
         // n(x) — electron concentration
         ctx.beginPath();
-        ctx.strokeStyle = '#ffcc44';
+        ctx.strokeStyle = T.yellow;
         ctx.lineWidth = 2;
         const nEmitter = isNPN ? eMaj : eMin;
         const nBase0 = isNPN ? Math.min(bMinEq + injectionBoost * 4, eMaj - 0.5) : bMaj;
@@ -962,7 +986,7 @@
 
         // Curve labels
         ctx.font = '600 11px "IBM Plex Mono"';
-        ctx.fillStyle = '#ffcc44';
+        ctx.fillStyle = T.yellow;
         ctx.textAlign = 'right';
         ctx.fillText('n(x)', margin.left + plotW - 5, yForVal(nCollector) - 6);
         ctx.fillStyle = '#ff66aa';
@@ -1132,7 +1156,7 @@
             if (p.type === 'electron') {
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffcc44';
+                ctx.fillStyle = T.yellow;
                 ctx.fill();
             } else {
                 ctx.beginPath();
@@ -1242,6 +1266,12 @@
     drawConcentration();
     updateExplanation();
     animate();
+
+    // Theme change support
+    window.addEventListener('themechange', function() {
+        needsRedraw = true;
+        drawConcentration();
+    });
 </script>
 
 </body>

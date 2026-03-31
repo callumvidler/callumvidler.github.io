@@ -26,6 +26,8 @@
       --depletion-color: rgba(255, 255, 255, 0.04);
     }
 
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -55,7 +57,7 @@
       font-weight: 500;
       transition: all 0.15s;
     }
-    .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+    .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
 
     /* Layout */
     .explainer {
@@ -70,7 +72,7 @@
     .title-block h1 {
       font-size: 28px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       letter-spacing: -0.5px;
       margin-bottom: 8px;
     }
@@ -109,7 +111,7 @@
     .step-tab:hover { color: var(--text-dim); background: rgba(255, 255, 255, 0.03); }
     .step-tab.active {
       background: rgba(255, 255, 255, 0.08);
-      color: #fff;
+      color: var(--text);
       border: 1px solid var(--border-hover);
     }
     .step-num {
@@ -150,7 +152,7 @@
     .step-description h2 {
       font-size: 16px;
       font-weight: 600;
-      color: #fff;
+      color: var(--text);
       margin-bottom: 10px;
     }
     .step-description p {
@@ -195,8 +197,8 @@
     .control-group input[type=range] {
       width: 140px;
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.1);
-      height: 3px;
+      background: rgba(255,255,255,0.18);
+      height: 4px;
       border-radius: 2px;
       outline: none;
     }
@@ -211,7 +213,7 @@
     .control-value {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 12px;
-      color: #fff;
+      color: var(--text);
       min-width: 48px;
       text-align: right;
     }
@@ -233,11 +235,11 @@
       cursor: pointer;
       transition: all 0.15s;
     }
-    .mat-btn:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .mat-btn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
     .mat-btn.active {
       background: rgba(255, 255, 255, 0.12);
       border-color: var(--border-hover);
-      color: #fff;
+      color: var(--text);
     }
 
     /* Legend */
@@ -284,10 +286,50 @@
       cursor: pointer;
       transition: all 0.15s;
     }
-    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
     .nav-btn:disabled { opacity: 0.3; cursor: default; }
     .nav-btn:disabled:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] .canvas-container { background: rgba(0,0,0,0.04); }
+    [data-theme="light"] .step-description { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .step-description h2 { color: #1a1a1e; }
+    [data-theme="light"] .step-description p { color: #555; }
+    [data-theme="light"] .step-nav { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .step-tab { color: #888; }
+    [data-theme="light"] .step-tab.active { background: rgba(0,0,0,0.06); color: #222; border-color: rgba(0,0,0,0.12); }
+    [data-theme="light"] .legend-bar { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .legend-item { color: #555; }
+    [data-theme="light"] .control-group { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .control-group label { color: #555; }
+    [data-theme="light"] .control-group input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] .control-group input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] .nav-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+    [data-theme="light"] .nav-btn:hover { background: rgba(0,0,0,0.08); color: #222; }
+    [data-theme="light"] .mat-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+    [data-theme="light"] .mat-btn.active { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.15); color: #222; }
+    [data-theme="light"] .back-btn { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); color: #555; }
+    [data-theme="light"] .title-block p { color: #666; }
+    [data-theme="light"] .title-block h1 { color: #1a1a1e; }
+    [data-theme="light"] .back-btn:hover { color: #1a1a1e; }
+    [data-theme="light"] .control-value { color: #1a1a1e; }
+    [data-theme="light"] .mat-btn:hover { color: #1a1a1e; }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -491,11 +533,11 @@
       ctx.fillRect(jx + deplHalf, 0, W - jx - deplHalf, H);
 
       // Depletion region
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.fillStyle = T.overlay03;
       ctx.fillRect(jx - deplHalf, 0, deplHalf * 2, H);
 
       // Depletion borders
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.strokeStyle = T.overlay10;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -509,7 +551,7 @@
       ctx.setLineDash([]);
 
       // Junction center line
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.strokeStyle = T.gridLight;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(jx, 0);
@@ -519,7 +561,7 @@
       // Depletion label
       if (deplHalf > 20) {
         ctx.font = '500 10px IBM Plex Mono';
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillStyle = T.overlay20;
         ctx.textAlign = 'center';
         ctx.fillText('Depletion', jx, H - 16);
         ctx.fillText('Region', jx, H - 4);
@@ -637,7 +679,7 @@
         ctx.stroke();
 
         ctx.font = '700 8px IBM Plex Mono';
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('−', e.x, e.y + 0.5);
@@ -691,7 +733,7 @@
 
         // Flash ring
         const radius = (1 - a.life) * 25 + 5;
-        ctx.strokeStyle = '#ffffff';
+        ctx.strokeStyle = T.text;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(a.x, a.y, radius, 0, Math.PI * 2);
@@ -699,7 +741,7 @@
 
         // Inner glow
         const grad = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, radius);
-        grad.addColorStop(0, 'rgba(255,255,255,0.3)');
+        grad.addColorStop(0, T.overlay30);
         grad.addColorStop(1, 'rgba(255,255,255,0)');
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -725,7 +767,7 @@
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.font = '700 8px IBM Plex Mono';
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('+', p.holeX, p.holeY + 0.5);
@@ -739,7 +781,7 @@
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.font = '700 8px IBM Plex Mono';
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('−', p.elecX, p.elecY + 0.5);
@@ -808,8 +850,8 @@
       const bh = 90;
 
       // Background
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+      ctx.fillStyle = T.darkOverlay;
+      ctx.strokeStyle = T.grid;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect(bx, by, bw, bh, 6);
@@ -818,7 +860,7 @@
 
       // Title
       ctx.font = '500 9px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillStyle = T.overlay25;
       ctx.textAlign = 'center';
       ctx.fillText('Energy Band Diagram', bx + bw / 2, by + 12);
 
@@ -859,7 +901,7 @@
 
       // Fermi level (dashed)
       const fermiY = pCbY + bandgap * 0.5 + drop * 0.5;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.strokeStyle = T.gridStrong;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -875,7 +917,7 @@
       ctx.fillText('Ec', bx + 2, pCbY - 3);
       ctx.fillStyle = 'rgba(255, 107, 107, 0.6)';
       ctx.fillText('Ev', bx + 2, pVbY + 10);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.fillStyle = T.overlay20;
       ctx.fillText('Ef', bx + 2, fermiY - 3);
 
       // P and N labels
@@ -887,20 +929,20 @@
 
       // Bandgap annotation
       const bgX = bx + bw - 30;
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.strokeStyle = T.overlay20;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(bgX, nCbY);
       ctx.lineTo(bgX, nVbY);
       ctx.stroke();
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillStyle = T.overlay20;
       ctx.beginPath();
       ctx.moveTo(bgX - 3, nCbY + 4); ctx.lineTo(bgX + 3, nCbY + 4); ctx.lineTo(bgX, nCbY); ctx.fill();
       ctx.beginPath();
       ctx.moveTo(bgX - 3, nVbY - 4); ctx.lineTo(bgX + 3, nVbY - 4); ctx.lineTo(bgX, nVbY); ctx.fill();
 
       ctx.font = '400 7px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillStyle = T.overlay25;
       ctx.textAlign = 'left';
       ctx.fillText('Eg=' + mat.bandgap.toFixed(2) + 'eV', bgX + 5, (nCbY + nVbY) / 2 + 3);
 
@@ -1092,7 +1134,7 @@
         ctx.font = '500 11px IBM Plex Mono';
         ctx.textAlign = 'left';
         const mat = MATERIALS[currentMaterial];
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+        ctx.fillStyle = T.overlay25;
         const statusText = reverseVoltage > 0
           ? `Reverse bias: ${reverseVoltage.toFixed(1)} V — depletion widened`
           : `No bias applied`;
@@ -1195,6 +1237,8 @@
     // Init
     setStep(0);
     requestAnimationFrame(loop);
+
+    window.addEventListener('themechange', () => { draw(); });
   </script>
 </body>
 

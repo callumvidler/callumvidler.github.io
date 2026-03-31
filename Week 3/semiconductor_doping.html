@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026: Semiconductor Doping — 3D Silicon Lattice</title>
   <style>
+    :root { --text: #ffffff; }
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #111; color: #ccc;
@@ -20,7 +23,7 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       font-size: 12px; line-height: 1.6;
     }
-    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
     .panel h3 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
     .panel p  { font-size: 11px; color: #666; margin-top: 6px; }
     #info { top: 16px; left: 16px; max-width: 310px; }
@@ -46,7 +49,7 @@
     }
     #controls input[type=range] {
       width: 120px; -webkit-appearance: none;
-      background: rgba(255,255,255,0.1); height: 3px; border-radius: 2px; outline: none;
+      background: rgba(255,255,255,0.18); height: 4px; border-radius: 2px; outline: none;
     }
     #controls input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none; width: 12px; height: 12px;
@@ -58,7 +61,7 @@
       color: #bbb; padding: 5px 14px; border-radius: 6px; cursor: pointer;
       font-size: 11px; font-weight: 500; transition: all 0.15s;
     }
-    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
     button.ctrl-btn.active {
       background: rgba(255,200,50,0.15); border-color: rgba(255,200,50,0.4); color: #ffc832;
     }
@@ -71,7 +74,7 @@
     }
     #status-panel .val {
       font-family: 'SF Mono','Fira Code','Consolas',monospace;
-      font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;
+      font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px;
     }
     #status-panel .stat-row {
       display: flex; justify-content: space-between; color: #888; margin: 3px 0; font-size: 11px;
@@ -80,6 +83,32 @@
       font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 600; color: #ccc;
     }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] canvas#diagramCanvas { background: rgba(0,0,0,0.06) !important; }
+    [data-theme="light"] #status-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #status-panel .val { color: #1a1a1e; }
+    [data-theme="light"] #status-panel .stat-val { color: #333; }
+    [data-theme="light"] #status-panel .stat-row { color: #666; }
+    [data-theme="light"] #controls .panel h3[style*="color:#fff"],
+    [data-theme="light"] .panel h3[style*="color:#fff"] { color: #1a1a1e !important; }
+    [data-theme="light"] #back-btn { background: rgba(255,255,255,0.9) !important; border-color: rgba(0,0,0,0.1) !important; color: #555 !important; }
+    [data-theme="light"] #back-btn:hover { color: #1a1a1e !important; }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -157,8 +186,8 @@
 
     // ─── Scene ───
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.FogExp2(0x111111, 0.003);
+    scene.background = new THREE.Color(T.sceneBg);
+    scene.fog = new THREE.FogExp2(T.sceneBg, 0.003);
 
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 800);
     camera.position.set(20, 18, 35);
@@ -466,7 +495,7 @@
     // ─── Free electron ───
     function createFreeElectron(pos, homeAtomIdx) {
       const mat = new THREE.MeshPhongMaterial({
-        color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.5,
+        color: T.yellow3js3, emissive: T.yellow3js3, emissiveIntensity: 0.5,
         transparent: true, opacity: 0.9,
       });
       const mesh = new THREE.Mesh(freeElecGeo, mat);
@@ -475,7 +504,7 @@
       // Glow
       mesh.add(new THREE.Mesh(
         new THREE.SphereGeometry(0.6, 8, 8),
-        new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.12, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: T.yellow3js3, transparent: true, opacity: 0.12, depthWrite: false })
       ));
       // Trail
       const TLEN = 50;
@@ -486,7 +515,7 @@
       const tGeo = new THREE.BufferGeometry();
       tGeo.setAttribute('position', new THREE.BufferAttribute(tp, 3));
       const trail = new THREE.Line(tGeo,
-        new THREE.LineBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.3 })
+        new THREE.LineBasicMaterial({ color: T.yellow3js3, transparent: true, opacity: 0.3 })
       );
       carrierGroup.add(trail);
 
@@ -569,7 +598,7 @@
           const arr = new THREE.ArrowHelper(
             new THREE.Vector3(-1, 0, 0),
             new THREE.Vector3(px - 2, y, z),
-            arrowLen, 0xffcc44, headLen, headW
+            arrowLen, T.yellow3js3, headLen, headW
           );
           arr.visible = false;
           arr.line.material.transparent = true;
@@ -579,7 +608,7 @@
         }
       }
 
-      fieldLabel = makeSprite('\u2190 E', '#ffcc44', 24);
+      fieldLabel = makeSprite('\u2190 E', T.yellow, 24);
       fieldLabel.position.set(px - 2, extent + 3 * s, 0);
       fieldLabel.scale.set(3 * s, 0.8 * s, 1);
       fieldLabel.visible = false;
@@ -670,7 +699,7 @@
       const rect = diagCanvas.getBoundingClientRect();
       const W = Math.round(rect.width), H = Math.round(rect.height);
       diagCtx.save(); diagCtx.scale(dpr, dpr);
-      diagCtx.fillStyle = 'rgba(0,0,0,0.9)';
+      diagCtx.fillStyle = T.plotBg2;
       diagCtx.fillRect(0, 0, W, H);
 
       const pad = 35, topY = 30, botY = H - 15;
@@ -679,12 +708,12 @@
       const bandW = right - left, cx = (left + right) / 2;
 
       // Energy axis
-      diagCtx.strokeStyle = 'rgba(255,255,255,0.2)'; diagCtx.lineWidth = 1;
+      diagCtx.strokeStyle = T.overlay20; diagCtx.lineWidth = 1;
       diagCtx.beginPath(); diagCtx.moveTo(pad - 5, topY - 5); diagCtx.lineTo(pad - 5, botY); diagCtx.stroke();
       diagCtx.beginPath();
       diagCtx.moveTo(pad - 5, topY - 5); diagCtx.lineTo(pad - 8, topY + 3);
       diagCtx.moveTo(pad - 5, topY - 5); diagCtx.lineTo(pad - 2, topY + 3); diagCtx.stroke();
-      diagCtx.fillStyle = '#666'; diagCtx.font = '10px sans-serif';
+      diagCtx.fillStyle = T.textQuiet; diagCtx.font = '10px sans-serif';
       diagCtx.save(); diagCtx.translate(10, (topY + botY) / 2); diagCtx.rotate(-Math.PI / 2);
       diagCtx.textAlign = 'center'; diagCtx.fillText('Energy (E)', 0, 0); diagCtx.restore();
 
@@ -706,22 +735,22 @@
       diagCtx.strokeRect(left, vbTop, bandW, vbBot - vbTop);
 
       // Band gap bracket
-      diagCtx.setLineDash([3, 3]); diagCtx.strokeStyle = 'rgba(255,255,255,0.1)'; diagCtx.lineWidth = 0.5;
+      diagCtx.setLineDash([3, 3]); diagCtx.strokeStyle = T.overlay10; diagCtx.lineWidth = 0.5;
       diagCtx.beginPath(); diagCtx.moveTo(left, cbBot); diagCtx.lineTo(right, cbBot); diagCtx.stroke();
       diagCtx.beginPath(); diagCtx.moveTo(left, vbTop); diagCtx.lineTo(right, vbTop); diagCtx.stroke();
       diagCtx.setLineDash([]);
       const bx = right + 2;
-      diagCtx.strokeStyle = 'rgba(255,255,255,0.25)'; diagCtx.lineWidth = 1;
+      diagCtx.strokeStyle = T.overlay25; diagCtx.lineWidth = 1;
       diagCtx.beginPath(); diagCtx.moveTo(bx, cbBot); diagCtx.lineTo(bx + 3, cbBot);
       diagCtx.lineTo(bx + 3, vbTop); diagCtx.lineTo(bx, vbTop); diagCtx.stroke();
-      diagCtx.fillStyle = '#888'; diagCtx.font = '9px sans-serif'; diagCtx.textAlign = 'left';
+      diagCtx.fillStyle = T.textMuted; diagCtx.font = '9px sans-serif'; diagCtx.textAlign = 'left';
       diagCtx.fillText('1.1eV', bx + 5, (cbBot + vbTop) / 2 + 3);
 
       // Fermi level
-      diagCtx.setLineDash([5, 3]); diagCtx.strokeStyle = 'rgba(255,200,50,0.6)'; diagCtx.lineWidth = 1.5;
+      diagCtx.setLineDash([5, 3]); diagCtx.strokeStyle = T.yellowA(0.6); diagCtx.lineWidth = 1.5;
       diagCtx.beginPath(); diagCtx.moveTo(left, fermiY); diagCtx.lineTo(right, fermiY); diagCtx.stroke();
       diagCtx.setLineDash([]);
-      diagCtx.fillStyle = '#ffc832'; diagCtx.font = '10px sans-serif'; diagCtx.textAlign = 'left';
+      diagCtx.fillStyle = T.yellow2; diagCtx.font = '10px sans-serif'; diagCtx.textAlign = 'left';
       diagCtx.fillText('E_F', left - 18, fermiY + 3);
 
       // Mode-specific details
@@ -732,7 +761,7 @@
         diagCtx.setLineDash([]);
         diagCtx.fillStyle = '#ee5555'; diagCtx.font = '9px sans-serif'; diagCtx.textAlign = 'center';
         diagCtx.fillText('Donor level (P)', cx, donorY - 5);
-        diagCtx.strokeStyle = 'rgba(255,204,68,0.5)'; diagCtx.lineWidth = 1; diagCtx.setLineDash([2, 2]);
+        diagCtx.strokeStyle = T.yellowA(0.5); diagCtx.lineWidth = 1; diagCtx.setLineDash([2, 2]);
         for (let a = 0; a < 3; a++) {
           const ax = cx - 20 + a * 20;
           diagCtx.beginPath(); diagCtx.moveTo(ax, donorY - 2); diagCtx.lineTo(ax, cbBot + 2); diagCtx.stroke();
@@ -740,7 +769,7 @@
           diagCtx.moveTo(ax, cbBot + 2); diagCtx.lineTo(ax + 2, cbBot + 6); diagCtx.stroke();
         }
         diagCtx.setLineDash([]);
-        diagCtx.fillStyle = 'rgba(255,204,68,0.9)';
+        diagCtx.fillStyle = T.yellowA(0.9);
         for (let d = 0; d < 4; d++) {
           const ex = left + 15 + d * (bandW - 30) / 3;
           diagCtx.beginPath(); diagCtx.arc(ex, cbTop + (cbBot - cbTop) * 0.5, 3.5, 0, Math.PI * 2); diagCtx.fill();
@@ -768,7 +797,7 @@
       } else {
         const tempNorm = temperature / 100;
         const numTh = Math.floor(tempNorm * tempNorm * 4);
-        diagCtx.fillStyle = 'rgba(255,204,68,0.7)';
+        diagCtx.fillStyle = T.yellowA(0.7);
         for (let d = 0; d < numTh; d++) {
           const ex = left + 15 + d * (bandW - 30) / Math.max(numTh, 1);
           diagCtx.beginPath(); diagCtx.arc(ex, cbTop + (cbBot - cbTop) * 0.6, 3, 0, Math.PI * 2); diagCtx.fill();
@@ -933,14 +962,14 @@
             const fromPos = new THREE.Vector3(-plateX + 1, entryY, entryZ);
             const toPos = firstHole.pos.clone();
             const mat = new THREE.MeshPhongMaterial({
-              color: 0xffcc44, emissive: 0xffcc44,
+              color: T.yellow3js3, emissive: T.yellow3js3,
               emissiveIntensity: 0.6, transparent: true, opacity: 0.95,
             });
             const mesh = new THREE.Mesh(freeElecGeo, mat);
             mesh.position.copy(fromPos);
             mesh.add(new THREE.Mesh(
               new THREE.SphereGeometry(0.5, 8, 8),
-              new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.15, depthWrite: false })
+              new THREE.MeshBasicMaterial({ color: T.yellow3js3, transparent: true, opacity: 0.15, depthWrite: false })
             ));
             carrierGroup.add(mesh);
             pTypeHopElectrons.push({
@@ -1194,10 +1223,10 @@
       }
 
       // ── UI ──
-      const T = Math.round(temperature * 10);
+      const tempK = Math.round(temperature * 10);
       const V = (voltage / 100 * 5).toFixed(1);
       document.getElementById('voltReadout').textContent = V + ' V';
-      document.getElementById('tempReadout').textContent = T + ' K';
+      document.getElementById('tempReadout').textContent = tempK + ' K';
       document.getElementById('atomCountVal').textContent = atomPositions.length.toString();
       document.getElementById('bondCountVal').textContent = bondPairs.length.toString();
 
@@ -1297,6 +1326,11 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('themechange', () => {
+      scene.background = new THREE.Color(T.sceneBg);
+      scene.fog.color.set(T.sceneBg);
     });
   </script>
 </body>

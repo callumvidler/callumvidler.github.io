@@ -27,6 +27,8 @@
       --depletion-color: rgba(255, 255, 255, 0.04);
     }
 
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -56,7 +58,7 @@
       font-weight: 500;
       transition: all 0.15s;
     }
-    .back-btn:hover { color: #fff; border-color: var(--border-hover); }
+    .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
 
     /* Layout */
     .explainer {
@@ -71,7 +73,7 @@
     .title-block h1 {
       font-size: 28px;
       font-weight: 700;
-      color: #fff;
+      color: var(--text);
       letter-spacing: -0.5px;
       margin-bottom: 8px;
     }
@@ -110,7 +112,7 @@
     .step-tab:hover { color: var(--text-dim); background: rgba(255, 255, 255, 0.03); }
     .step-tab.active {
       background: rgba(255, 255, 255, 0.08);
-      color: #fff;
+      color: var(--text);
       border: 1px solid var(--border-hover);
     }
     .step-num {
@@ -151,7 +153,7 @@
     .step-description h2 {
       font-size: 16px;
       font-weight: 600;
-      color: #fff;
+      color: var(--text);
       margin-bottom: 10px;
     }
     .step-description p {
@@ -196,8 +198,8 @@
     .control-group input[type=range] {
       width: 140px;
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.1);
-      height: 3px;
+      background: rgba(255,255,255,0.18);
+      height: 4px;
       border-radius: 2px;
       outline: none;
     }
@@ -212,7 +214,7 @@
     .control-value {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 12px;
-      color: #fff;
+      color: var(--text);
       min-width: 48px;
       text-align: right;
     }
@@ -261,10 +263,47 @@
       cursor: pointer;
       transition: all 0.15s;
     }
-    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .nav-btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--text); }
     .nav-btn:disabled { opacity: 0.3; cursor: default; }
     .nav-btn:disabled:hover { background: rgba(255, 255, 255, 0.05); color: var(--text-dim); }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] .canvas-container { background: rgba(0,0,0,0.04); }
+    [data-theme="light"] .step-description { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .step-description h2 { color: #1a1a1e; }
+    [data-theme="light"] .step-description p { color: #555; }
+    [data-theme="light"] .step-nav { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .step-tab { color: #888; }
+    [data-theme="light"] .step-tab.active { background: rgba(0,0,0,0.06); color: #222; border-color: rgba(0,0,0,0.12); }
+    [data-theme="light"] .legend-bar { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .legend-item { color: #555; }
+    [data-theme="light"] .control-group { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .control-group label { color: #555; }
+    [data-theme="light"] .control-group input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] .control-group input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] .nav-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+    [data-theme="light"] .nav-btn:hover { background: rgba(0,0,0,0.08); color: #222; }
+    [data-theme="light"] .back-btn { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); color: #555; }
+    [data-theme="light"] .title-block p { color: #666; }
+    [data-theme="light"] .title-block h1 { color: #1a1a1e; }
+    [data-theme="light"] .back-btn:hover { color: #1a1a1e; }
+    [data-theme="light"] .control-value { color: #1a1a1e; }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -502,7 +541,7 @@
       ctx.fillRect(jx + deplHalf, 0, W - jx - deplHalf, H);
 
       // Depletion region
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+      ctx.fillStyle = T.overlay02;
       ctx.fillRect(jx - deplHalf, 0, deplHalf * 2, H);
 
       // Active region highlight (quantum well)
@@ -510,21 +549,21 @@
         ctx.fillStyle = 'rgba(255, 200, 50, 0.04)';
         ctx.fillRect(active.left, active.top, active.right - active.left, active.bottom - active.top);
 
-        ctx.strokeStyle = 'rgba(255, 200, 50, 0.15)';
+        ctx.strokeStyle = T.yellowA(0.15);
         ctx.lineWidth = 1;
         ctx.setLineDash([4, 4]);
         ctx.strokeRect(active.left, active.top, active.right - active.left, active.bottom - active.top);
         ctx.setLineDash([]);
 
         ctx.font = '500 9px IBM Plex Mono';
-        ctx.fillStyle = 'rgba(255,200,50,0.4)';
+        ctx.fillStyle = T.yellowA(0.4);
         ctx.textAlign = 'center';
         ctx.fillText('Active Region', jx, active.top - 6);
         ctx.fillText('(Quantum Well)', jx, active.top + 10);
       }
 
       // Depletion borders
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.strokeStyle = T.grid;
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -538,7 +577,7 @@
       ctx.setLineDash([]);
 
       // Junction center line
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      ctx.strokeStyle = T.overlay05;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(jx, 0);
@@ -548,7 +587,7 @@
       // Depletion label
       if (deplHalf > 15) {
         ctx.font = '500 9px IBM Plex Mono';
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillStyle = T.gridStrong;
         ctx.textAlign = 'center';
         ctx.fillText('Depletion', jx, H - 12);
       }
@@ -603,14 +642,14 @@
       const mirrorBottom = active.bottom + 10;
 
       // Left mirror (fully reflective representation)
-      ctx.fillStyle = 'rgba(200, 200, 200, 0.25)';
+      ctx.fillStyle = T.overlay25;
       ctx.fillRect(active.left - mirrorWidth - 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.strokeStyle = T.overlay40;
       ctx.lineWidth = 1.5;
       ctx.strokeRect(active.left - mirrorWidth - 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
 
       // Hatching for left mirror
-      ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+      ctx.strokeStyle = T.gridStrong;
       ctx.lineWidth = 0.5;
       for (let y = mirrorTop; y < mirrorBottom; y += 8) {
         ctx.beginPath();
@@ -620,9 +659,9 @@
       }
 
       // Right mirror (partially transmitting — output coupler)
-      ctx.fillStyle = 'rgba(200, 200, 200, 0.15)';
+      ctx.fillStyle = T.gridStrong;
       ctx.fillRect(active.right + 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.strokeStyle = T.overlay30;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
       ctx.strokeRect(active.right + 20, mirrorTop, mirrorWidth, mirrorBottom - mirrorTop);
@@ -630,7 +669,7 @@
 
       // Labels
       ctx.font = '500 9px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillStyle = T.overlay35;
       ctx.textAlign = 'center';
       ctx.fillText('R₁ ≈ 32%', active.left - mirrorWidth / 2 - 20, mirrorTop - 8);
       ctx.fillText('R₂ ≈ 32%', active.right + mirrorWidth / 2 + 20, mirrorTop - 8);
@@ -676,7 +715,7 @@
         ctx.stroke();
 
         ctx.font = '700 8px IBM Plex Mono';
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('−', e.x, e.y + 0.5);
@@ -742,8 +781,8 @@
       const bx = W - bw - 16;
       const by = 44;
 
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillStyle = T.darkOverlay;
+      ctx.strokeStyle = T.grid;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect(bx, by, bw, bh, 6);
@@ -751,7 +790,7 @@
       ctx.stroke();
 
       ctx.font = '500 9px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillStyle = T.overlay30;
       ctx.textAlign = 'center';
       ctx.fillText('Energy Band Diagram', bx + bw / 2, by + 14);
 
@@ -830,7 +869,7 @@
       ctx.fillStyle = 'rgba(255, 107, 107, 0.5)';
       ctx.fillText('Ev', bx + 5, vbBase + 3);
 
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillStyle = T.overlay20;
       ctx.textAlign = 'center';
       ctx.fillText('Eg=' + BANDGAP.toFixed(2) + ' eV', midX, vbBase + 18);
 
@@ -852,8 +891,8 @@
       const cx = 16;
       const cy = H - ch - 16;
 
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillStyle = T.darkOverlay;
+      ctx.strokeStyle = T.grid;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect(cx, cy, cw, ch, 6);
@@ -861,7 +900,7 @@
       ctx.stroke();
 
       ctx.font = '500 9px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillStyle = T.overlay30;
       ctx.textAlign = 'center';
       ctx.fillText('L-I Characteristic', cx + cw / 2, cy + 14);
 
@@ -873,7 +912,7 @@
       const plotH = plotBottom - plotTop;
 
       // Axes
-      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.strokeStyle = T.overlay20;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(plotLeft, plotTop);
@@ -883,7 +922,7 @@
 
       // Axis labels
       ctx.font = '400 8px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillStyle = T.overlay25;
       ctx.textAlign = 'center';
       ctx.fillText('Current (mA)', plotLeft + plotW / 2, plotBottom + 12);
       ctx.save();
@@ -903,7 +942,7 @@
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.font = '400 7px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,200,50,0.4)';
+      ctx.fillStyle = T.yellowA(0.4);
       ctx.textAlign = 'center';
       ctx.fillText('I_th', threshX, plotBottom + 12);
 
@@ -937,14 +976,14 @@
       }
       const markerY = plotBottom - markerPower * plotH;
 
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = T.text;
       ctx.beginPath();
       ctx.arc(markerX, markerY, 4, 0, Math.PI * 2);
       ctx.fill();
 
       // Labels for regions
       ctx.font = '400 7px IBM Plex Mono';
-      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillStyle = T.overlay20;
       ctx.textAlign = 'center';
       if (threshX - plotLeft > 30) {
         ctx.fillText('LED', plotLeft + (threshX - plotLeft) / 2, plotTop + 10);
@@ -1347,6 +1386,8 @@
     // Init
     setStep(0);
     draw();
+
+    window.addEventListener('themechange', () => { draw(); });
   </script>
 </body>
 

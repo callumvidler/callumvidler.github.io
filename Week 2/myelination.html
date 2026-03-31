@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026: Myelinated vs Unmyelinated Neuron Conduction</title>
   <style>
+    :root { --text: #ffffff; }
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * {
       margin: 0;
       padding: 0;
@@ -41,7 +44,7 @@
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 8px;
-      color: #fff;
+      color: var(--text);
     }
 
     .panel h3 {
@@ -103,8 +106,8 @@
     #controls input[type=range] {
       width: 120px;
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.1);
-      height: 3px;
+      background: rgba(255,255,255,0.18);
+      height: 4px;
       border-radius: 2px;
       outline: none;
     }
@@ -139,7 +142,7 @@
 
     button.ctrl-btn:hover {
       background: rgba(255, 255, 255, 0.12);
-      color: #fff;
+      color: var(--text);
     }
 
     button.ctrl-btn.active {
@@ -225,6 +228,26 @@
       margin-bottom: 3px;
     }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] canvas#signalCanvas { background: rgba(0,0,0,0.06) !important; }
+    [data-theme="light"] #signal-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #readout { background: rgba(255,255,255,0.85); border-color: rgba(0,0,0,0.1); }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -314,8 +337,8 @@
 
     // --- Scene setup ---
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.FogExp2(0x111111, 0.006);
+    scene.background = new THREE.Color(T.sceneBg);
+    scene.fog = new THREE.FogExp2(T.sceneBg, 0.006);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
     camera.position.set(0, 18, 45);
@@ -488,12 +511,12 @@
     unmyelLabel.position.set(0, UNMYEL_Y + 4.5, 0);
     scene.add(unmyelLabel);
 
-    const stimLabel1 = makeTextSprite('Stimulus', '#ffc832', 36);
+    const stimLabel1 = makeTextSprite('Stimulus', T.yellow2, 36);
     stimLabel1.position.set(-HALF_LEN - 3, MYEL_Y + 2.5, 0);
     stimLabel1.scale.set(5, 0.7, 1);
     scene.add(stimLabel1);
 
-    const stimLabel2 = makeTextSprite('Stimulus', '#ffc832', 36);
+    const stimLabel2 = makeTextSprite('Stimulus', T.yellow2, 36);
     stimLabel2.position.set(-HALF_LEN - 3, UNMYEL_Y + 2.5, 0);
     stimLabel2.scale.set(5, 0.7, 1);
     scene.add(stimLabel2);
@@ -869,10 +892,10 @@
       sigCtx.save();
       sigCtx.scale(dpr, dpr);
 
-      sigCtx.fillStyle = 'rgba(0,0,0,0.85)';
+      sigCtx.fillStyle = T.plotBg;
       sigCtx.fillRect(0, 0, W, H);
 
-      sigCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+      sigCtx.strokeStyle = T.overlay05;
       sigCtx.lineWidth = 0.5;
       for (let y = 0; y <= H; y += 25) {
         sigCtx.beginPath(); sigCtx.moveTo(0, y); sigCtx.lineTo(W, y); sigCtx.stroke();
@@ -882,7 +905,7 @@
       }
 
       const baseY = H * 0.7;
-      sigCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+      sigCtx.strokeStyle = T.gridStrong;
       sigCtx.lineWidth = 1;
       sigCtx.beginPath(); sigCtx.moveTo(0, baseY); sigCtx.lineTo(W, baseY); sigCtx.stroke();
 
@@ -920,14 +943,14 @@
       sigCtx.fillRect(W - 60, 10, 10, 3);
       sigCtx.fillText('Unmyel.', W - 46, 16);
 
-      sigCtx.fillStyle = '#666';
+      sigCtx.fillStyle = T.textQuiet;
       sigCtx.font = '11px sans-serif';
       sigCtx.fillText('+40 mV', 4, 14);
       sigCtx.fillText('-70 mV', 4, baseY + 4);
       sigCtx.fillText('time \u2192', W - 52, H - 6);
 
       if (frozen) {
-        sigCtx.fillStyle = '#ffc832';
+        sigCtx.fillStyle = T.yellow2;
         sigCtx.font = '10px sans-serif';
         sigCtx.fillText('Frozen', 4, baseY - 20);
       }
@@ -1293,6 +1316,12 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('themechange', function() {
+      scene.background = new THREE.Color(T.sceneBg);
+      scene.fog.color.set(T.sceneBg);
+      drawSignal();
     });
   </script>
 </body>

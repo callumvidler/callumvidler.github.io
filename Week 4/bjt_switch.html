@@ -27,6 +27,19 @@
             --col-cutoff: rgba(200, 200, 200, 0.06);
         }
 
+        [data-theme="light"] {
+            --bg-deep: #f5f5f7;
+            --bg-panel: #ffffff;
+            --bg-card: #eeeef0;
+            --border: rgba(0,0,0,0.1);
+            --border-hover: rgba(0,0,0,0.2);
+            --accent: #3d8b6e;
+            --accent-dim: #357a60;
+            --text: #1a1a1e;
+            --text-dim: #555555;
+            --text-muted: #888888;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -56,7 +69,7 @@
             color: var(--text-dim); text-decoration: none;
             font-size: 11px; font-weight: 500; transition: all 0.15s;
         }
-        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+        .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
 
         h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
         .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
@@ -144,8 +157,8 @@
         .ctrl-row input[type=range] {
             flex: 1;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
-            height: 3px;
+            background: rgba(255,255,255,0.18);
+            height: 4px;
             border-radius: 2px;
             outline: none;
         }
@@ -160,7 +173,7 @@
         .ctrl-val {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 0.68rem;
-            color: #fff;
+            color: var(--text);
             min-width: 56px;
             width: 72px;
             text-align: right;
@@ -194,11 +207,11 @@
             transition: all 0.15s;
             text-align: center;
         }
-        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
         .toggle-btn.active {
             background: rgba(255,255,255,0.12);
             border-color: rgba(255,255,255,0.18);
-            color: #fff;
+            color: var(--text);
         }
 
         /* Readout bar */
@@ -253,7 +266,18 @@
         .region-cutoff { background: rgba(200,60,60,0.2); color: #d66; }
         .region-active { background: rgba(90,154,186,0.2); color: var(--col-ic); }
         .region-saturation { background: rgba(204,168,85,0.2); color: var(--col-ib); }
+        [data-theme="light"] .back-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+        [data-theme="light"] .back-btn:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.2); }
+        [data-theme="light"] .toggle-btn { background: rgba(0,0,0,0.04); }
+        [data-theme="light"] .toggle-btn:hover { background: rgba(0,0,0,0.08); color: #1a1a1e; }
+        [data-theme="light"] .toggle-btn.active { background: rgba(0,0,0,0.10); border-color: rgba(0,0,0,0.18); color: #1a1a1e; }
+        [data-theme="light"] .ctrl-val { color: #1a1a1e; background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] .ctrl-val:focus { border-color: rgba(0,0,0,0.3); background: rgba(0,0,0,0.06); }
+        [data-theme="light"] .ctrl-row input[type=range] { background: rgba(0,0,0,0.15); }
+        [data-theme="light"] .ctrl-row input[type=range]::-webkit-slider-thumb { background: #1a1a1e; }
     </style>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 <body>
 
@@ -627,7 +651,7 @@ function drawCircuit(state) {
     if (isNPN) {
         // V_CC label
         ctx.font = `600 ${s(12)}px 'IBM Plex Mono', monospace`;
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('V_CC = ' + vcc.toFixed(1) + ' V', railX, vccY - s(12));
@@ -644,7 +668,7 @@ function drawCircuit(state) {
         // R_load voltage drop label (right side)
         const vRL = state.ic * rLoad;
         ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
-        ctx.fillStyle = '#777';
+        ctx.fillStyle = T.textFaint;
         ctx.textAlign = 'left';
         ctx.fillText(vRL.toFixed(2) + ' V', railX + s(28), (rlTop + rlBot) / 2);
 
@@ -683,7 +707,7 @@ function drawCircuit(state) {
         // ─── PNP layout ───
         // V_CC label
         ctx.font = `600 ${s(12)}px 'IBM Plex Mono', monospace`;
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('V_CC = ' + vcc.toFixed(1) + ' V', railX, vccY - s(12));
@@ -722,7 +746,7 @@ function drawCircuit(state) {
         // R_load voltage drop label
         const vRL = state.ic * rLoad;
         ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
-        ctx.fillStyle = '#777';
+        ctx.fillStyle = T.textFaint;
         ctx.textAlign = 'left';
         ctx.fillText(vRL.toFixed(2) + ' V', railX + s(28), (rlTop + rlBot) / 2);
 
@@ -744,7 +768,7 @@ function drawCircuit(state) {
         ctx.fillStyle = '#cca855';
         ctx.fillText('h_FE(forced) = ' + state.hfeForced.toFixed(1), bjtX, bjtY + bjtR + s(6));
     } else if (state.region === 'active') {
-        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillStyle = T.overlay35;
         ctx.fillText('h_FE = ' + hfe, bjtX, bjtY + bjtR + s(6));
     }
 
@@ -786,7 +810,7 @@ function drawCircuit(state) {
     // V_BE label (below and to the left, clear of BJT symbol)
     const vbe = state.ib > 0 ? VBE_ON : 0;
     ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = '#777';
+    ctx.fillStyle = T.textFaint;
     ctx.textAlign = 'center';
     ctx.fillText('V_BE = ' + vbe.toFixed(1) + ' V', ibWireX - s(10), baseY + s(24));
 
@@ -809,7 +833,7 @@ function drawResistorBox(ctx, x1, y1, x2, y2, s, name, valStr, labelSide) {
     const bx2 = x1 + ux * (leadLen + boxLen), by2 = y1 + uy * (leadLen + boxLen);
 
     // Wires
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(bx1, by1); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(bx2, by2); ctx.lineTo(x2, y2); ctx.stroke();
@@ -819,15 +843,15 @@ function drawResistorBox(ctx, x1, y1, x2, y2, s, name, valStr, labelSide) {
     ctx.save();
     ctx.translate(midX, midY);
     ctx.rotate(Math.atan2(dy, dx));
-    ctx.fillStyle = 'rgba(30,30,35,0.9)';
+    ctx.fillStyle = T.panelBg2;
     ctx.fillRect(-boxLen / 2, -boxW / 2, boxLen, boxW);
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.strokeStyle = T.overlay50;
     ctx.lineWidth = 1.5;
     ctx.strokeRect(-boxLen / 2, -boxW / 2, boxLen, boxW);
 
     // Value text inside box
     ctx.font = `400 ${s(8)}px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = '#ccc';
+    ctx.fillStyle = T.textSub;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(valStr, 0, 0);
@@ -837,7 +861,7 @@ function drawResistorBox(ctx, x1, y1, x2, y2, s, name, valStr, labelSide) {
     const allMidX = (x1 + x2) / 2, allMidY = (y1 + y2) / 2;
     const off = (boxW / 2 + s(10)) * labelSide;
     ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = '#bbb';
+    ctx.fillStyle = T.textMid;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(name, allMidX + px * off, allMidY + py * off);
@@ -848,14 +872,14 @@ function drawBJT_NPN(ctx, x, y, r, s) {
     // Circle
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = T.overlay25;
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Base line (from circle left edge to vertical bar)
     const barX = x - r * 0.4;
     const barH = r * 0.6;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeStyle = T.overlay80;
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(barX, y); ctx.stroke();
 
@@ -867,7 +891,7 @@ function drawBJT_NPN(ctx, x, y, r, s) {
     const cEndX = x, cEndY = y - r;
     const cBarY = y - barH * 0.45;
     ctx.lineWidth = 1.8;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeStyle = T.overlay80;
     ctx.beginPath(); ctx.moveTo(barX, cBarY); ctx.lineTo(cEndX, cEndY); ctx.stroke();
 
     // Emitter line (bar lower → bottom of circle) with OUTWARD arrow
@@ -887,7 +911,7 @@ function drawBJT_NPN(ctx, x, y, r, s) {
     ctx.lineTo(arrowTipX - aux * as + apx * as * 0.4, arrowTipY - auy * as + apy * as * 0.4);
     ctx.lineTo(arrowTipX - aux * as - apx * as * 0.4, arrowTipY - auy * as - apy * as * 0.4);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillStyle = T.overlay80;
     ctx.fill();
 
     // Terminal labels
@@ -907,7 +931,7 @@ function drawBJT_NPN(ctx, x, y, r, s) {
     ctx.fillText('E', x + s(4), y + r - s(2));
 
     // Type label (inside circle, right side)
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = T.overlay40;
     ctx.font = `600 ${s(11)}px 'IBM Plex Mono', monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -918,14 +942,14 @@ function drawBJT_PNP(ctx, x, y, r, s) {
     // Circle
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeStyle = T.overlay25;
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // Base line
     const barX = x - r * 0.4;
     const barH = r * 0.6;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeStyle = T.overlay80;
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x - r, y); ctx.lineTo(barX, y); ctx.stroke();
 
@@ -937,7 +961,7 @@ function drawBJT_PNP(ctx, x, y, r, s) {
     const eEndX = x, eEndY = y - r;
     const eBarY = y - barH * 0.45;
     ctx.lineWidth = 1.8;
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeStyle = T.overlay80;
     ctx.beginPath(); ctx.moveTo(barX, eBarY); ctx.lineTo(eEndX, eEndY); ctx.stroke();
 
     // Arrow on emitter: points TOWARD bar (inward) — PNP convention
@@ -953,7 +977,7 @@ function drawBJT_PNP(ctx, x, y, r, s) {
     ctx.lineTo(arrowTipX - aux * as + apx * as * 0.4, arrowTipY - auy * as + apy * as * 0.4);
     ctx.lineTo(arrowTipX - aux * as - apx * as * 0.4, arrowTipY - auy * as - apy * as * 0.4);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillStyle = T.overlay80;
     ctx.fill();
 
     // Collector line (bar lower → bottom of circle)
@@ -978,7 +1002,7 @@ function drawBJT_PNP(ctx, x, y, r, s) {
     ctx.fillText('C', x + s(4), y + r - s(2));
 
     // Type label (inside circle, right side)
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = T.overlay40;
     ctx.font = `600 ${s(11)}px 'IBM Plex Mono', monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1042,13 +1066,13 @@ function drawWire(ctx, x1, y1, x2, y2) {
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.lineWidth = 1.5;
     ctx.stroke();
 }
 
 function drawGnd(ctx, x, y, s) {
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.lineWidth = 1.5;
     const w = s(10);
     for (let i = 0; i < 3; i++) {
@@ -1065,13 +1089,13 @@ function drawVoltageSource(ctx, x, y, r, s, vIn) {
     // Circle
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+    ctx.strokeStyle = T.overlay40;
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
     // + and - labels (top and bottom inside circle)
     ctx.font = `600 ${s(10)}px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = T.overlay50;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('+', x, y - r * 0.45);
@@ -1079,10 +1103,10 @@ function drawVoltageSource(ctx, x, y, r, s, vIn) {
 
     // V_in label below source
     ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = '#bbb';
+    ctx.fillStyle = T.textMid;
     ctx.fillText('V_in', x, y - r - s(10));
     ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = T.text;
     ctx.fillText(vIn.toFixed(1) + ' V', x, y - r - s(22));
 }
 
@@ -1106,11 +1130,11 @@ function drawTimePlots() {
     const plotH = H - pad.t - pad.b;
 
     // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillStyle = T.plotBg;
     ctx.fillRect(pad.l, pad.t, plotW, plotH);
 
     // Grid
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = T.gridLight;
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
         const y = pad.t + plotH * i / 4;
@@ -1139,7 +1163,7 @@ function drawTimePlots() {
     const maxVin = vInPk > 0 ? vInPk : 1;
 
     // Draw V_in trace (background, thin)
-    drawTrace(ctx, dataBuf.t, dataBuf.vin, tStart, tWindow, (v) => pad.t + plotH - (v / maxVin) * plotH * 0.3, pad.l, plotW, 'rgba(255,255,255,0.15)', 1, true);
+    drawTrace(ctx, dataBuf.t, dataBuf.vin, tStart, tWindow, (v) => pad.t + plotH - (v / maxVin) * plotH * 0.3, pad.l, plotW, T.gridStrong, 1, true);
 
     // Draw current traces
     drawTrace(ctx, dataBuf.t, dataBuf.ib, tStart, tWindow, mapY, pad.l, plotW, '#cca855', 1.5);
@@ -1148,7 +1172,7 @@ function drawTimePlots() {
 
     // Y-axis labels
     ctx.font = "13px 'IBM Plex Mono', monospace";
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = T.textDim;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     for (let i = 0; i <= 4; i++) {
@@ -1170,17 +1194,17 @@ function drawTimePlots() {
     ctx.translate(14, pad.t + plotH / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#999';
+    ctx.fillStyle = T.textDimmer;
     ctx.font = "13px 'IBM Plex Sans', sans-serif";
     ctx.fillText('Current', 0, 0);
     ctx.restore();
 
-    ctx.fillStyle = '#999';
+    ctx.fillStyle = T.textDimmer;
     ctx.textAlign = 'center';
     ctx.fillText('Time', pad.l + plotW / 2, H - 4);
 
     // Border
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = T.overlay10;
     ctx.lineWidth = 1;
     ctx.strokeRect(pad.l, pad.t, plotW, plotH);
 }
@@ -1228,7 +1252,7 @@ function drawIVCurve(state) {
     const plotH = H - pad.t - pad.b;
 
     // Background
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillStyle = T.plotBg;
     ctx.fillRect(pad.l, pad.t, plotW, plotH);
 
     // Axis ranges
@@ -1266,7 +1290,7 @@ function drawIVCurve(state) {
     ctx.fillText('FORWARD ACTIVE', mapX(vceMax * 0.55), pad.t + 28);
 
     // ─── Grid ───
-    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.strokeStyle = T.gridLight;
     ctx.lineWidth = 1;
     for (let i = 0; i <= 4; i++) {
         const y = pad.t + plotH * i / 4;
@@ -1321,7 +1345,7 @@ function drawIVCurve(state) {
     // ─── Load line ───
     // I_C = (V_CC - V_CE) / R_load
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+    ctx.strokeStyle = T.overlay50;
     ctx.lineWidth = 1.5;
     ctx.setLineDash([6, 4]);
     const llIc0 = vcc / rLoad;  // at VCE=0
@@ -1332,7 +1356,7 @@ function drawIVCurve(state) {
 
     // Load line label
     ctx.font = "12px 'IBM Plex Mono', monospace";
-    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillStyle = T.overlay80;
     ctx.textAlign = 'right';
     ctx.fillText('Load line', mapX(vcc) - 4, mapY(0) - 6);
 
@@ -1349,15 +1373,15 @@ function drawIVCurve(state) {
     ctx.beginPath();
     ctx.arc(opX, opY, 4, 0, Math.PI * 2);
     ctx.fillStyle = state.region === 'saturation' ? '#cca855' :
-                    state.region === 'active' ? '#5a9aba' : '#aaa';
+                    state.region === 'active' ? '#5a9aba' : T.textDim;
     ctx.fill();
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = T.text;
     ctx.lineWidth = 1;
     ctx.stroke();
 
     // ─── Axis labels ───
     ctx.font = "13px 'IBM Plex Mono', monospace";
-    ctx.fillStyle = '#aaa';
+    ctx.fillStyle = T.textDim;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     for (let i = 0; i <= 4; i++) {
@@ -1377,19 +1401,19 @@ function drawIVCurve(state) {
     ctx.translate(14, pad.t + plotH / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#999';
+    ctx.fillStyle = T.textDimmer;
     ctx.font = "13px 'IBM Plex Sans', sans-serif";
     ctx.fillText('I_C (Collector Current)', 0, 0);
     ctx.restore();
 
-    ctx.fillStyle = '#999';
+    ctx.fillStyle = T.textDimmer;
     ctx.textAlign = 'center';
     ctx.font = "13px 'IBM Plex Sans', sans-serif";
     const vAxisLabel = bjt === 'NPN' ? 'V_CE (Collector-Emitter)' : 'V_EC (Emitter-Collector)';
     ctx.fillText(vAxisLabel, pad.l + plotW / 2, pad.t + plotH + 32);
 
     // Border
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.strokeStyle = T.overlay10;
     ctx.lineWidth = 1;
     ctx.strokeRect(pad.l, pad.t, plotW, plotH);
 }
@@ -1580,6 +1604,12 @@ function animate(timestamp) {
 }
 
 requestAnimationFrame(animate);
+
+// Theme change support
+window.addEventListener('themechange', function() {
+    // Animation loop is continuous, just force a full redraw on next frame
+    resizeAll();
+});
 
 </script>
 </body>

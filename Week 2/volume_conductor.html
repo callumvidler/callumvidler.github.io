@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026: Volume Conductor Problem — 3D Visualisation</title>
   <style>
+    :root { --text: #ffffff; }
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * {
       margin: 0;
       padding: 0;
@@ -41,7 +44,7 @@
       font-size: 14px;
       font-weight: 600;
       margin-bottom: 8px;
-      color: #fff;
+      color: var(--text);
     }
 
     .panel h3 {
@@ -98,8 +101,8 @@
     #controls input[type=range] {
       width: 120px;
       -webkit-appearance: none;
-      background: rgba(255, 255, 255, 0.1);
-      height: 3px;
+      background: rgba(255,255,255,0.18);
+      height: 4px;
       border-radius: 2px;
       outline: none;
     }
@@ -135,13 +138,13 @@
 
     button.ctrl-btn:hover {
       background: rgba(255, 255, 255, 0.12);
-      color: #fff;
+      color: var(--text);
     }
 
     button.ctrl-btn.active {
       background: rgba(255, 255, 255, 0.15);
       border-color: rgba(255, 255, 255, 0.3);
-      color: #fff;
+      color: var(--text);
     }
 
     /* Tissue panel */
@@ -211,7 +214,7 @@
       top: -2px;
       left: 1px;
       font-size: 11px;
-      color: #fff;
+      color: var(--text);
     }
 
     /* Signal panel — resizable from top-left corner */
@@ -288,7 +291,7 @@
     }
 
     .electrode-item button:hover {
-      color: #fff;
+      color: var(--text);
       border-color: rgba(255, 255, 255, 0.3);
     }
 
@@ -312,6 +315,40 @@
       border-radius: 2px;
     }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] canvas#signalCanvas { background: rgba(0,0,0,0.06) !important; }
+    [data-theme="light"] #signal-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .tissue-toggle:checked::after { color: #1a1a1e; }
+    [data-theme="light"] .tissue-toggle:checked { background: rgba(0,0,0,0.1); border-color: rgba(0,0,0,0.3); }
+    [data-theme="light"] .tissue-toggle { border-color: rgba(0,0,0,0.2); }
+    [data-theme="light"] .tissue-item { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.06); }
+    [data-theme="light"] .tissue-item:hover { background: rgba(0,0,0,0.06); }
+    [data-theme="light"] .tissue-name { color: #444; }
+    [data-theme="light"] .tissue-sigma { color: #777; }
+    [data-theme="light"] .electrode-item { color: #555; }
+    [data-theme="light"] .electrode-item button { border-color: rgba(0,0,0,0.1); color: #666; }
+    [data-theme="light"] .electrode-item button:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.3); }
+    [data-theme="light"] #electrode-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #tissue-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .resize-handle::before { border-top-color: rgba(0,0,0,0.2); border-left-color: rgba(0,0,0,0.2); }
+    [data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); }
+    [data-theme="light"] [style*="color:#fff"] { color: #1a1a1e !important; }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -359,7 +396,7 @@
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
         <label style="color:#999;font-size:11px;display:flex;align-items:center;gap:6px;">
           Recorded scale <input type="range" id="recordedScale" min="0.1" max="10000" step="1" value="1"
-            style="width:80px;-webkit-appearance:none;background:rgba(255,255,255,0.1);height:3px;border-radius:2px;outline:none;">
+            style="width:80px;-webkit-appearance:none;background:rgba(255,255,255,0.18);height:4px;border-radius:2px;outline:none;">
           <span id="recordedScaleVal"
             style="color:#ff4488;font-size:10px;font-family:monospace;min-width:30px;">1.0x</span>
         </label>
@@ -481,8 +518,8 @@
     // SCENE SETUP
     // =============================================
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.FogExp2(0x111111, 0.006);
+    scene.background = new THREE.Color(T.sceneBg);
+    scene.fog = new THREE.FogExp2(T.sceneBg, 0.006);
 
     const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 500);
     camera.position.set(25, 18, 30);
@@ -1074,11 +1111,11 @@
       sigCtx.save();
       sigCtx.scale(dpr, dpr);
 
-      sigCtx.fillStyle = 'rgba(0,0,0,0.85)';
+      sigCtx.fillStyle = T.plotBg;
       sigCtx.fillRect(0, 0, W, H);
 
       // Grid
-      sigCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+      sigCtx.strokeStyle = T.overlay05;
       sigCtx.lineWidth = 0.5;
       for (let y = 0; y <= H; y += 25) {
         sigCtx.beginPath(); sigCtx.moveTo(0, y); sigCtx.lineTo(W, y); sigCtx.stroke();
@@ -1088,7 +1125,7 @@
       }
 
       // Zero line
-      sigCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+      sigCtx.strokeStyle = T.gridStrong;
       sigCtx.lineWidth = 1;
       sigCtx.beginPath();
       sigCtx.moveTo(0, H / 2);
@@ -1136,7 +1173,7 @@
       }
 
       // Labels
-      sigCtx.fillStyle = '#666';
+      sigCtx.fillStyle = T.textQuiet;
       sigCtx.font = '11px sans-serif';
       sigCtx.fillText('+', 4, 14);
       sigCtx.fillText('−', 4, H - 6);
@@ -1149,7 +1186,7 @@
       sigCtx.fillText(recordedScaleFactor !== 1.0 ? `— Recorded (${recordedScaleFactor.toFixed(1)}x)` : '— Recorded', W - 120, 28);
 
       if (electrodes.length >= 2) {
-        sigCtx.fillStyle = '#666';
+        sigCtx.fillStyle = T.textQuiet;
         sigCtx.font = '10px sans-serif';
         const a = electrodes[0], b = electrodes[1];
         sigCtx.fillText(`V(${a.label}) − V(${b.label})`, 4, H - 20);
@@ -1159,7 +1196,7 @@
       if (electrodes.length >= 2) {
         const lastTrue = trueSignalHistory[trueSignalHistory.length - 1];
         const lastRec = recordedSignalHistory[recordedSignalHistory.length - 1];
-        sigCtx.fillStyle = '#999';
+        sigCtx.fillStyle = T.textDimmer;
         sigCtx.font = '10px monospace';
         if (Math.abs(lastTrue) > 1e-6) {
           const ratio = lastRec / lastTrue;
@@ -1171,7 +1208,7 @@
           const fc = 1 / (2 * Math.PI * tau);
           sigCtx.fillText(`LPF f_c: ${fc.toFixed(0)} Hz  τ: ${(tau * 1000).toFixed(1)} ms`, 4, 40);
         } else {
-          sigCtx.fillStyle = '#555';
+          sigCtx.fillStyle = T.textGray;
           sigCtx.fillText('LPF: off (no layers)', 4, 40);
         }
       }
@@ -1803,6 +1840,12 @@
         dragging = false;
       });
     }
+
+    window.addEventListener('themechange', function() {
+      scene.background = new THREE.Color(T.sceneBg);
+      scene.fog.color.set(T.sceneBg);
+      drawSignal();
+    });
   </script>
 </body>
 

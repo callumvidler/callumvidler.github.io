@@ -24,6 +24,20 @@
             --col-power-in: #5080d0;
         }
 
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --bg-deep: #f5f5f7;
+            --bg-panel: rgba(255,255,255,0.92);
+            --bg-card: #eeeef0;
+            --border: rgba(0,0,0,0.1);
+            --border-hover: rgba(0,0,0,0.2);
+            --accent: #3d8b6e;
+            --accent-dim: #357a60;
+            --text: #1a1a1e;
+            --text-dim: #555555;
+            --text-muted: #888888;
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
@@ -53,7 +67,7 @@
             color: var(--text-dim); text-decoration: none;
             font-size: 11px; font-weight: 500; transition: all 0.15s;
         }
-        .back-btn:hover { color: #fff; border-color: rgba(255,255,255,0.18); }
+        .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
 
         h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
         .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
@@ -139,8 +153,8 @@
         .ctrl-row input[type=range] {
             flex: 1;
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
-            height: 3px;
+            background: rgba(255,255,255,0.18);
+            height: 4px;
             border-radius: 2px;
             outline: none;
         }
@@ -155,7 +169,7 @@
         .ctrl-val {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 0.68rem;
-            color: #fff;
+            color: var(--text);
             min-width: 56px;
             text-align: right;
         }
@@ -178,11 +192,11 @@
             transition: all 0.15s;
             text-align: center;
         }
-        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        .toggle-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
         .toggle-btn.active {
             background: rgba(255,255,255,0.12);
             border-color: rgba(255,255,255,0.18);
-            color: #fff;
+            color: var(--text);
         }
 
         /* Power bars */
@@ -289,8 +303,8 @@
         }
         .transport-bar input[type=range] {
             -webkit-appearance: none;
-            background: rgba(255,255,255,0.1);
-            height: 3px;
+            background: rgba(255,255,255,0.18);
+            height: 4px;
             border-radius: 2px;
             outline: none;
         }
@@ -301,7 +315,20 @@
             background: #fff;
             cursor: pointer;
         }
+        [data-theme="light"] .back-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+        [data-theme="light"] .back-btn:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.2); }
+        [data-theme="light"] .ctrl-val { color: #1a1a1e; }
+        [data-theme="light"] .toggle-btn:hover { background: rgba(0,0,0,0.06); color: #1a1a1e; }
+        [data-theme="light"] .toggle-btn.active { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.15); color: #1a1a1e; }
+        [data-theme="light"] .toggle-btn { background: rgba(0,0,0,0.03); }
+        [data-theme="light"] .ctrl-row input[type=range] { background: rgba(0,0,0,0.15); }
+        [data-theme="light"] .ctrl-row input[type=range]::-webkit-slider-thumb { background: #333; }
+        [data-theme="light"] .power-bar-track { background: rgba(0,0,0,0.04); }
+        [data-theme="light"] .transport-bar input[type=range] { background: rgba(0,0,0,0.15); }
+        [data-theme="light"] .transport-bar input[type=range]::-webkit-slider-thumb { background: #333; }
     </style>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 <body>
 
@@ -650,9 +677,9 @@ function drawNPNTransistor(ctx, x, y, scale, labelColor, labelFont) {
     const s = scale || 1;
     ctx.beginPath();
     ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = T.overlay30;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
 
     ctx.beginPath();
     ctx.moveTo(x - 16 * s, y);
@@ -682,7 +709,7 @@ function drawNPNTransistor(ctx, x, y, scale, labelColor, labelFont) {
     ctx.lineTo(ax - 6 * s, ay - 2 * s);
     ctx.lineTo(ax - 3 * s, ay - 6 * s);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = T.overlay50;
     ctx.fill();
 
     ctx.save();
@@ -699,9 +726,9 @@ function drawPNPTransistor(ctx, x, y, scale, labelColor, labelFont) {
     const s = scale || 1;
     ctx.beginPath();
     ctx.arc(x, y, 16 * s, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = T.overlay30;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
 
     ctx.beginPath();
     ctx.moveTo(x - 16 * s, y);
@@ -731,7 +758,7 @@ function drawPNPTransistor(ctx, x, y, scale, labelColor, labelFont) {
     ctx.lineTo(bx + 6 * s, by - 2 * s);
     ctx.lineTo(bx + 3 * s, by - 6 * s);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillStyle = T.overlay50;
     ctx.fill();
 
     ctx.save();
@@ -763,7 +790,7 @@ function drawDiode(ctx, x1, y1, x2, y2) {
     ctx.lineTo(mx - ux * triSize - px * triSize, my - uy * triSize - py * triSize);
     ctx.lineTo(mx + ux * triSize, my + uy * triSize);
     ctx.closePath();
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = T.overlay40;
     ctx.fill();
     ctx.stroke();
 
@@ -1180,9 +1207,9 @@ function drawLoadLineInset(ctx, w, h) {
     const iy = h - insetH - 12;
     const pad = 15;
 
-    ctx.fillStyle = 'rgba(26,26,30,0.85)';
+    ctx.fillStyle = T.cardBg;
     ctx.fillRect(ix, iy, insetW, insetH);
-    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.strokeStyle = T.gridStrong;
     ctx.lineWidth = 1;
     ctx.strokeRect(ix, iy, insetW, insetH);
 
@@ -1191,7 +1218,7 @@ function drawLoadLineInset(ctx, w, h) {
     const axW = insetW - pad * 2;
     const axH = insetH - pad * 2;
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+    ctx.strokeStyle = T.overlay30;
     ctx.beginPath();
     ctx.moveTo(ox, oy - axH);
     ctx.lineTo(ox, oy);
@@ -1200,14 +1227,14 @@ function drawLoadLineInset(ctx, w, h) {
 
     ctx.save();
     ctx.font = '8px "IBM Plex Mono", monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillStyle = T.overlay40;
     ctx.textAlign = 'center';
     ctx.fillText('V_CE', ox + axW / 2, oy + 11);
     ctx.textAlign = 'right';
     ctx.fillText('I_C', ox - 3, oy - axH / 2);
     ctx.restore();
 
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.strokeStyle = T.overlay50;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(ox, oy - axH);
@@ -1408,7 +1435,7 @@ function drawClassACurrentFlow(ctx, w, h) {
     ctx.font = '600 9px "IBM Plex Mono", monospace';
     ctx.textAlign = 'left';
     if (Math.abs(normalizedVin) < 0.05) {
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = T.overlay50;
         ctx.fillText('v_in ≈ 0  (quiescent)', 8, 14);
     } else if (normalizedVin > 0) {
         ctx.fillStyle = 'rgba(106,170,142,0.8)';
@@ -1673,7 +1700,7 @@ function drawClassABCurrentFlow(ctx, w, h) {
     ctx.font = '600 9px "IBM Plex Mono", monospace';
     ctx.textAlign = 'left';
     if (Math.abs(normalizedVin) < 0.05) {
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.fillStyle = T.overlay50;
         ctx.fillText('v_in ≈ 0  (both conduct — no dead zone)', 8, 14);
     } else if (normalizedVin > 0) {
         ctx.fillStyle = 'rgba(106,170,142,0.8)';
@@ -1690,10 +1717,10 @@ function drawCircuit() {
     const { w, h } = circuitSize;
     ctx.clearRect(0, 0, w, h);
 
-    const lineColor = 'rgba(255,255,255,0.5)';
+    const lineColor = T.overlay50;
     const activeColor = '#6aaa8e';
-    const componentColor = 'rgba(255,255,255,0.7)';
-    const labelColor = '#a0a0a0';
+    const componentColor = T.overlay70;
+    const labelColor = T.textDim;
     const labelFont = '500 10px "IBM Plex Mono", monospace';
     const titleFont = '500 11px "IBM Plex Sans", sans-serif';
 
@@ -1768,7 +1795,7 @@ function drawWaveforms() {
     const cy = padT + plotH / 2;
 
     // ─── Vertical grid lines ───
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.strokeStyle = T.gridFine;
     ctx.lineWidth = 1;
     for (let i = 1; i < 8; i++) {
         const gx = padL + (i / 8) * plotW;
@@ -1777,12 +1804,12 @@ function drawWaveforms() {
     }
 
     // ─── Horizontal zero line ───
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = T.grid;
     ctx.beginPath();
     ctx.moveTo(padL, cy); ctx.lineTo(w - padR, cy); ctx.stroke();
 
     // ─── Horizontal grid lines (quarter marks) ───
-    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.strokeStyle = T.gridFine;
     for (let i = 1; i <= 3; i++) {
         if (i === 2) continue; // skip center (already drawn)
         const gy = padT + (i / 4) * plotH;
@@ -1797,7 +1824,7 @@ function drawWaveforms() {
 
     // ─── Draw V_in trace (white) ───
     if (waveHistory.length > 1 && vinPeak > 0) {
-        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.strokeStyle = T.overlay35;
         ctx.lineWidth = 1;
         ctx.beginPath();
         for (let i = 0; i < waveHistory.length; i++) {
@@ -1849,7 +1876,7 @@ function drawWaveforms() {
     // ─── Y-axis labels ───
     ctx.save();
     ctx.font = '9px "IBM Plex Mono", monospace';
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fillStyle = T.overlay30;
     ctx.textAlign = 'right';
     ctx.fillText('+' + maxVout + 'V', padL - 6, padT + plotH * 0.05 + 4);
     ctx.fillText('0', padL - 6, cy + 4);
@@ -1979,6 +2006,8 @@ function animate(timestamp) {
 }
 
 requestAnimationFrame(animate);
+
+window.addEventListener('themechange', function() { updateAll(); });
 </script>
 
 </body>

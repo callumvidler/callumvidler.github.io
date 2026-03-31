@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026: Semiconductor Band Theory — 3D Visualisation</title>
   <style>
+    :root { --text: #ffffff; }
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
@@ -24,7 +27,7 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       font-size: 12px; line-height: 1.6;
     }
-    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
     .panel h3 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
     .panel p  { font-size: 11px; color: #666; margin-top: 6px; }
 
@@ -54,7 +57,7 @@
     }
     #controls input[type=range] {
       width: 120px; -webkit-appearance: none;
-      background: rgba(255,255,255,0.1); height: 3px; border-radius: 2px; outline: none;
+      background: rgba(255,255,255,0.18); height: 4px; border-radius: 2px; outline: none;
     }
     #controls input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none; width: 12px; height: 12px;
@@ -66,7 +69,7 @@
       color: #bbb; padding: 5px 14px; border-radius: 6px; cursor: pointer;
       font-size: 11px; font-weight: 500; transition: all 0.15s;
     }
-    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
     button.ctrl-btn.active {
       background: rgba(255,200,50,0.15); border-color: rgba(255,200,50,0.4); color: #ffc832;
     }
@@ -80,7 +83,7 @@
     }
     #status-panel .val {
       font-family: 'SF Mono','Fira Code','Consolas',monospace;
-      font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px;
+      font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 4px;
     }
     #status-panel .stat-row {
       display: flex; justify-content: space-between; color: #888; margin: 3px 0; font-size: 11px;
@@ -89,6 +92,32 @@
       font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 600; color: #ccc;
     }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] canvas#bandCanvas { background: rgba(0,0,0,0.06) !important; }
+    [data-theme="light"] #status-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #status-panel .val { color: #1a1a1e; }
+    [data-theme="light"] #status-panel .stat-val { color: #333; }
+    [data-theme="light"] #status-panel .stat-row { color: #666; }
+    [data-theme="light"] #controls .panel h3[style*="color:#fff"],
+    [data-theme="light"] .panel h3[style*="color:#fff"] { color: #1a1a1e !important; }
+    [data-theme="light"] #back-btn { background: rgba(255,255,255,0.9) !important; border-color: rgba(0,0,0,0.1) !important; color: #555 !important; }
+    [data-theme="light"] #back-btn:hover { color: #1a1a1e !important; }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -153,8 +182,8 @@
 
     // ─── Scene ───
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.FogExp2(0x111111, 0.004);
+    scene.background = new THREE.Color(T.sceneBg);
+    scene.fog = new THREE.FogExp2(T.sceneBg, 0.004);
 
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
     camera.position.set(0, 10, 38);
@@ -343,7 +372,7 @@
         sceneGroup.add(glow);
 
         // + label
-        const plus = makeTextSprite('+', '#ffffff', 36);
+        const plus = makeTextSprite('+', T.text, 36);
         plus.position.set(ax, 0, 0);
         plus.scale.set(1.2, 0.6, 1);
         sceneGroup.add(plus);
@@ -439,7 +468,7 @@
           const trailGeo = new THREE.BufferGeometry();
           trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
           const trailLine = new THREE.Line(trailGeo,
-            new THREE.LineBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0 })
+            new THREE.LineBasicMaterial({ color: T.yellow3js3, transparent: true, opacity: 0 })
           );
           sceneGroup.add(trailLine);
 
@@ -531,7 +560,7 @@
       bandCtx.save();
       bandCtx.scale(dpr, dpr);
 
-      bandCtx.fillStyle = 'rgba(0,0,0,0.9)';
+      bandCtx.fillStyle = T.plotBg2;
       bandCtx.fillRect(0, 0, W, H);
 
       const cfg = MATERIAL_CONFIGS[currentMode];
@@ -541,7 +570,7 @@
       const midH = botY - topY;
 
       // Energy axis
-      bandCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+      bandCtx.strokeStyle = T.overlay20;
       bandCtx.lineWidth = 1;
       bandCtx.beginPath();
       bandCtx.moveTo(pad - 5, topY - 5);
@@ -553,7 +582,7 @@
       bandCtx.moveTo(pad - 5, topY - 5);
       bandCtx.lineTo(pad - 2, topY + 3);
       bandCtx.stroke();
-      bandCtx.fillStyle = '#666';
+      bandCtx.fillStyle = T.textQuiet;
       bandCtx.font = '10px sans-serif';
       bandCtx.save();
       bandCtx.translate(10, (topY + botY) / 2);
@@ -594,20 +623,20 @@
       // Gap bracket
       if (cbBotPx < vbTopPx - 4) {
         bandCtx.setLineDash([3, 3]);
-        bandCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+        bandCtx.strokeStyle = T.gridStrong;
         bandCtx.lineWidth = 0.5;
         bandCtx.beginPath(); bandCtx.moveTo(left, cbBotPx); bandCtx.lineTo(right, cbBotPx); bandCtx.stroke();
         bandCtx.beginPath(); bandCtx.moveTo(left, vbTopPx); bandCtx.lineTo(right, vbTopPx); bandCtx.stroke();
         bandCtx.setLineDash([]);
 
         const bx = right + 4;
-        bandCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+        bandCtx.strokeStyle = T.overlay30;
         bandCtx.lineWidth = 1;
         bandCtx.beginPath();
         bandCtx.moveTo(bx, cbBotPx); bandCtx.lineTo(bx + 4, cbBotPx);
         bandCtx.lineTo(bx + 4, vbTopPx); bandCtx.lineTo(bx, vbTopPx);
         bandCtx.stroke();
-        bandCtx.fillStyle = '#888';
+        bandCtx.fillStyle = T.textMuted;
         bandCtx.font = '10px sans-serif';
         bandCtx.textAlign = 'left';
         bandCtx.fillText('E_g', bx + 7, (cbBotPx + vbTopPx) / 2 + 3);
@@ -623,7 +652,7 @@
       }
 
       // Free electrons in conduction band
-      bandCtx.fillStyle = 'rgba(255,204,68,0.9)';
+      bandCtx.fillStyle = T.yellowA(0.9);
       for (let d = 0; d < Math.min(numFree, 10); d++) {
         const ex = left + 15 + (d % 5) * (bandW - 30) / 4;
         const ey = topY + 12 + Math.floor(d / 5) * 12;
@@ -633,7 +662,7 @@
       // Excitation arrows
       if (numFree > 0 && cbBotPx < vbTopPx - 4) {
         const alpha = Math.min(numFree / 5, 0.8);
-        bandCtx.strokeStyle = `rgba(255,200,50,${alpha})`;
+        bandCtx.strokeStyle = T.yellowA(alpha);
         bandCtx.lineWidth = 1.5;
         bandCtx.setLineDash([3, 3]);
         const arrCount = Math.min(numFree, 4);
@@ -663,11 +692,11 @@
       bandCtx.fillStyle = '#ff8844';
       bandCtx.fillText('Conduction Band', cx, topY + 10);
 
-      const T = Math.round(200 + temperature * 15);
-      bandCtx.fillStyle = '#ffc832';
+      const tempK = Math.round(200 + temperature * 15);
+      bandCtx.fillStyle = T.yellow2;
       bandCtx.font = 'bold 10px sans-serif';
       bandCtx.textAlign = 'left';
-      bandCtx.fillText(`T = ${T} K`, pad, botY - 6);
+      bandCtx.fillText(`T = ${tempK} K`, pad, botY - 6);
 
       bandCtx.restore();
     }
@@ -803,7 +832,7 @@
 
             // Color: lerp blue→gold
             const boundCol = new THREE.Color(0x4488ff);
-            const freeCol = new THREE.Color(0xffcc44);
+            const freeCol = new THREE.Color(T.yellow3js3);
             ve.mesh.material.color.copy(boundCol).lerp(freeCol, easeF);
             ve.mesh.material.emissive.copy(new THREE.Color(0x112244)).lerp(new THREE.Color(0x664400), easeF);
             ve.mesh.material.opacity = 0.8 + Math.sin(t * 4 + ve.phaseTheta) * 0.2;
@@ -827,14 +856,14 @@
       }
 
       // ── UI ──
-      const T = Math.round(200 + temperature * 15);
+      const tempK2 = Math.round(200 + temperature * 15);
       document.getElementById('materialName').textContent = cfg.label;
       document.getElementById('materialName').style.color = cfg.colorCSS;
       document.getElementById('bandGapVal').textContent = cfg.bandGapEV;
       document.getElementById('gapDist').textContent = gap > 0.05 ? gap.toFixed(1) + ' (shells apart)' : 'Overlapping';
       document.getElementById('freeElecVal').textContent = numFree + ' / ' + valenceElectrons.length;
       document.getElementById('condVal').textContent = cfg.conductivityLabel(tempNorm);
-      document.getElementById('tempReadout').textContent = T + ' K';
+      document.getElementById('tempReadout').textContent = tempK2 + ' K';
 
       drawBandDiagram();
       renderer.render(scene, camera);
@@ -877,6 +906,11 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    window.addEventListener('themechange', () => {
+      scene.background = new THREE.Color(T.sceneBg);
+      scene.fog.color.set(T.sceneBg);
     });
   </script>
 </body>

@@ -30,6 +30,8 @@
             --ch8: #5aafaf;
         }
 
+        [data-theme="light"] { --text: #1a1a1e; }
+
         * { box-sizing: border-box; }
         body {
             margin: 0;
@@ -320,7 +322,7 @@
         .value-display {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 0.6rem;
-            color: #fff;
+            color: var(--text);
             font-weight: 400;
         }
 
@@ -342,7 +344,7 @@
 
         .btn.btn-record {
             background: var(--error);
-            color: #fff;
+            color: var(--text);
             width: 100%;
             padding: 0.5rem;
             font-size: 0.7rem;
@@ -709,6 +711,47 @@
         .channel-col-headers .col-plots { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; }
         .channel-col-headers .col-stim { width: 40px; flex-shrink: 0; }
     </style>
+    <style>
+        [data-theme="light"] body { background: #f5f5f7; color: #333; }
+        [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] .panel h2 { color: #1a1a1e; }
+        [data-theme="light"] .panel h3 { color: #555; }
+        [data-theme="light"] .panel p { color: #777; }
+        [data-theme="light"] .legend { color: #555; }
+        [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] #controls label { color: #555; }
+        [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+        [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+        [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+        [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+        [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+        [data-theme="light"] canvas { filter: none; }
+        [data-theme="light"] .value-display { color: #1a1a1e; }
+        [data-theme="light"] .btn.btn-record { color: #1a1a1e; }
+        [data-theme="light"] .toggle-label[style*="color:#fff"] { color: #1a1a1e !important; }
+        [data-theme="light"] header { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] h1 { color: #1a1a1e; }
+        [data-theme="light"] .header-sub { color: #666; }
+        [data-theme="light"] .plot-section { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] .plot-header { background: rgba(245,245,247,0.95); border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .plot-header strong { color: #1a1a1e; }
+        [data-theme="light"] .controls-panel { background: #f5f5f7; border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] .ctrl-section { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] .ctrl-section h3 { color: #666; border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .step-title { color: #1a1a1e; }
+        [data-theme="light"] .step-number { color: #888; }
+        [data-theme="light"] .step-item { background: rgba(0,0,0,0.02); border-left-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .step-item.active { background: rgba(106,170,142,0.08); }
+        [data-theme="light"] .toggle-label { color: #555; }
+        [data-theme="light"] .toggle-switch { background: rgba(0,0,0,0.12); }
+        [data-theme="light"] .control-group label { color: #555; }
+        [data-theme="light"] .legend-item { color: #555; }
+        [data-theme="light"] .main-layout { border-color: rgba(0,0,0,0.1); }
+        [data-theme="light"] header a[href] { background: rgba(0,0,0,0.05) !important; border-color: rgba(0,0,0,0.1) !important; color: #555 !important; }
+        [data-theme="light"] header a[href]:hover { color: #1a1a1e !important; }
+    </style>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 <body>
     <header>
@@ -1267,7 +1310,7 @@
         ctx.stroke();
 
         // Center line
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.strokeStyle = T.gridLight;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(0, h / 2);
@@ -1900,7 +1943,7 @@
         ctx.clearRect(0, 0, w, h);
 
         if (!rawAudioBuffer) {
-            ctx.fillStyle = '#a0a0a0';
+            ctx.fillStyle = T.textDim;
             ctx.font = '11px IBM Plex Sans, sans-serif';
             ctx.textAlign = 'center';
             ctx.save();
@@ -1951,7 +1994,7 @@
         ctx.fill();
 
         // Center line
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+        ctx.strokeStyle = T.grid;
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(mid, 0);
@@ -2034,7 +2077,7 @@
     // ─── Three.js: 3D Cochlea ────────────────────────────────
     const threeContainer = document.getElementById('three-container');
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x222226);
+    scene.background = new THREE.Color(T.sceneBg2);
 
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     camera.position.set(3, 5, 9);
@@ -2462,6 +2505,11 @@
     requestAnimationFrame(() => {
         resizeThree();
         animate();
+    });
+
+    window.addEventListener('themechange', () => {
+        scene.background = new THREE.Color(T.sceneBg2);
+        drawPipeline();
     });
 
     </script>

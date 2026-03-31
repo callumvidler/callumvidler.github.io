@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026: P-N Junction — 3D Visualisation</title>
   <style>
+    :root { --text: #ffffff; }
+    [data-theme="light"] { --text: #1a1a1e; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #111; color: #ccc;
@@ -20,7 +23,7 @@
       border: 1px solid rgba(255, 255, 255, 0.08);
       font-size: 12px; line-height: 1.6;
     }
-    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #fff; }
+    .panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
     .panel h3 { font-size: 12px; font-weight: 500; color: #999; margin-bottom: 6px; }
     .panel p  { font-size: 11px; color: #666; margin-top: 6px; }
     #info { top: 16px; left: 16px; max-width: 310px; }
@@ -46,7 +49,7 @@
     }
     #controls input[type=range] {
       width: 160px; -webkit-appearance: none;
-      background: rgba(255,255,255,0.1); height: 3px; border-radius: 2px; outline: none;
+      background: rgba(255,255,255,0.18); height: 4px; border-radius: 2px; outline: none;
     }
     #controls input[type=range]::-webkit-slider-thumb {
       -webkit-appearance: none; width: 12px; height: 12px;
@@ -58,7 +61,7 @@
       color: #bbb; padding: 5px 14px; border-radius: 6px; cursor: pointer;
       font-size: 11px; font-weight: 500; transition: all 0.15s;
     }
-    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    button.ctrl-btn:hover { background: rgba(255,255,255,0.12); color: var(--text); }
     button.ctrl-btn.active {
       background: rgba(255,200,50,0.15); border-color: rgba(255,200,50,0.4); color: #ffc832;
     }
@@ -70,7 +73,7 @@
     }
     #status-panel .val {
       font-family: 'SF Mono','Fira Code','Consolas',monospace;
-      font-size: 15px; font-weight: 700; color: #fff; margin-bottom: 4px;
+      font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 4px;
     }
     #status-panel .stat-row {
       display: flex; justify-content: space-between; color: #888; margin: 3px 0; font-size: 11px;
@@ -79,6 +82,32 @@
       font-family: 'SF Mono','Fira Code','Consolas',monospace; font-weight: 600; color: #ccc;
     }
   </style>
+  <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] canvas#bandCanvas { background: rgba(0,0,0,0.06) !important; }
+    [data-theme="light"] #status-panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #status-panel .val { color: #1a1a1e; }
+    [data-theme="light"] #status-panel .stat-val { color: #333; }
+    [data-theme="light"] #status-panel .stat-row { color: #666; }
+    [data-theme="light"] #controls .panel h3[style*="color:#fff"],
+    [data-theme="light"] .panel h3[style*="color:#fff"] { color: #1a1a1e !important; }
+    [data-theme="light"] #back-btn { background: rgba(255,255,255,0.9) !important; border-color: rgba(0,0,0,0.1) !important; color: #555 !important; }
+    [data-theme="light"] #back-btn:hover { color: #1a1a1e !important; }
+  </style>
+  <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -142,8 +171,8 @@
     //  SCENE SETUP
     // ═══════════════════════════════════════
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x111111);
-    scene.fog = new THREE.FogExp2(0x111111, 0.003);
+    scene.background = new THREE.Color(T.sceneBg);
+    scene.fog = new THREE.FogExp2(T.sceneBg, 0.003);
 
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 800);
     camera.position.set(25, 20, 40);
@@ -289,7 +318,7 @@
         if (progress > 0.5) phaseText = 'E-field building';
         if (progress > 0.85) phaseText = 'Equilibrium forming';
         stateReadout.textContent = phaseText + ' ' + pct + '%';
-        stateReadout.style.color = '#ffc832';
+        stateReadout.style.color = T.yellow2;
         diagramTitle.textContent = 'Energy Band Diagram \u2014 Junction Forming';
         return;
       }
@@ -544,7 +573,7 @@
 
       // 5. Depletion region box
       const depMat = new THREE.MeshBasicMaterial({
-        color: 0xffcc44, transparent: true, opacity: 0.05, side: THREE.DoubleSide,
+        color: T.yellow3js3, transparent: true, opacity: 0.05, side: THREE.DoubleSide,
       });
       depletionBox = new THREE.Mesh(new THREE.BoxGeometry(1, extent, extent), depMat);
       latticeGroup.add(depletionBox);
@@ -766,7 +795,7 @@
       barrierGroup.add(plusLabel);
 
       // E-field label
-      eFieldLabel = makeTextSprite('\u2190 E-field', '#ffc832');
+      eFieldLabel = makeTextSprite('\u2190 E-field', T.yellow2);
       eFieldLabel.position.set(0, extent / 2 + 2, extent / 2 + 2);
       eFieldLabel.scale.set(8, 2, 1);
       barrierGroup.add(eFieldLabel);
@@ -784,7 +813,7 @@
       // Circle background
       ctx.beginPath();
       ctx.arc(32, 32, 28, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.fillStyle = T.darkOverlay;
       ctx.fill();
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
@@ -959,7 +988,7 @@
         depletionBox.material.color.setHex(0xff6644);
       } else {
         depletionBox.material.opacity = 0.05;
-        depletionBox.material.color.setHex(0xffcc44);
+        depletionBox.material.color.setHex(T.yellow3js3);
       }
     }
 
@@ -973,7 +1002,7 @@
     function spawnElectron(x, y, z) {
       if (electrons.length + holes.length >= carrierCap()) return;
       const mat = new THREE.MeshPhongMaterial({
-        color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.5,
+        color: T.yellow3js3, emissive: T.yellow3js3, emissiveIntensity: 0.5,
         transparent: true, opacity: 0.9,
       });
       const mesh = new THREE.Mesh(freeElecGeo, mat);
@@ -981,7 +1010,7 @@
       carrierGroup.add(mesh);
       mesh.add(new THREE.Mesh(
         glowGeo,
-        new THREE.MeshBasicMaterial({ color: 0xffcc44, transparent: true, opacity: 0.12, depthWrite: false })
+        new THREE.MeshBasicMaterial({ color: T.yellow3js3, transparent: true, opacity: 0.12, depthWrite: false })
       ));
       electrons.push({
         mesh,
@@ -1208,7 +1237,7 @@
       const hole = holes[startHoleIdx];
       if (!hole) return;
       const mat = new THREE.MeshPhongMaterial({
-        color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.6,
+        color: T.yellow3js3, emissive: T.yellow3js3, emissiveIntensity: 0.6,
         transparent: true, opacity: 0.9,
       });
       const mesh = new THREE.Mesh(freeElecGeo, mat);
@@ -1657,10 +1686,10 @@
       const depR = midX + depW / 2;
 
       // Depletion region shading
-      bandCtx.fillStyle = 'rgba(255, 200, 50, 0.05)';
+      bandCtx.fillStyle = T.yellowA(0.05);
       bandCtx.fillRect(depL, pad, depW, plotH);
       bandCtx.setLineDash([4, 4]);
-      bandCtx.strokeStyle = 'rgba(255, 200, 50, 0.3)';
+      bandCtx.strokeStyle = T.yellowA(0.3);
       bandCtx.beginPath();
       bandCtx.moveTo(depL, pad); bandCtx.lineTo(depL, h - pad);
       bandCtx.moveTo(depR, pad); bandCtx.lineTo(depR, h - pad);
@@ -1741,13 +1770,13 @@
         const arrowX = midX + depW / 2 + 12;
         const arrowTop = EcP;
         const arrowBot = EcN;
-        bandCtx.strokeStyle = '#ffc832';
+        bandCtx.strokeStyle = T.yellow2;
         bandCtx.lineWidth = 1;
         bandCtx.beginPath();
         bandCtx.moveTo(arrowX, arrowTop + 5);
         bandCtx.lineTo(arrowX, arrowBot - 5);
         bandCtx.stroke();
-        bandCtx.fillStyle = '#ffc832';
+        bandCtx.fillStyle = T.yellow2;
         bandCtx.beginPath();
         bandCtx.moveTo(arrowX - 3, arrowTop + 8);
         bandCtx.lineTo(arrowX + 3, arrowTop + 8);
@@ -1759,7 +1788,7 @@
         bandCtx.lineTo(arrowX, arrowBot - 2);
         bandCtx.fill();
         bandCtx.font = "11px 'SF Mono','Fira Code',monospace";
-        bandCtx.fillStyle = '#ffc832';
+        bandCtx.fillStyle = T.yellow2;
         const barrierV = Math.max(0, V0 - V).toFixed(2);
         bandCtx.fillText('q\u00B7' + barrierV + 'V', arrowX + 4, (arrowTop + arrowBot) / 2 + 4);
       }
@@ -1783,7 +1812,7 @@
       }
 
       // Depletion label
-      bandCtx.fillStyle = '#666';
+      bandCtx.fillStyle = T.textQuiet;
       bandCtx.font = "9px 'SF Mono','Fira Code',monospace";
       bandCtx.fillText('Depletion', midX - 22, h - pad + 14);
     }
@@ -1899,7 +1928,7 @@
       batteryGroup.add(posLabel);
       batteryGroup.add(negLabel);
 
-      voltLabel = makeBatteryLabel(Math.abs(V).toFixed(2) + ' V', '#ffffff', 36);
+      voltLabel = makeBatteryLabel(Math.abs(V).toFixed(2) + ' V', T.text, 36);
       voltLabel.position.set(0, BATT_Y + 3, 0);
       voltLabel.scale.set(6, 3, 1);
       batteryGroup.add(voltLabel);
@@ -1944,7 +1973,7 @@
     // t = 0 → battery terminal, t = 1 → lattice face
     const wireElecGeo = new THREE.SphereGeometry(0.3, 10, 10);
     const wireElecMat = new THREE.MeshPhongMaterial({
-      color: 0xffcc44, emissive: 0xffcc44, emissiveIntensity: 0.5,
+      color: T.yellow3js3, emissive: T.yellow3js3, emissiveIntensity: 0.5,
       transparent: true, opacity: 0.9,
     });
     let wireElectrons = [];
@@ -2206,6 +2235,11 @@
       renderer.render(scene, camera);
     }
     animate();
+
+    window.addEventListener('themechange', () => {
+      scene.background = new THREE.Color(T.sceneBg);
+      scene.fog.color.set(T.sceneBg);
+    });
   </script>
 </body>
 

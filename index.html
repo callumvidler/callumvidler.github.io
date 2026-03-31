@@ -20,6 +20,17 @@
             --text-tertiary: #707070;
         }
 
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --border-hover: rgba(0, 0, 0, 0.2);
+            --accent: #3d8b6e;
+            --text: #1a1a1e;
+            --text-secondary: #555555;
+            --text-tertiary: #888888;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -114,6 +125,10 @@
             background: #2a2a2f;
         }
 
+        [data-theme="light"] .topic:hover {
+            background: #eeeef0;
+        }
+
         .topic-number {
             font-family: 'IBM Plex Mono', monospace;
             font-size: 12px;
@@ -149,6 +164,8 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="theme.css">
+    <script src="theme.js"></script>
 </head>
 
 <body>

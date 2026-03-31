@@ -173,6 +173,30 @@
             height: 100%;
         }
     </style>
+    <style>
+    [data-theme="light"] body { background: #f5f5f7; color: #333; }
+    [data-theme="light"] .panel { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .panel h2 { color: #1a1a1e; }
+    [data-theme="light"] .panel h3 { color: #555; }
+    [data-theme="light"] .panel p { color: #777; }
+    [data-theme="light"] .legend { color: #555; }
+    [data-theme="light"] #controls { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #controls label { color: #555; }
+    [data-theme="light"] #controls input[type=range] { background: rgba(0,0,0,0.15); }
+    [data-theme="light"] #controls input[type=range]::-webkit-slider-thumb { background: #333; }
+    [data-theme="light"] button.ctrl-btn { background: rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.12); color: #444; }
+    [data-theme="light"] button.ctrl-btn:hover { background: rgba(0,0,0,0.1); color: #222; }
+    [data-theme="light"] button.ctrl-btn.active { background: rgba(60,139,110,0.15); border-color: rgba(60,139,110,0.4); color: #3d8b6e; }
+    [data-theme="light"] .metric-card { background: rgba(0,0,0,0.04); }
+    [data-theme="light"] .canvas-overlay { background: rgba(0,0,0,0.08); }
+    [data-theme="light"] .controls-sidebar { background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.1); box-shadow: -5px 0 20px rgba(0,0,0,0.08); }
+    [data-theme="light"] header { background: rgba(255,255,255,0.95); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] #plot-container { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); }
+    [data-theme="light"] .vis-area { background: #f0f0f2; }
+    [data-theme="light"] [style*="color:white"] { color: #1a1a1e !important; }
+    </style>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
 </head>
 
 <body>
@@ -389,8 +413,8 @@
 
                 // Scene Setup
                 this.scene = new THREE.Scene();
-                this.scene.background = new THREE.Color(0x020617);
-                this.scene.fog = new THREE.FogExp2(0x020617, 0.02); // Distance fog
+                this.scene.background = new THREE.Color(T.sceneBg);
+                this.scene.fog = new THREE.FogExp2(T.sceneBg, 0.02); // Distance fog
 
                 // Side View Camera
                 const aspect = container.clientWidth / container.clientHeight;
@@ -585,7 +609,7 @@
                 // Outside: High (145mM) -> visually many
                 // Inside: Low (15mM) -> visually few
                 const naGeo = new THREE.SphereGeometry(0.2, 8, 8);
-                const naMat = new THREE.MeshBasicMaterial({ color: 0xffd700 }); // Gold
+                const naMat = new THREE.MeshBasicMaterial({ color: T.yellow3js }); // Gold
                 const naCount = 2000;
                 this.ions.na = new THREE.InstancedMesh(naGeo, naMat, naCount);
                 this.scene.add(this.ions.na);
@@ -1107,7 +1131,7 @@
                 const botH = h - topH;
 
                 // light grid
-                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.strokeStyle = T.overlay05;
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 for (let x = 0; x <= w; x += w / 10) { ctx.moveTo(x, 0); ctx.lineTo(x, h); }
@@ -1122,7 +1146,7 @@
                 const mapYv = (val) => (topH - ((val - vMin) / vRange * topH * 0.8) - topH * 0.1);
 
                 ctx.beginPath();
-                ctx.strokeStyle = '#f59e0b';
+                ctx.strokeStyle = T.yellowF;
                 ctx.lineWidth = 2;
                 for (let i = 0; i < this.stimData.length; i++) {
                     const y = this.stimData[i] > 0 ? topH - 18 : topH - 5;
@@ -1140,7 +1164,7 @@
                 ctx.stroke();
 
                 // separator
-                ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+                ctx.strokeStyle = T.gridMed;
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.moveTo(0, topH);
@@ -1162,7 +1186,7 @@
                 const mapYi = (I) => y0 - (I / Imax) * (botH * 0.42);
 
                 // zero line
-                ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+                ctx.strokeStyle = T.overlay20;
                 ctx.lineWidth = 1;
                 ctx.beginPath();
                 ctx.moveTo(0, y0);
@@ -1171,7 +1195,7 @@
 
                 // INa (gold)
                 ctx.beginPath();
-                ctx.strokeStyle = '#ffd700';
+                ctx.strokeStyle = T.yellow3;
                 ctx.lineWidth = 2;
                 for (let i = 0; i < this.inaData.length; i++) {
                     const y = mapYi(this.inaData[i]);
@@ -1256,6 +1280,14 @@
             const val = parseFloat(e.target.value);
             HH.stim.cur = val;
             document.getElementById('stimValDisp').innerText = val;
+        });
+
+        window.addEventListener('themechange', function() {
+            if (VIS.scene) {
+                VIS.scene.background = new THREE.Color(T.sceneBg);
+                VIS.scene.fog.color.set(T.sceneBg);
+            }
+            PLOT.draw();
         });
 
     </script>

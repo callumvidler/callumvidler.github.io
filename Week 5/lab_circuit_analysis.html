@@ -1,0 +1,1763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Lab Circuit Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0e14;
+            --bg-panel: rgba(16, 20, 28, 0.92);
+            --border: rgba(255,255,255,0.07);
+            --border-hover: rgba(255,255,255,0.15);
+            --text: #e2e8f0;
+            --text-dim: #8892a4;
+            --text-muted: #505868;
+            --accent: #6aaa8e;
+            --yellow: #ffcc44;
+            --red: #e06050;
+            --blue: #5b9bd5;
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --bg-deep: #f5f5f7;
+            --bg-panel: rgba(255,255,255,0.92);
+            --bg-card: #eeeef0;
+            --border: rgba(0,0,0,0.1);
+            --border-hover: rgba(0,0,0,0.2);
+            --accent: #3d8b6e;
+            --accent-dim: #357a60;
+            --text: #1a1a1e;
+            --text-dim: #555555;
+            --text-muted: #888888;
+            --yellow: #b8860b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 100;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
+
+        .explainer {
+            max-width: 880px;
+            margin: 0 auto;
+            padding: 72px 24px 120px;
+        }
+
+        .title-block {
+            margin-bottom: 56px;
+        }
+        .title-block h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+        .title-block .sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 12px;
+        }
+        .title-block p {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.7;
+            max-width: 640px;
+        }
+
+        .section {
+            margin-bottom: 72px;
+        }
+        .section summary {
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            padding: 12px 0;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+            transition: border-color 0.15s;
+        }
+        .section summary:hover { border-bottom-color: var(--border-hover); }
+        .section summary::-webkit-details-marker { display: none; }
+        .section summary::after {
+            content: '\25B6';
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+        .section[open] summary::after {
+            transform: rotate(90deg);
+        }
+        .section-number {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+        .section h2 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.3px;
+            margin: 0;
+        }
+        .section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 28px 0 12px;
+        }
+        .section p, .section li {
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+        .section ul, .section ol {
+            padding-left: 20px;
+            margin-bottom: 16px;
+        }
+
+        .eq-block {
+            display: block;
+            margin: 16px 0;
+            padding: 12px 20px;
+            background: rgba(106,170,142,0.06);
+            border: 1px solid rgba(106,170,142,0.15);
+            border-radius: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 15px;
+            color: var(--accent);
+            line-height: 1.8;
+            text-align: center;
+        }
+        .eq-block .dim {
+            color: var(--text-muted);
+        }
+        .eq-block .hl {
+            color: var(--yellow);
+        }
+        .eq-block .wh {
+            color: var(--text);
+        }
+
+        .derivation {
+            margin: 24px 0;
+            padding: 0;
+            list-style: none;
+            counter-reset: step;
+        }
+        .derivation li {
+            counter-increment: step;
+            position: relative;
+            padding: 16px 20px 16px 52px;
+            margin-bottom: 6px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: var(--text-dim);
+        }
+        .derivation li::before {
+            content: counter(step);
+            position: absolute;
+            left: 18px;
+            top: 16px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .derivation .math {
+            display: inline-block;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text);
+            margin: 4px 0;
+        }
+        .derivation .step-note {
+            display: block;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: stretch;
+            vertical-align: middle;
+            margin: 0 3px;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text);
+        }
+        .frac .num, .frac .den {
+            display: block;
+            padding: 0 4px;
+            line-height: 1.4;
+            text-align: center;
+        }
+        .frac .num {
+            border-bottom: 1px solid var(--border-hover);
+            padding-bottom: 2px;
+        }
+        .frac .den {
+            padding-top: 2px;
+        }
+        .frac-lg {
+            font-size: 14px;
+        }
+        .frac-lg .num, .frac-lg .den {
+            padding: 1px 6px;
+        }
+
+        .eq-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            color: var(--text);
+            padding: 14px 16px;
+            margin: 12px 0;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            flex-wrap: wrap;
+            line-height: 1.6;
+        }
+        .eq-line .label {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        .eq-line .accent { color: var(--accent); }
+        .eq-line .yellow { color: var(--yellow); }
+        .eq-line .dim { color: var(--text-muted); }
+
+        .callout {
+            padding: 14px 18px;
+            background: rgba(106,170,142,0.06);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 6px 6px 0;
+            margin: 16px 0;
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.7;
+        }
+        .callout strong { color: var(--text); }
+        .callout.warn {
+            background: rgba(255,200,100,0.06);
+            border-left-color: var(--yellow);
+        }
+        .callout.info {
+            background: rgba(91,155,213,0.06);
+            border-left-color: var(--blue);
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 13px;
+        }
+        .param-table th {
+            text-align: left;
+            padding: 10px 14px;
+            font-weight: 600;
+            color: var(--accent);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--border);
+            background: rgba(106,170,142,0.04);
+        }
+        .param-table td {
+            padding: 10px 14px;
+            color: var(--text-dim);
+            border-bottom: 1px solid var(--border);
+        }
+        .param-table td:first-child {
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 24px 0 28px;
+            overflow: hidden;
+        }
+        .canvas-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .canvas-tall { height: 420px; }
+        .canvas-medium { height: 360px; }
+
+        .sub-section {
+            margin: 28px 0;
+            padding: 20px;
+            background: rgba(255,255,255,0.015);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .sub-section h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+        }
+        /* ─── Interactive Controls ─── */
+        .controls-panel {
+            margin: 20px 0 28px;
+            padding: 20px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        .controls-panel h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .controls-panel h4 .tag {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--accent);
+            background: rgba(106,170,142,0.12);
+            padding: 2px 8px;
+            border-radius: 3px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px 28px;
+        }
+        @media (max-width: 600px) {
+            .controls-grid { grid-template-columns: 1fr; }
+        }
+        .ctrl-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .ctrl-row label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dim);
+            min-width: 32px;
+            flex-shrink: 0;
+        }
+        .ctrl-row input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 4px;
+            background: rgba(255,255,255,0.18);
+            border-radius: 2px;
+            outline: none;
+        }
+        .ctrl-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid var(--bg);
+        }
+        .ctrl-row input[type="range"]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            border: 2px solid var(--bg);
+        }
+        .ctrl-val {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text);
+            min-width: 72px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .ctrl-reset {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 14px;
+            padding: 5px 12px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 11px;
+            font-family: 'IBM Plex Mono', monospace;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .ctrl-reset:hover { color: var(--text); border-color: var(--border-hover); }
+
+        .readout-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 20px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .readout-bar span { color: var(--text); }
+
+        /* ─── Side-by-side plot layout ─── */
+        .plots-row {
+            display: flex;
+            gap: 12px;
+            margin: 24px 0 28px;
+            /* Break out of the 880px explainer container */
+            width: calc(100vw - 48px);
+            max-width: 1400px;
+            margin-left: 50%;
+            transform: translateX(-50%);
+        }
+        .plots-bode {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .plots-nyquist {
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+        .canvas-bode-half {
+            height: 280px;
+        }
+        .canvas-nyquist-full {
+            /* Square: match the total height of both Bode plots + gap */
+            width: calc(280px * 2 + 12px);
+            height: calc(280px * 2 + 12px);
+        }
+        @media (max-width: 900px) {
+            .plots-row {
+                flex-direction: column;
+                width: auto;
+                max-width: none;
+                margin-left: 0;
+                transform: none;
+            }
+            .plots-nyquist { flex: none; }
+            .canvas-bode-half { height: 280px; }
+            .canvas-nyquist-full {
+                width: 100%;
+                height: 0;
+                padding-bottom: 100%; /* Square via padding trick */
+            }
+        }
+
+        [data-theme="light"] .back-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
+        [data-theme="light"] .back-btn:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.2); }
+
+        /* ─── Light-mode overrides ─── */
+        [data-theme="light"] .title-block h1,
+        [data-theme="light"] .section h2,
+        [data-theme="light"] .section h3,
+        [data-theme="light"] .sub-section h4,
+        [data-theme="light"] .controls-panel h4,
+        [data-theme="light"] .callout strong,
+        [data-theme="light"] .param-table td:first-child,
+        [data-theme="light"] .ctrl-val,
+        [data-theme="light"] .readout-bar span { color: var(--text); }
+
+        [data-theme="light"] .eq-block .wh,
+        [data-theme="light"] .derivation .math,
+        [data-theme="light"] .frac,
+        [data-theme="light"] .eq-line { color: var(--text); }
+
+        [data-theme="light"] .frac .num { border-bottom-color: rgba(0,0,0,0.25); }
+
+        [data-theme="light"] .derivation li,
+        [data-theme="light"] .eq-line,
+        [data-theme="light"] .controls-panel,
+        [data-theme="light"] .sub-section { background: rgba(0,0,0,0.02); }
+
+        [data-theme="light"] .canvas-container { background: rgba(0,0,0,0.03); }
+
+        [data-theme="light"] .ctrl-row input[type="range"] { background: rgba(0,0,0,0.15); }
+        [data-theme="light"] .ctrl-reset { background: rgba(0,0,0,0.04); color: var(--text-dim); }
+        [data-theme="light"] .ctrl-reset:hover { color: var(--text); }
+    </style>
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
+</head>
+<body>
+    <a href="../index.html" class="back-btn">Back</a>
+
+    <div class="explainer">
+        <div class="title-block">
+            <h1>Lab Circuit Analysis</h1>
+            <div class="sub">week 05 &mdash; BJT common-emitter amplifier &mdash; transfer function &amp; frequency response</div>
+            <p>
+                Step-by-step analysis of a voltage-divider biased common-emitter BJT amplifier.
+                We identify the DC operating point, build the AC small-signal model, derive the
+                transfer function H(s) = V<sub>o</sub>/V<sub>s</sub>, find the poles, and sketch
+                the Bode and Nyquist plots.
+            </p>
+        </div>
+
+        <!-- ═══════════════════════ PART 1: Circuit Identification ═══════════════════════ -->
+        <details class="section" open>
+            <summary>
+                <span class="section-number">Part 01</span>
+                <h2>Circuit Identification &amp; Component Values</h2>
+            </summary>
+
+            <p>The circuit is a <strong>common-emitter (CE) BJT amplifier</strong> with voltage-divider biasing. Here are the components:</p>
+
+            <table class="param-table">
+                <thead>
+                    <tr><th>Component</th><th>Value</th><th>Role</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>V<sub>s</sub>(t)</td><td>10 mV<sub>pk</sub>, 5 kHz, 0&deg;</td><td>AC signal source</td></tr>
+                    <tr><td>R<sub>S</sub></td><td>100 &Omega;</td><td>Source resistance</td></tr>
+                    <tr><td>C<sub>C1</sub></td><td>0.1 &mu;F</td><td>Input coupling capacitor</td></tr>
+                    <tr><td>R<sub>B1</sub></td><td>200 k&Omega;</td><td>Upper bias resistor</td></tr>
+                    <tr><td>R<sub>B2</sub></td><td>100 k&Omega;</td><td>Lower bias resistor</td></tr>
+                    <tr><td>R<sub>C</sub></td><td>2 k&Omega;</td><td>Collector resistor</td></tr>
+                    <tr><td>R<sub>E</sub></td><td>0.5 k&Omega;</td><td>Emitter resistor</td></tr>
+                    <tr><td>C<sub>E</sub></td><td>220 &mu;F</td><td>Emitter bypass capacitor</td></tr>
+                    <tr><td>C<sub>C2</sub></td><td>0.1 &mu;F</td><td>Output coupling capacitor</td></tr>
+                    <tr><td>R<sub>L</sub></td><td>2 k&Omega;</td><td>Load resistor</td></tr>
+                    <tr><td>V<sub>CC</sub></td><td>5 V</td><td>DC supply</td></tr>
+                    <tr><td>BJT</td><td>2N3904</td><td>&beta; = 200, f<sub>T</sub> = 300 MHz, C<sub>&mu;</sub> = 4 pF</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout">
+                <strong>Node labels from the schematic:</strong> Node 7 = source input, Node 5 = after R<sub>S</sub>, Node 1 = base,
+                Node 3 = collector, Node 4 = V<sub>CC</sub> rail, Node 2 = emitter, Node 0 = ground, Node 6 = output side of C<sub>C2</sub>.
+            </div>
+        </details>
+
+        <!-- ═══════════════════════ PART 2: DC Operating Point ═══════════════════════ -->
+        <details class="section">
+            <summary>
+                <span class="section-number">Part 02</span>
+                <h2>DC Operating Point (Q-Point)</h2>
+            </summary>
+
+            <p>At DC, all capacitors are open circuits. We need to find I<sub>C</sub>, V<sub>CE</sub>, and the
+            transconductance g<sub>m</sub> for the small-signal model.</p>
+
+            <h3>Step 1: Thevenin Base Voltage</h3>
+            <p>The voltage divider R<sub>B1</sub> and R<sub>B2</sub> sets the base voltage:</p>
+            <div class="eq-block">
+                V<sub>BB</sub> = V<sub>CC</sub> &middot;
+                <span class="frac"><span class="num">R<sub>B2</sub></span><span class="den">R<sub>B1</sub> + R<sub>B2</sub></span></span>
+                = 5 &middot;
+                <span class="frac"><span class="num">100k</span><span class="den">200k + 100k</span></span>
+                = <span class="hl">1.667 V</span>
+            </div>
+
+            <h3>Step 2: Thevenin Base Resistance</h3>
+            <div class="eq-block">
+                R<sub>BB</sub> = R<sub>B1</sub> || R<sub>B2</sub> =
+                <span class="frac"><span class="num">200k &middot; 100k</span><span class="den">200k + 100k</span></span>
+                = <span class="hl">66.67 k&Omega;</span>
+            </div>
+
+            <h3>Step 3: Find I<sub>C</sub> (assuming &beta; = 200)</h3>
+            <p>Using the approximation I<sub>C</sub> &approx; (V<sub>BB</sub> &minus; V<sub>BE</sub>) / (R<sub>E</sub> + R<sub>BB</sub>/&beta;), with V<sub>BE</sub> &approx; 0.7 V:</p>
+            <div class="eq-block">
+                I<sub>C</sub> &approx;
+                <span class="frac"><span class="num">V<sub>BB</sub> &minus; V<sub>BE</sub></span><span class="den">R<sub>E</sub> + R<sub>BB</sub>/&beta;</span></span>
+                =
+                <span class="frac"><span class="num">1.667 &minus; 0.7</span><span class="den">500 + 333.5</span></span>
+                =
+                <span class="frac"><span class="num">0.967</span><span class="den">833.5</span></span>
+                = <span class="hl">1.160 mA</span>
+            </div>
+
+            <h3>Step 4: V<sub>CE</sub></h3>
+            <div class="eq-block">
+                V<sub>CE</sub> = V<sub>CC</sub> &minus; I<sub>C</sub>(R<sub>C</sub> + R<sub>E</sub>)
+                = 5 &minus; 1.160m &middot; 2.5k
+                = 5 &minus; 2.90
+                = <span class="hl">2.10 V</span>
+            </div>
+
+            <div class="callout">
+                <strong>Check:</strong> V<sub>CE</sub> = 2.10 V > 0.2 V &rArr; the transistor is in active mode. The Q-point is valid.
+            </div>
+
+            <h3>Step 5: Small-Signal Parameters</h3>
+            <div class="eq-block">
+                g<sub>m</sub> =
+                <span class="frac"><span class="num">I<sub>C</sub></span><span class="den">V<sub>T</sub></span></span>
+                =
+                <span class="frac"><span class="num">1.160 mA</span><span class="den">26 mV</span></span>
+                = <span class="hl">44.62 mA/V</span>
+            </div>
+            <div class="eq-block">
+                r<sub>&pi;</sub> =
+                <span class="frac"><span class="num">&beta;</span><span class="den">g<sub>m</sub></span></span>
+                =
+                <span class="frac"><span class="num">200</span><span class="den">44.62 mA/V</span></span>
+                = <span class="hl">4483 &Omega; &approx; 4.48 k&Omega;</span>
+            </div>
+        </details>
+
+        <!-- ═══════════════════════ PART 3: AC Small-Signal Model ═══════════════════════ -->
+        <details class="section">
+            <summary>
+                <span class="section-number">Part 03</span>
+                <h2>AC Small-Signal Equivalent Circuit</h2>
+            </summary>
+
+            <p>To build the AC model, we replace the BJT with its hybrid-&pi; model, short V<sub>CC</sub> to ground, and keep all capacitors as impedances Z = 1/sC.</p>
+
+            <h3>Rules for AC Model</h3>
+            <ul>
+                <li><strong>DC supply V<sub>CC</sub> &rarr; short to ground</strong> (AC ground)</li>
+                <li><strong>BJT &rarr; hybrid-&pi; model:</strong> r<sub>&pi;</sub> between base-emitter, current source g<sub>m</sub>v<sub>&pi;</sub> from collector to emitter</li>
+                <li><strong>Capacitors remain</strong> as impedances: Z<sub>C</sub> = 1/(sC)</li>
+            </ul>
+
+            <h3>Resulting AC Circuit</h3>
+            <p>The AC equivalent has three capacitor-dependent paths:</p>
+
+            <div class="sub-section">
+                <h4>Input Stage (Node 7 &rarr; Node 1)</h4>
+                <p>V<sub>s</sub> &rarr; R<sub>S</sub> &rarr; C<sub>C1</sub> &rarr; (R<sub>B1</sub> || R<sub>B2</sub>) || r<sub>&pi;</sub> &approx; 4.20 k&Omega;</p>
+                <p>The input coupling capacitor C<sub>C1</sub> forms a high-pass filter with the total resistance it sees.</p>
+            </div>
+
+            <div class="sub-section">
+                <h4>Emitter Stage (Node 2 &rarr; Ground)</h4>
+                <p>R<sub>E</sub> in parallel with C<sub>E</sub>. At low frequencies, R<sub>E</sub> provides negative feedback
+                (reducing gain). As frequency increases, C<sub>E</sub> bypasses R<sub>E</sub>, increasing the gain.</p>
+            </div>
+
+            <div class="sub-section">
+                <h4>Output Stage (Node 3 &rarr; Node 6)</h4>
+                <p>Collector node through C<sub>C2</sub> to R<sub>L</sub>. Another high-pass filter.</p>
+            </div>
+        </details>
+
+        <!-- ═══════════════════════ PART 4: Transfer Function Derivation ═══════════════════════ -->
+        <details class="section">
+            <summary>
+                <span class="section-number">Part 04</span>
+                <h2>Transfer Function Derivation</h2>
+            </summary>
+
+            <p>We derive A<sub>V</sub>(s) = V<sub>o</sub>(s) / V<sub>s</sub>(s) as the product of the midband gain and frequency-dependent pole/zero terms. Define shorthand:</p>
+            <div class="eq-line">
+                <span class="dim">R<sub>BB</sub></span> = R<sub>B1</sub> || R<sub>B2</sub> = 66.67 k&Omega;
+                &emsp;&emsp;
+                <span class="dim">R<sub>C</sub>&prime;</span> = R<sub>C</sub> || R<sub>L</sub> = 1 k&Omega;
+            </div>
+
+            <h3>Step 1: Midband Gain</h3>
+            <p>At midband frequencies (coupling/bypass caps are shorts, parasitic caps are opens):</p>
+            <div class="eq-block">
+                R<sub>in</sub> = R<sub>BB</sub> || r<sub>&pi;</sub> =
+                <span class="frac"><span class="num">66.67k &middot; 4.48k</span><span class="den">66.67k + 4.48k</span></span>
+                &approx; <span class="hl">4.20 k&Omega;</span>
+            </div>
+            <div class="eq-block">
+                A<sub>mid</sub> = &minus;g<sub>m</sub>(R<sub>C</sub> || R<sub>L</sub>) &middot;
+                <span class="frac"><span class="num">R<sub>BB</sub> || r<sub>&pi;</sub></span><span class="den">R<sub>S</sub> + R<sub>BB</sub> || r<sub>&pi;</sub></span></span>
+                = &minus;44.62 &times; 10<sup>&minus;3</sup> &times; 1000 &times;
+                <span class="frac"><span class="num">4200</span><span class="den">100 + 4200</span></span>
+                = <span class="hl">&minus;43.6 V/V</span>
+                <span class="dim">&ensp;(&approx; 32.8 dB)</span>
+            </div>
+
+            <h3>Step 2: Low-Frequency Poles (High-Pass)</h3>
+
+            <p><strong>Input coupling (C<sub>C1</sub>):</strong></p>
+            <div class="eq-block">
+                &omega;<sub>L1</sub> =
+                <span class="frac"><span class="num">1</span><span class="den">C<sub>C1</sub>(R<sub>S</sub> + R<sub>BB</sub> || r<sub>&pi;</sub>)</span></span>
+                =
+                <span class="frac"><span class="num">1</span><span class="den">0.1&mu; &middot; (100 + 4200)</span></span>
+                =
+                <span class="frac"><span class="num">1</span><span class="den">4.3 &times; 10<sup>&minus;4</sup></span></span>
+                = <span class="hl">2326 rad/s</span>
+                <span class="dim">&ensp;(f<sub>L1</sub> &approx; 370 Hz)</span>
+            </div>
+
+            <p><strong>Output coupling (C<sub>C2</sub>):</strong></p>
+            <div class="eq-block">
+                &omega;<sub>L2</sub> =
+                <span class="frac"><span class="num">1</span><span class="den">C<sub>C2</sub>(R<sub>C</sub> + R<sub>L</sub>)</span></span>
+                =
+                <span class="frac"><span class="num">1</span><span class="den">0.1&mu; &middot; (2k + 2k)</span></span>
+                = <span class="hl">2500 rad/s</span>
+                <span class="dim">&ensp;(f<sub>L2</sub> &approx; 398 Hz)</span>
+            </div>
+
+            <p><strong>Emitter bypass (C<sub>E</sub>):</strong> The resistance seen by C<sub>E</sub> is R<sub>E</sub> in parallel with the resistance looking into the emitter:</p>
+            <div class="eq-block">
+                R<sub>th</sub> = R<sub>S</sub> || R<sub>BB</sub> = 100 || 66.67k &approx; 100 &Omega;
+            </div>
+            <div class="eq-block">
+                &omega;<sub>L3</sub> =
+                <span class="frac"><span class="num">1</span><span class="den">C<sub>E</sub> &middot; (R<sub>E</sub> || <span class="frac"><span class="num">r<sub>&pi;</sub> + R<sub>th</sub></span><span class="den">&beta; + 1</span></span>)</span></span>
+                =
+                <span class="frac"><span class="num">1</span><span class="den">220&mu; &middot; (500 || 22.8)</span></span>
+                =
+                <span class="frac"><span class="num">1</span><span class="den">220&mu; &middot; 21.8</span></span>
+                = <span class="hl">208.5 rad/s</span>
+                <span class="dim">&ensp;(f<sub>L3</sub> &approx; 33 Hz)</span>
+            </div>
+
+            <p><strong>Emitter bypass zero:</strong></p>
+            <div class="eq-block">
+                &omega;<sub>Z,CE</sub> =
+                <span class="frac"><span class="num">1</span><span class="den">C<sub>E</sub> &middot; R<sub>E</sub></span></span>
+                =
+                <span class="frac"><span class="num">1</span><span class="den">220&mu; &middot; 500</span></span>
+                = <span class="hl">9.09 rad/s</span>
+                <span class="dim">&ensp;(f<sub>Z</sub> &approx; 1.4 Hz)</span>
+            </div>
+
+            <h3>Step 3: High-Frequency Poles (Low-Pass, Miller Effect)</h3>
+            <p>The BJT has internal capacitances C<sub>&pi;</sub> and C<sub>&mu;</sub>. Using f<sub>T</sub> = 300 MHz:</p>
+            <div class="eq-block">
+                C<sub>&pi;</sub> =
+                <span class="frac"><span class="num">g<sub>m</sub></span><span class="den">2&pi;f<sub>T</sub></span></span>
+                &minus; C<sub>&mu;</sub>
+                = 23.7 pF &minus; 4 pF = <span class="hl">19.7 pF</span>
+            </div>
+
+            <p><strong>Miller input capacitance:</strong></p>
+            <div class="eq-block">
+                C<sub>in,Miller</sub> = C<sub>&pi;</sub> + C<sub>&mu;</sub>(1 + g<sub>m</sub>R<sub>C</sub>&prime;)
+                = 19.7 pF + 4 pF &times; (1 + 44.6)
+                = <span class="hl">202.1 pF</span>
+            </div>
+
+            <p><strong>Dominant input pole:</strong></p>
+            <div class="eq-block">
+                R<sub>th,b</sub> = R<sub>S</sub> || R<sub>BB</sub> || r<sub>&pi;</sub> &approx; 97.7 &Omega;
+            </div>
+            <div class="eq-block">
+                &omega;<sub>H1</sub> =
+                <span class="frac"><span class="num">1</span><span class="den">R<sub>th,b</sub> &middot; C<sub>in,Miller</sub></span></span>
+                &rArr;&ensp; <span class="hl">f<sub>H1</sub> &approx; 8.06 MHz</span>
+            </div>
+
+            <p><strong>Output pole:</strong></p>
+            <div class="eq-block">
+                &omega;<sub>H2</sub> =
+                <span class="frac"><span class="num">1</span><span class="den">R<sub>C</sub>&prime; &middot; C<sub>&mu;</sub></span></span>
+                =
+                <span class="frac"><span class="num">1</span><span class="den">1000 &middot; 4 pF</span></span>
+                &rArr;&ensp; <span class="hl">f<sub>H2</sub> &approx; 39.8 MHz</span>
+            </div>
+
+            <h3>Step 4: Complete Transfer Function</h3>
+            <p>Combining all stages:</p>
+            <div class="eq-block" style="font-size: 13px; line-height: 2.2;">
+                A<sub>V</sub>(s) = A<sub>mid</sub>
+                &middot;
+                <span class="frac frac-lg"><span class="num">s</span><span class="den">s + &omega;<sub>L1</sub></span></span>
+                &middot;
+                <span class="frac frac-lg"><span class="num">s</span><span class="den">s + &omega;<sub>L2</sub></span></span>
+                &middot;
+                <span class="frac frac-lg"><span class="num">s + &omega;<sub>Z</sub></span><span class="den">s + &omega;<sub>L3</sub></span></span>
+                &middot;
+                <span class="frac frac-lg"><span class="num">&omega;<sub>H1</sub></span><span class="den">s + &omega;<sub>H1</sub></span></span>
+                &middot;
+                <span class="frac frac-lg"><span class="num">&omega;<sub>H2</sub></span><span class="den">s + &omega;<sub>H2</sub></span></span>
+            </div>
+
+            <div class="callout warn">
+                <strong>Note:</strong> At very low frequencies (below &omega;<sub>Z</sub>), the emitter bypass is inactive and the gain reduces to
+                g<sub>m</sub>R<sub>C</sub>&prime; / (1 + g<sub>m</sub>R<sub>E</sub>) &approx; 1.94 (5.8 dB).
+                The bypass capacitor provides a gain boost of about 27 dB in the midband. The high-frequency
+                response is limited by the Miller effect, with C<sub>in,Miller</sub> &approx; 202 pF significantly exceeding the intrinsic C<sub>&pi;</sub>.
+            </div>
+        </details>
+
+        <!-- ═══════════════════════ PART 5: Summary of Poles & Zeros ═══════════════════════ -->
+        <details class="section">
+            <summary>
+                <span class="section-number">Part 05</span>
+                <h2>Poles &amp; Zeros Summary</h2>
+            </summary>
+
+            <table class="param-table">
+                <thead>
+                    <tr><th>Parameter</th><th>Origin</th><th>Frequency</th><th>Type</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td style="color: var(--red);">f<sub>L1</sub></td><td>C<sub>C1</sub> input coupling</td><td>370 Hz</td><td>HP pole</td></tr>
+                    <tr><td style="color: var(--red);">f<sub>L2</sub></td><td>C<sub>C2</sub> output coupling</td><td>398 Hz</td><td>HP pole</td></tr>
+                    <tr><td style="color: var(--red);">f<sub>L3</sub></td><td>C<sub>E</sub> emitter bypass</td><td>33 Hz</td><td>HP pole</td></tr>
+                    <tr><td style="color: var(--yellow);">f<sub>Z,CE</sub></td><td>C<sub>E</sub> emitter bypass</td><td>1.4 Hz</td><td>Zero</td></tr>
+                    <tr><td style="color: var(--blue);">f<sub>H1</sub></td><td>Miller (C<sub>&pi;</sub> + C<sub>&mu;</sub>)</td><td>8.06 MHz</td><td>LP pole</td></tr>
+                    <tr><td style="color: var(--blue);">f<sub>H2</sub></td><td>Output C<sub>&mu;</sub></td><td>39.8 MHz</td><td>LP pole</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout">
+                <strong>Key observations:</strong> The low-frequency &minus;3 dB point is dominated by f<sub>L1</sub> &approx; 370 Hz
+                and f<sub>L2</sub> &approx; 398 Hz (coupling capacitors). The high-frequency response is limited by the
+                Miller effect at f<sub>H1</sub> &approx; 8.06 MHz. In the midband, the phase is flat at &minus;180&deg;.
+            </div>
+        </details>
+
+        <!-- ═══════════════════════ PART 6: Frequency Response ═══════════════════════ -->
+        <details class="section" open>
+            <summary>
+                <span class="section-number">Part 06</span>
+                <h2>Frequency Response &amp; Nyquist</h2>
+            </summary>
+
+            <p>The Bode magnitude and phase plots show the frequency response of A<sub>V</sub>(s) from 10 Hz to 100 MHz.
+            The Nyquist plot traces A<sub>V</sub>(j&omega;) in the complex plane. Drag the frequency cursor to see the
+            corresponding point on all three plots.</p>
+
+            <div class="controls-panel">
+                <h4>Circuit Parameters <span class="tag">Interactive</span></h4>
+                <div class="controls-grid">
+                    <div class="ctrl-row">
+                        <label>C<sub>C1</sub></label>
+                        <input type="range" id="sl-cc1" min="-2" max="1.5" step="0.01" value="-1">
+                        <span class="ctrl-val" id="val-cc1">0.10 &mu;F</span>
+                    </div>
+                    <div class="ctrl-row">
+                        <label>C<sub>C2</sub></label>
+                        <input type="range" id="sl-cc2" min="-2" max="1.5" step="0.01" value="-1">
+                        <span class="ctrl-val" id="val-cc2">0.10 &mu;F</span>
+                    </div>
+                    <div class="ctrl-row">
+                        <label>C<sub>E</sub></label>
+                        <input type="range" id="sl-ce" min="0" max="3.5" step="0.01" value="2.342">
+                        <span class="ctrl-val" id="val-ce">220 &mu;F</span>
+                    </div>
+                    <div class="ctrl-row">
+                        <label>R<sub>L</sub></label>
+                        <input type="range" id="sl-rl" min="2" max="5" step="0.01" value="3.301">
+                        <span class="ctrl-val" id="val-rl">2.00 k&Omega;</span>
+                    </div>
+                    <div class="ctrl-row">
+                        <label>R<sub>C</sub></label>
+                        <input type="range" id="sl-rc" min="2.3" max="4.5" step="0.01" value="3.301">
+                        <span class="ctrl-val" id="val-rc">2.00 k&Omega;</span>
+                    </div>
+                    <div class="ctrl-row">
+                        <label>&beta;</label>
+                        <input type="range" id="sl-beta" min="50" max="500" step="1" value="200">
+                        <span class="ctrl-val" id="val-beta">200</span>
+                    </div>
+                </div>
+                <button class="ctrl-reset" id="btn-reset">Reset to defaults</button>
+                <div class="readout-bar">
+                    A<sub>mid</sub> = <span id="ro-amid"></span> &ensp;|&ensp;
+                    f<sub>L1</sub> = <span id="ro-fl1"></span> &ensp;|&ensp;
+                    f<sub>L2</sub> = <span id="ro-fl2"></span> &ensp;|&ensp;
+                    f<sub>L3</sub> = <span id="ro-fl3"></span> &ensp;|&ensp;
+                    f<sub>H1</sub> = <span id="ro-fh1"></span>
+                </div>
+            </div>
+
+            <!-- Frequency cursor -->
+            <div class="controls-panel" style="margin-top: -12px; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0;">
+                <div class="ctrl-row">
+                    <label style="min-width: 60px;">Frequency</label>
+                    <input type="range" id="sl-freq" min="1" max="8" step="0.005" value="4">
+                    <span class="ctrl-val" id="val-freq" style="min-width: 100px;">10.0 kHz</span>
+                </div>
+                <div class="readout-bar" style="margin-top: 8px; padding-top: 8px;">
+                    |A<sub>V</sub>| = <span id="ro-mag"></span> &ensp;|&ensp;
+                    &ang;A<sub>V</sub> = <span id="ro-phase"></span> &ensp;|&ensp;
+                    &ang; (0&ndash;360) = <span id="ro-angle360"></span> &ensp;|&ensp;
+                    Re = <span id="ro-re"></span> &ensp;|&ensp;
+                    Im = <span id="ro-im"></span>
+                </div>
+            </div>
+
+            <!-- Side-by-side: Bode (left) | Nyquist (right) -->
+            <div class="plots-row">
+                <div class="plots-bode">
+                    <div class="canvas-container canvas-bode-half">
+                        <canvas id="bodeMag"></canvas>
+                    </div>
+                    <div class="canvas-container canvas-bode-half">
+                        <canvas id="bodePhase"></canvas>
+                    </div>
+                </div>
+                <div class="plots-nyquist">
+                    <div class="canvas-container canvas-nyquist-full">
+                        <canvas id="nyquist"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="callout info">
+                <strong>Reading the plots:</strong> The midband gain is &approx; 32.8 dB. The coupling
+                capacitor poles (f<sub>L1</sub>, f<sub>L2</sub>) cause the low-frequency roll-off.
+                The Miller pole at f<sub>H1</sub> dominates the high-frequency response.
+                On the Nyquist plot, the locus starts at the origin (&omega; = 0), swings to the negative real axis
+                at midband (phase &approx; &minus;180&deg;), and returns toward the origin at high frequencies.
+            </div>
+        </details>
+
+    </div>
+
+    <!-- ═══════════════════════ JAVASCRIPT: Bode & Nyquist Plots ═══════════════════════ -->
+    <script>
+    (function() {
+        // ─── Fixed circuit constants ───
+        const RS = 100;
+        const RE = 500;
+        const RBB = 66670;         // RB1 || RB2
+        const Cmu = 4e-12;
+        const fT = 300e6;
+        const VT = 0.026;
+        const VBB = 1.667;
+        const VBE = 0.7;
+
+        // ─── Default slider values ───
+        const DEFAULTS = { cc1: -1, cc2: -1, ce: 2.342, rl: 3.301, rc: 3.301, beta: 200 };
+
+        // ─── Read sliders and compute all derived parameters ───
+        function getParams() {
+            const CC1  = Math.pow(10, parseFloat(document.getElementById('sl-cc1').value)) * 1e-6;
+            const CC2  = Math.pow(10, parseFloat(document.getElementById('sl-cc2').value)) * 1e-6;
+            const CE   = Math.pow(10, parseFloat(document.getElementById('sl-ce').value)) * 1e-6;
+            const RL   = Math.pow(10, parseFloat(document.getElementById('sl-rl').value));
+            const RC   = Math.pow(10, parseFloat(document.getElementById('sl-rc').value));
+            const beta = parseFloat(document.getElementById('sl-beta').value);
+
+            const IC   = (VBB - VBE) / (RE + RBB / beta);
+            const gm   = IC / VT;
+            const r_pi = beta / gm;
+            const Rin  = (RBB * r_pi) / (RBB + r_pi);
+            const RC_eff = (RC * RL) / (RC + RL);
+            const Amid = (Rin / (Rin + RS)) * gm * RC_eff;
+
+            // Low-frequency poles & zero
+            const wL1 = 1 / (CC1 * (RS + Rin));
+            const wL2 = 1 / (CC2 * (RC + RL));
+            const Rth_e = (RS * RBB) / (RS + RBB);
+            const Re_seen = (r_pi + Rth_e) / (beta + 1);
+            const RE_par = (RE * Re_seen) / (RE + Re_seen);
+            const wL3 = 1 / (CE * RE_par);
+            const wZ  = 1 / (CE * RE);
+
+            // High-frequency poles (Miller)
+            const Cpi = gm / (2 * Math.PI * fT) - Cmu;
+            const Cin_Miller = Cpi + Cmu * (1 + gm * RC_eff);
+            const Rth_b = 1 / (1/RS + 1/RBB + 1/r_pi);
+            const wH1 = 1 / (Rth_b * Cin_Miller);
+            const wH2 = 1 / (RC_eff * Cmu);
+
+            return { CC1, CC2, CE, RL, RC, beta, gm, r_pi, Rin, RC_eff, Amid, wL1, wL2, wL3, wZ, wH1, wH2 };
+        }
+
+        // ─── Complex arithmetic helpers ───
+        function highPass(w, p) {
+            const d = p * p + w * w;
+            return { re: (w * w) / d, im: (w * p) / d };
+        }
+        function lowPass(w, p) {
+            const d = p * p + w * w;
+            return { re: (p * p) / d, im: -(w * p) / d };
+        }
+        function poleZero(w, z, p) {
+            const d = p * p + w * w;
+            return { re: (z * p + w * w) / d, im: (w * p - w * z) / d };
+        }
+        function cmul(a, b) {
+            return { re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re };
+        }
+
+        // ─── Evaluate H(jw) with given params ───
+        function evalH(w, P) {
+            if (w === 0) return { re: 0, im: 0, mag: 0, phase_deg: 0 };
+
+            let r = cmul(highPass(w, P.wL1), highPass(w, P.wL2));
+            r = cmul(r, poleZero(w, P.wZ, P.wL3));
+            r = cmul(r, lowPass(w, P.wH1));
+            r = cmul(r, lowPass(w, P.wH2));
+
+            const K = -P.Amid;
+            r.re *= K;
+            r.im *= K;
+
+            const mag = Math.sqrt(r.re * r.re + r.im * r.im);
+            const phase = Math.atan2(r.im, r.re) * 180 / Math.PI;
+            return { re: r.re, im: r.im, mag, phase_deg: phase };
+        }
+
+        // ─── Bode Magnitude Plot ───
+        function drawBodeMag(P, cursorF) {
+            const canvas = document.getElementById('bodeMag');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const W = rect.width, H = rect.height;
+
+            const pad = { top: 40, right: 40, bottom: 50, left: 70 };
+            const pw = W - pad.left - pad.right;
+            const ph = H - pad.top - pad.bottom;
+
+            const logMin = 1, logMax = 8;
+            const dbMin = -30, dbMax = 40;
+
+            function xOf(logF) { return pad.left + (logF - logMin) / (logMax - logMin) * pw; }
+            function yOf(dB) { return pad.top + (dbMax - dB) / (dbMax - dbMin) * ph; }
+
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Grid
+            ctx.strokeStyle = T.gridLight;
+            ctx.lineWidth = 1;
+            for (let l = logMin; l <= logMax; l++) {
+                const x = xOf(l);
+                ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ph); ctx.stroke();
+            }
+            for (let db = dbMin; db <= dbMax; db += 10) {
+                const y = yOf(db);
+                ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + pw, y); ctx.stroke();
+            }
+
+            // Axes labels
+            ctx.fillStyle = T.textGray;
+            ctx.font = '11px IBM Plex Mono, monospace';
+            ctx.textAlign = 'center';
+            const supMap = {1:'\u00B9',2:'\u00B2',3:'\u00B3',4:'\u2074',5:'\u2075',6:'\u2076',7:'\u2077',8:'\u2078'};
+            for (let l = logMin; l <= logMax; l++) {
+                ctx.fillText('10' + supMap[l], xOf(l), pad.top + ph + 20);
+            }
+            ctx.textAlign = 'right';
+            for (let db = dbMin; db <= dbMax; db += 10) {
+                ctx.fillText(db + ' dB', pad.left - 8, yOf(db) + 4);
+            }
+
+            ctx.fillStyle = T.textSlate;
+            ctx.font = '12px IBM Plex Sans, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Frequency (Hz)', pad.left + pw / 2, H - 6);
+            ctx.save();
+            ctx.translate(14, pad.top + ph / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Magnitude (dB)', 0, 0);
+            ctx.restore();
+
+            ctx.fillStyle = T.text;
+            ctx.font = '600 13px IBM Plex Sans, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Bode Plot \u2014 CE Amplifier Frequency Response', pad.left, 24);
+
+            // Plot the curve
+            ctx.beginPath();
+            ctx.strokeStyle = '#6aaa8e';
+            ctx.lineWidth = 2;
+            let first = true;
+            for (let i = 0; i <= 800; i++) {
+                const logF = logMin + (logMax - logMin) * i / 800;
+                const w = 2 * Math.PI * Math.pow(10, logF);
+                const h = evalH(w, P);
+                const dB = 20 * Math.log10(Math.max(h.mag, 1e-12));
+                const x = xOf(logF);
+                const y = yOf(Math.max(dbMin, Math.min(dbMax, dB)));
+                if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Frequency markers with smart label placement
+            const fL1 = P.wL1 / (2 * Math.PI);
+            const fL2 = P.wL2 / (2 * Math.PI);
+            const fH1 = P.wH1 / (2 * Math.PI);
+
+            const markers = [
+                { f: fL1, label: 'f\u2097\u2081=' + fmtFreq(fL1), color: '#e06050' },
+                { f: fL2, label: 'f\u2097\u2082=' + fmtFreq(fL2), color: '#e06050' },
+                { f: fH1, label: 'f\u2091\u2081=' + fmtFreq(fH1), color: '#5b9bd5' },
+            ];
+            drawMarkers(ctx, markers, xOf, pad, ph, logMin, logMax, pw);
+
+            // Midband reference
+            const midDb = 20 * Math.log10(P.Amid);
+            ctx.strokeStyle = 'rgba(106,170,142,0.3)';
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath(); ctx.moveTo(pad.left, yOf(midDb)); ctx.lineTo(pad.left + pw, yOf(midDb)); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#6aaa8e';
+            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText(midDb.toFixed(1) + ' dB midband', pad.left + pw - 4, yOf(midDb) - 6);
+
+            // Frequency cursor
+            if (cursorF) {
+                const logCF = Math.log10(cursorF);
+                if (logCF >= logMin && logCF <= logMax) {
+                    const wc = 2 * Math.PI * cursorF;
+                    const hc = evalH(wc, P);
+                    const cDb = 20 * Math.log10(Math.max(hc.mag, 1e-12));
+                    const cx = xOf(logCF);
+                    const cy = yOf(Math.max(dbMin, Math.min(dbMax, cDb)));
+                    // Vertical hairline
+                    ctx.strokeStyle = T.overlay20;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 3]);
+                    ctx.beginPath(); ctx.moveTo(cx, pad.top); ctx.lineTo(cx, pad.top + ph); ctx.stroke();
+                    ctx.setLineDash([]);
+                    // Dot
+                    ctx.fillStyle = T.text;
+                    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 2 * Math.PI); ctx.fill();
+                    ctx.fillStyle = '#6aaa8e';
+                    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 2 * Math.PI); ctx.fill();
+                }
+            }
+        }
+
+        // ─── Bode Phase Plot ───
+        function drawBodePhase(P, cursorF) {
+            const canvas = document.getElementById('bodePhase');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const W = rect.width, H = rect.height;
+
+            const pad = { top: 40, right: 40, bottom: 50, left: 70 };
+            const pw = W - pad.left - pad.right;
+            const ph = H - pad.top - pad.bottom;
+
+            const logMin = 1, logMax = 8;
+            const phaseMin = -315, phaseMax = 45;
+
+            function xOf(logF) { return pad.left + (logF - logMin) / (logMax - logMin) * pw; }
+            function yOf(deg) { return pad.top + (phaseMax - deg) / (phaseMax - phaseMin) * ph; }
+
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, W, H);
+
+            ctx.strokeStyle = T.gridLight;
+            ctx.lineWidth = 1;
+            for (let l = logMin; l <= logMax; l++) {
+                const x = xOf(l);
+                ctx.beginPath(); ctx.moveTo(x, pad.top); ctx.lineTo(x, pad.top + ph); ctx.stroke();
+            }
+            for (let deg = phaseMin; deg <= phaseMax; deg += 45) {
+                const y = yOf(deg);
+                ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + pw, y); ctx.stroke();
+            }
+
+            ctx.fillStyle = T.textGray;
+            ctx.font = '11px IBM Plex Mono, monospace';
+            ctx.textAlign = 'center';
+            const supMap = {1:'\u00B9',2:'\u00B2',3:'\u00B3',4:'\u2074',5:'\u2075',6:'\u2076',7:'\u2077',8:'\u2078'};
+            for (let l = logMin; l <= logMax; l++) {
+                ctx.fillText('10' + supMap[l], xOf(l), pad.top + ph + 20);
+            }
+            ctx.textAlign = 'right';
+            for (let deg = phaseMin; deg <= phaseMax; deg += 45) {
+                ctx.fillText(deg + '\u00B0', pad.left - 8, yOf(deg) + 4);
+            }
+
+            ctx.fillStyle = T.textSlate;
+            ctx.font = '12px IBM Plex Sans, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Frequency (Hz)', pad.left + pw / 2, H - 6);
+            ctx.save();
+            ctx.translate(14, pad.top + ph / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Phase (degrees)', 0, 0);
+            ctx.restore();
+
+            ctx.fillStyle = T.text;
+            ctx.font = '600 13px IBM Plex Sans, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Bode Phase Plot', pad.left, 24);
+
+            // Plot (unwrapped phase)
+            ctx.beginPath();
+            ctx.strokeStyle = T.yellow;
+            ctx.lineWidth = 2;
+            let first = true;
+            let prevPhase = 0;
+            let phaseOffset = 0;
+            for (let i = 0; i <= 800; i++) {
+                const logF = logMin + (logMax - logMin) * i / 800;
+                const w = 2 * Math.PI * Math.pow(10, logF);
+                const h = evalH(w, P);
+                let p = h.phase_deg + phaseOffset;
+                if (i > 0) {
+                    while (p - prevPhase > 180) { p -= 360; phaseOffset -= 360; }
+                    while (p - prevPhase < -180) { p += 360; phaseOffset += 360; }
+                }
+                prevPhase = p;
+                const x = xOf(logF);
+                const y = yOf(Math.max(phaseMin, Math.min(phaseMax, p)));
+                if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // -180 line
+            ctx.strokeStyle = T.gridStrong;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath(); ctx.moveTo(pad.left, yOf(-180)); ctx.lineTo(pad.left + pw, yOf(-180)); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = T.textGray;
+            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.textAlign = 'right';
+            ctx.fillText('-180\u00B0 (inverting)', pad.left + pw - 4, yOf(-180) - 6);
+
+            // Frequency markers
+            const fL1 = P.wL1 / (2 * Math.PI);
+            const fL2 = P.wL2 / (2 * Math.PI);
+            const fH1 = P.wH1 / (2 * Math.PI);
+            const markers = [
+                { f: fL1, label: 'f\u2097\u2081=' + fmtFreq(fL1), color: '#e06050' },
+                { f: fL2, label: 'f\u2097\u2082=' + fmtFreq(fL2), color: '#e06050' },
+                { f: fH1, label: 'f\u2091\u2081=' + fmtFreq(fH1), color: '#5b9bd5' },
+            ];
+            drawMarkers(ctx, markers, xOf, pad, ph, logMin, logMax, pw);
+
+            // Frequency cursor (unwrap phase by scanning up to cursor)
+            if (cursorF) {
+                const logCF = Math.log10(cursorF);
+                if (logCF >= logMin && logCF <= logMax) {
+                    // Quick unwrap scan to get correct phase
+                    let uwPrev = 0, uwOff = 0;
+                    const steps = 200;
+                    let uwPhase = 0;
+                    for (let j = 0; j <= steps; j++) {
+                        const lf = logMin + (logCF - logMin) * j / steps;
+                        const wj = 2 * Math.PI * Math.pow(10, lf);
+                        const hj = evalH(wj, P);
+                        let pj = hj.phase_deg + uwOff;
+                        if (j > 0) {
+                            while (pj - uwPrev > 180) { pj -= 360; uwOff -= 360; }
+                            while (pj - uwPrev < -180) { pj += 360; uwOff += 360; }
+                        }
+                        uwPrev = pj;
+                        uwPhase = pj;
+                    }
+                    const cx = xOf(logCF);
+                    const cy = yOf(Math.max(phaseMin, Math.min(phaseMax, uwPhase)));
+                    ctx.strokeStyle = T.overlay20;
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([2, 3]);
+                    ctx.beginPath(); ctx.moveTo(cx, pad.top); ctx.lineTo(cx, pad.top + ph); ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = T.text;
+                    ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 2 * Math.PI); ctx.fill();
+                    ctx.fillStyle = T.yellow;
+                    ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 2 * Math.PI); ctx.fill();
+                }
+            }
+        }
+
+        // ─── Nyquist Plot ───
+        function drawNyquist(P, cursorF) {
+            const canvas = document.getElementById('nyquist');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const W = rect.width, H = rect.height;
+
+            // Use the smaller dimension to force a square plot area
+            const maxPad = 50;
+            const plotSize = Math.min(W, H) - 2 * maxPad;
+            const pad = {
+                top: (H - plotSize) / 2 - 5,
+                bottom: (H - plotSize) / 2 + 10,
+                left: (W - plotSize) / 2 + 5,
+                right: (W - plotSize) / 2 - 5
+            };
+            const pw = W - pad.left - pad.right;
+            const ph = H - pad.top - pad.bottom;
+
+            // Find plot range by sampling
+            let maxVal = 1;
+            for (let i = 0; i <= 1000; i++) {
+                const logW = 0 + 8 * i / 1000;
+                const w = Math.pow(10, logW);
+                const h = evalH(w, P);
+                maxVal = Math.max(maxVal, Math.abs(h.re), Math.abs(h.im));
+            }
+            const range = maxVal * 1.15;
+
+            function xOf(re) { return pad.left + (re + range) / (2 * range) * pw; }
+            function yOf(im) { return pad.top + (range - im) / (2 * range) * ph; }
+
+            ctx.fillStyle = 'rgba(0,0,0,0)';
+            ctx.fillRect(0, 0, W, H);
+
+            // Axes
+            ctx.strokeStyle = T.gridMed;
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(pad.left, yOf(0)); ctx.lineTo(pad.left + pw, yOf(0)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(xOf(0), pad.top); ctx.lineTo(xOf(0), pad.top + ph); ctx.stroke();
+
+            // Grid circles
+            ctx.strokeStyle = T.gridFine;
+            const gridRadii = [10, 20, 30, 40, 50];
+            gridRadii.forEach(r => {
+                if (r < range) {
+                    const px = (r / range) * pw / 2;
+                    ctx.beginPath();
+                    ctx.arc(xOf(0), yOf(0), px, 0, 2 * Math.PI);
+                    ctx.stroke();
+                }
+            });
+
+            // Labels
+            ctx.fillStyle = T.textSlate;
+            ctx.font = '12px IBM Plex Sans, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Re{A\u1D65(j\u03C9)}', pad.left + pw / 2, H - 6);
+            ctx.save();
+            ctx.translate(14, pad.top + ph / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Im{A\u1D65(j\u03C9)}', 0, 0);
+            ctx.restore();
+
+            ctx.fillStyle = T.text;
+            ctx.font = '600 13px IBM Plex Sans, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Nyquist Plot', pad.left, 24);
+
+            // Scale labels on axes
+            ctx.fillStyle = T.textGray;
+            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.textAlign = 'center';
+            const ticks = [-40, -30, -20, -10, 10, 20, 30, 40];
+            ticks.forEach(t => {
+                if (Math.abs(t) < range) {
+                    ctx.fillText(t, xOf(t), yOf(0) + 14);
+                    ctx.fillText(t + 'j', xOf(0) + 20, yOf(t) + 4);
+                }
+            });
+
+            // Plot the Nyquist curve
+            ctx.beginPath();
+            ctx.strokeStyle = '#6aaa8e';
+            ctx.lineWidth = 2;
+            let first = true;
+            const points = [];
+            for (let i = 0; i <= 1000; i++) {
+                const logW = 0 + 8 * i / 1000;
+                const w = Math.pow(10, logW);
+                const h = evalH(w, P);
+                points.push({ w, re: h.re, im: h.im });
+                const x = xOf(h.re);
+                const y = yOf(h.im);
+                if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Mirror (negative frequencies)
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(106,170,142,0.3)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+            first = true;
+            points.forEach(p => {
+                const x = xOf(p.re);
+                const y = yOf(-p.im);
+                if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Mark -1 point
+            ctx.fillStyle = '#e06050';
+            ctx.beginPath();
+            ctx.arc(xOf(-1), yOf(0), 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.fillStyle = '#e06050';
+            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('-1', xOf(-1) + 6, yOf(0) - 6);
+
+            // Mark origin
+            ctx.fillStyle = T.text;
+            ctx.beginPath();
+            ctx.arc(xOf(0), yOf(0), 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Direction arrow at midpoint
+            const midIdx = Math.floor(points.length * 0.4);
+            const mp = points[midIdx];
+            const mpn = points[midIdx + 2];
+            if (mp && mpn) {
+                const ax = xOf(mp.re), ay = yOf(mp.im);
+                const dx = xOf(mpn.re) - ax, dy = yOf(mpn.im) - ay;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                if (len > 0) {
+                    const ux = dx / len, uy = dy / len;
+                    ctx.fillStyle = '#6aaa8e';
+                    ctx.beginPath();
+                    ctx.moveTo(ax + ux * 8, ay + uy * 8);
+                    ctx.lineTo(ax - ux * 4 + uy * 5, ay - uy * 4 - ux * 5);
+                    ctx.lineTo(ax - ux * 4 - uy * 5, ay - uy * 4 + ux * 5);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+
+            // Frequency annotations with offset directions to avoid overlaps
+            const annots = [
+                { f: 1000, label: '1 kHz', ox: 6, oy: -8 },
+                { f: 10000, label: '10 kHz', ox: 6, oy: 14 },
+                { f: 100000, label: '100 kHz', ox: 6, oy: -8 },
+                { f: 1e6, label: '1 MHz', ox: -6, oy: -8, align: 'right' },
+                { f: 8e6, label: '8 MHz', ox: 6, oy: 14 },
+            ];
+            ctx.font = '9px IBM Plex Mono, monospace';
+            // Compute positions first, then nudge any that are too close
+            const labelPositions = annots.map(a => {
+                const w = 2 * Math.PI * a.f;
+                const h = evalH(w, P);
+                return { ...a, px: xOf(h.re), py: yOf(h.im) };
+            });
+            // Nudge labels that would overlap (within 16px vertically and 40px horizontally)
+            for (let i = 1; i < labelPositions.length; i++) {
+                for (let j = 0; j < i; j++) {
+                    const a = labelPositions[j], b = labelPositions[i];
+                    const dx = Math.abs((a.px + a.ox) - (b.px + b.ox));
+                    const dy = Math.abs((a.py + a.oy) - (b.py + b.oy));
+                    if (dx < 50 && dy < 14) {
+                        b.oy = a.oy > 0 ? -8 : 14; // flip to opposite side
+                    }
+                }
+            }
+            labelPositions.forEach(a => {
+                ctx.fillStyle = T.yellow;
+                ctx.beginPath();
+                ctx.arc(a.px, a.py, 3, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = T.yellow;
+                ctx.textAlign = a.align || 'left';
+                ctx.fillText(a.label, a.px + a.ox, a.py + a.oy);
+            });
+
+            // Frequency cursor on Nyquist — vector + angle arc
+            if (cursorF) {
+                const wc = 2 * Math.PI * cursorF;
+                const hc = evalH(wc, P);
+                const ox = xOf(0), oy = yOf(0);
+                const cx = xOf(hc.re), cy = yOf(hc.im);
+                const dx = cx - ox, dy = cy - oy;
+                const len = Math.sqrt(dx * dx + dy * dy);
+
+                if (len > 2) {
+                    const ux = dx / len, uy = dy / len;
+                    const headLen = 10;
+
+                    // Vector shaft
+                    ctx.strokeStyle = T.text;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(ox, oy);
+                    ctx.lineTo(cx - ux * headLen, cy - uy * headLen);
+                    ctx.stroke();
+
+                    // Arrowhead
+                    ctx.fillStyle = T.text;
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx - ux * headLen + uy * 5, cy - uy * headLen - ux * 5);
+                    ctx.lineTo(cx - ux * headLen - uy * 5, cy - uy * headLen + ux * 5);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Magnitude label perpendicular to vector
+                    const lx = (ox + cx) / 2, ly = (oy + cy) / 2;
+                    ctx.fillStyle = T.overlay70;
+                    ctx.font = '10px IBM Plex Mono, monospace';
+                    const nx = -uy * 14, ny = ux * 14;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('|A\u1D65|=' + hc.mag.toFixed(1), lx + nx, ly + ny);
+
+                    // Angle arc: 0°–360° measured CCW from positive real axis
+                    // In canvas, y is flipped, so canvas angle = -math angle
+                    // Math angle of vector (standard: CCW from +Re axis, Im up)
+                    let angleDeg = Math.atan2(hc.im, hc.re) * 180 / Math.PI;
+                    if (angleDeg < 0) angleDeg += 360; // Convert to 0–360°
+
+                    // Canvas angle: y is inverted, so canvas_angle = -math_angle
+                    const canvasAngle = -Math.atan2(hc.im, hc.re); // angle in canvas coords
+                    const canvasRef = 0; // positive real axis in canvas = 0 rad
+
+                    const arcR = Math.min(len * 0.3, 45);
+                    ctx.strokeStyle = T.yellowA(0.6);
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    // Draw CCW in math = CW in canvas (counterclockwise=false)
+                    // From positive real axis (0) to vector angle, going CW in canvas
+                    if (canvasAngle >= 0) {
+                        ctx.arc(ox, oy, arcR, 0, canvasAngle, false);
+                    } else {
+                        ctx.arc(ox, oy, arcR, 0, canvasAngle + 2 * Math.PI, false);
+                    }
+                    ctx.stroke();
+
+                    // Angle label at midpoint of arc
+                    const midCanvasAngle = canvasAngle >= 0 ? canvasAngle / 2 : (canvasAngle + 2 * Math.PI) / 2;
+                    const labelR = arcR + 14;
+                    const alx = ox + Math.cos(midCanvasAngle) * labelR;
+                    const aly = oy + Math.sin(midCanvasAngle) * labelR;
+                    ctx.fillStyle = T.yellow;
+                    ctx.font = '10px IBM Plex Mono, monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(angleDeg.toFixed(0) + '\u00B0', alx, aly + 4);
+                }
+
+                // Dot at tip
+                ctx.fillStyle = T.text;
+                ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 2 * Math.PI); ctx.fill();
+                ctx.fillStyle = '#6aaa8e';
+                ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 2 * Math.PI); ctx.fill();
+            }
+        }
+
+        // ─── Shared: format frequency nicely ───
+        function fmtFreq(f) {
+            if (f >= 1e6) return (f / 1e6).toFixed(f >= 10e6 ? 0 : 1) + ' MHz';
+            if (f >= 1e3) return (f / 1e3).toFixed(f >= 10e3 ? 0 : 1) + ' kHz';
+            return f.toFixed(0) + ' Hz';
+        }
+
+        // ─── Shared: draw frequency marker lines with smart label collision ───
+        function drawMarkers(ctx, markers, xOf, pad, ph, logMin, logMax, pw) {
+            // Compute pixel positions
+            const items = markers.map(m => {
+                const logF = Math.log10(m.f);
+                return { ...m, logF, x: xOf(logF) };
+            }).filter(m => m.logF >= logMin && m.logF <= logMax);
+
+            // Draw dashed lines
+            items.forEach(m => {
+                ctx.strokeStyle = m.color;
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(m.x, pad.top); ctx.lineTo(m.x, pad.top + ph); ctx.stroke();
+                ctx.setLineDash([]);
+            });
+
+            // Place labels, merging any that are within 55px of each other
+            ctx.font = '10px IBM Plex Mono, monospace';
+            const placed = [];
+            for (let i = 0; i < items.length; i++) {
+                const m = items[i];
+                // Check if this overlaps a previously placed label
+                let merged = false;
+                for (let j = 0; j < placed.length; j++) {
+                    if (Math.abs(m.x - placed[j].x) < 55 && m.color === placed[j].color) {
+                        // Merge: update label to show range
+                        placed[j].label = placed[j].origLabel + ', ' + m.label;
+                        placed[j].x = (placed[j].origX + m.x) / 2;
+                        merged = true;
+                        break;
+                    }
+                }
+                if (!merged) {
+                    placed.push({ ...m, origLabel: m.label, origX: m.x });
+                }
+            }
+
+            // Draw labels, shifting vertically if different-color labels overlap
+            for (let i = 0; i < placed.length; i++) {
+                let yOff = pad.top - 6;
+                for (let j = 0; j < i; j++) {
+                    if (Math.abs(placed[i].x - placed[j].x) < 70) {
+                        yOff = pad.top - 18;
+                    }
+                }
+                ctx.fillStyle = placed[i].color;
+                ctx.textAlign = 'center';
+                ctx.fillText(placed[i].label, placed[i].x, yOff);
+            }
+        }
+
+        // ─── Format slider display values ───
+        function fmtCap(uF) {
+            if (uF >= 1) return uF.toFixed(0) + ' \u00B5F';
+            if (uF >= 0.1) return uF.toFixed(2) + ' \u00B5F';
+            return (uF * 1000).toFixed(0) + ' nF';
+        }
+        function fmtRes(ohm) {
+            if (ohm >= 1e6) return (ohm / 1e6).toFixed(1) + ' M\u03A9';
+            if (ohm >= 1e3) return (ohm / 1e3).toFixed(ohm >= 10e3 ? 1 : 2) + ' k\u03A9';
+            return ohm.toFixed(0) + ' \u03A9';
+        }
+
+        // ─── Update display values next to sliders ───
+        function updateLabels() {
+            const cc1 = Math.pow(10, parseFloat(document.getElementById('sl-cc1').value));
+            const cc2 = Math.pow(10, parseFloat(document.getElementById('sl-cc2').value));
+            const ce  = Math.pow(10, parseFloat(document.getElementById('sl-ce').value));
+            const rl  = Math.pow(10, parseFloat(document.getElementById('sl-rl').value));
+            const rc  = Math.pow(10, parseFloat(document.getElementById('sl-rc').value));
+            const beta = parseFloat(document.getElementById('sl-beta').value);
+
+            document.getElementById('val-cc1').textContent = fmtCap(cc1);
+            document.getElementById('val-cc2').textContent = fmtCap(cc2);
+            document.getElementById('val-ce').textContent  = fmtCap(ce);
+            document.getElementById('val-rl').textContent  = fmtRes(rl);
+            document.getElementById('val-rc').textContent  = fmtRes(rc);
+            document.getElementById('val-beta').textContent = beta;
+        }
+
+        // ─── Update readout bar ───
+        function updateReadouts(P) {
+            const fL1 = P.wL1 / (2 * Math.PI);
+            const fL2 = P.wL2 / (2 * Math.PI);
+            const fL3 = P.wL3 / (2 * Math.PI);
+            const fH1 = P.wH1 / (2 * Math.PI);
+            const midDb = 20 * Math.log10(P.Amid);
+
+            document.getElementById('ro-amid').textContent = P.Amid.toFixed(1) + ' (' + midDb.toFixed(1) + ' dB)';
+            document.getElementById('ro-fl1').textContent  = fmtFreq(fL1);
+            document.getElementById('ro-fl2').textContent  = fmtFreq(fL2);
+            document.getElementById('ro-fl3').textContent  = fmtFreq(fL3);
+            document.getElementById('ro-fh1').textContent  = fmtFreq(fH1);
+        }
+
+        // ─── Unwrap phase by scanning from low frequency ───
+        function getUnwrappedPhase(P, cursorF) {
+            let prev = 0, off = 0, result = 0;
+            const logMin = 1, logCF = Math.log10(cursorF);
+            const steps = 200;
+            for (let j = 0; j <= steps; j++) {
+                const lf = logMin + (logCF - logMin) * j / steps;
+                const hj = evalH(2 * Math.PI * Math.pow(10, lf), P);
+                let pj = hj.phase_deg + off;
+                if (j > 0) {
+                    while (pj - prev > 180) { pj -= 360; off -= 360; }
+                    while (pj - prev < -180) { pj += 360; off += 360; }
+                }
+                prev = pj;
+                result = pj;
+            }
+            return result;
+        }
+
+        // ─── Update frequency cursor readouts ───
+        function updateCursorReadouts(P, cursorF) {
+            const wc = 2 * Math.PI * cursorF;
+            const hc = evalH(wc, P);
+            const magDb = 20 * Math.log10(Math.max(hc.mag, 1e-12));
+            const uwPhase = getUnwrappedPhase(P, cursorF);
+            let angle360 = Math.atan2(hc.im, hc.re) * 180 / Math.PI;
+            if (angle360 < 0) angle360 += 360;
+
+            document.getElementById('val-freq').textContent   = fmtFreq(cursorF);
+            document.getElementById('ro-mag').textContent     = hc.mag.toFixed(2) + ' (' + magDb.toFixed(1) + ' dB)';
+            document.getElementById('ro-phase').textContent   = uwPhase.toFixed(1) + '\u00B0';
+            document.getElementById('ro-angle360').textContent = angle360.toFixed(1) + '\u00B0';
+            document.getElementById('ro-re').textContent      = hc.re.toFixed(2);
+            document.getElementById('ro-im').textContent      = hc.im.toFixed(2) + 'j';
+        }
+
+        // ─── Master redraw ───
+        function drawAll() {
+            const P = getParams();
+            const cursorF = Math.pow(10, parseFloat(document.getElementById('sl-freq').value));
+            updateLabels();
+            updateReadouts(P);
+            updateCursorReadouts(P, cursorF);
+            drawBodeMag(P, cursorF);
+            drawBodePhase(P, cursorF);
+            drawNyquist(P, cursorF);
+        }
+
+        // ─── Wire up controls ───
+        window.addEventListener('load', drawAll);
+        window.addEventListener('resize', drawAll);
+        window.addEventListener('themechange', function() { drawAll(); });
+
+        ['sl-cc1','sl-cc2','sl-ce','sl-rl','sl-rc','sl-beta','sl-freq'].forEach(id => {
+            document.getElementById(id).addEventListener('input', drawAll);
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', function() {
+            document.getElementById('sl-cc1').value  = DEFAULTS.cc1;
+            document.getElementById('sl-cc2').value  = DEFAULTS.cc2;
+            document.getElementById('sl-ce').value   = DEFAULTS.ce;
+            document.getElementById('sl-rl').value   = DEFAULTS.rl;
+            document.getElementById('sl-rc').value   = DEFAULTS.rc;
+            document.getElementById('sl-beta').value = DEFAULTS.beta;
+            drawAll();
+        });
+    })();
+    </script>
+</body>
+</html>

@@ -121,6 +121,12 @@
             transition: background 0.15s ease;
         }
 
+        .topic.disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
         .topic:hover {
             background: #2a2a2f;
         }
@@ -277,10 +283,10 @@
                     <span class="topic-number">4</span>
                     <span class="topic-title">Amplifier Bandwidth</span>
                 </a>
-                <a href="Week 5/lab_circuit_analysis.html" class="topic">
+                <span class="topic disabled">
                     <span class="topic-number">5</span>
-                    <span class="topic-title">Lab Circuit Analysis</span>
-                </a>
+                    <span class="topic-title">Week 5 Lab: Interactive Walkthrough <span style="font-size:0.75em; opacity:0.5;">(Released Next Week)</span></span>
+                </span>
             </div>
         </div>
     </div>

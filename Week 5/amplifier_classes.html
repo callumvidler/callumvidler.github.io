@@ -401,6 +401,7 @@
                 <label>Q-Point</label>
                 <input type="range" id="sl-bias" min="0" max="100" value="50" oninput="setBias(this.value)">
                 <span class="ctrl-val" id="val-bias">I<sub>CQ</sub> 5.0 mA</span>
+                <span class="ctrl-val" id="bias-fixed-note" style="display:none; color:var(--col-overlay-40); font-size:0.75rem;">Fixed at cutoff</span>
             </div>
         </div>
         <div class="ctrl-section">
@@ -497,7 +498,13 @@ function setClass(cls) {
     else if (cls === 'B') biasPoint = 0;
     else biasPoint = 5;
 
-    document.getElementById('sl-bias').value = biasPoint;
+    const biasSlider = document.getElementById('sl-bias');
+    const biasNote = document.getElementById('bias-fixed-note');
+    const isPushPull = (cls === 'B' || cls === 'AB');
+    biasSlider.value = biasPoint;
+    biasSlider.disabled = isPushPull;
+    biasNote.style.display = isPushPull ? 'inline' : 'none';
+    biasNote.textContent = cls === 'B' ? 'Fixed at cutoff' : 'Fixed near cutoff';
     waveHistory = [];
     updateAll();
 }
@@ -1251,13 +1258,28 @@ function drawLoadLineInset(ctx, w, h) {
     ctx.fill();
 
     if (amplitude > 0) {
-        // Compute swing as fraction of load line based on actual output voltage
-        const loadLineRange = VCC - VCE_SAT; // total V_CE span of load line
-        const unclippedSwing = (amplitude / 100) * GAIN; // peak output voltage swing
-        const swingFrac = unclippedSwing / loadLineRange;
+        const loadLineRange = VCC - VCE_SAT;
+        const isPushPull = (ampClass === 'B' || ampClass === 'AB');
 
-        // Clamp to load line endpoints — hitting 0 or 1 means clipping at the axis
-        const s1Frac = Math.max(0, qFrac - swingFrac);
+        // Account for dead zone in Class B/AB swing calculation
+        let effectiveSwing;
+        if (ampClass === 'B') {
+            const deadZone = 0.6;
+            const vinPeakLocal = (amplitude / 100);
+            const scaledDead = deadZone / GAIN;
+            effectiveSwing = Math.max(0, vinPeakLocal - scaledDead) * GAIN;
+        } else if (ampClass === 'AB') {
+            const deadZone = 0.05;
+            const vinPeakLocal = (amplitude / 100);
+            const scaledDead = deadZone / GAIN;
+            effectiveSwing = Math.max(0, vinPeakLocal - scaledDead) * GAIN;
+        } else {
+            effectiveSwing = (amplitude / 100) * GAIN;
+        }
+        const swingFrac = effectiveSwing / loadLineRange;
+
+        // For push-pull B/AB, swing goes upward from Q-point toward saturation only
+        const s1Frac = isPushPull ? qFrac : Math.max(0, qFrac - swingFrac);
         const s2Frac = Math.min(1, qFrac + swingFrac);
 
         ctx.strokeStyle = 'rgba(106,170,142,0.5)';
@@ -1267,17 +1289,15 @@ function drawLoadLineInset(ctx, w, h) {
         ctx.lineTo(ox + axW * (1 - s1Frac), oy - axH * s1Frac);
         ctx.stroke();
 
-        // Draw clipping indicators at the axes
+        // Draw clipping indicators — only at saturation for push-pull B/AB
         const clipColor = 'rgba(224,96,80,0.7)';
         if (s2Frac >= 1) {
-            // Clipping at saturation (I_C axis / top-left of load line)
             ctx.beginPath();
             ctx.arc(ox, oy - axH, 3, 0, Math.PI * 2);
             ctx.fillStyle = clipColor;
             ctx.fill();
         }
-        if (s1Frac <= 0) {
-            // Clipping at cutoff (V_CE axis / bottom-right of load line)
+        if (!isPushPull && s1Frac <= 0) {
             ctx.beginPath();
             ctx.arc(ox + axW, oy, 3, 0, Math.PI * 2);
             ctx.fillStyle = clipColor;

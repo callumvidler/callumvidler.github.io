@@ -585,6 +585,7 @@
             let selectedId = null;
             let dragging = null; // { x1, y1, x2, y2 } grid coords for wire in progress
             let hoverGrid = null; // { gx, gy }
+            let lastNodeData = null; // persisted node labels from last Compute
 
             // ── Defaults ──
             const DEFAULTS = {
@@ -893,7 +894,7 @@
                     ctx.stroke();
                 });
 
-                // Draw wire in progress (dashed)
+                // Draw wire in progress (dashed, L-shaped routing)
                 if (dragging) {
                     const p1 = gridToPixel(dragging.x1, dragging.y1);
                     const p2 = gridToPixel(dragging.x2, dragging.y2);
@@ -902,7 +903,14 @@
                     ctx.setLineDash([6, 4]);
                     ctx.beginPath();
                     ctx.moveTo(p1.x, p1.y);
-                    ctx.lineTo(p2.x, p2.y);
+                    if (dragging.x1 !== dragging.x2 && dragging.y1 !== dragging.y2) {
+                        // L-shaped: horizontal first, then vertical
+                        const midP = gridToPixel(dragging.x2, dragging.y1);
+                        ctx.lineTo(midP.x, midP.y);
+                        ctx.lineTo(p2.x, p2.y);
+                    } else {
+                        ctx.lineTo(p2.x, p2.y);
+                    }
                     ctx.stroke();
                     ctx.setLineDash([]);
                 }
@@ -928,6 +936,11 @@
                     }
                     drawComponent(preview);
                     ctx.globalAlpha = 1.0;
+                }
+
+                // Re-draw persistent node labels if available
+                if (lastNodeData) {
+                    drawNodeLabels(lastNodeData);
                 }
             }
 
@@ -1055,7 +1068,22 @@
                 if (!editingComp) return;
                 const parsed = parseSIValue(veInput.value);
                 if (!isNaN(parsed) && parsed > 0) {
-                    editingComp.value = parsed;
+                    // parseSIValue returns base SI value (e.g. "10u" -> 10e-6).
+                    // comp.value is stored in display units (e.g. 10 for 10μF).
+                    // Convert base SI back to display units by dividing by the unit multiplier.
+                    const def = DEFAULTS[editingComp.type];
+                    if (def) {
+                        var mult = 1;
+                        for (var i = 0; i < def.units.length; i++) {
+                            if (def.units[i].label === editingComp.baseUnit) {
+                                mult = def.units[i].mult;
+                                break;
+                            }
+                        }
+                        editingComp.value = parsed / mult;
+                    } else {
+                        editingComp.value = parsed;
+                    }
                 }
                 hideValueEditor();
                 draw();
@@ -1102,6 +1130,7 @@
                 selectedId = null;
                 activeTool = null;
                 dragging = null;
+                lastNodeData = null;
                 toolBtns.forEach(function(b) { b.classList.remove('active'); });
                 hideValueEditor();
                 document.getElementById('walkthrough').classList.remove('visible');
@@ -1132,6 +1161,7 @@
                     }
                 }
                 selectedId = null;
+                lastNodeData = null;
                 hideValueEditor();
                 draw();
             }
@@ -1190,6 +1220,7 @@
                     }
                     components.push(comp);
                     selectedId = comp.id;
+                    lastNodeData = null;
                     hideValueEditor();
                     draw();
                 } else {
@@ -1229,13 +1260,33 @@
 
                     // Only add wire if it has nonzero length
                     if (dragging.x1 !== dragging.x2 || dragging.y1 !== dragging.y2) {
-                        wires.push({
-                            id: nextId++,
-                            x1: dragging.x1,
-                            y1: dragging.y1,
-                            x2: dragging.x2,
-                            y2: dragging.y2
-                        });
+                        // Bug 3 fix: enforce orthogonal (L-shaped) routing
+                        if (dragging.x1 !== dragging.x2 && dragging.y1 !== dragging.y2) {
+                            // Diagonal: split into horizontal then vertical segments
+                            wires.push({
+                                id: nextId++,
+                                x1: dragging.x1,
+                                y1: dragging.y1,
+                                x2: dragging.x2,
+                                y2: dragging.y1
+                            });
+                            wires.push({
+                                id: nextId++,
+                                x1: dragging.x2,
+                                y1: dragging.y1,
+                                x2: dragging.x2,
+                                y2: dragging.y2
+                            });
+                        } else {
+                            wires.push({
+                                id: nextId++,
+                                x1: dragging.x1,
+                                y1: dragging.y1,
+                                x2: dragging.x2,
+                                y2: dragging.y2
+                            });
+                        }
+                        lastNodeData = null;
                     }
                     dragging = null;
                     draw();
@@ -1460,6 +1511,50 @@
                         }
                     });
                 });
+
+                // Check circuit connectivity: all non-ground components must be in one connected graph
+                if (errors.length === 0 && nonGndComponents.length > 1) {
+                    var connParent = {};
+                    function connKey(gx, gy) { return gx + ',' + gy; }
+                    function connFind(x) {
+                        if (connParent[x] === undefined) connParent[x] = x;
+                        if (connParent[x] !== x) connParent[x] = connFind(connParent[x]);
+                        return connParent[x];
+                    }
+                    function connUnion(a, b) {
+                        var ra = connFind(a), rb = connFind(b);
+                        if (ra !== rb) connParent[ra] = rb;
+                    }
+                    // Union wire endpoints
+                    wires.forEach(function(w) {
+                        connUnion(connKey(w.x1, w.y1), connKey(w.x2, w.y2));
+                    });
+                    // Union component terminals (each component connects its own terminals)
+                    components.forEach(function(comp) {
+                        var terms = getTerminals(comp);
+                        for (var i = 1; i < terms.length; i++) {
+                            connUnion(connKey(terms[0].gx, terms[0].gy), connKey(terms[i].gx, terms[i].gy));
+                        }
+                    });
+                    // Check all non-ground components share one connected component
+                    var roots = {};
+                    nonGndComponents.forEach(function(comp) {
+                        var terms = getTerminals(comp);
+                        var root = connFind(connKey(terms[0].gx, terms[0].gy));
+                        roots[root] = true;
+                    });
+                    // Also include ground components
+                    components.forEach(function(comp) {
+                        if (comp.type === 'gnd') {
+                            var terms = getTerminals(comp);
+                            var root = connFind(connKey(terms[0].gx, terms[0].gy));
+                            roots[root] = true;
+                        }
+                    });
+                    if (Object.keys(roots).length > 1) {
+                        errors.push('Circuit is not fully connected. There are ' + Object.keys(roots).length + ' disconnected subgraphs. Ensure all components are wired together.');
+                    }
+                }
 
                 return errors;
             }
@@ -1935,9 +2030,9 @@
                 wt.innerHTML = html;
                 wt.classList.add('visible');
 
-                // Draw node labels on canvas
+                // Persist node labels so they survive redraws
+                lastNodeData = nodeData;
                 draw();
-                drawNodeLabels(nodeData);
 
                 // Scroll walkthrough into view
                 wt.scrollIntoView({behavior:'smooth'});

@@ -1271,10 +1271,672 @@
                 if (!dragging) draw();
             });
 
-            // ── Compute Button (placeholder for Task 5) ──
+            // ── Complex Number Helpers [real, imag] ──
+            function cAdd(a, b) { return [a[0] + b[0], a[1] + b[1]]; }
+            function cSub(a, b) { return [a[0] - b[0], a[1] - b[1]]; }
+            function cMul(a, b) { return [a[0]*b[0] - a[1]*b[1], a[0]*b[1] + a[1]*b[0]]; }
+            function cDiv(a, b) {
+                var d = b[0]*b[0] + b[1]*b[1];
+                return [(a[0]*b[0] + a[1]*b[1]) / d, (a[1]*b[0] - a[0]*b[1]) / d];
+            }
+            function cMag(a) { return Math.sqrt(a[0]*a[0] + a[1]*a[1]); }
+            function cPhase(a) { return Math.atan2(a[1], a[0]) * 180 / Math.PI; }
+            function cNeg(a) { return [-a[0], -a[1]]; }
+            function cConj(a) { return [a[0], -a[1]]; }
+            function cStr(a) {
+                var r = a[0], im = a[1];
+                if (Math.abs(im) < 1e-20) return parseFloat(r.toPrecision(4)).toString();
+                var rs = parseFloat(r.toPrecision(4));
+                var is = parseFloat(Math.abs(im).toPrecision(4));
+                if (Math.abs(r) < 1e-20) return (im < 0 ? '-' : '') + is + 'j';
+                return rs + (im < 0 ? ' - ' : ' + ') + is + 'j';
+            }
+            function cPolar(a) {
+                var m = cMag(a);
+                var p = cPhase(a);
+                return parseFloat(m.toPrecision(4)) + ' \u2220 ' + parseFloat(p.toPrecision(4)) + '\u00B0';
+            }
+
+            // ── Union-Find ──
+            function ufFind(parent, x) {
+                if (parent[x] === undefined) parent[x] = x;
+                if (parent[x] !== x) parent[x] = ufFind(parent, parent[x]);
+                return parent[x];
+            }
+            function ufUnion(parent, a, b) {
+                var ra = ufFind(parent, a);
+                var rb = ufFind(parent, b);
+                if (ra !== rb) parent[ra] = rb;
+            }
+
+            // ── Node Detection ──
+            function buildNodeMap() {
+                var parent = {};
+                // Union wire endpoints
+                wires.forEach(function(w) {
+                    var k1 = w.x1 + ',' + w.y1;
+                    var k2 = w.x2 + ',' + w.y2;
+                    if (parent[k1] === undefined) parent[k1] = k1;
+                    if (parent[k2] === undefined) parent[k2] = k2;
+                    ufUnion(parent, k1, k2);
+                });
+
+                // Add component terminals to union-find
+                components.forEach(function(comp) {
+                    var terms = getTerminals(comp);
+                    terms.forEach(function(t) {
+                        var k = t.gx + ',' + t.gy;
+                        if (parent[k] === undefined) parent[k] = k;
+                    });
+                    // Union terminals that share the same grid point with wire endpoints
+                    // (already handled by union-find if they share a key)
+                });
+
+                // Also union points that overlap (component terminals at same grid point)
+                var allTermPoints = {};
+                components.forEach(function(comp) {
+                    var terms = getTerminals(comp);
+                    terms.forEach(function(t) {
+                        var k = t.gx + ',' + t.gy;
+                        if (allTermPoints[k]) {
+                            // Another component terminal is at same point, union them
+                            ufUnion(parent, k, allTermPoints[k]);
+                        } else {
+                            allTermPoints[k] = k;
+                        }
+                    });
+                });
+
+                // Find ground node root
+                var groundRoot = null;
+                components.forEach(function(comp) {
+                    if (comp.type === 'gnd') {
+                        var terms = getTerminals(comp);
+                        groundRoot = ufFind(parent, terms[0].gx + ',' + terms[0].gy);
+                    }
+                });
+
+                // Group terminals by root
+                var rootGroups = {};
+                components.forEach(function(comp) {
+                    var terms = getTerminals(comp);
+                    terms.forEach(function(t) {
+                        var k = t.gx + ',' + t.gy;
+                        var root = ufFind(parent, k);
+                        if (!rootGroups[root]) rootGroups[root] = { compIds: [], points: [] };
+                        if (rootGroups[root].compIds.indexOf(comp.id) === -1) {
+                            rootGroups[root].compIds.push(comp.id);
+                        }
+                        rootGroups[root].points.push({ gx: t.gx, gy: t.gy });
+                    });
+                });
+
+                // Assign node numbers: ground=0, rest=1,2,...
+                var nodeNumMap = {};
+                var nodeNum = 1;
+                if (groundRoot !== null) {
+                    nodeNumMap[groundRoot] = 0;
+                }
+                Object.keys(rootGroups).forEach(function(root) {
+                    if (nodeNumMap[root] === undefined) {
+                        nodeNumMap[root] = nodeNum++;
+                    }
+                });
+                var nodeCount = groundRoot !== null ? nodeNum : nodeNum;
+
+                // Build terminalNodeMap: for each non-ground component, map terminal index to node number
+                var terminalNodeMap = {};
+                components.forEach(function(comp) {
+                    if (comp.type === 'gnd') return;
+                    var terms = getTerminals(comp);
+                    var nodes = [];
+                    terms.forEach(function(t) {
+                        var k = t.gx + ',' + t.gy;
+                        var root = ufFind(parent, k);
+                        nodes.push(nodeNumMap[root] !== undefined ? nodeNumMap[root] : -1);
+                    });
+                    terminalNodeMap[comp.id] = nodes;
+                });
+
+                // Build nodeInfo
+                var nodeInfo = {};
+                Object.keys(rootGroups).forEach(function(root) {
+                    var num = nodeNumMap[root];
+                    nodeInfo[num] = {
+                        num: num,
+                        comps: rootGroups[root].compIds,
+                        point: rootGroups[root].points[0]
+                    };
+                });
+
+                return {
+                    terminalNodeMap: terminalNodeMap,
+                    nodeInfo: nodeInfo,
+                    nodeCount: nodeCount,
+                    hasGround: groundRoot !== null
+                };
+            }
+
+            // ── Circuit Validation ──
+            function validateCircuit() {
+                var errors = [];
+                var nonGndComponents = components.filter(function(c) { return c.type !== 'gnd'; });
+                if (nonGndComponents.length === 0) {
+                    errors.push('Place at least one component');
+                    return errors;
+                }
+                var hasGround = components.some(function(c) { return c.type === 'gnd'; });
+                if (!hasGround) {
+                    errors.push('A ground node is required');
+                }
+
+                // Check for unconnected terminals
+                // Build set of all wire endpoints and all component terminal points
+                var wirePoints = {};
+                wires.forEach(function(w) {
+                    wirePoints[w.x1 + ',' + w.y1] = true;
+                    wirePoints[w.x2 + ',' + w.y2] = true;
+                });
+                var allTermPoints = {};
+                components.forEach(function(comp) {
+                    var terms = getTerminals(comp);
+                    terms.forEach(function(t) {
+                        var k = t.gx + ',' + t.gy;
+                        if (!allTermPoints[k]) allTermPoints[k] = [];
+                        allTermPoints[k].push(comp);
+                    });
+                });
+
+                components.forEach(function(comp) {
+                    if (comp.type === 'gnd') return;
+                    var terms = getTerminals(comp);
+                    terms.forEach(function(t, idx) {
+                        var k = t.gx + ',' + t.gy;
+                        var onWire = wirePoints[k] === true;
+                        var sharedWithOther = allTermPoints[k] && allTermPoints[k].length > 1;
+                        if (!onWire && !sharedWithOther) {
+                            var termName = idx === 0 ? '+' : '-';
+                            errors.push('Terminal ' + termName + ' of ' + comp.type + ' (id=' + comp.id + ') is not connected');
+                        }
+                    });
+                });
+
+                return errors;
+            }
+
+            // ── Get base SI value for a component ──
+            function getBaseValue(comp) {
+                var def = DEFAULTS[comp.type];
+                if (!def) return comp.value;
+                // Find the multiplier for the component's current unit
+                var mult = 1;
+                for (var i = 0; i < def.units.length; i++) {
+                    if (def.units[i].label === comp.baseUnit) {
+                        mult = def.units[i].mult;
+                        break;
+                    }
+                }
+                return comp.value * mult;
+            }
+
+            // ── MNA Builder ──
+            function buildMNA(terminalNodeMap, nodeCount, omega) {
+                // Count voltage sources
+                var vsources = [];
+                components.forEach(function(comp) {
+                    if (comp.type === 'vsource') vsources.push(comp);
+                });
+                var numVsources = vsources.length;
+                var n = (nodeCount - 1) + numVsources; // matrix size (exclude ground node 0)
+
+                // Initialize A (n x n) and b (n) as complex
+                var A = [];
+                var b = [];
+                for (var i = 0; i < n; i++) {
+                    A[i] = [];
+                    for (var j = 0; j < n; j++) {
+                        A[i][j] = [0, 0];
+                    }
+                    b[i] = [0, 0];
+                }
+
+                // xLabels
+                var xLabels = [];
+                for (var i = 1; i < nodeCount; i++) {
+                    xLabels.push('V' + i);
+                }
+                for (var i = 0; i < numVsources; i++) {
+                    xLabels.push('I_V' + (i + 1));
+                }
+
+                // Helper: node number to matrix index (node 0 = ground = excluded)
+                function ni(node) { return node - 1; }
+
+                var vsIdx = 0;
+                components.forEach(function(comp) {
+                    if (comp.type === 'gnd') return;
+                    var nodes = terminalNodeMap[comp.id];
+                    if (!nodes) return;
+                    var n1 = nodes[0]; // + terminal
+                    var n2 = nodes[1]; // - terminal
+                    var baseVal = getBaseValue(comp);
+
+                    if (comp.type === 'resistor') {
+                        var G = [1 / baseVal, 0]; // conductance
+                        if (n1 > 0) A[ni(n1)][ni(n1)] = cAdd(A[ni(n1)][ni(n1)], G);
+                        if (n2 > 0) A[ni(n2)][ni(n2)] = cAdd(A[ni(n2)][ni(n2)], G);
+                        if (n1 > 0 && n2 > 0) {
+                            A[ni(n1)][ni(n2)] = cSub(A[ni(n1)][ni(n2)], G);
+                            A[ni(n2)][ni(n1)] = cSub(A[ni(n2)][ni(n1)], G);
+                        }
+                    } else if (comp.type === 'capacitor') {
+                        var Y = [0, omega * baseVal]; // jωC
+                        if (n1 > 0) A[ni(n1)][ni(n1)] = cAdd(A[ni(n1)][ni(n1)], Y);
+                        if (n2 > 0) A[ni(n2)][ni(n2)] = cAdd(A[ni(n2)][ni(n2)], Y);
+                        if (n1 > 0 && n2 > 0) {
+                            A[ni(n1)][ni(n2)] = cSub(A[ni(n1)][ni(n2)], Y);
+                            A[ni(n2)][ni(n1)] = cSub(A[ni(n2)][ni(n1)], Y);
+                        }
+                    } else if (comp.type === 'inductor') {
+                        var Y;
+                        if (omega === 0) {
+                            Y = [1e12, 0]; // short circuit at DC
+                        } else {
+                            Y = cDiv([1, 0], [0, omega * baseVal]); // 1/(jωL)
+                        }
+                        if (n1 > 0) A[ni(n1)][ni(n1)] = cAdd(A[ni(n1)][ni(n1)], Y);
+                        if (n2 > 0) A[ni(n2)][ni(n2)] = cAdd(A[ni(n2)][ni(n2)], Y);
+                        if (n1 > 0 && n2 > 0) {
+                            A[ni(n1)][ni(n2)] = cSub(A[ni(n1)][ni(n2)], Y);
+                            A[ni(n2)][ni(n1)] = cSub(A[ni(n2)][ni(n1)], Y);
+                        }
+                    } else if (comp.type === 'vsource') {
+                        var vsRow = (nodeCount - 1) + vsIdx;
+                        // V+ - V- = Vs
+                        if (n1 > 0) {
+                            A[vsRow][ni(n1)] = cAdd(A[vsRow][ni(n1)], [1, 0]);
+                            A[ni(n1)][vsRow] = cAdd(A[ni(n1)][vsRow], [1, 0]);
+                        }
+                        if (n2 > 0) {
+                            A[vsRow][ni(n2)] = cAdd(A[vsRow][ni(n2)], [-1, 0]);
+                            A[ni(n2)][vsRow] = cAdd(A[ni(n2)][vsRow], [-1, 0]);
+                        }
+                        b[vsRow] = [baseVal, 0];
+                        vsIdx++;
+                    } else if (comp.type === 'isource') {
+                        // Current flows from n1 to n2 (out of n1, into n2)
+                        var I = [baseVal, 0];
+                        if (n1 > 0) b[ni(n1)] = cSub(b[ni(n1)], I);
+                        if (n2 > 0) b[ni(n2)] = cAdd(b[ni(n2)], I);
+                    }
+                });
+
+                return { A: A, b: b, xLabels: xLabels, size: n, vsources: vsources };
+            }
+
+            // ── Gaussian Elimination Solver ──
+            function solveSystem(A, b) {
+                var n = b.length;
+                // Build augmented matrix
+                var aug = [];
+                for (var i = 0; i < n; i++) {
+                    aug[i] = [];
+                    for (var j = 0; j < n; j++) {
+                        aug[i][j] = [A[i][j][0], A[i][j][1]];
+                    }
+                    aug[i][n] = [b[i][0], b[i][1]];
+                }
+                var steps = [];
+
+                // Forward elimination with partial pivoting
+                for (var col = 0; col < n; col++) {
+                    // Find pivot
+                    var maxMag = cMag(aug[col][col]);
+                    var maxRow = col;
+                    for (var row = col + 1; row < n; row++) {
+                        var m = cMag(aug[row][col]);
+                        if (m > maxMag) {
+                            maxMag = m;
+                            maxRow = row;
+                        }
+                    }
+                    if (maxMag < 1e-15) {
+                        return { error: 'Matrix is singular (no unique solution). Check circuit connectivity.' };
+                    }
+                    if (maxRow !== col) {
+                        var tmp = aug[col];
+                        aug[col] = aug[maxRow];
+                        aug[maxRow] = tmp;
+                        steps.push({ type: 'swap', r1: col, r2: maxRow });
+                    }
+
+                    // Eliminate below
+                    for (var row = col + 1; row < n; row++) {
+                        var factor = cDiv(aug[row][col], aug[col][col]);
+                        steps.push({ type: 'eliminate', target: row, source: col, factor: factor });
+                        for (var j = col; j <= n; j++) {
+                            aug[row][j] = cSub(aug[row][j], cMul(factor, aug[col][j]));
+                        }
+                    }
+                }
+
+                // Back substitution
+                var x = [];
+                for (var i = 0; i < n; i++) x[i] = [0, 0];
+                for (var i = n - 1; i >= 0; i--) {
+                    var sum = aug[i][n];
+                    for (var j = i + 1; j < n; j++) {
+                        sum = cSub(sum, cMul(aug[i][j], x[j]));
+                    }
+                    x[i] = cDiv(sum, aug[i][i]);
+                }
+
+                return { x: x, steps: steps };
+            }
+
+            // ── Walkthrough Generators ──
+            function generateStep1(nodeData) {
+                var html = '<div class="walk-step"><h3>Step 1: Identify Nodes</h3>';
+                html += '<p>Each unique electrical connection point is a node. The ground node is the reference (0V).</p>';
+                html += '<table class="walk-table"><tr><th>Node</th><th>Type</th><th>Connected Components</th></tr>';
+                var keys = Object.keys(nodeData.nodeInfo).sort(function(a, b) { return Number(a) - Number(b); });
+                keys.forEach(function(num) {
+                    var info = nodeData.nodeInfo[num];
+                    var color = NODE_COLORS[num % NODE_COLORS.length];
+                    var badge = '<span class="node-badge" style="background:' + color + '">' + num + '</span>';
+                    var typeStr = Number(num) === 0 ? 'Reference (GND)' : 'Node';
+                    var compNames = info.comps.map(function(cid) {
+                        var c = components.find(function(x) { return x.id === cid; });
+                        return c ? (c.type + ' (id=' + c.id + ')') : ('id=' + cid);
+                    }).join(', ');
+                    html += '<tr><td>' + badge + '</td><td>' + typeStr + '</td><td>' + compNames + '</td></tr>';
+                });
+                html += '</table></div>';
+                return html;
+            }
+
+            function generateStep2(nodeData, omega) {
+                var html = '<div class="walk-step"><h3>Step 2: Component Values and Impedances</h3>';
+                html += '<p>Convert each component to its admittance or conductance for stamping into the MNA matrix.</p>';
+                html += '<table class="walk-table"><tr><th>Component</th><th>Value</th><th>Nodes</th><th>Admittance / Conductance</th></tr>';
+                components.forEach(function(comp) {
+                    if (comp.type === 'gnd') return;
+                    var nodes = nodeData.terminalNodeMap[comp.id];
+                    var nodesStr = nodes ? nodes.join(', ') : '?';
+                    var baseVal = getBaseValue(comp);
+                    var def = DEFAULTS[comp.type];
+                    var valStr = def ? formatValue(comp.value, def.unit) : String(comp.value);
+                    var admStr = '';
+
+                    if (comp.type === 'resistor') {
+                        admStr = 'G = 1/R = ' + cStr([1/baseVal, 0]) + ' S';
+                    } else if (comp.type === 'capacitor') {
+                        var Y = [0, omega * baseVal];
+                        admStr = 'Y = j\u03C9C = ' + cStr(Y) + ' S';
+                    } else if (comp.type === 'inductor') {
+                        var Y;
+                        if (omega === 0) {
+                            Y = [1e12, 0];
+                            admStr = 'Y = 1/j\u03C9L \u2192 \u221E (DC short)';
+                        } else {
+                            Y = cDiv([1, 0], [0, omega * baseVal]);
+                            admStr = 'Y = 1/j\u03C9L = ' + cStr(Y) + ' S';
+                        }
+                    } else if (comp.type === 'vsource') {
+                        admStr = 'Voltage source: ' + valStr + ' (MNA constraint)';
+                    } else if (comp.type === 'isource') {
+                        admStr = 'Current source: ' + valStr;
+                    }
+
+                    html += '<tr><td>' + comp.type + ' (id=' + comp.id + ')</td><td>' + valStr + '</td><td>' + nodesStr + '</td><td>' + admStr + '</td></tr>';
+                });
+                html += '</table></div>';
+                return html;
+            }
+
+            function generateStep3(nodeData, omega) {
+                var html = '<div class="walk-step"><h3>Step 3: Write KCL Equations</h3>';
+                html += '<p>Apply Kirchhoff\'s Current Law at each non-reference node: the sum of currents leaving equals zero.</p>';
+                var keys = Object.keys(nodeData.nodeInfo).sort(function(a, b) { return Number(a) - Number(b); });
+                keys.forEach(function(num) {
+                    if (Number(num) === 0) return; // skip ground
+                    var info = nodeData.nodeInfo[num];
+                    html += '<p><strong>Node ' + num + ':</strong> KCL equation from connected components:</p>';
+                    var eqTerms = [];
+                    components.forEach(function(comp) {
+                        if (comp.type === 'gnd') return;
+                        var nodes = nodeData.terminalNodeMap[comp.id];
+                        if (!nodes) return;
+                        if (nodes[0] !== Number(num) && nodes[1] !== Number(num)) return;
+                        var baseVal = getBaseValue(comp);
+                        var n1 = nodes[0], n2 = nodes[1];
+                        if (comp.type === 'resistor') {
+                            var otherNode = n1 === Number(num) ? n2 : n1;
+                            var sign = n1 === Number(num) ? '' : '-';
+                            eqTerms.push('(V' + num + ' - V' + otherNode + ')/' + formatValue(baseVal, '\u03A9'));
+                        } else if (comp.type === 'capacitor') {
+                            var otherNode = n1 === Number(num) ? n2 : n1;
+                            eqTerms.push('j\u03C9C\u00B7(V' + num + ' - V' + otherNode + ')');
+                        } else if (comp.type === 'inductor') {
+                            var otherNode = n1 === Number(num) ? n2 : n1;
+                            eqTerms.push('(V' + num + ' - V' + otherNode + ')/(j\u03C9L)');
+                        } else if (comp.type === 'isource') {
+                            var dir = n1 === Number(num) ? '+' : '-';
+                            eqTerms.push(dir + 'I_source');
+                        }
+                    });
+                    if (eqTerms.length > 0) {
+                        html += '<div class="equation">' + eqTerms.join(' + ') + ' = 0</div>';
+                    }
+                });
+
+                // Voltage source constraint equations
+                var vsIdx = 0;
+                components.forEach(function(comp) {
+                    if (comp.type !== 'vsource') return;
+                    var nodes = nodeData.terminalNodeMap[comp.id];
+                    if (!nodes) return;
+                    var baseVal = getBaseValue(comp);
+                    html += '<p><strong>Voltage Source Constraint (V' + (vsIdx + 1) + '):</strong></p>';
+                    html += '<div class="equation">V' + nodes[0] + ' - V' + nodes[1] + ' = ' + cStr([baseVal, 0]) + ' V</div>';
+                    vsIdx++;
+                });
+
+                html += '</div>';
+                return html;
+            }
+
+            function generateStep4(A, xLabels, b) {
+                var n = A.length;
+                var html = '<div class="walk-step"><h3>Step 4: Assemble the MNA Matrix</h3>';
+                html += '<p>The system of equations in matrix form [A][x] = [b]:</p>';
+                html += '<div class="matrix-container">';
+
+                // A matrix
+                html += '<div class="matrix">';
+                for (var i = 0; i < n; i++) {
+                    html += '<div class="matrix-row">';
+                    for (var j = 0; j < n; j++) {
+                        html += '<span>' + cStr(A[i][j]) + '</span>';
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+
+                // x vector
+                html += '<div class="vector">';
+                for (var i = 0; i < n; i++) {
+                    html += '<span class="vector-entry">' + xLabels[i] + '</span>';
+                }
+                html += '</div>';
+
+                html += '<span style="font-size:18px;color:var(--text-dim)">=</span>';
+
+                // b vector
+                html += '<div class="vector">';
+                for (var i = 0; i < n; i++) {
+                    html += '<span class="vector-entry">' + cStr(b[i]) + '</span>';
+                }
+                html += '</div>';
+
+                html += '</div></div>';
+                return html;
+            }
+
+            function generateStep5(result, xLabels) {
+                var html = '<div class="walk-step"><h3>Step 5: Solve the System</h3>';
+
+                if (result.error) {
+                    html += '<div class="error-msg">' + result.error + '</div></div>';
+                    return html;
+                }
+
+                // Row operations summary
+                if (result.steps.length > 0) {
+                    html += '<p>Row operations performed during Gaussian elimination:</p><div class="equation">';
+                    result.steps.forEach(function(step) {
+                        if (step.type === 'swap') {
+                            html += 'R' + (step.r1 + 1) + ' \u2194 R' + (step.r2 + 1) + '<br>';
+                        } else if (step.type === 'eliminate') {
+                            html += 'R' + (step.target + 1) + ' \u2192 R' + (step.target + 1) + ' - (' + cStr(step.factor) + ')\u00B7R' + (step.source + 1) + '<br>';
+                        }
+                    });
+                    html += '</div>';
+                }
+
+                // Solution table
+                html += '<p>Solution:</p>';
+                html += '<table class="walk-table"><tr><th>Variable</th><th>Rectangular</th><th>Polar</th></tr>';
+                result.x.forEach(function(val, i) {
+                    html += '<tr><td>' + xLabels[i] + '</td><td>' + cStr(val) + '</td><td>' + cPolar(val) + '</td></tr>';
+                });
+                html += '</table></div>';
+                return html;
+            }
+
+            function generateStep6(nodeData, solution, omega) {
+                var html = '<div class="walk-step"><h3>Step 6: Results Summary</h3>';
+                html += '<p>Voltage across, current through, and power dissipated by each component:</p>';
+                html += '<table class="walk-table"><tr><th>Component</th><th>Voltage Across</th><th>Current Through</th><th>Power</th></tr>';
+
+                var vsIdx = 0;
+                components.forEach(function(comp) {
+                    if (comp.type === 'gnd') return;
+                    var nodes = nodeData.terminalNodeMap[comp.id];
+                    if (!nodes) return;
+                    var n1 = nodes[0], n2 = nodes[1];
+
+                    // Get node voltages from solution (node 0 = ground = [0,0])
+                    var v1 = n1 === 0 ? [0, 0] : solution.x[n1 - 1];
+                    var v2 = n2 === 0 ? [0, 0] : solution.x[n2 - 1];
+                    var vAcross = cSub(v1, v2);
+
+                    var baseVal = getBaseValue(comp);
+                    var current = [0, 0];
+
+                    if (comp.type === 'resistor') {
+                        current = cDiv(vAcross, [baseVal, 0]);
+                    } else if (comp.type === 'capacitor') {
+                        current = cMul([0, omega * baseVal], vAcross);
+                    } else if (comp.type === 'inductor') {
+                        if (omega === 0) {
+                            current = cMul([1e12, 0], vAcross);
+                        } else {
+                            current = cDiv(vAcross, [0, omega * baseVal]);
+                        }
+                    } else if (comp.type === 'vsource') {
+                        // Current from solution vector
+                        var curIdx = (nodeData.nodeCount - 1) + vsIdx;
+                        current = solution.x[curIdx];
+                        vsIdx++;
+                    } else if (comp.type === 'isource') {
+                        current = [baseVal, 0];
+                    }
+
+                    // Power = V * I* (conjugate)
+                    var power = cMul(vAcross, cConj(current));
+
+                    html += '<tr><td>' + comp.type + ' (id=' + comp.id + ')</td>';
+                    html += '<td>' + cStr(vAcross) + ' V<br><span style="color:var(--text-dim);font-size:11px">' + cPolar(vAcross) + '</span></td>';
+                    html += '<td>' + cStr(current) + ' A<br><span style="color:var(--text-dim);font-size:11px">' + cPolar(current) + '</span></td>';
+                    html += '<td>' + cStr(power) + ' W<br><span style="color:var(--text-dim);font-size:11px">' + cPolar(power) + '</span></td>';
+                    html += '</tr>';
+                });
+
+                html += '</table></div>';
+                return html;
+            }
+
+            // ── Draw Node Labels on Canvas ──
+            function drawNodeLabels(nodeData) {
+                var keys = Object.keys(nodeData.nodeInfo);
+                keys.forEach(function(num) {
+                    var info = nodeData.nodeInfo[num];
+                    var color = NODE_COLORS[num % NODE_COLORS.length];
+                    var pt = gridToPixel(info.point.gx, info.point.gy);
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 11px IBM Plex Mono';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(num), pt.x, pt.y);
+                });
+            }
+
+            // ── Compute Button ──
             document.getElementById('btn-compute').addEventListener('click', function() {
-                // Will be implemented in a later task
-                console.log('Compute: components=', components, 'wires=', wires);
+                var wt = document.getElementById('walkthrough');
+                wt.innerHTML = '';
+                wt.classList.remove('visible');
+
+                // Validate
+                var errors = validateCircuit();
+                if (errors.length > 0) {
+                    wt.innerHTML = '<div class="error-msg">' + errors.join('<br>') + '</div>';
+                    wt.classList.add('visible');
+                    return;
+                }
+
+                // Build node map
+                var nodeData = buildNodeMap();
+                if (!nodeData.hasGround) {
+                    wt.innerHTML = '<div class="error-msg">A ground node is required</div>';
+                    wt.classList.add('visible');
+                    return;
+                }
+
+                // Get omega
+                var omega = parseFloat(document.getElementById('freq-input').value) || 0;
+
+                // Build MNA
+                var mna = buildMNA(nodeData.terminalNodeMap, nodeData.nodeCount, omega);
+
+                // Solve
+                var result = solveSystem(mna.A, mna.b);
+                if (result.error) {
+                    wt.innerHTML = '<div class="error-msg">' + result.error + '</div>';
+                    wt.classList.add('visible');
+                    return;
+                }
+
+                // Generate walkthrough HTML
+                var html = '<h2>Solution Walkthrough</h2>';
+                html += generateStep1(nodeData);
+                html += generateStep2(nodeData, omega);
+                html += generateStep3(nodeData, omega);
+                html += generateStep4(mna.A, mna.xLabels, mna.b);
+                html += generateStep5(result, mna.xLabels);
+                html += generateStep6(nodeData, result, omega);
+
+                wt.innerHTML = html;
+                wt.classList.add('visible');
+
+                // Draw node labels on canvas
+                draw();
+                drawNodeLabels(nodeData);
             });
 
             // ── Theme Change Listener ──

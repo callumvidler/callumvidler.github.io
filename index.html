@@ -156,6 +156,97 @@
             white-space: nowrap;
         }
 
+        /* Extras side tab */
+        .extras-tab {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            writing-mode: vertical-lr;
+            transform: translateY(-50%) rotate(180deg);
+            background: var(--accent);
+            color: #fff;
+            padding: 14px 8px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 6px 0 0 6px;
+            z-index: 1000;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .extras-tab:hover {
+            background: var(--text);
+        }
+
+        .extras-panel {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 320px;
+            height: 100vh;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            z-index: 999;
+            transition: left 0.3s ease;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .extras-panel.open {
+            left: 0;
+        }
+
+        .extras-panel h3 {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .extras-panel p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .extras-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            left: auto;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            padding: 4px;
+        }
+
+        .extras-close:hover {
+            color: var(--text);
+        }
+
+        .extras-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .extras-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
         @media (max-width: 560px) {
             body {
                 padding: 40px 16px 60px;
@@ -289,6 +380,17 @@
                 </span>
             </div>
         </div>
+    </div>
+
+    <div class="extras-tab" onclick="document.querySelector('.extras-panel').classList.add('open'); document.querySelector('.extras-overlay').classList.add('open');">Extras</div>
+    <div class="extras-overlay" onclick="document.querySelector('.extras-panel').classList.remove('open'); this.classList.remove('open');"></div>
+    <div class="extras-panel">
+        <button class="extras-close" onclick="this.parentElement.classList.remove('open'); document.querySelector('.extras-overlay').classList.remove('open');">&times;</button>
+        <h3>Extras</h3>
+        <a href="Extras/nodal_analysis.html" style="display:block;padding:10px 14px;margin:8px 0;border-radius:6px;background:rgba(106,170,142,0.08);border:1px solid rgba(106,170,142,0.2);color:var(--text);text-decoration:none;transition:all 0.15s;">
+            <strong style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Nodal Analysis Tool</strong>
+            <p style="font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.4;">Build circuits and see step-by-step nodal analysis solutions.</p>
+        </a>
     </div>
 </body>
 

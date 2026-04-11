@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 11 — Setting Gain Using Negative Feedback</title>
+  <title>Slide 10 — How Negative Feedback Controls the Gain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
@@ -44,8 +44,8 @@
 
   <script type="module">
     import {
-      Scene, Line, Rectangle, MathTex, Text, VGroup, Dot,
-      Create, Write, FadeIn,
+      Scene, Polygon, Line, Rectangle, Circle, Text, MathTex, VGroup, Dot,
+      Create, Write, FadeIn, FadeOut, Transform,
       UP, DOWN, LEFT, RIGHT, WHITE
     } from 'https://esm.sh/manim-web@0.3.18';
 
@@ -67,95 +67,28 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
-    // ── Title ──
-    const title = new Text({ text: 'Setting the Gain Using Negative Feedback', fontSize: 40, color: FG, fontUrl: FONT_URL });
-    await title.loadGlyphs?.();
-    title.moveTo([-3.5, 3.5, 0]);
-    const TITLE_LEFT_X = -6.2;
-    if (typeof title.getLeft === 'function') {
-      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
-    }
+    // Plot region constants (shared across Part 1 and Part 2)
+    const PLOT_X0 = 1.5, PLOT_X1 = 5.5;
+    const PLOT_Y0 = -2.0, PLOT_Y1 = 1.9;
 
-    // ── Boxed equation (top-right) ──
-    const eqnBox = new Rectangle({ width: 3.4, height: 0.8, color: ACCENT, strokeWidth: 2, fillOpacity: 0.08 });
-    eqnBox.moveTo([4.6, 2.8, 0]);
-    const eqnBoxed = new MathTex({ latex: 'A_{CL} = \\dfrac{A_{OL}}{1 + A_{OL}\\,\\beta}', color: ACCENT });
-    await eqnBoxed.waitForRender?.();
-    eqnBoxed.scale(0.55).moveTo([4.6, 2.8, 0]);
+    // Design values
+    const BETA = 0.5;
+    const V_IN_AUTO = 2;
+    const V_SAT = 13;
 
-    // ── Bullet list (left side) ──
-    const bullets = [
-      'Negative feedback sets the gain with minimal dependence on A_OL',
-      'No need to consider device variation in the open-loop gain'
-    ];
-    const bulletObjs = [];
-    for (let i = 0; i < bullets.length; i++) {
-      const b = new Text({ text: '•  ' + bullets[i], fontSize: 12, color: MUTED, fontUrl: FONT_URL });
-      await b.loadGlyphs?.();
-      b.moveTo([-5.4, 2.8 - i * 0.45, 0]);
-      bulletObjs.push(b);
-    }
+    // ── Part 1 ──
+    // (filled in by Task 3)
 
-    // ── Plot ──
-    const x0 = -4.8, x1 = 3.4, y0 = -2.4, y1 = 1.9;
-    const xAxis = new Line({ start: [x0, y0, 0], end: [x1, y0, 0], color: MUTED });
-    const yAxis = new Line({ start: [x0, y0, 0], end: [x0, y1, 0], color: MUTED });
-    const xL = new Text({ text: 'Open-loop voltage gain magnitude (V/V)', fontSize: 10, color: FG, fontUrl: FONT_URL });
-    const yL = new Text({ text: 'Closed-loop voltage gain magnitude (V/V)', fontSize: 9, color: FG, fontUrl: FONT_URL });
-    await Promise.all([xL.loadGlyphs?.(), yL.loadGlyphs?.()]);
-    xL.moveTo([(x0 + x1) / 2, y0 - 0.35, 0]);
-    yL.rotate(Math.PI / 2).moveTo([x0 - 0.3, (y0 + y1) / 2, 0]);
+    // ── Transition to Part 2 ──
+    // (filled in by Task 5)
 
-    // Curves
-    const mkCurve = (G, color) => {
-      const beta = 1 / G;
-      const pts = [];
-      const N = 60;
-      for (let i = 0; i <= N; i++) {
-        const logA = (i / N) * 6;
-        const A = Math.pow(10, logA);
-        const ACL = A / (1 + A * beta);
-        const logCL = Math.log10(Math.max(ACL, 1e-3));
-        const xPix = x0 + (logA / 6) * (x1 - x0);
-        const yPix = y0 + (logCL / 4) * (y1 - y0);
-        pts.push([xPix, yPix, 0]);
-      }
-      const lines = [];
-      for (let i = 1; i < pts.length; i++)
-        lines.push(new Line({ start: pts[i - 1], end: pts[i], color, strokeWidth: 3 }));
-      return new VGroup(...lines);
-    };
+    // ── Part 2 ──
+    // (filled in by Tasks 6–9)
 
-    const c10   = mkCurve(10,   BLUE);
-    const c100  = mkCurve(100,  ACCENT);
-    const c1000 = mkCurve(1000, MAG);
+    // ── Interactive panel wiring ──
+    // (filled in by Tasks 10–12)
 
-    // Legend (right of plot)
-    const lbl10   = new Text({ text: 'Desired gain: 10',   fontSize: 10, color: BLUE,   fontUrl: FONT_URL });
-    const lbl100  = new Text({ text: 'Desired gain: 100',  fontSize: 10, color: ACCENT, fontUrl: FONT_URL });
-    const lbl1000 = new Text({ text: 'Desired gain: 1000', fontSize: 10, color: MAG,    fontUrl: FONT_URL });
-    await Promise.all([lbl10.loadGlyphs?.(), lbl100.loadGlyphs?.(), lbl1000.loadGlyphs?.()]);
-    lbl10.moveTo([4.5, -0.9, 0]);
-    lbl100.moveTo([4.5, -1.3, 0]);
-    lbl1000.moveTo([4.5, -1.7, 0]);
-
-    // Caption
-    const caption = new Text({ text: 'Large A_OL makes A_CL robust.', fontSize: 20, color: YELLOW, fontUrl: FONT_URL });
-    await caption.loadGlyphs?.();
-    caption.moveTo([4.6, 0.5, 0]);
-
-    // ── Sequence ──
-    await scene.play(new Write(title, { duration: 0.6 }));
-    await scene.play(new Create(eqnBox), new Write(eqnBoxed));
-    for (const b of bulletObjs) {
-      await scene.play(new FadeIn(b, { duration: 0.25 }));
-    }
-    await scene.play(new Create(xAxis), new Create(yAxis), new Write(xL), new Write(yL));
-    await scene.play(new Create(c10,   { duration: 1.0, lagRatio: 0.02 }), new FadeIn(lbl10));
-    await scene.play(new Create(c100,  { duration: 1.0, lagRatio: 0.02 }), new FadeIn(lbl100));
-    await scene.play(new Create(c1000, { duration: 1.0, lagRatio: 0.02 }), new FadeIn(lbl1000));
-    await scene.play(new FadeIn(caption, { shift: [0, -0.2, 0] }));
-    await scene.wait(2);
+    await scene.wait(0.1);
   </script>
 </body>
 </html>

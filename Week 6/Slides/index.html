@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BMEN90033 — Week 6: Operational Amplifiers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    // Presenter theme persistence. theme.js hardcodes 'light' at every page
+    // load, so we shadow that with a sessionStorage entry that survives our
+    // own reloads and that we push into child iframes via ?theme=.
+    (function () {
+      try {
+        var ss = sessionStorage.getItem('slideTheme');
+        if (ss === 'dark' || ss === 'light') {
+          document.documentElement.setAttribute('data-theme', ss);
+        }
+      } catch (e) { /* ignore */ }
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+    })();
+  </script>
+</head>
+<body class="presenter">
+  <a class="back-btn" href="../../index.html">← Back</a>
+
+  <aside class="deck-sidebar" id="sidebar">
+    <h2>Week 6 · Op-Amps</h2>
+    <ol id="slide-list"></ol>
+  </aside>
+
+  <main class="deck-main">
+    <iframe class="slide-frame" id="stage" src="about:blank" title="current slide"></iframe>
+    <div class="deck-controls">
+      <button id="prev">← Prev</button>
+      <span class="deck-counter" id="counter">1 / 22</span>
+      <button id="next">Next →</button>
+    </div>
+  </main>
+
+  <script>
+    const slides = [
+      { file: '01_intro.html',                   title: 'Op-Amp Introduction' },
+      { file: '02_transfer_characteristic.html', title: 'Transfer Characteristic' },
+      { file: '03_equivalent_circuit.html',      title: 'Equivalent Circuit Model' },
+      { file: '04_lm741_pinout.html',            title: 'LM741 Pinout' },
+      { file: '05_lm741_internal.html',          title: 'LM741 Internal Circuitry' },
+      { file: '06_noninv.html',                  title: 'Non-Inverting Amplifier' },
+      { file: '06b_inv.html',                    title: 'Inverting Amplifier' },
+      { file: '07_thermostat.html',              title: 'Thermostat Analogy' },
+      { file: '08_feedback_formal.html',         title: 'Negative Feedback (Formal)' },
+      { file: '09_feedback_effects.html',        title: 'Gain-Bandwidth Tradeoff with Feedback' },
+      { file: '10_frequency_gain.html',          title: 'Frequency Response, Feedback, and GBP' },
+      { file: '11_gain_setting.html',            title: 'Setting Gain With Feedback' },
+      { file: '12_virtual_short.html',           title: 'Virtual Short' },
+      { file: '13_resistor_choice.html',         title: 'Resistor Choice' },
+      { file: '14_offset_voltage.html',          title: 'DC Offset Voltage' },
+      { file: '15_summing_amp.html',             title: 'Summing Amplifier' },
+      { file: '16_common_mode_noise.html',       title: 'Common-Mode Noise' },
+      { file: '17_cmrr.html',                    title: 'CMRR' },
+      { file: '18_difference_amp.html',          title: 'Difference Amplifier' },
+      { file: '19_instrumentation_amp.html',     title: 'Instrumentation Amplifier' },
+      { file: '20_isolation_amp.html',           title: 'Isolation Amplifier' },
+      { file: '21_iv_vi_converter.html',         title: 'I/V & V/I Converters' }
+    ];
+
+    const stage = document.getElementById('stage');
+    const counter = document.getElementById('counter');
+    const listEl = document.getElementById('slide-list');
+    const btnPrev = document.getElementById('prev');
+    const btnNext = document.getElementById('next');
+
+    function getTheme() {
+      return document.documentElement.getAttribute('data-theme') || 'light';
+    }
+    function slideSrc(i) {
+      return slides[i].file + '?theme=' + getTheme();
+    }
+
+    // Build the sidebar once
+    slides.forEach((s, i) => {
+      const li = document.createElement('li');
+      li.dataset.idx = i;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.innerHTML = `<span class="deck-num">${String(i + 1).padStart(2, '0')}</span><span>${s.title}</span>`;
+      btn.addEventListener('click', () => goTo(i));
+      li.appendChild(btn);
+      listEl.appendChild(li);
+    });
+
+    let current = 0;
+
+    function goTo(i, { push = true } = {}) {
+      if (i < 0 || i >= slides.length || i === current) return;
+      current = i;
+      stage.src = slideSrc(i);
+      counter.textContent = `${i + 1} / ${slides.length}`;
+      btnPrev.disabled = i === 0;
+      btnNext.disabled = i === slides.length - 1;
+      listEl.querySelectorAll('li').forEach((li, idx) => {
+        li.classList.toggle('active', idx === i);
+      });
+      // Ensure the active item is visible in the sidebar
+      const active = listEl.querySelector('li.active');
+      if (active) active.scrollIntoView({ block: 'nearest' });
+      if (push) history.replaceState(null, '', '#' + (i + 1));
+      try { localStorage.setItem('week6-slide', String(i)); } catch (e) { /* ignore */ }
+    }
+
+    // Initial position: hash → localStorage → 0
+    function initialIndex() {
+      const hashN = parseInt((location.hash || '').replace('#', ''), 10);
+      if (!isNaN(hashN) && hashN >= 1 && hashN <= slides.length) return hashN - 1;
+      try {
+        const saved = parseInt(localStorage.getItem('week6-slide') || '', 10);
+        if (!isNaN(saved) && saved >= 0 && saved < slides.length) return saved;
+      } catch (e) { /* ignore */ }
+      return 0;
+    }
+
+    // Force the initial iframe src (since goTo will early-return on the same index)
+    const start = initialIndex();
+    stage.src = slideSrc(start);
+    current = start;
+    counter.textContent = `${start + 1} / ${slides.length}`;
+    btnPrev.disabled = start === 0;
+    btnNext.disabled = start === slides.length - 1;
+    listEl.querySelectorAll('li').forEach((li, idx) => {
+      if (idx === start) li.classList.add('active');
+    });
+    history.replaceState(null, '', '#' + (start + 1));
+
+    btnPrev.addEventListener('click', () => goTo(current - 1));
+    btnNext.addEventListener('click', () => goTo(current + 1));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   { e.preventDefault(); goTo(current - 1); }
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
+      if (e.key === 'Home')  { e.preventDefault(); goTo(0); }
+      if (e.key === 'End')   { e.preventDefault(); goTo(slides.length - 1); }
+    });
+
+    // React to hash changes (e.g., browser back/forward)
+    window.addEventListener('hashchange', () => {
+      const n = parseInt(location.hash.replace('#', ''), 10);
+      if (!isNaN(n) && n >= 1 && n <= slides.length) goTo(n - 1, { push: false });
+    });
+
+    // Theme change: reload the current slide with the new ?theme= param.
+    // theme.js dispatches the event after flipping data-theme, so getTheme()
+    // returns the fresh value by the time we read it here.
+    window.addEventListener('themechange', () => {
+      stage.src = slideSrc(current);
+    });
+  </script>
+</body>
+</html>

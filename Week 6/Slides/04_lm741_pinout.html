@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 4 — LM741 Pinout</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+               : (ss === 'dark' || ss === 'light') ? ss
+               : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">04 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Rectangle, Polygon, Circle, Line, Text, MathTex, Arc, VGroup,
+      Create, Write, FadeIn, FadeOut, MoveAlongPath,
+      UP, DOWN, LEFT, RIGHT, ORIGIN, WHITE, linear
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
+    const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
+    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
+    const BLACK  = IS_LIGHT ? '#000000' : '#ffffff';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    // ── Title and subtitle ──
+    const title = new Text({ text: 'LM741 Op-Amp', fontSize: 40, color: BLACK, fontUrl: FONT_URL });
+    const subtitle = new Text({ text: 'LM741 Pinout Diagram', fontSize: 20, color: MUTED, fontUrl: FONT_URL });
+    await Promise.all([title.loadGlyphs?.(), subtitle.loadGlyphs?.()]);
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+    subtitle.moveTo([0, 2.5, 0]);
+
+    // ── DIP-8 package body (centered, enlarged) ──
+    const BODY_CX = 0, BODY_CY = -0.3;
+    const BODY_W  = 3.0, BODY_H = 4.2;
+    const body = new Rectangle({ width: BODY_W, height: BODY_H, color: MUTED, strokeWidth: 2, fillOpacity: 0.05 });
+    body.moveTo([BODY_CX, BODY_CY, 0]);
+
+    // Notch
+    const notch = new Arc({ radius: 0.26, angle: -Math.PI, color: BLACK, strokeWidth: 2 });
+    notch.moveTo([BODY_CX, BODY_CY + BODY_H / 2, 0]);
+
+    // 8 pins
+    const L = BODY_CX - BODY_W / 2;
+    const R = BODY_CX + BODY_W / 2;
+    const pinYs = [1.4, 0.55, -0.3, -1.15]; // top → bottom on each side
+
+    const pinSpec = [
+      { n: 1, xy: [L, pinYs[0], 0], fn: 'Offset Null',            color: MUTED },
+      { n: 2, xy: [L, pinYs[1], 0], fn: 'Inverting Input (−)',    color: RED    },
+      { n: 3, xy: [L, pinYs[2], 0], fn: 'Non-Inverting Input (+)', color: ACCENT },
+      { n: 4, xy: [L, pinYs[3], 0], fn: 'V− (Negative Supply)',   color: MAG    },
+      { n: 5, xy: [R, pinYs[3], 0], fn: 'Offset Null',            color: MUTED  },
+      { n: 6, xy: [R, pinYs[2], 0], fn: 'Output',                 color: BLUE   },
+      { n: 7, xy: [R, pinYs[1], 0], fn: 'V+ (Positive Supply)',   color: YELLOW },
+      { n: 8, xy: [R, pinYs[0], 0], fn: 'NC',                     color: MUTED  }
+    ];
+
+    const pinDots = [], pinNums = [], pinLeads = [], pinFnLabels = [];
+    for (const p of pinSpec) {
+      const side = p.xy[0] < BODY_CX ? -1 : 1;
+
+      // short external lead stub
+      const lead = new Line({
+        start: [p.xy[0],                p.xy[1], 0],
+        end:   [p.xy[0] + 0.28 * side,  p.xy[1], 0],
+        color: MUTED
+      });
+
+      // pin dot on body edge
+      const dot = new Circle({ radius: 0.1, color: p.color, strokeWidth: 2, fillOpacity: 1 });
+      dot.moveTo(p.xy);
+
+      // pin number inside the body
+      const num = new MathTex({ latex: String(p.n), color: FG });
+      await num.waitForRender?.();
+      num.scale(0.55).moveTo([p.xy[0] + (side < 0 ? 0.32 : -0.32), p.xy[1], 0]);
+
+      // function label outside, aligned away from the body
+      const fnLabel = new Text({ text: p.fn, fontSize: 15, color: p.color, fontUrl: FONT_URL });
+      await fnLabel.loadGlyphs?.();
+      const labelAnchorX = p.xy[0] + 0.5 * side;
+      fnLabel.moveTo([labelAnchorX, p.xy[1], 0]);
+      if (side < 0 && typeof fnLabel.getRight === 'function') {
+        fnLabel.shift([labelAnchorX - fnLabel.getRight()[0], 0, 0]);
+      } else if (side > 0 && typeof fnLabel.getLeft === 'function') {
+        fnLabel.shift([labelAnchorX - fnLabel.getLeft()[0], 0, 0]);
+      }
+
+      pinLeads.push(lead);
+      pinDots.push(dot);
+      pinNums.push(num);
+      pinFnLabels.push(fnLabel);
+    }
+
+    // ── Sequence: build, then slowly reveal each pin with its inline label ──
+    await scene.play(new Write(title, { duration: 0.8 }));
+    await scene.play(new FadeIn(subtitle));
+    await scene.play(new Create(body, { duration: 0.8 }), new Create(notch, { duration: 0.6 }));
+    for (const lead of pinLeads) scene.add(lead);
+
+    for (let i = 0; i < pinSpec.length; i++) {
+      const side = pinSpec[i].xy[0] < BODY_CX ? -1 : 1;
+      await scene.play(
+        new FadeIn(pinDots[i], { duration: 0.45 }),
+        new Write(pinNums[i], { duration: 0.45 }),
+        new FadeIn(pinFnLabels[i], { shift: [0.35 * side, 0, 0], duration: 0.7 })
+      );
+      await scene.wait(0.18);
+    }
+
+    await scene.wait(1.2);
+
+    // ── Phase 2: shrink DIP to the left, reveal a larger equivalent circuit ──
+
+    // Build the compact DIP at its target left-side position (hidden until the cross-fade)
+    const SMALL_CX = -4.3, SMALL_CY = -0.3;
+    const SMALL_W = 2.0, SMALL_H = 3.2;
+    const smallBody = new Rectangle({ width: SMALL_W, height: SMALL_H, color: MUTED, strokeWidth: 1.6, fillOpacity: 0.05 });
+    smallBody.moveTo([SMALL_CX, SMALL_CY, 0]);
+    const smallNotch = new Arc({ radius: 0.2, angle: -Math.PI, color: MUTED, strokeWidth: 1.6 });
+    smallNotch.moveTo([SMALL_CX, SMALL_CY + SMALL_H / 2, 0]);
+
+    const smallL = SMALL_CX - SMALL_W / 2;
+    const smallR = SMALL_CX + SMALL_W / 2;
+    const smallYs = [1.0, 0.35, -0.3, -0.95];
+    const smallPinSpec = [
+      { n: 1, xy: [smallL, smallYs[0], 0], fn: 'Offset Null',      color: MUTED  },
+      { n: 2, xy: [smallL, smallYs[1], 0], fn: 'Inv. In (−)',      color: RED    },
+      { n: 3, xy: [smallL, smallYs[2], 0], fn: 'Non-Inv. In (+)',  color: ACCENT },
+      { n: 4, xy: [smallL, smallYs[3], 0], fn: 'V−  Supply',       color: MAG    },
+      { n: 5, xy: [smallR, smallYs[3], 0], fn: 'Offset Null',      color: MUTED  },
+      { n: 6, xy: [smallR, smallYs[2], 0], fn: 'Output',           color: BLUE   },
+      { n: 7, xy: [smallR, smallYs[1], 0], fn: 'V+  Supply',       color: YELLOW },
+      { n: 8, xy: [smallR, smallYs[0], 0], fn: 'NC',               color: MUTED  }
+    ];
+    const smallDots = [], smallNums = [], smallLeads = [], smallFnLabels = [];
+    for (const p of smallPinSpec) {
+      const side = p.xy[0] < SMALL_CX ? -1 : 1;
+      const lead = new Line({
+        start: [p.xy[0], p.xy[1], 0],
+        end:   [p.xy[0] + 0.22 * side, p.xy[1], 0],
+        color: MUTED
+      });
+      const dot = new Circle({ radius: 0.08, color: p.color, strokeWidth: 1.6, fillOpacity: 1 });
+      dot.moveTo(p.xy);
+      const num = new MathTex({ latex: String(p.n), color: FG });
+      await num.waitForRender?.();
+      num.scale(0.45).moveTo([p.xy[0] + (side < 0 ? 0.23 : -0.23), p.xy[1], 0]);
+      const fn = new Text({ text: p.fn, fontSize: 13, color: p.color, fontUrl: FONT_URL });
+      await fn.loadGlyphs?.();
+      const anchorX = p.xy[0] + 0.38 * side;
+      fn.moveTo([anchorX, p.xy[1], 0]);
+      if (side < 0 && typeof fn.getRight === 'function') {
+        fn.shift([anchorX - fn.getRight()[0], 0, 0]);
+      } else if (side > 0 && typeof fn.getLeft === 'function') {
+        fn.shift([anchorX - fn.getLeft()[0], 0, 0]);
+      }
+      smallLeads.push(lead);
+      smallDots.push(dot);
+      smallNums.push(num);
+      smallFnLabels.push(fn);
+    }
+
+    // Cross-fade: original big DIP slides out left, smaller DIP fades in at its new home
+    const oldDipParts = [body, notch, ...pinLeads, ...pinDots, ...pinNums, ...pinFnLabels];
+    const newDipParts = [smallBody, smallNotch, ...smallLeads, ...smallDots, ...smallNums, ...smallFnLabels];
+    const transitionDur = 0.9;
+    await scene.play(
+      ...oldDipParts.map(o => new FadeOut(o, { shift: [-1.8, 0, 0], duration: transitionDur })),
+      ...newDipParts.map(o => new FadeIn(o,  { shift: [-1.2, 0, 0], duration: transitionDur })),
+      new MoveAlongPath(subtitle, {
+        path: new Line({ start: [0, 2.5, 0], end: [SMALL_CX, 1.75, 0] }),
+        duration: transitionDur, rateFunc: linear
+      })
+    );
+
+    // ── Equivalent circuit on the right (scaled from slide 3) ──
+    const CIRC_S  = 0.65;
+    const CIRC_DX = 3.9;
+    const CIRC_DY = 0;
+    const xf = (x, y) => [x * CIRC_S + CIRC_DX, y * CIRC_S + CIRC_DY, 0];
+
+    const eqHeader = new Text({ text: 'Equivalent Circuit', fontSize: 15, color: MUTED, fontUrl: FONT_URL });
+    await eqHeader.loadGlyphs?.();
+    eqHeader.moveTo([xf(-1.9, 0)[0], 3.05, 0]);
+
+    const eqTri = new Polygon({
+      vertices: [xf(-5.2, -2.2), xf(-5.2, 2.2), xf(1.2, 0)],
+      color: MUTED2, strokeWidth: 1.6, fillOpacity: 0
+    });
+
+    const supplyX = -3.5;
+    const eqVsPlus  = new Line({ start: xf(supplyX,  2.45), end: xf(supplyX,  1.6), color: YELLOW, strokeWidth: 1.8 });
+    const eqVsMinus = new Line({ start: xf(supplyX, -2.45), end: xf(supplyX, -1.6), color: MAG,    strokeWidth: 1.8 });
+    const eqVsPL = new MathTex({ latex: 'V_{S+}', color: YELLOW });
+    const eqVsML = new MathTex({ latex: 'V_{S-}', color: MAG });
+    await eqVsPL.waitForRender?.();
+    await eqVsML.waitForRender?.();
+    eqVsPL.scale(0.42).moveTo([xf(supplyX,  2.45)[0], xf(supplyX,  2.45)[1] + 0.22, 0]);
+    eqVsML.scale(0.42).moveTo([xf(supplyX, -2.45)[0], xf(supplyX, -2.45)[1] - 0.22, 0]);
+
+    const eqInPlus  = new Line({ start: xf(-6.1,  0.8), end: xf(-4.3,  0.8), color: FG });
+    const eqInMinus = new Line({ start: xf(-6.1, -0.8), end: xf(-4.3, -0.8), color: FG });
+
+    const eqRin = new Rectangle({ width: 0.34 * CIRC_S, height: 1.2 * CIRC_S, color: ACCENT, strokeWidth: 1.8 });
+    eqRin.moveTo(xf(-4.3, 0));
+    const eqRinJT = new Line({ start: xf(-4.3,  0.8), end: xf(-4.3,  0.6), color: FG });
+    const eqRinJB = new Line({ start: xf(-4.3, -0.8), end: xf(-4.3, -0.6), color: FG });
+    const eqRinLbl = new MathTex({ latex: 'R_{in}', color: ACCENT });
+    await eqRinLbl.waitForRender?.();
+    eqRinLbl.scale(0.42).moveTo(xf(-3.75, 0.1));
+
+    const eqDiamond = new Polygon({
+      vertices: [xf(-3.35, -0.63), xf(-2.9, -0.18), xf(-2.45, -0.63), xf(-2.9, -1.08)],
+      color: YELLOW, strokeWidth: 1.8, fillOpacity: 0.08
+    });
+    const eqDiamondLbl = new MathTex({ latex: 'A_{OL}\\,v_{in}', color: YELLOW });
+    const eqDepPlus  = new MathTex({ latex: '+', color: FG });
+    const eqDepMinus = new MathTex({ latex: '-', color: FG });
+    await eqDiamondLbl.waitForRender?.();
+    await eqDepPlus.waitForRender?.();
+    await eqDepMinus.waitForRender?.();
+    eqDiamondLbl.scale(0.42).moveTo(xf(-1.6, -0.63));
+    eqDepPlus.scale(0.4).moveTo(xf(-2.9, -0.42));
+    eqDepMinus.scale(0.4).moveTo(xf(-2.9, -0.84));
+
+    const eqRout = new Rectangle({ width: 1.2 * CIRC_S, height: 0.34 * CIRC_S, color: ACCENT, strokeWidth: 1.8 });
+    eqRout.moveTo(xf(-1.3, 0));
+    const eqRoutLbl = new MathTex({ latex: 'R_{out}', color: ACCENT });
+    await eqRoutLbl.waitForRender?.();
+    eqRoutLbl.scale(0.42).moveTo(xf(-1.3, 0.55));
+
+    const eqWireDiaUp   = new Line({ start: xf(-2.9, -0.18), end: xf(-2.9, 0),  color: FG });
+    const eqWireDiaRout = new Line({ start: xf(-2.9,  0),    end: xf(-1.9, 0),  color: FG });
+    const eqWireRoutOut = new Line({ start: xf(-0.7,  0),    end: xf( 1.2, 0),  color: FG });
+    const eqOutLead     = new Line({ start: xf( 1.2,  0),    end: xf( 2.2, 0),  color: BLUE, strokeWidth: 1.8 });
+    const eqOutLbl = new MathTex({ latex: 'v_{out}', color: BLUE });
+    await eqOutLbl.waitForRender?.();
+    eqOutLbl.scale(0.55).moveTo([xf(2.2, 0)[0] + 0.32, xf(2.2, 0)[1], 0]);
+
+    const eqGndLead = new Line({ start: xf(-2.9, -1.08), end: xf(-2.9, -1.88), color: FG });
+    const eqGnd1 = new Line({ start: xf(-3.25, -1.88), end: xf(-2.55, -1.88), color: FG, strokeWidth: 2.6 });
+    const eqGnd2 = new Line({ start: xf(-3.10, -2.03), end: xf(-2.70, -2.03), color: FG, strokeWidth: 1.8 });
+    const eqGnd3 = new Line({ start: xf(-3.00, -2.16), end: xf(-2.80, -2.16), color: FG, strokeWidth: 1 });
+
+    const eqVPlusLbl  = new MathTex({ latex: 'v_{+}', color: ACCENT });
+    const eqVMinusLbl = new MathTex({ latex: 'v_{-}', color: RED });
+    await eqVPlusLbl.waitForRender?.();
+    await eqVMinusLbl.waitForRender?.();
+    eqVPlusLbl.scale(0.55).moveTo([xf(-6.1, 0.8)[0] - 0.22, xf(-6.1, 0.8)[1], 0]);
+    eqVMinusLbl.scale(0.55).moveTo([xf(-6.1, -0.8)[0] - 0.22, xf(-6.1, -0.8)[1], 0]);
+
+    // Reveal the whole circuit in one quick fade
+    const eqAllParts = [
+      eqTri,
+      eqInPlus, eqInMinus, eqVPlusLbl, eqVMinusLbl,
+      eqRin, eqRinJT, eqRinJB, eqRinLbl,
+      eqDiamond, eqDiamondLbl, eqDepPlus, eqDepMinus,
+      eqGndLead, eqGnd1, eqGnd2, eqGnd3,
+      eqWireDiaUp, eqWireDiaRout,
+      eqRout, eqRoutLbl,
+      eqWireRoutOut, eqOutLead, eqOutLbl,
+      eqVsPlus, eqVsMinus, eqVsPL, eqVsML
+    ];
+    await scene.play(
+      new FadeIn(eqHeader, { duration: 0.35 }),
+      ...eqAllParts.map(o => new FadeIn(o, { duration: 0.35 }))
+    );
+
+    // ── Pin-to-terminal correspondence tags ──
+    const mkTag = async (text, color, pos) => {
+      const t = new Text({ text, fontSize: 12, color, fontUrl: FONT_URL });
+      await t.loadGlyphs?.();
+      t.moveTo(pos);
+      return t;
+    };
+    const tag3 = await mkTag('pin 3', ACCENT, [xf(-6.1,  0.8)[0] - 0.22, xf(-6.1,  0.8)[1] + 0.32, 0]);
+    const tag2 = await mkTag('pin 2', RED,    [xf(-6.1, -0.8)[0] - 0.22, xf(-6.1, -0.8)[1] - 0.32, 0]);
+    const tag7 = await mkTag('pin 7', YELLOW, [xf(supplyX,  2.45)[0] + 0.45, xf(supplyX,  2.45)[1] + 0.22, 0]);
+    const tag4 = await mkTag('pin 4', MAG,    [xf(supplyX, -2.45)[0] + 0.45, xf(supplyX, -2.45)[1] - 0.22, 0]);
+    const tag6 = await mkTag('pin 6', BLUE,   [xf(2.2, 0)[0] + 0.32, xf(2.2, 0)[1] - 0.32, 0]);
+
+    for (const t of [tag3, tag2, tag7, tag4, tag6]) {
+      await scene.play(new FadeIn(t, { duration: 0.35 }));
+    }
+
+    await scene.wait(1.6);
+
+    // ── Phase 3: Offset Null demo under the equivalent circuit (loops forever) ──
+
+    // Halos on pins 1 & 5 of the compact DIP
+    const halo1 = new Circle({ radius: 0.17, color: CYAN, strokeWidth: 2, fillOpacity: 0 });
+    const halo5 = new Circle({ radius: 0.17, color: CYAN, strokeWidth: 2, fillOpacity: 0 });
+    halo1.moveTo(smallPinSpec[0].xy);
+    halo5.moveTo(smallPinSpec[4].xy);
+
+    // Compact transfer-characteristic graph, sitting below the compact DIP pinout
+    const gX = SMALL_CX, gY = -2.75;
+    const gXExt = 1.1, gYExt = 0.32;
+    const VOS = 0.4;
+    const linearHalfW = 0.1; // half-width of the steep linear region (where the op-amp isn't saturated)
+
+    const offsetCaption = new MathTex({ latex: '\\text{Offset Null (pins 1 \\& 5): trim }V_{OS}\\text{ so }v_{out}=0\\text{ when }v_{+}=v_{-}', fontSize: 15, color: MUTED, fontUrl: FONT_URL });
+    await offsetCaption.loadGlyphs?.();
+    offsetCaption.moveTo([gX, -3.6, 0]);
+
+    // Axes: y-axis is the v_in = 0 reference, x-axis is the v_out = 0 reference
+    const gXAxis = new Line({ start: [gX - gXExt - 0.15, gY, 0], end: [gX + gXExt + 0.18, gY, 0], color: MUTED, strokeWidth: 1.5 });
+    const gYAxis = new Line({ start: [gX, gY - gYExt - 0.12, 0], end: [gX, gY + gYExt + 0.18, 0], color: MUTED, strokeWidth: 1.5 });
+
+    const gXLbl = new MathTex({ latex: 'v_{in}',  color: FG });
+    const gYLbl = new MathTex({ latex: 'v_{out}', color: FG });
+    await gXLbl.waitForRender?.();
+    await gYLbl.waitForRender?.();
+    gXLbl.scale(0.4).moveTo([gX + gXExt + 0.36, gY - 0.03, 0]);
+    gYLbl.scale(0.4).moveTo([gX + 0.28, gY + gYExt + 0.32, 0]);
+
+    // Saturation rail markers (short ticks at ±V_sat on the y-axis)
+    const gSatPlus  = new Line({ start: [gX - 0.06, gY + gYExt, 0], end: [gX + 0.06, gY + gYExt, 0], color: MUTED, strokeWidth: 1.2 });
+    const gSatMinus = new Line({ start: [gX - 0.06, gY - gYExt, 0], end: [gX + 0.06, gY - gYExt, 0], color: MUTED, strokeWidth: 1.2 });
+    const gSatPlusLbl  = new MathTex({ latex: '+V_{sat}', color: MUTED });
+    const gSatMinusLbl = new MathTex({ latex: '-V_{sat}', color: MUTED });
+    await gSatPlusLbl.waitForRender?.();
+    await gSatMinusLbl.waitForRender?.();
+    gSatPlusLbl.scale(0.32).moveTo([gX - 0.38, gY + gYExt, 0]);
+    gSatMinusLbl.scale(0.32).moveTo([gX - 0.38, gY - gYExt, 0]);
+
+    // Transfer curve: saturated low, steep linear slope through V_OS, saturated high
+    const gBottom = new Line({ start: [gX - gXExt,               gY - gYExt, 0], end: [gX + VOS - linearHalfW, gY - gYExt, 0], color: BLUE, strokeWidth: 2.6 });
+    const gVert   = new Line({ start: [gX + VOS - linearHalfW,   gY - gYExt, 0], end: [gX + VOS + linearHalfW, gY + gYExt, 0], color: BLUE, strokeWidth: 2.6 });
+    const gTop    = new Line({ start: [gX + VOS + linearHalfW,   gY + gYExt, 0], end: [gX + gXExt,             gY + gYExt, 0], color: BLUE, strokeWidth: 2.6 });
+
+    const VOS_X_offset = 0.3; 
+    const VOS_Y_offset = 0.15;
+
+    // V_OS tick on the x-axis + label
+    const gTick = new Line({ start: [gX + VOS, gY - 0.08, 0], end: [gX + VOS, gY + 0.08, 0], color: RED, strokeWidth: 2 });
+    const gVosLbl = new MathTex({ latex: 'V_{OS}', color: RED });
+    await gVosLbl.waitForRender?.();
+    gVosLbl.scale(0.4).moveTo([gX + VOS + VOS_X_offset, gY - VOS_Y_offset, 0]);
+
+    // Reveal the halos + graph quickly in one pass
+    await scene.play(
+      new FadeIn(halo1, { duration: 0.4 }),
+      new FadeIn(halo5, { duration: 0.4 }),
+      new FadeIn(offsetCaption, { duration: 0.4 }),
+      new Create(gXAxis, { duration: 0.4 }),
+      new Create(gYAxis, { duration: 0.4 }),
+      new FadeIn(gXLbl,  { duration: 0.4 }),
+      new FadeIn(gYLbl,  { duration: 0.4 }),
+      new Create(gSatPlus,  { duration: 0.4 }),
+      new Create(gSatMinus, { duration: 0.4 }),
+      new FadeIn(gSatPlusLbl,  { duration: 0.4 }),
+      new FadeIn(gSatMinusLbl, { duration: 0.4 }),
+      new Create(gBottom, { duration: 0.4 }),
+      new Create(gVert,   { duration: 0.4 }),
+      new Create(gTop,    { duration: 0.4 }),
+      new Create(gTick,   { duration: 0.4 }),
+      new FadeIn(gVosLbl, { duration: 0.4 })
+    );
+
+    // Infinite loop: null the offset, then release it, repeating forever
+    const loopSegments = [
+      { obj: gBottom, start: [gX + (VOS - linearHalfW - gXExt) / 2, gY - gYExt, 0] },
+      { obj: gVert,   start: [gX + VOS,                              gY,         0] },
+      { obj: gTop,    start: [gX + (VOS + linearHalfW + gXExt) / 2, gY + gYExt, 0] },
+      { obj: gTick,   start: [gX + VOS,                              gY,         0] },
+      { obj: gVosLbl, start: [gX + VOS + VOS_X_offset, gY - VOS_Y_offset,  0] }
+    ];
+    const loopDur = 1.4;
+    const loopPause = 0.9;
+    while (true) {
+      await scene.wait(loopPause);
+      // Null the offset: shift curve left by V_OS
+      await scene.play(
+        ...loopSegments.map(({ obj, start }) => new MoveAlongPath(obj, {
+          path: new Line({ start, end: [start[0] - VOS, start[1], 0] }),
+          duration: loopDur, rateFunc: linear
+        }))
+      );
+      await scene.wait(loopPause);
+      // Release: shift curve back to the offset position
+      await scene.play(
+        ...loopSegments.map(({ obj, start }) => new MoveAlongPath(obj, {
+          path: new Line({ start: [start[0] - VOS, start[1], 0], end: start }),
+          duration: loopDur, rateFunc: linear
+        }))
+      );
+    }
+  </script>
+</body>
+</html>

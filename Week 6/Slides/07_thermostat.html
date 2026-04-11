@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 7 — Thermostat (Negative Feedback)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+               : (ss === 'dark' || ss === 'light') ? ss
+               : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">08 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Rectangle, Circle, Line, Arrow, Text, VGroup, MathTex,
+      Create, Write, FadeIn, FadeToColor, Transform
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    // ── Title ──
+    const title = new Text({ text: 'Thermostat Feedback Loop', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+
+    // ── Bullet points (right side) ──
+    const bullets = [
+      'Set-point drives the "+" input, feedback drives the "−" input',
+      'Identical topology to a non-inverting op-amp amplifier loop',
+      'Output (room temp) tracks the reference — no sign inversion',
+      'Inverting amp instead sums input and feedback at the "−" node',
+      'Negative feedback drives the error toward zero in both systems'
+    ];
+    const bulletObjs = [];
+    const BULLET_LEFT_X = 2.5;
+    for (let i = 0; i < bullets.length; i++) {
+      const b = new Text({ text: '•  ' + bullets[i], fontSize: 15, color: MUTED, fontUrl: FONT_URL });
+      await b.loadGlyphs?.();
+      b.moveTo([4, 1.5 - i * 0.5, 0]);
+      if (typeof b.getLeft === 'function') {
+        b.shift([BULLET_LEFT_X - b.getLeft()[0], 0, 0]);
+      }
+      bulletObjs.push(b);
+    }
+
+    // ── Block diagram (left / upper-left) ──
+    const mkBlock = (x, y, w, h, text, fs = 13) => {
+      const r = new Rectangle({ width: w, height: h, color: MUTED, strokeWidth: 2, fillOpacity: 0.05 });
+      r.moveTo([x, y, 0]);
+      const t = new Text({ text, fontSize: fs, color: FG, fontUrl: FONT_URL });
+      return { box: r, label: t, xy: [x, y, 0] };
+    };
+
+    // setp is built manually so its label can be a MathTex symbol (T_{set}).
+    const setp = {
+      box: new Rectangle({ width: 1.5, height: 0.6, color: MUTED, strokeWidth: 2, fillOpacity: 0.05 }),
+      label: new MathTex({ latex: 'T_{\\text{set}}', color: FG }),
+      xy: [-5.9, 1.9, 0]
+    };
+    setp.box.moveTo(setp.xy);
+    const cmp  = { box: new Circle({ radius: 0.33, color: MUTED, strokeWidth: 2, fillOpacity: 0.05 }), label: new Text({ text: 'Σ', fontSize: 17, color: FG, fontUrl: FONT_URL }), xy: [-4.0, 1.9, 0] };
+    cmp.plus  = new Text({ text: '+', fontSize: 17, color: FG, fontUrl: FONT_URL });
+    cmp.minus = new Text({ text: '−', fontSize: 19, color: FG, fontUrl: FONT_URL });
+    cmp.box.moveTo(cmp.xy);
+    const heat = mkBlock(-2.3, 1.9, 1.5, 0.7, 'Heater', 12);
+    const room = mkBlock(0.1, 1.9, 1.9, 0.7, 'Room temperature', 12);
+    const sens = mkBlock(0.1, 0.35, 1.8, 0.65, 'Temperature sensor', 12);
+
+    await Promise.all([cmp.label, cmp.plus, cmp.minus, heat.label, room.label, sens.label].map(t => t.loadGlyphs?.()));
+    await setp.label.waitForRender?.();
+    setp.label.scale(0.6).moveTo(setp.xy);
+    cmp.label.moveTo(cmp.xy);
+    cmp.plus.moveTo([-4.50, 2.08, 0]);   // above the horizontal set-point input arrow
+    cmp.minus.moveTo([-3.82, 1.48, 0]);  // right of the vertical feedback input arrow
+    heat.label.moveTo(heat.xy);
+    room.label.moveTo(room.xy);
+    sens.label.moveTo(sens.xy);
+
+    // ── Lines and summation-input arrows ──
+    const inputArrowStyle = { color: FG, tipLength: 0.08, strokeWidth: 2 };
+    const aSetToCmp = new Arrow({ start: [-5.15, 1.9, 0], end: [-4.35, 1.9, 0], ...inputArrowStyle });
+    const lCmpToHeat = new Line({ start: [-3.65, 1.9, 0], end: [-3.05, 1.9, 0], color: FG });
+    const lHeatToRoom = new Line({ start: [-1.55, 1.9, 0], end: [-0.85, 1.9, 0], color: FG });
+    const lRoomOut = new Line({ start: [1.05, 1.9, 0], end: [2.15, 1.9, 0], color: FG });
+    const fbDown = new Line({ start: [1.6, 1.9, 0], end: [1.6, 0.35, 0], color: FG });
+    const fbToSensor = new Line({ start: [1.6, 0.35, 0], end: [1.0, 0.35, 0], color: FG });
+    const fbOutSensor = new Line({ start: [-0.8, 0.35, 0], end: [-4.0, 0.35, 0], color: FG });
+    const fbUpToSum = new Arrow({ start: [-4.0, 0.35, 0], end: [-4.0, 1.55, 0], ...inputArrowStyle });
+
+    // LaTeX symbol rendered on the output signal line (the "Room
+    // temperature" block's output). Kept as a parameter so downstream
+    // labels can share the exact same glyphs.
+    const roomOutputSymbol = 'T_{\\text{room}}';
+    const roomOutLbl = new MathTex({ latex: roomOutputSymbol, color: FG });
+    await roomOutLbl.waitForRender?.();
+    roomOutLbl.scale(0.6).moveTo([1.6, 2.18, 0]);
+
+    // ── Realistic room temperature graph (time simulation) ──
+    const gx0 = -6.1, gx1 = 2.7, gy0 = -2.95, gy1 = -0.95;
+    const plotFrame = new Rectangle({ width: gx1 - gx0, height: gy1 - gy0, color: MUTED, strokeWidth: 1.2, fillOpacity: 0.02 });
+    plotFrame.moveTo([(gx0 + gx1) / 2, (gy0 + gy1) / 2, 0]);
+    const xAxis = new Line({ start: [gx0, gy0, 0], end: [gx1, gy0, 0], color: MUTED });
+    const yAxis = new Line({ start: [gx0, gy0, 0], end: [gx0, gy1, 0], color: MUTED });
+
+    const gridLines = [];
+    for (let i = 1; i <= 5; i++) {
+      const yg = gy0 + (i / 6) * (gy1 - gy0);
+      gridLines.push(new Line({ start: [gx0, yg, 0], end: [gx1, yg, 0], color: MUTED2, strokeWidth: 0.8 }));
+    }
+    for (let i = 1; i <= 7; i++) {
+      const xg = gx0 + (i / 8) * (gx1 - gx0);
+      gridLines.push(new Line({ start: [xg, gy0, 0], end: [xg, gy1, 0], color: MUTED2, strokeWidth: 0.8 }));
+    }
+    const gridGroup = new VGroup(...gridLines);
+
+    const xLbl = new Text({ text: 'time (minutes)', fontSize: 14, color: MUTED, fontUrl: FONT_URL });
+    const yLbl = new Text({ text: 'room temp (degC)', fontSize: 14, color: MUTED, fontUrl: FONT_URL });
+    await Promise.all([xLbl.loadGlyphs?.(), yLbl.loadGlyphs?.()]);
+    xLbl.moveTo([gx1 - 0.2, gy0 - 0.2, 0]);
+    yLbl.rotate(Math.PI / 2).moveTo([gx0 - 0.45, (gy0 + gy1) / 2, 0]);
+
+    const simDurationMin = 60;
+    const minTemp = 16;
+    const maxTemp = 23.5;
+    const setPoint1 = 22;     // initial set-point
+    const setPoint2 = 20.5;   // set-point after the step change
+    const setChangeMin = 30;  // time (min) at which the set-point steps
+    const mapX = (t) => gx0 + (t / simDurationMin) * (gx1 - gx0);
+    const mapY = (v) => gy0 + ((v - minTemp) / (maxTemp - minTemp)) * (gy1 - gy0);
+
+    // Set-point trace: horizontal at setPoint1, vertical drop at setChangeMin,
+    // then horizontal at setPoint2 for the remainder of the run.
+    const setLine1 = new Line({ start: [mapX(0),            mapY(setPoint1), 0], end: [mapX(setChangeMin),   mapY(setPoint1), 0], color: YELLOW, strokeWidth: 1.6 });
+    const setDrop  = new Line({ start: [mapX(setChangeMin), mapY(setPoint1), 0], end: [mapX(setChangeMin),   mapY(setPoint2), 0], color: YELLOW, strokeWidth: 1.6 });
+    const setLine2 = new Line({ start: [mapX(setChangeMin), mapY(setPoint2), 0], end: [mapX(simDurationMin), mapY(setPoint2), 0], color: YELLOW, strokeWidth: 1.6 });
+    const setLbl1  = new Text({ text: 'set-point 22C',   fontSize: 13, color: YELLOW, fontUrl: FONT_URL });
+    const setLbl2  = new Text({ text: 'set-point 20.5C', fontSize: 13, color: YELLOW, fontUrl: FONT_URL });
+    await Promise.all([setLbl1.loadGlyphs?.(), setLbl2.loadGlyphs?.()]);
+    setLbl1.moveTo([mapX(4),  mapY(setPoint1) + 0.18, 0]);
+    // Place lbl2 well below setLine2 so the settled oscillation does not overlap it.
+    setLbl2.moveTo([mapX(42), mapY(setPoint2) - 0.42, 0]);
+
+    // Bang-bang thermostat with realistic actuator + sensor dynamics:
+    //   controller :  relay with hysteresis on the measured temperature
+    //   actuator   :  first-order heater ramp-up / ramp-down (tau_h)
+    //   plant      :  first-order room G(s) = K/(tau_r*s + 1)
+    //   sensor     :  first-order lag on the measurement (tau_s)
+    // Cascading the first-order actuator with the first-order plant makes
+    // the displayed temperature C1-smooth (no sharp corners at switching
+    // points). Hysteresis gives the visible on/off cycling of the heater
+    // near the set-point, and setPoint steps down at setChangeMin so the
+    // system must transient again and re-settle around the new value.
+    const dtMin = 0.05; // ≈3 s/sample -> ~1200 points across 60 minutes
+    const ambient = 16.5;
+    const hysteresis = 0.12;
+    const tauRoomMin   = 6.5;
+    const tauHeaterMin = 1.6;
+    const tauSensorMin = 0.55;
+    const heaterSteadyRise = 8.6; // K in G(s)
+    const roomAlpha   = Math.exp(-dtMin / tauRoomMin);
+    const heaterAlpha = Math.exp(-dtMin / tauHeaterMin);
+    const sensorAlpha = Math.exp(-dtMin / tauSensorMin);
+
+    let t = 0;
+    let roomTemp = 17.2;
+    let measuredTemp = 17.2;
+    let heaterPower = 0;   // filtered actuator output, 0..1
+    let heaterCmd = true;  // relay command
+    const samples = [];
+    while (t <= simDurationMin + 1e-9) {
+      const currentSetPoint = (t < setChangeMin) ? setPoint1 : setPoint2;
+
+      // Relay with hysteresis, acting on the sensor-lagged measurement.
+      if (heaterCmd  && measuredTemp >= currentSetPoint + hysteresis) heaterCmd = false;
+      if (!heaterCmd && measuredTemp <= currentSetPoint - hysteresis) heaterCmd = true;
+
+      samples.push({ t, roomTemp, heaterOn: heaterCmd });
+
+      // Heater actuator first-order lag filters the relay output so the
+      // plant sees a continuous input (and the curve becomes C1-smooth).
+      const heaterTarget = heaterCmd ? 1 : 0;
+      heaterPower = heaterTarget + (heaterPower - heaterTarget) * heaterAlpha;
+
+      // First-order room plant driven by the filtered heater power.
+      const roomTarget = ambient + heaterPower * heaterSteadyRise;
+      roomTemp = roomTarget + (roomTemp - roomTarget) * roomAlpha;
+
+      // Sensor first-order lag.
+      measuredTemp = roomTemp + (measuredTemp - roomTemp) * sensorAlpha;
+
+      t += dtMin;
+    }
+
+    // Break the curve into fixed-size chunks of line segments. Small chunks
+    // avoid the large-VGroup "ghost full curve" artifact under Create, and
+    // they let the heater block flip color whenever the heater state at the
+    // end of a chunk differs from the previous one.
+    const tempPts = samples.map((s) => [mapX(s.t), mapY(s.roomTemp), 0]);
+    const chunkSize = 14; // small chunks keep heater-state flips in sync
+    const totalCurveSegments = samples.length - 1;
+    const chunks = [];
+    for (let start = 1; start < samples.length; start += chunkSize) {
+      const end = Math.min(start + chunkSize, samples.length);
+      const segs = [];
+      const fills = [];
+      for (let i = start; i < end; i++) {
+        const p0 = tempPts[i - 1];
+        const p1 = tempPts[i];
+        const col = samples[i - 1].heaterOn ? RED : BLUE;
+        segs.push(new Line({ start: p0, end: p1, color: col, strokeWidth: 2.4 }));
+
+        // Under-curve fill column: from the x-axis up to the segment's
+        // midpoint height. A small horizontal overlap avoids gaps between
+        // adjacent columns when the scene rasterises at non-integer pixels.
+        const xmid = (p0[0] + p1[0]) / 2;
+        const ymid = (p0[1] + p1[1]) / 2;
+        const colW = (p1[0] - p0[0]) * 1.08;
+        const colH = Math.max(0.002, ymid - gy0);
+        const rect = new Rectangle({
+          width: colW,
+          height: colH,
+          color: col,
+          strokeWidth: 0,
+          fillOpacity: 0.16
+        });
+        rect.moveTo([xmid, (ymid + gy0) / 2, 0]);
+        fills.push(rect);
+      }
+      if (segs.length === 0) continue;
+      chunks.push({
+        lineGroup: new VGroup(...segs),
+        fillGroup: new VGroup(...fills),
+        count: segs.length,
+        heaterOn: samples[end - 1].heaterOn,
+        endTime: samples[end - 1].t
+      });
+    }
+    // ── Sequence ──
+    await scene.play(new Write(title, { duration: 0.7 }));
+    await scene.play(
+      new Create(setp.box), new Write(setp.label),
+      new Create(cmp.box),  new Write(cmp.label), new Write(cmp.plus), new Write(cmp.minus),
+      new Create(heat.box), new Write(heat.label),
+      new Create(room.box), new Write(room.label),
+      new Create(sens.box), new Write(sens.label)
+    );
+    await scene.play(
+      new Create(aSetToCmp), new Create(lCmpToHeat),
+      new Create(lHeatToRoom), new Create(lRoomOut),
+      new Create(fbDown), new Create(fbToSensor), new Create(fbOutSensor), new Create(fbUpToSum)
+    );
+    await scene.play(new Write(roomOutLbl));
+
+    await scene.play(new Create(plotFrame), new Create(gridGroup));
+    await scene.play(new Create(xAxis), new Create(yAxis), new Write(xLbl), new Write(yLbl));
+    await scene.play(new Create(setLine1), new Write(setLbl1));
+
+    // Prime the heater block to match the initial chunk's state.
+    await scene.play(new FadeToColor(heat.box, {
+      color: chunks[0].heaterOn ? RED : MUTED2,
+      duration: 0.2
+    }));
+
+    // Draw the curve chunk-by-chunk. Within each chunk segments appear
+    // strictly in time order (lagRatio 1.0). Animations played in parallel
+    // inside the same scene.play keep the heater block color in lock-step
+    // with the heater state, and trigger the set-point step transition at
+    // the exact chunk whose end time crosses setChangeMin.
+    const totalDrawDur = 16.0;
+    let prevHeaterOn = chunks[0].heaterOn;
+    let setpointTransitioned = false;
+    for (const ch of chunks) {
+      const chDur = Math.max(0.10, totalDrawDur * (ch.count / totalCurveSegments));
+      const anims = [
+        new FadeIn(ch.fillGroup, { duration: chDur, lagRatio: 1.0 }),
+        new Create(ch.lineGroup, { duration: chDur, lagRatio: 1.0 })
+      ];
+      if (ch.heaterOn !== prevHeaterOn) {
+        anims.unshift(new FadeToColor(heat.box, {
+          color: ch.heaterOn ? RED : MUTED2,
+          duration: Math.min(0.18, chDur)
+        }));
+        prevHeaterOn = ch.heaterOn;
+      }
+      if (!setpointTransitioned && ch.endTime >= setChangeMin) {
+        anims.push(
+          new Create(setDrop,  { duration: Math.min(0.35, chDur) }),
+          new Create(setLine2, { duration: chDur }),
+          new Write(setLbl2,   { duration: Math.min(0.45, chDur) })
+        );
+        setpointTransitioned = true;
+      }
+      await scene.play(...anims);
+    }
+
+    for (const b of bulletObjs) {
+      await scene.play(new FadeIn(b, { duration: 0.2 }));
+    }
+    await scene.wait(1.5);
+  </script>
+</body>
+</html>

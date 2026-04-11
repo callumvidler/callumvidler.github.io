@@ -460,6 +460,36 @@
             vertical-align: middle;
         }
 
+        /* ── Probe readout ── */
+        .probe-readout {
+            display: none;
+            padding: 10px 16px;
+            margin-bottom: 8px;
+            background: var(--bg-panel);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+        .probe-readout.visible { display: block; }
+        .probe-readout .probe-title {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 4px;
+        }
+        .probe-readout .probe-row {
+            display: flex;
+            gap: 24px;
+        }
+        .probe-readout .probe-label {
+            color: var(--text-dim);
+            min-width: 60px;
+        }
+        .probe-readout .probe-val {
+            color: var(--text);
+        }
+
         /* ── Node diagram canvases ── */
         .node-diagram-canvas {
             display: block;
@@ -545,7 +575,20 @@
             </div>
             <div class="sep"></div>
             <div class="group">
+                <label>Preset:</label>
+                <select id="preset-select" style="padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:var(--bg-panel);color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:11px;">
+                    <option value="">-- Load a preset --</option>
+                    <option value="voltage-divider">Voltage Divider</option>
+                    <option value="rc-lowpass">RC Low-Pass Filter</option>
+                    <option value="rl-circuit">RL Circuit</option>
+                    <option value="wheatstone">Wheatstone Bridge</option>
+                    <option value="current-divider">Current Divider</option>
+                </select>
+            </div>
+            <div class="sep"></div>
+            <div class="group">
                 <button class="action-btn" id="btn-compute">Compute</button>
+                <button class="tool-btn" data-tool="probe" id="btn-probe" style="display:none;">&#x1F50D; Probe</button>
                 <button class="action-btn secondary" id="btn-clear">Clear All</button>
                 <button class="action-btn secondary" id="btn-delete">Delete</button>
             </div>
@@ -562,6 +605,7 @@
                 </div>
             </div>
         </div>
+        <div class="probe-readout" id="probe-readout"></div>
         <div class="canvas-hint">Click a component to edit its value. Press R to rotate before placing or after selecting.</div>
 
         <div class="walkthrough" id="walkthrough">
@@ -584,7 +628,7 @@
 
             // ── Canvas & Context ──
             const canvas = document.getElementById('circuit-canvas');
-            const ctx = canvas.getContext('2d');
+            let ctx = canvas.getContext('2d');
 
             // ── State ──
             let components = [];
@@ -596,6 +640,9 @@
             let hoverGrid = null; // { gx, gy }
             let placementRotation = 0; // 0 = horizontal, 1 = vertical; toggled with R
             let lastNodeData = null; // persisted node labels from last Compute
+            let lastSolution = null; // persisted solution from last Compute
+            let lastOmega = 0;
+            let probeHover = null; // {px, py} pixel coords when probe is active
 
             // ── Defaults ──
             const DEFAULTS = {
@@ -817,6 +864,36 @@
                 }
             }
 
+            // ── Label Manager (collision avoidance) ──
+            function createLabelManager() {
+                var rects = [];
+                return {
+                    occupy: function(x, y, w, h) {
+                        rects.push({ x: x, y: y, w: w, h: h });
+                    },
+                    overlaps: function(x, y, w, h, padding) {
+                        var p = padding || 2;
+                        for (var i = 0; i < rects.length; i++) {
+                            var r = rects[i];
+                            if (x - p < r.x + r.w && x + w + p > r.x &&
+                                y - p < r.y + r.h && y + h + p > r.y) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    },
+                    findClear: function(candidates, w, h, padding) {
+                        for (var i = 0; i < candidates.length; i++) {
+                            if (!this.overlaps(candidates[i].x, candidates[i].y, w, h, padding)) {
+                                return candidates[i];
+                            }
+                        }
+                        return candidates[candidates.length - 1];
+                    },
+                    reset: function() { rects = []; }
+                };
+            }
+
             // ── Format Value ──
             function formatValue(val, unit) {
                 if (val >= 1e6) return (val / 1e6).toFixed(val % 1e6 === 0 ? 0 : 1) + 'M' + unit;
@@ -830,7 +907,7 @@
             }
 
             // ── Draw Component ──
-            function drawComponent(comp) {
+            function drawComponent(comp, labelMgr) {
                 const len = COMP_LEN * GRID;
                 const p = gridToPixel(comp.gx, comp.gy);
                 const isSelected = comp.id === selectedId;
@@ -871,7 +948,19 @@
                     ctx.fill();
                 });
 
-                // Draw value label
+                // Register component body in label manager
+                if (labelMgr && comp.type !== 'gnd') {
+                    var regTerms = getTerminals(comp);
+                    var rt0 = gridToPixel(regTerms[0].gx, regTerms[0].gy);
+                    var rt1 = gridToPixel(regTerms[1].gx, regTerms[1].gy);
+                    var rbx = Math.min(rt0.x, rt1.x) - 10;
+                    var rby = Math.min(rt0.y, rt1.y) - 12;
+                    var rbw = Math.abs(rt1.x - rt0.x) + 20;
+                    var rbh = Math.abs(rt1.y - rt0.y) + 24;
+                    labelMgr.occupy(rbx, rby, rbw, rbh);
+                }
+
+                // Draw value label with collision avoidance
                 if (comp.type !== 'gnd' && comp.value !== undefined) {
                     var def2 = DEFAULTS[comp.type];
                     var baseUnitSym2 = def2 ? def2.unit.replace(/^[kMm\u03BC]/, '') : '';
@@ -879,16 +968,46 @@
                     var labelTerms = getTerminals(comp);
                     var lmx = (labelTerms[0].gx + labelTerms[1].gx) / 2 * GRID;
                     var lmy = (labelTerms[0].gy + labelTerms[1].gy) / 2 * GRID;
+                    ctx.font = '11px IBM Plex Mono';
+                    var labelW = ctx.measureText(label).width + 6;
+                    var labelH = 14;
+                    var rot = comp.rotation % 4;
+                    var isVert = (rot === 1 || rot === 3);
+
+                    // Default position
+                    var defX = isVert ? lmx + 16 : lmx;
+                    var defY = isVert ? lmy - 6 : lmy - 18;
+
+                    var lx = defX;
+                    var ly = defY;
+
+                    if (labelMgr) {
+                        var candidates = [
+                            { x: lmx - labelW / 2, y: lmy - 20 },
+                            { x: lmx - labelW / 2, y: lmy + 12 },
+                            { x: lmx + 18, y: lmy - 6 },
+                            { x: lmx - 18 - labelW, y: lmy - 6 },
+                            { x: lmx + 14, y: lmy - 16 },
+                            { x: lmx - 14 - labelW, y: lmy - 16 },
+                            { x: lmx + 14, y: lmy + 8 },
+                            { x: lmx - 14 - labelW, y: lmy + 8 }
+                        ];
+                        var best = labelMgr.findClear(candidates, labelW, labelH, 2);
+                        lx = best.x + labelW / 2;
+                        ly = best.y;
+                        labelMgr.occupy(best.x, best.y, labelW, labelH);
+                    }
+
+                    // Draw semi-transparent background behind label
+                    var bgPad = 3;
+                    ctx.fillStyle = T.isDark ? 'rgba(10,14,20,0.8)' : 'rgba(245,245,247,0.8)';
+                    ctx.fillRect(lx - labelW / 2 - bgPad, ly - 1, labelW + bgPad * 2, labelH + 2);
+
                     ctx.fillStyle = T.textDim;
                     ctx.font = '11px IBM Plex Mono';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'top';
-                    var rot = comp.rotation % 4;
-                    if (rot === 1 || rot === 3) {
-                        ctx.fillText(label, lmx + 16, lmy - 6);
-                    } else {
-                        ctx.fillText(label, lmx, lmy - 16);
-                    }
+                    ctx.fillText(label, lx, ly);
                 }
             }
 
@@ -896,7 +1015,9 @@
             function draw() {
                 drawGrid();
 
-                // Draw wires
+                var labelMgr = createLabelManager();
+
+                // Draw wires and register them in label manager
                 wires.forEach(function(w) {
                     const p1 = gridToPixel(w.x1, w.y1);
                     const p2 = gridToPixel(w.x2, w.y2);
@@ -907,6 +1028,12 @@
                     ctx.moveTo(p1.x, p1.y);
                     ctx.lineTo(p2.x, p2.y);
                     ctx.stroke();
+                    // Register wire as thin rectangle
+                    var wx = Math.min(p1.x, p2.x) - 3;
+                    var wy = Math.min(p1.y, p2.y) - 3;
+                    var ww = Math.abs(p2.x - p1.x) + 6;
+                    var wh = Math.abs(p2.y - p1.y) + 6;
+                    labelMgr.occupy(wx, wy, ww, wh);
                 });
 
                 // Draw wire in progress (dashed, L-shaped routing)
@@ -932,11 +1059,11 @@
 
                 // Draw components
                 components.forEach(function(c) {
-                    drawComponent(c);
+                    drawComponent(c, labelMgr);
                 });
 
                 // Draw placement preview
-                if (activeTool && activeTool !== 'wire' && hoverGrid) {
+                if (activeTool && activeTool !== 'wire' && activeTool !== 'probe' && hoverGrid) {
                     ctx.globalAlpha = 0.4;
                     const preview = {
                         type: activeTool,
@@ -960,7 +1087,12 @@
 
                 // Re-draw persistent node labels if available
                 if (lastNodeData) {
-                    drawNodeLabels(lastNodeData);
+                    drawNodeLabels(lastNodeData, labelMgr);
+                }
+
+                // Probe hover overlay
+                if (probeHover && activeTool === 'probe' && lastNodeData && lastSolution) {
+                    drawProbeOverlay(probeHover.px, probeHover.py);
                 }
             }
 
@@ -1127,6 +1259,11 @@
                     }
                     hideValueEditor();
                     selectedId = null;
+                    canvas.style.cursor = activeTool === 'probe' ? 'none' : '';
+                    if (activeTool !== 'probe') {
+                        probeHover = null;
+                        document.getElementById('probe-readout').classList.remove('visible');
+                    }
                     draw();
                 });
             });
@@ -1139,7 +1276,7 @@
                 selectedId = null;
                 activeTool = null;
                 dragging = null;
-                lastNodeData = null;
+                lastNodeData = null; lastSolution = null; document.getElementById('btn-probe').style.display = 'none'; document.getElementById('probe-readout').classList.remove('visible');
                 toolBtns.forEach(function(b) { b.classList.remove('active'); });
                 hideValueEditor();
                 document.getElementById('walkthrough').classList.remove('visible');
@@ -1170,12 +1307,174 @@
                     }
                 }
                 selectedId = null;
-                lastNodeData = null;
+                lastNodeData = null; lastSolution = null; document.getElementById('btn-probe').style.display = 'none'; document.getElementById('probe-readout').classList.remove('visible');
                 hideValueEditor();
                 draw();
             }
 
             document.getElementById('btn-delete').addEventListener('click', deleteSelected);
+
+            // ── Preset Circuits ──
+            var PRESETS = {
+                'voltage-divider': {
+                    desc: 'Voltage Divider: 10V source, 2kΩ and 1kΩ resistors',
+                    omega: 0,
+                    components: [
+                        { type: 'vsource', gx: 3, gy: 4, rotation: 1, value: 10 },
+                        { type: 'resistor', gx: 5, gy: 2, rotation: 0, value: 2000 },
+                        { type: 'resistor', gx: 9, gy: 4, rotation: 1, value: 1000 },
+                        { type: 'gnd', gx: 3, gy: 8, rotation: 0 }
+                    ],
+                    wires: [
+                        { x1: 3, y1: 2, x2: 3, y2: 4 },  // vsource top to top wire
+                        { x1: 3, y1: 2, x2: 5, y2: 2 },  // top wire to R1
+                        { x1: 7, y1: 2, x2: 9, y2: 2 },  // R1 to junction
+                        { x1: 9, y1: 2, x2: 9, y2: 4 },  // junction to R2 top
+                        { x1: 9, y1: 6, x2: 9, y2: 8 },  // R2 bottom to bottom wire
+                        { x1: 3, y1: 6, x2: 3, y2: 8 },  // vsource bottom to gnd wire
+                        { x1: 3, y1: 8, x2: 9, y2: 8 }   // bottom wire
+                    ]
+                },
+                'rc-lowpass': {
+                    desc: 'RC Low-Pass Filter: 5V source, 1kΩ resistor, 10μF capacitor',
+                    omega: 100,
+                    components: [
+                        { type: 'vsource', gx: 3, gy: 4, rotation: 1, value: 5 },
+                        { type: 'resistor', gx: 5, gy: 2, rotation: 0, value: 1000 },
+                        { type: 'capacitor', gx: 9, gy: 4, rotation: 1, value: 10e-6 },
+                        { type: 'gnd', gx: 3, gy: 8, rotation: 0 }
+                    ],
+                    wires: [
+                        { x1: 3, y1: 2, x2: 3, y2: 4 },
+                        { x1: 3, y1: 2, x2: 5, y2: 2 },
+                        { x1: 7, y1: 2, x2: 9, y2: 2 },
+                        { x1: 9, y1: 2, x2: 9, y2: 4 },
+                        { x1: 9, y1: 6, x2: 9, y2: 8 },
+                        { x1: 3, y1: 6, x2: 3, y2: 8 },
+                        { x1: 3, y1: 8, x2: 9, y2: 8 }
+                    ]
+                },
+                'rl-circuit': {
+                    desc: 'RL Circuit: 5V source, 100Ω resistor, 10mH inductor',
+                    omega: 1000,
+                    components: [
+                        { type: 'vsource', gx: 3, gy: 4, rotation: 1, value: 5 },
+                        { type: 'resistor', gx: 5, gy: 2, rotation: 0, value: 100 },
+                        { type: 'inductor', gx: 9, gy: 4, rotation: 1, value: 10e-3 },
+                        { type: 'gnd', gx: 3, gy: 8, rotation: 0 }
+                    ],
+                    wires: [
+                        { x1: 3, y1: 2, x2: 3, y2: 4 },
+                        { x1: 3, y1: 2, x2: 5, y2: 2 },
+                        { x1: 7, y1: 2, x2: 9, y2: 2 },
+                        { x1: 9, y1: 2, x2: 9, y2: 4 },
+                        { x1: 9, y1: 6, x2: 9, y2: 8 },
+                        { x1: 3, y1: 6, x2: 3, y2: 8 },
+                        { x1: 3, y1: 8, x2: 9, y2: 8 }
+                    ]
+                },
+                'wheatstone': {
+                    desc: 'Wheatstone Bridge: 10V source, 4 resistors',
+                    omega: 0,
+                    components: [
+                        { type: 'vsource', gx: 3, gy: 4, rotation: 1, value: 10 },
+                        { type: 'resistor', gx: 5, gy: 2, rotation: 0, value: 1000 },
+                        { type: 'resistor', gx: 9, gy: 2, rotation: 0, value: 2000 },
+                        { type: 'resistor', gx: 7, gy: 4, rotation: 1, value: 3000 },
+                        { type: 'resistor', gx: 5, gy: 8, rotation: 0, value: 1000 },
+                        { type: 'resistor', gx: 9, gy: 8, rotation: 0, value: 2000 },
+                        { type: 'gnd', gx: 13, gy: 5, rotation: 0 }
+                    ],
+                    wires: [
+                        { x1: 3, y1: 2, x2: 3, y2: 4 },
+                        { x1: 3, y1: 2, x2: 5, y2: 2 },
+                        { x1: 7, y1: 2, x2: 9, y2: 2 },
+                        { x1: 11, y1: 2, x2: 13, y2: 2 },
+                        { x1: 13, y1: 2, x2: 13, y2: 5 },
+                        { x1: 7, y1: 4, x2: 7, y2: 6 },
+                        { x1: 3, y1: 6, x2: 3, y2: 8 },
+                        { x1: 3, y1: 8, x2: 5, y2: 8 },
+                        { x1: 7, y1: 8, x2: 9, y2: 8 },
+                        { x1: 11, y1: 8, x2: 13, y2: 8 },
+                        { x1: 13, y1: 8, x2: 13, y2: 5 }
+                    ]
+                },
+                'current-divider': {
+                    desc: 'Current Divider: 5mA source, 2kΩ and 3kΩ in parallel',
+                    omega: 0,
+                    components: [
+                        { type: 'isource', gx: 3, gy: 4, rotation: 1, value: 5e-3 },
+                        { type: 'resistor', gx: 7, gy: 4, rotation: 1, value: 2000 },
+                        { type: 'resistor', gx: 11, gy: 4, rotation: 1, value: 3000 },
+                        { type: 'gnd', gx: 3, gy: 8, rotation: 0 }
+                    ],
+                    wires: [
+                        { x1: 3, y1: 2, x2: 3, y2: 4 },
+                        { x1: 3, y1: 2, x2: 7, y2: 2 },
+                        { x1: 7, y1: 2, x2: 7, y2: 4 },
+                        { x1: 7, y1: 2, x2: 11, y2: 2 },
+                        { x1: 11, y1: 2, x2: 11, y2: 4 },
+                        { x1: 3, y1: 6, x2: 3, y2: 8 },
+                        { x1: 3, y1: 8, x2: 7, y2: 8 },
+                        { x1: 7, y1: 6, x2: 7, y2: 8 },
+                        { x1: 7, y1: 8, x2: 11, y2: 8 },
+                        { x1: 11, y1: 6, x2: 11, y2: 8 }
+                    ]
+                }
+            };
+
+            function loadPreset(name) {
+                var preset = PRESETS[name];
+                if (!preset) return;
+
+                // Clear existing
+                components = [];
+                wires = [];
+                nextId = 1;
+                selectedId = null;
+                activeTool = null;
+                lastNodeData = null; lastSolution = null; document.getElementById('btn-probe').style.display = 'none'; document.getElementById('probe-readout').classList.remove('visible');
+                toolBtns.forEach(function(b) { b.classList.remove('active'); });
+                hideValueEditor();
+                document.getElementById('walkthrough').classList.remove('visible');
+                document.getElementById('walkthrough').innerHTML = '';
+
+                // Load components
+                preset.components.forEach(function(pc) {
+                    var comp = {
+                        id: nextId++,
+                        type: pc.type,
+                        gx: pc.gx,
+                        gy: pc.gy,
+                        rotation: pc.rotation || 0
+                    };
+                    if (pc.value !== undefined) {
+                        comp.value = pc.value;
+                        var def = DEFAULTS[pc.type];
+                        comp.baseUnit = def ? def.unit : '';
+                    }
+                    components.push(comp);
+                });
+
+                // Load wires
+                preset.wires.forEach(function(pw) {
+                    wires.push({ id: nextId++, x1: pw.x1, y1: pw.y1, x2: pw.x2, y2: pw.y2 });
+                });
+
+                // Set frequency
+                if (preset.omega !== undefined) {
+                    document.getElementById('freq-input').value = preset.omega;
+                }
+
+                draw();
+            }
+
+            document.getElementById('preset-select').addEventListener('change', function() {
+                if (this.value) {
+                    loadPreset(this.value);
+                    this.value = '';
+                }
+            });
 
             // ── Keyboard Handlers ──
             document.addEventListener('keydown', function(e) {
@@ -1202,8 +1501,11 @@
                     activeTool = null;
                     selectedId = null;
                     dragging = null;
+                    probeHover = null;
+                    canvas.style.cursor = '';
                     toolBtns.forEach(function(b) { b.classList.remove('active'); });
                     hideValueEditor();
+                    document.getElementById('probe-readout').classList.remove('visible');
                     draw();
                 }
             });
@@ -1213,12 +1515,16 @@
                 const pos = getMousePos(e);
                 const g = pixelToGrid(pos.x, pos.y);
 
-                if (activeTool === 'wire') {
+                if (activeTool === 'probe') {
+                    // Probe mode: measure voltage at node or current through component
+                    probeAt(pos.x, pos.y, g.gx, g.gy);
+                    return;
+                } else if (activeTool === 'wire') {
                     // Start wire drag
                     dragging = { x1: g.gx, y1: g.gy, x2: g.gx, y2: g.gy };
                     selectedId = null;
                     hideValueEditor();
-                } else if (activeTool && activeTool !== 'wire') {
+                } else if (activeTool && activeTool !== 'wire' && activeTool !== 'probe') {
                     // Place component
                     const comp = {
                         id: nextId++,
@@ -1239,7 +1545,7 @@
                     }
                     components.push(comp);
                     selectedId = comp.id;
-                    lastNodeData = null;
+                    lastNodeData = null; lastSolution = null; document.getElementById('btn-probe').style.display = 'none'; document.getElementById('probe-readout').classList.remove('visible');
                     hideValueEditor();
                     draw();
                 } else {
@@ -1261,6 +1567,12 @@
                 const pos = getMousePos(e);
                 const g = pixelToGrid(pos.x, pos.y);
                 hoverGrid = g;
+
+                if (activeTool === 'probe') {
+                    probeHover = { px: pos.x, py: pos.y };
+                } else {
+                    probeHover = null;
+                }
 
                 if (dragging) {
                     dragging.x2 = g.gx;
@@ -1305,7 +1617,7 @@
                                 y2: dragging.y2
                             });
                         }
-                        lastNodeData = null;
+                        lastNodeData = null; lastSolution = null; document.getElementById('btn-probe').style.display = 'none'; document.getElementById('probe-readout').classList.remove('visible');
                     }
                     dragging = null;
                     draw();
@@ -1338,6 +1650,7 @@
             // ── Canvas: Mouse Leave ──
             canvas.addEventListener('mouseleave', function() {
                 hoverGrid = null;
+                probeHover = null;
                 if (!dragging) draw();
             });
 
@@ -1355,16 +1668,25 @@
             function cConj(a) { return [a[0], -a[1]]; }
             function cStr(a) {
                 var r = a[0], im = a[1];
-                if (Math.abs(im) < 1e-20) return parseFloat(r.toPrecision(4)).toString();
+                var mag = cMag(a);
+                var tol = mag * 1e-10;
+                if (tol < 1e-15) tol = 1e-15;
+                // Treat near-zero imaginary as purely real
+                if (Math.abs(im) < tol) return parseFloat(r.toPrecision(4)).toString();
+                // Treat near-zero real as purely imaginary
+                if (Math.abs(r) < tol) return (im < 0 ? '-' : '') + parseFloat(Math.abs(im).toPrecision(4)) + 'j';
                 var rs = parseFloat(r.toPrecision(4));
                 var is = parseFloat(Math.abs(im).toPrecision(4));
-                if (Math.abs(r) < 1e-20) return (im < 0 ? '-' : '') + is + 'j';
                 return rs + (im < 0 ? ' - ' : ' + ') + is + 'j';
             }
             function cPolar(a) {
                 var m = cMag(a);
+                if (m < 1e-15) return '0 \u2220 0\u00B0';
                 var p = cPhase(a);
-                return parseFloat(m.toPrecision(4)) + ' \u2220 ' + parseFloat(p.toPrecision(4)) + '\u00B0';
+                // Clean up near-zero phase for purely real values
+                if (Math.abs(p) < 1e-6) p = 0;
+                if (Math.abs(Math.abs(p) - 180) < 1e-6) p = 180;
+                return parseFloat(m.toPrecision(4)) + ' \u2220 ' + parseFloat(p.toFixed(1)) + '\u00B0';
             }
 
             // ── Union-Find ──
@@ -1472,10 +1794,18 @@
                 var nodeInfo = {};
                 Object.keys(rootGroups).forEach(function(root) {
                     var num = nodeNumMap[root];
+                    // Deduplicate points
+                    var seen = {};
+                    var uniquePoints = [];
+                    rootGroups[root].points.forEach(function(p) {
+                        var k = p.gx + ',' + p.gy;
+                        if (!seen[k]) { seen[k] = true; uniquePoints.push(p); }
+                    });
                     nodeInfo[num] = {
                         num: num,
                         comps: rootGroups[root].compIds,
-                        point: rootGroups[root].points[0]
+                        point: uniquePoints[0],
+                        points: uniquePoints
                     };
                 });
 
@@ -1742,26 +2072,47 @@
 
             // ── Walkthrough Generators ──
             // ── Node Diagram Drawing ──
+            // Helper: draw a background box behind a text label
+            function drawLabelBg(c, text, x, y, font) {
+                c.font = font;
+                var metrics = c.measureText(text);
+                var pad = 3;
+                var w = metrics.width + pad * 2;
+                var h = 12 + pad * 2;
+                c.fillStyle = T.isDark ? 'rgba(17,17,17,0.85)' : 'rgba(245,245,247,0.85)';
+                c.fillRect(x - w / 2, y - h / 2, w, h);
+            }
+
+            // Helper: draw an arrowhead at (x,y) pointing in direction angle
+            function drawArrowhead(c, x, y, angle, size, color) {
+                c.fillStyle = color;
+                c.beginPath();
+                c.moveTo(x + Math.cos(angle) * size, y + Math.sin(angle) * size);
+                c.lineTo(x + Math.cos(angle + 2.5) * size * 0.6, y + Math.sin(angle + 2.5) * size * 0.6);
+                c.lineTo(x + Math.cos(angle - 2.5) * size * 0.6, y + Math.sin(angle - 2.5) * size * 0.6);
+                c.closePath();
+                c.fill();
+            }
+
             function drawNodeDiagram(canvasId, nodeNum, nodeData, options) {
                 var cvs = document.getElementById(canvasId);
                 if (!cvs) return;
                 var c = cvs.getContext('2d');
-                var W = cvs.width, H = cvs.height;
                 var dpr = window.devicePixelRatio || 1;
+                var W = 400, H = 300;
 
                 // HiDPI setup
-                cvs.width = 300 * dpr;
-                cvs.height = 250 * dpr;
-                cvs.style.width = '300px';
-                cvs.style.height = '250px';
+                cvs.width = W * dpr;
+                cvs.height = H * dpr;
+                cvs.style.width = W + 'px';
+                cvs.style.height = H + 'px';
                 c.scale(dpr, dpr);
-                W = 300; H = 250;
 
                 // Background
                 c.fillStyle = T.canvasBg;
                 c.fillRect(0, 0, W, H);
 
-                var cx = W / 2, cy = H / 2;
+                var diagLM = createLabelManager();
                 var nodeColor = NODE_COLORS[nodeNum % NODE_COLORS.length];
 
                 // Collect branches: components connected to this node
@@ -1773,14 +2124,12 @@
                     if (nodes[0] !== nodeNum && nodes[1] !== nodeNum) return;
                     var otherNode = nodes[0] === nodeNum ? nodes[1] : nodes[0];
                     var baseVal = getBaseValue(comp);
-                    var def = DEFAULTS[comp.type];
-                    var baseUnitSym = def ? def.unit.replace(/^[kMm\u03BC]/, '') : '';
                     var label = '';
-                    if (comp.type === 'resistor') label = 'R (id=' + comp.id + ') ' + formatValue(baseVal, '\u03A9');
-                    else if (comp.type === 'capacitor') label = 'C (id=' + comp.id + ') ' + formatValue(baseVal, 'F');
-                    else if (comp.type === 'inductor') label = 'L (id=' + comp.id + ') ' + formatValue(baseVal, 'H');
-                    else if (comp.type === 'vsource') label = 'V (id=' + comp.id + ') ' + formatValue(baseVal, 'V');
-                    else if (comp.type === 'isource') label = 'I (id=' + comp.id + ') ' + formatValue(baseVal, 'A');
+                    if (comp.type === 'resistor') label = formatValue(baseVal, '\u03A9');
+                    else if (comp.type === 'capacitor') label = formatValue(baseVal, 'F');
+                    else if (comp.type === 'inductor') label = formatValue(baseVal, 'H');
+                    else if (comp.type === 'vsource') label = formatValue(baseVal, 'V');
+                    else if (comp.type === 'isource') label = formatValue(baseVal, 'A');
 
                     branches.push({
                         comp: comp,
@@ -1792,75 +2141,415 @@
 
                 if (branches.length === 0) return;
 
-                var branchLen = 80;
-                var angleStep = (2 * Math.PI) / branches.length;
-                var startAngle = -Math.PI / 2;
+                // ── Compute bounding box of ENTIRE circuit ──
+                var allGridPoints = [];
+                var focusedInfo = nodeData.nodeInfo[nodeNum];
 
-                branches.forEach(function(br, i) {
-                    var angle = startAngle + i * angleStep;
-                    var ex = cx + Math.cos(angle) * branchLen;
-                    var ey = cy + Math.sin(angle) * branchLen;
-                    var otherColor = NODE_COLORS[br.otherNode % NODE_COLORS.length];
+                // Include ALL components and wires in the bounding box
+                components.forEach(function(comp) {
+                    var terms = getTerminals(comp);
+                    terms.forEach(function(t) {
+                        allGridPoints.push(t);
+                    });
+                });
+                wires.forEach(function(w) {
+                    allGridPoints.push({ gx: w.x1, gy: w.y1 });
+                    allGridPoints.push({ gx: w.x2, gy: w.y2 });
+                });
 
-                    // Draw branch line
-                    c.strokeStyle = T.textDim;
-                    c.lineWidth = 2;
-                    c.beginPath();
-                    c.moveTo(cx, cy);
-                    c.lineTo(ex, ey);
-                    c.stroke();
+                // Build set of terminals relevant to this node's branches
+                var termSet = {};
+                branches.forEach(function(br) {
+                    var terms = getTerminals(br.comp);
+                    terms.forEach(function(t) {
+                        termSet[t.gx + ',' + t.gy] = true;
+                    });
+                });
+                if (focusedInfo && focusedInfo.point) {
+                    termSet[focusedInfo.point.gx + ',' + focusedInfo.point.gy] = true;
+                }
 
-                    // Arrow for assumed current direction (leaving node = positive)
-                    var arrowMid = 0.55;
-                    var ax = cx + Math.cos(angle) * branchLen * arrowMid;
-                    var ay = cy + Math.sin(angle) * branchLen * arrowMid;
-                    var arrowSize = 8;
-                    var arrowColor = '#e06050'; // red for assumed direction
-
-                    if (br.comp.type === 'isource') {
-                        // Fixed direction: current flows from n1 to n2 (into n2, out of n1)
-                        var nodes = nodeData.terminalNodeMap[br.comp.id];
-                        var leavingNode = (nodes[0] === nodeNum);
-                        arrowColor = '#5b9bd5'; // blue for fixed current source
-                        if (!leavingNode) {
-                            // Current enters this node - flip arrow
-                            angle = angle + Math.PI;
-                            ax = cx + Math.cos(angle - Math.PI) * branchLen * arrowMid;
-                            ay = cy + Math.sin(angle - Math.PI) * branchLen * arrowMid;
-                        }
-                    } else if (br.comp.type === 'vsource') {
-                        arrowColor = '#ffcc44'; // yellow for vsource (MNA variable)
+                // Identify relevant vs non-relevant wires
+                var relevantWireSet = {};
+                var relevantCompSet = {};
+                branches.forEach(function(br) {
+                    relevantCompSet[br.comp.id] = true;
+                });
+                wires.forEach(function(w, idx) {
+                    var k1 = w.x1 + ',' + w.y1;
+                    var k2 = w.x2 + ',' + w.y2;
+                    if (termSet[k1] || termSet[k2]) {
+                        relevantWireSet[idx] = true;
                     }
+                });
 
-                    // Draw arrowhead
-                    c.fillStyle = arrowColor;
+                // Calculate bounding box
+                var minGX = Infinity, maxGX = -Infinity, minGY = Infinity, maxGY = -Infinity;
+                allGridPoints.forEach(function(p) {
+                    if (p.gx < minGX) minGX = p.gx;
+                    if (p.gx > maxGX) maxGX = p.gx;
+                    if (p.gy < minGY) minGY = p.gy;
+                    if (p.gy > maxGY) maxGY = p.gy;
+                });
+
+                // Add padding (2 grid units)
+                var pad = 2;
+                minGX -= pad; maxGX += pad;
+                minGY -= pad; maxGY += pad;
+
+                // Ensure minimum range so we don't get degenerate scaling
+                var rangeGX = maxGX - minGX;
+                var rangeGY = maxGY - minGY;
+                if (rangeGX < 4) { minGX -= 2; maxGX += 2; rangeGX = maxGX - minGX; }
+                if (rangeGY < 4) { minGY -= 2; maxGY += 2; rangeGY = maxGY - minGY; }
+
+                // Scale to fit canvas with margin
+                var margin = 30;
+                var drawW = W - margin * 2;
+                var drawH = H - margin * 2;
+                var scaleX = drawW / rangeGX;
+                var scaleY = drawH / rangeGY;
+                var scale = Math.min(scaleX, scaleY);
+
+                // Center the diagram
+                var usedW = rangeGX * scale;
+                var usedH = rangeGY * scale;
+                var offsetX = margin + (drawW - usedW) / 2;
+                var offsetY = margin + (drawH - usedH) / 2;
+
+                function mapX(gx) { return offsetX + (gx - minGX) * scale; }
+                function mapY(gy) { return offsetY + (gy - minGY) * scale; }
+
+                // ── 1. Draw ALL wires — non-relevant transparent, relevant full ──
+                var dimAlpha = 0.2;
+                var compLen = COMP_LEN * scale;
+
+                // Draw non-relevant wires first (transparent)
+                c.globalAlpha = dimAlpha;
+                c.strokeStyle = T.isDark ? '#555555' : '#aaaaaa';
+                c.lineWidth = 2;
+                wires.forEach(function(w, idx) {
+                    if (relevantWireSet[idx]) return; // skip relevant, draw later
                     c.beginPath();
-                    c.moveTo(ax + Math.cos(angle) * arrowSize, ay + Math.sin(angle) * arrowSize);
-                    c.lineTo(ax + Math.cos(angle + 2.5) * arrowSize * 0.6, ay + Math.sin(angle + 2.5) * arrowSize * 0.6);
-                    c.lineTo(ax + Math.cos(angle - 2.5) * arrowSize * 0.6, ay + Math.sin(angle - 2.5) * arrowSize * 0.6);
-                    c.closePath();
-                    c.fill();
+                    c.moveTo(mapX(w.x1), mapY(w.y1));
+                    c.lineTo(mapX(w.x2), mapY(w.y2));
+                    c.stroke();
+                });
 
-                    // Component label
-                    var labelX = cx + Math.cos(angle) * branchLen * 0.5;
-                    var labelY = cy + Math.sin(angle) * branchLen * 0.5;
-                    // Offset label perpendicular to branch
-                    var perpX = -Math.sin(angle) * 16;
-                    var perpY = Math.cos(angle) * 16;
-                    c.font = '10px IBM Plex Mono';
+                // Draw non-relevant components (transparent)
+                var savedCtx = ctx;
+                ctx = c;
+                var dimCompColor = T.isDark ? '#555555' : '#aaaaaa';
+                components.forEach(function(comp) {
+                    if (comp.type === 'gnd') return;
+                    if (relevantCompSet[comp.id]) return; // skip relevant
+                    var terms = getTerminals(comp);
+                    if (terms.length < 2) return;
+                    var t0x = mapX(terms[0].gx);
+                    var t0y = mapY(terms[0].gy);
+                    var t1x = mapX(terms[1].gx);
+                    var t1y = mapY(terms[1].gy);
+                    var midCX = (t0x + t1x) / 2;
+                    var midCY = (t0y + t1y) / 2;
+                    var rot = (comp.rotation % 4) * Math.PI / 2;
+
+                    ctx.save();
+                    ctx.translate(midCX, midCY);
+                    ctx.rotate(rot);
+                    switch (comp.type) {
+                        case 'resistor':  drawResistor(compLen, dimCompColor); break;
+                        case 'capacitor': drawCapacitor(compLen, dimCompColor); break;
+                        case 'inductor':  drawInductor(compLen, dimCompColor); break;
+                        case 'vsource':   drawVSource(compLen, dimCompColor); break;
+                        case 'isource':   drawISource(compLen, dimCompColor); break;
+                    }
+                    ctx.restore();
+                });
+
+                // Draw non-relevant ground symbols (transparent)
+                components.forEach(function(comp) {
+                    if (comp.type !== 'gnd') return;
+                    var terms = getTerminals(comp);
+                    var gx = mapX(terms[0].gx);
+                    var gy = mapY(terms[0].gy);
+                    ctx.save();
+                    ctx.translate(gx, gy);
+                    drawGround(dimCompColor);
+                    ctx.restore();
+                });
+
+                // Draw non-relevant node circles (transparent)
+                Object.keys(nodeData.nodeInfo).forEach(function(num) {
+                    if (Number(num) === nodeNum) return;
+                    var drawn = false;
+                    branches.forEach(function(br) { if (br.otherNode === Number(num)) drawn = true; });
+                    if (drawn) return; // will be drawn at full opacity later
+                    var info = nodeData.nodeInfo[num];
+                    var pts = info.points || [info.point];
+                    var clr = NODE_COLORS[Number(num) % NODE_COLORS.length];
+                    pts.forEach(function(p) {
+                        if (p.gx >= minGX && p.gx <= maxGX && p.gy >= minGY && p.gy <= maxGY) {
+                            var nx = mapX(p.gx);
+                            var ny = mapY(p.gy);
+                            c.fillStyle = clr;
+                            c.beginPath();
+                            c.arc(nx, ny, 7, 0, Math.PI * 2);
+                            c.fill();
+                            c.fillStyle = '#fff';
+                            c.font = 'bold 9px IBM Plex Mono';
+                            c.textAlign = 'center';
+                            c.textBaseline = 'middle';
+                            c.fillText(String(num), nx, ny);
+                        }
+                    });
+                });
+                ctx = savedCtx;
+                c.globalAlpha = 1.0;
+
+                // ── 2. Draw relevant wires (full opacity) ──
+                c.strokeStyle = T.isDark ? '#555555' : '#aaaaaa';
+                c.lineWidth = 2;
+                wires.forEach(function(w, idx) {
+                    if (!relevantWireSet[idx]) return;
+                    var wx1 = mapX(w.x1), wy1 = mapY(w.y1);
+                    var wx2 = mapX(w.x2), wy2 = mapY(w.y2);
+                    c.beginPath();
+                    c.moveTo(wx1, wy1);
+                    c.lineTo(wx2, wy2);
+                    c.stroke();
+                    diagLM.occupy(Math.min(wx1, wx2) - 3, Math.min(wy1, wy2) - 3,
+                        Math.abs(wx2 - wx1) + 6, Math.abs(wy2 - wy1) + 6);
+                });
+
+                // ── 3. Draw relevant components (full opacity) ──
+                savedCtx = ctx;
+                ctx = c;
+                var compColor = T.isDark ? '#cccccc' : '#444444';
+                branches.forEach(function(br) {
+                    var terms = getTerminals(br.comp);
+                    var t0x = mapX(terms[0].gx);
+                    var t0y = mapY(terms[0].gy);
+                    var t1x = mapX(terms[1].gx);
+                    var t1y = mapY(terms[1].gy);
+                    var midX = (t0x + t1x) / 2;
+                    var midY = (t0y + t1y) / 2;
+                    var rot = (br.comp.rotation % 4) * Math.PI / 2;
+
+                    ctx.save();
+                    ctx.translate(midX, midY);
+                    ctx.rotate(rot);
+                    switch (br.comp.type) {
+                        case 'resistor':  drawResistor(compLen, compColor); break;
+                        case 'capacitor': drawCapacitor(compLen, compColor); break;
+                        case 'inductor':  drawInductor(compLen, compColor); break;
+                        case 'vsource':   drawVSource(compLen, compColor); break;
+                        case 'isource':   drawISource(compLen, compColor); break;
+                    }
+                    ctx.restore();
+                    // Register component body in diagram label manager
+                    var cbx = Math.min(t0x, t1x) - 8;
+                    var cby = Math.min(t0y, t1y) - 10;
+                    var cbw = Math.abs(t1x - t0x) + 16;
+                    var cbh = Math.abs(t1y - t0y) + 20;
+                    diagLM.occupy(cbx, cby, cbw, cbh);
+                });
+                ctx = savedCtx;
+
+                // ── 3. Draw component value labels with background (collision-aware) ──
+                branches.forEach(function(br) {
+                    var terms = getTerminals(br.comp);
+                    var t0x = mapX(terms[0].gx);
+                    var t0y = mapY(terms[0].gy);
+                    var t1x = mapX(terms[1].gx);
+                    var t1y = mapY(terms[1].gy);
+                    var midX = (t0x + t1x) / 2;
+                    var midY = (t0y + t1y) / 2;
+
+                    var font = '10px IBM Plex Mono';
+                    c.font = font;
+                    var valW = c.measureText(br.label).width + 6;
+                    var valH = 14;
+
+                    var valCandidates = [
+                        { x: midX - valW / 2, y: midY - 22 },
+                        { x: midX - valW / 2, y: midY + 10 },
+                        { x: midX + 16, y: midY - valH / 2 },
+                        { x: midX - 16 - valW, y: midY - valH / 2 },
+                        { x: midX + 12, y: midY - 18 },
+                        { x: midX - 12 - valW, y: midY - 18 },
+                        { x: midX + 12, y: midY + 6 },
+                        { x: midX - 12 - valW, y: midY + 6 }
+                    ];
+                    var bestVal = diagLM.findClear(valCandidates, valW, valH, 2);
+                    var lx = bestVal.x + valW / 2;
+                    var ly = bestVal.y + valH / 2;
+                    diagLM.occupy(bestVal.x, bestVal.y, valW, valH);
+
+                    drawLabelBg(c, br.label, lx, ly, font);
+                    c.font = font;
                     c.fillStyle = T.textDim;
                     c.textAlign = 'center';
                     c.textBaseline = 'middle';
-                    c.fillText(br.label, labelX + perpX, labelY + perpY);
+                    c.fillText(br.label, lx, ly);
 
-                    // Solved values overlay (Step 6)
+                    // MNA variable note for vsource (Step 3 only)
+                    if (br.comp.type === 'vsource' && !(options && options.solved)) {
+                        var mnaFont = '8px IBM Plex Mono';
+                        c.font = mnaFont;
+                        var mnaW = c.measureText('MNA var').width + 6;
+                        var mnaH = 12;
+                        var mnaCandidates = [
+                            { x: lx - mnaW / 2, y: ly + 8 },
+                            { x: lx - mnaW / 2, y: ly - 20 },
+                            { x: lx + valW / 2 + 4, y: ly - mnaH / 2 },
+                            { x: lx - valW / 2 - mnaW - 4, y: ly - mnaH / 2 }
+                        ];
+                        var bestMna = diagLM.findClear(mnaCandidates, mnaW, mnaH, 2);
+                        var mnaX = bestMna.x + mnaW / 2;
+                        var mnaY = bestMna.y + mnaH / 2;
+                        diagLM.occupy(bestMna.x, bestMna.y, mnaW, mnaH);
+                        drawLabelBg(c, 'MNA var', mnaX, mnaY, mnaFont);
+                        c.font = mnaFont;
+                        c.fillStyle = '#ffcc44';
+                        c.textAlign = 'center';
+                        c.textBaseline = 'middle';
+                        c.fillText('MNA var', mnaX, mnaY);
+                    }
+                });
+
+                // ── 4. Draw node circles ──
+                // Collect all unique nodes to draw
+                var nodesDrawn = {};
+
+                // Draw all nodes at same size as main circuit (radius=10, font=bold 11px)
+                var nodeRadius = 7;
+                var nodeFont = 'bold 9px IBM Plex Mono';
+
+                // Helper to draw a node label at a mapped grid point
+                function drawNodeCircle(gx, gy, num, color) {
+                    var nx = mapX(gx);
+                    var ny = mapY(gy);
+                    c.fillStyle = color;
+                    c.beginPath();
+                    c.arc(nx, ny, nodeRadius, 0, Math.PI * 2);
+                    c.fill();
+                    c.fillStyle = '#fff';
+                    c.font = nodeFont;
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillText(String(num), nx, ny);
+                    diagLM.occupy(nx - nodeRadius, ny - nodeRadius, nodeRadius * 2, nodeRadius * 2);
+                }
+
+                // Draw connected (other) nodes at all their points
+                branches.forEach(function(br) {
+                    if (nodesDrawn[br.otherNode]) return;
+                    nodesDrawn[br.otherNode] = true;
+                    var otherInfo = nodeData.nodeInfo[br.otherNode];
+                    if (!otherInfo) return;
+                    var otherColor = NODE_COLORS[br.otherNode % NODE_COLORS.length];
+                    var pts = otherInfo.points || [otherInfo.point];
+                    pts.forEach(function(p) {
+                        // Only draw if this point is within our bounding box
+                        if (p.gx >= minGX && p.gx <= maxGX && p.gy >= minGY && p.gy <= maxGY) {
+                            drawNodeCircle(p.gx, p.gy, br.otherNode, otherColor);
+                        }
+                    });
+                });
+
+                // Draw focused node at all its points (on top)
+                var focusX, focusY;
+                var focusPts = focusedInfo ? (focusedInfo.points || [focusedInfo.point]) : [];
+                focusPts.forEach(function(p) {
+                    if (p.gx >= minGX && p.gx <= maxGX && p.gy >= minGY && p.gy <= maxGY) {
+                        drawNodeCircle(p.gx, p.gy, nodeNum, nodeColor);
+                    }
+                });
+                if (focusedInfo && focusedInfo.point) {
+                    focusX = mapX(focusedInfo.point.gx);
+                    focusY = mapY(focusedInfo.point.gy);
+                } else {
+                    focusX = W / 2;
+                    focusY = H / 2;
+                }
+
+                // ── 5. Draw current arrows along branches ──
+                branches.forEach(function(br) {
+                    var terms = getTerminals(br.comp);
+                    var t0x = mapX(terms[0].gx);
+                    var t0y = mapY(terms[0].gy);
+                    var t1x = mapX(terms[1].gx);
+                    var t1y = mapY(terms[1].gy);
+                    var midX = (t0x + t1x) / 2;
+                    var midY = (t0y + t1y) / 2;
+                    var dx = t1x - t0x;
+                    var dy = t1y - t0y;
+                    var brLen = Math.sqrt(dx * dx + dy * dy) || 1;
+
+                    // Arrow offset perpendicular to branch so it doesn't overlap
+                    var isVertical = Math.abs(dy) > Math.abs(dx);
+                    var perpOffX = isVertical ? -10 : 0;
+                    var perpOffY = isVertical ? 0 : 10;
+
+                    var nodesMap = nodeData.terminalNodeMap[br.comp.id];
+                    // Which terminal of this component connects to the focused node?
+                    var focusedTermIdx = (nodesMap[0] === nodeNum) ? 0 : 1;
+                    // Pixel position of the terminal at the focused node
+                    var focTermX = focusedTermIdx === 0 ? t0x : t1x;
+                    var focTermY = focusedTermIdx === 0 ? t0y : t1y;
+                    // Pixel position of the terminal at the other node
+                    var otherTermX = focusedTermIdx === 0 ? t1x : t0x;
+                    var otherTermY = focusedTermIdx === 0 ? t1y : t0y;
+                    // Angle from focused node terminal toward other node terminal
+                    var awayAngle = Math.atan2(otherTermY - focTermY, otherTermX - focTermX);
+                    var towardAngle = awayAngle + Math.PI;
+
+                    if (!(options && options.solved)) {
+                        // Step 3: assumed KCL direction arrows
+                        // Convention: current LEAVING this node is positive in KCL
+                        // So arrow points AWAY from focused node (toward other node)
+                        var angle;
+                        var arrowColor = '#e06050'; // red for passive assumed direction
+
+                        if (br.comp.type === 'isource') {
+                            // Current source has fixed direction: flows from terminal 0 to terminal 1
+                            // If terminal 0 is at focused node, current leaves (away)
+                            // If terminal 1 is at focused node, current enters (toward)
+                            arrowColor = '#5b9bd5'; // blue for fixed current source
+                            angle = (focusedTermIdx === 0) ? awayAngle : towardAngle;
+                        } else if (br.comp.type === 'vsource') {
+                            // Voltage source current is an MNA unknown — show assumed leaving direction
+                            arrowColor = '#ffcc44'; // yellow for MNA variable
+                            angle = awayAngle;
+                        } else {
+                            // Passive components (R, C, L): assume current leaves this node
+                            angle = awayAngle;
+                        }
+
+                        // Draw arrow at 1/3 from focused node terminal toward other terminal
+                        var arrowFrac = 0.3;
+                        var ax = focTermX + (otherTermX - focTermX) * arrowFrac + perpOffX;
+                        var ay = focTermY + (otherTermY - focTermY) * arrowFrac + perpOffY;
+                        c.strokeStyle = arrowColor;
+                        c.lineWidth = 3;
+                        var aLen = 16;
+                        c.beginPath();
+                        c.moveTo(ax - Math.cos(angle) * aLen / 2, ay - Math.sin(angle) * aLen / 2);
+                        c.lineTo(ax + Math.cos(angle) * aLen / 2, ay + Math.sin(angle) * aLen / 2);
+                        c.stroke();
+                        drawArrowhead(c, ax + Math.cos(angle) * aLen / 2, ay + Math.sin(angle) * aLen / 2, angle, 10, arrowColor);
+                        diagLM.occupy(ax - 12, ay - 12, 24, 24);
+                    }
+
+                    // ── Step 6: Solved values overlay ──
                     if (options && options.solved && options.solution) {
                         var sol = options.solution;
-                        var n1 = nodeData.terminalNodeMap[br.comp.id][0];
-                        var n2 = nodeData.terminalNodeMap[br.comp.id][1];
+                        var n1 = nodesMap[0];
+                        var n2 = nodesMap[1];
                         var v1 = n1 === 0 ? [0,0] : sol.x[n1 - 1];
                         var v2 = n2 === 0 ? [0,0] : sol.x[n2 - 1];
                         var vAcross = cSub(v1, v2);
+                        // current is defined as flowing from terminal 0 to terminal 1 (conventional)
                         var current = [0,0];
                         var omega = options.omega || 0;
 
@@ -1882,82 +2571,154 @@
                             current = [br.baseVal, 0];
                         }
 
-                        // Current magnitude and direction
-                        var cMag = Math.sqrt(current[0]*current[0] + current[1]*current[1]);
-                        // Show current value along branch
-                        var curLabelX = cx + Math.cos(angle) * branchLen * 0.75;
-                        var curLabelY = cy + Math.sin(angle) * branchLen * 0.75;
-                        c.font = 'bold 9px IBM Plex Mono';
-                        c.fillStyle = '#6aaa8e';
-                        c.fillText(formatValue(cMag, 'A'), curLabelX + perpX, curLabelY + perpY);
+                        var iMag = cMag(current);
+                        var vMag = cMag(vAcross);
 
-                        // Voltage drop on branch
-                        var vMag = Math.sqrt(vAcross[0]*vAcross[0] + vAcross[1]*vAcross[1]);
-                        var vLabelX = cx + Math.cos(angle) * branchLen * 0.3;
-                        var vLabelY = cy + Math.sin(angle) * branchLen * 0.3;
-                        c.font = '9px IBM Plex Mono';
-                        c.fillStyle = '#5b9bd5';
-                        c.fillText(formatValue(vMag, 'V'), vLabelX + perpX * 0.7, vLabelY + perpY * 0.7);
+                        // Determine actual current direction relative to this node:
+                        // `current` flows from terminal 0 to terminal 1.
+                        // If focused node is at terminal 0: positive current = leaving this node
+                        // If focused node is at terminal 1: positive current = entering this node
+                        //
+                        // For direction, check the real part of the current as seen from this node.
+                        // currentFromNode = current if focusedTermIdx==0, else -current
+                        var currentFromNode = (focusedTermIdx === 0)
+                            ? current
+                            : [-current[0], -current[1]];
+                        // Positive real part means current leaves this node (away), negative means enters (toward)
+                        // For complex currents, use the real part for direction determination
+                        var leavesNode = currentFromNode[0] > 0;
+                        // If real part is near zero, check imaginary
+                        if (Math.abs(currentFromNode[0]) < iMag * 1e-6 && iMag > 0) {
+                            leavesNode = currentFromNode[1] > 0;
+                        }
+                        var actualAngle = leavesNode ? awayAngle : towardAngle;
 
-                        // Green arrow for actual current direction
-                        var actualAngle = angle;
-                        // If current is actually flowing into this node (negative convention), flip
-                        var nodes = nodeData.terminalNodeMap[br.comp.id];
-                        var currentLeavesNode = (nodes[0] === nodeNum);
-                        // Check sign of real part for direction
-                        var iDir = currentLeavesNode ? current : [-current[0], -current[1]];
-                        if (iDir[0] < 0) actualAngle = angle + Math.PI;
-                        var gax = cx + Math.cos(angle) * branchLen * 0.7;
-                        var gay = cy + Math.sin(angle) * branchLen * 0.7;
-                        c.fillStyle = '#4ade80';
+                        // Draw green arrow at 1/3 from focused terminal
+                        var arrowFrac2 = 0.3;
+                        var gax = focTermX + (otherTermX - focTermX) * arrowFrac2 + perpOffX;
+                        var gay = focTermY + (otherTermY - focTermY) * arrowFrac2 + perpOffY;
+                        c.strokeStyle = '#4ade80';
+                        c.lineWidth = 3;
+                        var gaLen = 16;
                         c.beginPath();
-                        c.moveTo(gax + Math.cos(actualAngle) * 6, gay + Math.sin(actualAngle) * 6);
-                        c.lineTo(gax + Math.cos(actualAngle + 2.5) * 4, gay + Math.sin(actualAngle + 2.5) * 4);
-                        c.lineTo(gax + Math.cos(actualAngle - 2.5) * 4, gay + Math.sin(actualAngle - 2.5) * 4);
-                        c.closePath();
-                        c.fill();
-                    }
+                        c.moveTo(gax - Math.cos(actualAngle) * gaLen / 2, gay - Math.sin(actualAngle) * gaLen / 2);
+                        c.lineTo(gax + Math.cos(actualAngle) * gaLen / 2, gay + Math.sin(actualAngle) * gaLen / 2);
+                        c.stroke();
+                        drawArrowhead(c, gax + Math.cos(actualAngle) * gaLen / 2, gay + Math.sin(actualAngle) * gaLen / 2, actualAngle, 10, '#4ade80');
+                        diagLM.occupy(gax - 12, gay - 12, 24, 24);
 
-                    // Other node circle at end of branch
-                    c.fillStyle = otherColor;
-                    c.beginPath();
-                    c.arc(ex, ey, 12, 0, Math.PI * 2);
-                    c.fill();
-                    c.fillStyle = '#fff';
-                    c.font = 'bold 10px IBM Plex Mono';
-                    c.textAlign = 'center';
-                    c.textBaseline = 'middle';
-                    c.fillText(String(br.otherNode), ex, ey);
+                        // Current label with background (collision-aware)
+                        var curFont = 'bold 9px IBM Plex Mono';
+                        var curText = formatValue(iMag, 'A');
+                        c.font = curFont;
+                        var curW = c.measureText(curText).width + 6;
+                        var curH = 12;
+                        var curDefX = midX + perpOffX + (isVertical ? -12 : 0);
+                        var curDefY = midY + perpOffY + (isVertical ? 0 : 12);
+                        var curCandidates = [
+                            { x: curDefX - curW / 2, y: curDefY - curH / 2 },
+                            { x: midX - curW / 2, y: midY + 16 },
+                            { x: midX - curW / 2, y: midY - 20 },
+                            { x: midX + 20, y: midY - curH / 2 },
+                            { x: midX - 20 - curW, y: midY - curH / 2 },
+                            { x: midX + 16, y: midY + 10 },
+                            { x: midX - 16 - curW, y: midY + 10 },
+                            { x: midX + 16, y: midY - 16 },
+                            { x: midX - 16 - curW, y: midY - 16 }
+                        ];
+                        var bestCur = diagLM.findClear(curCandidates, curW, curH, 2);
+                        var curLX = bestCur.x + curW / 2;
+                        var curLY = bestCur.y + curH / 2;
+                        diagLM.occupy(bestCur.x, bestCur.y, curW, curH);
+                        drawLabelBg(c, curText, curLX, curLY, curFont);
+                        c.font = curFont;
+                        c.fillStyle = '#6aaa8e';
+                        c.textAlign = 'center';
+                        c.textBaseline = 'middle';
+                        c.fillText(curText, curLX, curLY);
 
-                    // Note for vsource
-                    if (br.comp.type === 'vsource' && !(options && options.solved)) {
-                        c.font = '8px IBM Plex Mono';
-                        c.fillStyle = '#ffcc44';
-                        c.fillText('MNA var', labelX + perpX, labelY + perpY + 12);
+                        // Voltage drop label with background (collision-aware)
+                        var vFont = '9px IBM Plex Mono';
+                        var vText = formatValue(vMag, 'V');
+                        c.font = vFont;
+                        var vLW = c.measureText(vText).width + 6;
+                        var vLH = 12;
+                        var vDefX = midX - perpOffX + (isVertical ? 14 : 0);
+                        var vDefY = midY - perpOffY + (isVertical ? 0 : -10);
+                        var vCandidates = [
+                            { x: vDefX - vLW / 2, y: vDefY - vLH / 2 },
+                            { x: midX - vLW / 2, y: midY - 22 },
+                            { x: midX - vLW / 2, y: midY + 14 },
+                            { x: midX + 22, y: midY - vLH / 2 },
+                            { x: midX - 22 - vLW, y: midY - vLH / 2 },
+                            { x: midX + 18, y: midY - 18 },
+                            { x: midX - 18 - vLW, y: midY - 18 },
+                            { x: midX + 18, y: midY + 8 },
+                            { x: midX - 18 - vLW, y: midY + 8 }
+                        ];
+                        var bestV = diagLM.findClear(vCandidates, vLW, vLH, 2);
+                        var vLX = bestV.x + vLW / 2;
+                        var vLY = bestV.y + vLH / 2;
+                        diagLM.occupy(bestV.x, bestV.y, vLW, vLH);
+                        drawLabelBg(c, vText, vLX, vLY, vFont);
+                        c.font = vFont;
+                        c.fillStyle = '#5b9bd5';
+                        c.textAlign = 'center';
+                        c.textBaseline = 'middle';
+                        c.fillText(vText, vLX, vLY);
                     }
                 });
 
-                // Central node circle (drawn last so it's on top)
-                c.fillStyle = nodeColor;
-                c.beginPath();
-                c.arc(cx, cy, 20, 0, Math.PI * 2);
-                c.fill();
-                c.fillStyle = '#fff';
-                c.font = 'bold 14px IBM Plex Mono';
-                c.textAlign = 'center';
-                c.textBaseline = 'middle';
-                c.fillText(String(nodeNum), cx, cy);
-
-                // Show node voltage for solved diagrams
+                // ── 6. Show node voltage for solved diagrams (collision-aware) ──
                 if (options && options.solved && options.solution) {
                     var nodeV = nodeNum === 0 ? [0,0] : options.solution.x[nodeNum - 1];
-                    var vMag = Math.sqrt(nodeV[0]*nodeV[0] + nodeV[1]*nodeV[1]);
-                    c.font = 'bold 11px IBM Plex Mono';
+                    var vNodeMag = Math.sqrt(nodeV[0]*nodeV[0] + nodeV[1]*nodeV[1]);
+                    var vMainFont = 'bold 11px IBM Plex Mono';
+                    var vMainText = 'V=' + formatValue(vNodeMag, 'V');
+                    c.font = vMainFont;
+                    var vmW = c.measureText(vMainText).width + 6;
+                    var vmH = 14;
+                    var vmCandidates = [
+                        { x: focusX - vmW / 2, y: focusY - 28 },
+                        { x: focusX - vmW / 2, y: focusY + 14 },
+                        { x: focusX + 14, y: focusY - vmH / 2 },
+                        { x: focusX - 14 - vmW, y: focusY - vmH / 2 },
+                        { x: focusX - vmW / 2, y: focusY - 38 },
+                        { x: focusX + 14, y: focusY - 24 },
+                        { x: focusX - 14 - vmW, y: focusY - 24 }
+                    ];
+                    var bestVm = diagLM.findClear(vmCandidates, vmW, vmH, 2);
+                    var vMainX = bestVm.x + vmW / 2;
+                    var vMainY = bestVm.y + vmH / 2;
+                    diagLM.occupy(bestVm.x, bestVm.y, vmW, vmH);
+                    drawLabelBg(c, vMainText, vMainX, vMainY, vMainFont);
+                    c.font = vMainFont;
                     c.fillStyle = nodeColor;
-                    c.fillText('V=' + formatValue(vMag, 'V'), cx, cy - 30);
-                    c.font = '9px IBM Plex Mono';
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillText(vMainText, vMainX, vMainY);
+
+                    var vSubFont = '9px IBM Plex Mono';
+                    var vSubText = cStr(nodeV) + ' V';
+                    c.font = vSubFont;
+                    var vsW = c.measureText(vSubText).width + 6;
+                    var vsH = 12;
+                    var vsCandidates = [
+                        { x: vMainX - vsW / 2, y: bestVm.y - vsH - 2 },
+                        { x: vMainX - vsW / 2, y: bestVm.y + vmH + 2 },
+                        { x: vMainX + vmW / 2 + 4, y: vMainY - vsH / 2 },
+                        { x: vMainX - vmW / 2 - vsW - 4, y: vMainY - vsH / 2 }
+                    ];
+                    var bestVs = diagLM.findClear(vsCandidates, vsW, vsH, 2);
+                    var vSubX = bestVs.x + vsW / 2;
+                    var vSubY = bestVs.y + vsH / 2;
+                    diagLM.occupy(bestVs.x, bestVs.y, vsW, vsH);
+                    drawLabelBg(c, vSubText, vSubX, vSubY, vSubFont);
+                    c.font = vSubFont;
                     c.fillStyle = T.textDim;
-                    c.fillText(cStr(nodeV) + ' V', cx, cy - 42);
+                    c.textAlign = 'center';
+                    c.textBaseline = 'middle';
+                    c.fillText(vSubText, vSubX, vSubY);
                 }
             }
 
@@ -2043,7 +2804,7 @@
                 keys.forEach(function(num) {
                     if (Number(num) === 0) return; // skip ground
                     var info = nodeData.nodeInfo[num];
-                    html += '<canvas id="node-diagram-3-' + num + '" class="node-diagram-canvas" width="300" height="250"></canvas>';
+                    html += '<canvas id="node-diagram-3-' + num + '" class="node-diagram-canvas" width="400" height="300"></canvas>';
                     html += '<p><strong>Node ' + num + ':</strong> KCL equation from connected components:</p>';
                     var eqTerms = [];
                     components.forEach(function(comp) {
@@ -2165,7 +2926,7 @@
                 var keys6 = Object.keys(nodeData.nodeInfo).sort(function(a, b) { return Number(a) - Number(b); });
                 keys6.forEach(function(num) {
                     if (Number(num) === 0) return;
-                    html += '<canvas id="node-diagram-6-' + num + '" class="node-diagram-canvas" width="300" height="250"></canvas>';
+                    html += '<canvas id="node-diagram-6-' + num + '" class="node-diagram-canvas" width="400" height="300"></canvas>';
                 });
 
                 html += '<p>Voltage across, current through, and power dissipated by each component:</p>';
@@ -2220,22 +2981,409 @@
             }
 
             // ── Draw Node Labels on Canvas ──
-            function drawNodeLabels(nodeData) {
+            function drawNodeLabels(nodeData, labelMgr) {
                 var keys = Object.keys(nodeData.nodeInfo);
                 keys.forEach(function(num) {
                     var info = nodeData.nodeInfo[num];
                     var color = NODE_COLORS[num % NODE_COLORS.length];
-                    var pt = gridToPixel(info.point.gx, info.point.gy);
-                    ctx.fillStyle = color;
-                    ctx.beginPath();
-                    ctx.arc(pt.x, pt.y, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 11px IBM Plex Mono';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(String(num), pt.x, pt.y);
+                    var pts = info.points || [info.point];
+                    pts.forEach(function(p) {
+                        var pt = gridToPixel(p.gx, p.gy);
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#fff';
+                        ctx.font = 'bold 9px IBM Plex Mono';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(String(num), pt.x, pt.y);
+                        // Register node circle in label manager
+                        if (labelMgr) {
+                            labelMgr.occupy(pt.x - 7, pt.y - 7, 14, 14);
+                        }
+                    });
                 });
+            }
+
+            // ── Probe Overlay (drawn on canvas during hover) ──
+            function findNodeAtPixel(px, py) {
+                // Find the closest node point within threshold
+                var best = null;
+                var bestDist = 25; // pixel threshold
+                Object.keys(lastNodeData.nodeInfo).forEach(function(num) {
+                    var info = lastNodeData.nodeInfo[num];
+                    var pts = info.points || [info.point];
+                    pts.forEach(function(p) {
+                        var npx = p.gx * GRID;
+                        var npy = p.gy * GRID;
+                        var d = Math.sqrt((px - npx) * (px - npx) + (py - npy) * (py - npy));
+                        if (d < bestDist) { bestDist = d; best = Number(num); }
+                    });
+                });
+                return best;
+            }
+
+            function findWireAtPixel(px, py) {
+                // Find the closest wire within threshold
+                var best = null;
+                var bestDist = 12;
+                wires.forEach(function(w) {
+                    var ax = w.x1 * GRID, ay = w.y1 * GRID;
+                    var bx = w.x2 * GRID, by = w.y2 * GRID;
+                    var dx = bx - ax, dy = by - ay;
+                    var lenSq = dx * dx + dy * dy;
+                    if (lenSq === 0) return;
+                    var t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+                    var cx = ax + t * dx, cy = ay + t * dy;
+                    var d = Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+                    if (d < bestDist) { bestDist = d; best = w; }
+                });
+                return best;
+            }
+
+            function getNodeForWirePoint(w) {
+                // A wire connects two grid points — find which node they belong to
+                if (!lastNodeData) return null;
+                // Check all node points to find which node this wire endpoint belongs to
+                var k1 = w.x1 + ',' + w.y1;
+                var k2 = w.x2 + ',' + w.y2;
+                // Both ends of a wire should be in the same node (wires connect nodes)
+                // Check terminalNodeMap or nodeInfo points
+                var foundNode = null;
+                Object.keys(lastNodeData.nodeInfo).forEach(function(num) {
+                    var info = lastNodeData.nodeInfo[num];
+                    var pts = info.points || [info.point];
+                    pts.forEach(function(p) {
+                        var k = p.gx + ',' + p.gy;
+                        if (k === k1 || k === k2) foundNode = Number(num);
+                    });
+                });
+                return foundNode;
+            }
+
+            function drawProbeOverlay(px, py) {
+                // Draw crosshair
+                ctx.strokeStyle = T.isDark ? 'rgba(106,170,142,0.5)' : 'rgba(61,139,110,0.5)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(px, 0); ctx.lineTo(px, canvas.height);
+                ctx.moveTo(0, py); ctx.lineTo(canvas.width, py);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Helper: compute current through a component (from terminal 0 to terminal 1)
+                function getCompCurrent(comp) {
+                    var nodes = lastNodeData.terminalNodeMap[comp.id];
+                    if (!nodes) return [0,0];
+                    var n1 = nodes[0], n2 = nodes[1];
+                    var v1 = n1 === 0 ? [0,0] : lastSolution.x[n1 - 1];
+                    var v2 = n2 === 0 ? [0,0] : lastSolution.x[n2 - 1];
+                    var vAcross = cSub(v1, v2);
+                    var baseVal = getBaseValue(comp);
+                    if (comp.type === 'resistor') return cDiv(vAcross, [baseVal, 0]);
+                    if (comp.type === 'capacitor') return cMul([0, lastOmega * baseVal], vAcross);
+                    if (comp.type === 'inductor') {
+                        if (lastOmega === 0) return cMul([1e12, 0], vAcross);
+                        return cDiv(vAcross, [0, lastOmega * baseVal]);
+                    }
+                    if (comp.type === 'vsource') {
+                        var vsIdx = 0;
+                        components.forEach(function(cc) { if (cc.type === 'vsource' && cc.id < comp.id) vsIdx++; });
+                        return lastSolution.x[(lastNodeData.nodeCount - 1) + vsIdx];
+                    }
+                    if (comp.type === 'isource') return [baseVal, 0];
+                    return [0,0];
+                }
+
+                // Helper: find component that has a terminal at grid point (gx,gy)
+                function findCompAtTerminal(gx, gy) {
+                    var results = [];
+                    components.forEach(function(comp) {
+                        if (comp.type === 'gnd') return;
+                        var terms = getTerminals(comp);
+                        terms.forEach(function(t, idx) {
+                            if (t.gx === gx && t.gy === gy) {
+                                results.push({ comp: comp, termIdx: idx });
+                            }
+                        });
+                    });
+                    return results;
+                }
+
+                // Determine what's under the cursor
+                var lines = [];
+                var titleColor = '#6aaa8e';
+                var arrowAngle = null; // direction to draw current arrow
+                var arrowColor = '#4ade80';
+
+                // 1. Check for component
+                var comp = findComponentAt(px, py);
+                if (comp && comp.type !== 'gnd') {
+                    var nodes = lastNodeData.terminalNodeMap[comp.id];
+                    if (nodes) {
+                        var n1 = nodes[0], n2 = nodes[1];
+                        var v1 = n1 === 0 ? [0,0] : lastSolution.x[n1 - 1];
+                        var v2 = n2 === 0 ? [0,0] : lastSolution.x[n2 - 1];
+                        var vAcross = cSub(v1, v2);
+                        var current = getCompCurrent(comp);
+                        var iMag = cMag(current);
+
+                        lines.push(comp.type.toUpperCase());
+                        lines.push('V: ' + cStr(vAcross) + ' V');
+                        lines.push('I: ' + cStr(current) + ' A');
+                        if (iMag > 1e-15) lines.push('|I|: ' + formatValue(iMag, 'A'));
+
+                        // Arrow direction: current flows from terminal 0 to terminal 1
+                        var terms = getTerminals(comp);
+                        var t0 = gridToPixel(terms[0].gx, terms[0].gy);
+                        var t1 = gridToPixel(terms[1].gx, terms[1].gy);
+                        var compAngle = Math.atan2(t1.y - t0.y, t1.x - t0.x);
+                        // If current is negative (flowing from t1 to t0), flip
+                        if (current[0] < 0 || (Math.abs(current[0]) < iMag * 1e-6 && current[1] < 0)) {
+                            compAngle += Math.PI;
+                        }
+                        arrowAngle = compAngle;
+                    }
+                } else {
+                    // 2. Check for wire first (wider hit area)
+                    var wire = findWireAtPixel(px, py);
+                    // 3. Also check for node point
+                    var nodeNum = findNodeAtPixel(px, py);
+
+                    if (wire) {
+                        // Find which node this wire belongs to
+                        if (nodeNum === null) nodeNum = getNodeForWirePoint(wire);
+
+                        // Wire angle
+                        var wAngle = Math.atan2(
+                            (wire.y2 - wire.y1) * GRID,
+                            (wire.x2 - wire.x1) * GRID
+                        );
+
+                        // Find components connected at either end of this wire
+                        var endComps1 = findCompAtTerminal(wire.x1, wire.y1);
+                        var endComps2 = findCompAtTerminal(wire.x2, wire.y2);
+
+                        // Determine current flowing through this wire
+                        // The wire carries current between its endpoints.
+                        // Find a component at one end and use its current.
+                        var wireCurrent = null;
+                        var wireCurrentComp = null;
+
+                        // If only one component touches one end, the wire carries that component's current
+                        if (endComps1.length === 1 && endComps1[0].comp.type !== 'gnd') {
+                            wireCurrentComp = endComps1[0];
+                            wireCurrent = getCompCurrent(wireCurrentComp.comp);
+                            // If terminal 1 of the component is at wire.x1,y1, current enters via this wire
+                            // (current flows from term0 to term1, so at term1 it arrives)
+                            if (wireCurrentComp.termIdx === 1) wireCurrent = cNeg(wireCurrent);
+                        } else if (endComps2.length === 1 && endComps2[0].comp.type !== 'gnd') {
+                            wireCurrentComp = endComps2[0];
+                            wireCurrent = getCompCurrent(wireCurrentComp.comp);
+                            if (wireCurrentComp.termIdx === 0) wireCurrent = cNeg(wireCurrent);
+                        }
+
+                        if (nodeNum !== null) {
+                            var nodeV = nodeNum === 0 ? [0,0] : lastSolution.x[nodeNum - 1];
+                            titleColor = NODE_COLORS[nodeNum % NODE_COLORS.length];
+                            lines.push('Node ' + nodeNum + (nodeNum === 0 ? ' (GND)' : ''));
+                            lines.push('V: ' + cStr(nodeV) + ' V');
+                        } else {
+                            lines.push('Wire');
+                        }
+
+                        if (wireCurrent) {
+                            var wiMag = cMag(wireCurrent);
+                            lines.push('I: ' + cStr(wireCurrent) + ' A');
+                            if (wiMag > 1e-15) {
+                                lines.push('|I|: ' + formatValue(wiMag, 'A'));
+                                // Arrow along wire in direction of current
+                                arrowAngle = wAngle;
+                                if (wireCurrent[0] < 0 || (Math.abs(wireCurrent[0]) < wiMag * 1e-6 && wireCurrent[1] < 0)) {
+                                    arrowAngle += Math.PI;
+                                }
+                            }
+                        }
+                    } else if (nodeNum !== null) {
+                        var nodeV = nodeNum === 0 ? [0,0] : lastSolution.x[nodeNum - 1];
+                        titleColor = NODE_COLORS[nodeNum % NODE_COLORS.length];
+                        lines.push('Node ' + nodeNum + (nodeNum === 0 ? ' (GND)' : ''));
+                        lines.push('V: ' + cStr(nodeV) + ' V');
+                    }
+                }
+
+                if (lines.length === 0) return;
+
+                // Draw current direction arrow at probe point
+                if (arrowAngle !== null) {
+                    var arrowLen = 20;
+                    var ax1 = px - Math.cos(arrowAngle) * arrowLen;
+                    var ay1 = py - Math.sin(arrowAngle) * arrowLen;
+                    var ax2 = px + Math.cos(arrowAngle) * arrowLen;
+                    var ay2 = py + Math.sin(arrowAngle) * arrowLen;
+
+                    ctx.strokeStyle = arrowColor;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(ax1, ay1);
+                    ctx.lineTo(ax2, ay2);
+                    ctx.stroke();
+
+                    // Arrowhead
+                    var headLen = 10;
+                    ctx.fillStyle = arrowColor;
+                    ctx.beginPath();
+                    ctx.moveTo(ax2, ay2);
+                    ctx.lineTo(ax2 - Math.cos(arrowAngle - 0.4) * headLen, ay2 - Math.sin(arrowAngle - 0.4) * headLen);
+                    ctx.lineTo(ax2 - Math.cos(arrowAngle + 0.4) * headLen, ay2 - Math.sin(arrowAngle + 0.4) * headLen);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // Draw tooltip near cursor
+                var tipX = px + 20;
+                var tipY = py - 10;
+                var tipFont = '11px IBM Plex Mono';
+                ctx.font = tipFont;
+
+                // Measure widest line
+                var maxW = 0;
+                lines.forEach(function(l) {
+                    var w = ctx.measureText(l).width;
+                    if (w > maxW) maxW = w;
+                });
+
+                var padX = 8, padY = 6;
+                var lineH = 16;
+                var tipW = maxW + padX * 2;
+                var tipH = lines.length * lineH + padY * 2;
+
+                // Keep tooltip on-screen
+                if (tipX + tipW > canvas.width - 10) tipX = px - tipW - 24;
+                if (tipY + tipH > canvas.height - 10) tipY = py - tipH - 10;
+                if (tipY < 10) tipY = 10;
+
+                // Background
+                ctx.fillStyle = T.isDark ? 'rgba(20,20,24,0.92)' : 'rgba(255,255,255,0.95)';
+                ctx.strokeStyle = titleColor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(tipX, tipY, tipW, tipH, 4);
+                } else {
+                    ctx.rect(tipX, tipY, tipW, tipH);
+                }
+                ctx.fill();
+                ctx.stroke();
+
+                // Text
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                lines.forEach(function(line, i) {
+                    ctx.fillStyle = i === 0 ? titleColor : T.text;
+                    ctx.font = i === 0 ? 'bold 11px IBM Plex Mono' : '11px IBM Plex Mono';
+                    ctx.fillText(line, tipX + padX, tipY + padY + i * lineH);
+                });
+
+                // Probe dot
+                ctx.fillStyle = titleColor;
+                ctx.beginPath();
+                ctx.arc(px, py, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            // ── Probe Tool ──
+            function probeAt(px, py, gx, gy) {
+                if (!lastNodeData || !lastSolution) return;
+                var readout = document.getElementById('probe-readout');
+
+                // First check if clicking on a component
+                var comp = findComponentAt(px, py);
+                if (comp && comp.type !== 'gnd') {
+                    var nodes = lastNodeData.terminalNodeMap[comp.id];
+                    if (!nodes) return;
+                    var n1 = nodes[0], n2 = nodes[1];
+                    var v1 = n1 === 0 ? [0,0] : lastSolution.x[n1 - 1];
+                    var v2 = n2 === 0 ? [0,0] : lastSolution.x[n2 - 1];
+                    var vAcross = cSub(v1, v2);
+                    var baseVal = getBaseValue(comp);
+                    var current = [0,0];
+
+                    if (comp.type === 'resistor') {
+                        current = cDiv(vAcross, [baseVal, 0]);
+                    } else if (comp.type === 'capacitor') {
+                        current = cMul([0, lastOmega * baseVal], vAcross);
+                    } else if (comp.type === 'inductor') {
+                        if (lastOmega === 0) current = cMul([1e12, 0], vAcross);
+                        else current = cDiv(vAcross, [0, lastOmega * baseVal]);
+                    } else if (comp.type === 'vsource') {
+                        var vsIdx = 0;
+                        components.forEach(function(cc) {
+                            if (cc.type === 'vsource' && cc.id < comp.id) vsIdx++;
+                        });
+                        current = lastSolution.x[(lastNodeData.nodeCount - 1) + vsIdx];
+                    } else if (comp.type === 'isource') {
+                        current = [baseVal, 0];
+                    }
+
+                    var power = cMul(vAcross, cConj(current));
+                    var def = DEFAULTS[comp.type];
+                    var unitSym = def ? def.unit.replace(/^[kMm\u03BC]/, '') : '';
+
+                    readout.innerHTML =
+                        '<div class="probe-title">' + comp.type.toUpperCase() + ' (id=' + comp.id + ') — ' + formatValue(baseVal, unitSym) + '</div>' +
+                        '<div class="probe-row"><span class="probe-label">Nodes</span><span class="probe-val">' + n1 + ' \u2192 ' + n2 + '</span></div>' +
+                        '<div class="probe-row"><span class="probe-label">V across</span><span class="probe-val">' + cStr(vAcross) + ' V &nbsp; (' + cPolar(vAcross) + ')</span></div>' +
+                        '<div class="probe-row"><span class="probe-label">Current</span><span class="probe-val">' + cStr(current) + ' A &nbsp; (' + cPolar(current) + ')</span></div>' +
+                        '<div class="probe-row"><span class="probe-label">Power</span><span class="probe-val">' + cStr(power) + ' W &nbsp; (' + cPolar(power) + ')</span></div>';
+                    readout.classList.add('visible');
+
+                    // Highlight probed component
+                    selectedId = comp.id;
+                    draw();
+                    return;
+                }
+
+                // Check if clicking near a node point
+                var closestNode = null;
+                var closestDist = 20; // pixel threshold
+                Object.keys(lastNodeData.nodeInfo).forEach(function(num) {
+                    var info = lastNodeData.nodeInfo[num];
+                    var pts = info.points || [info.point];
+                    pts.forEach(function(p) {
+                        var npx = p.gx * GRID;
+                        var npy = p.gy * GRID;
+                        var dist = Math.sqrt((px - npx) * (px - npx) + (py - npy) * (py - npy));
+                        if (dist < closestDist) {
+                            closestDist = dist;
+                            closestNode = Number(num);
+                        }
+                    });
+                });
+
+                if (closestNode !== null) {
+                    var nodeV = closestNode === 0 ? [0,0] : lastSolution.x[closestNode - 1];
+                    var nodeColor = NODE_COLORS[closestNode % NODE_COLORS.length];
+
+                    readout.innerHTML =
+                        '<div class="probe-title" style="color:' + nodeColor + '">Node ' + closestNode + (closestNode === 0 ? ' (GND)' : '') + '</div>' +
+                        '<div class="probe-row"><span class="probe-label">Voltage</span><span class="probe-val">' + cStr(nodeV) + ' V &nbsp; (' + cPolar(nodeV) + ')</span></div>';
+                    readout.classList.add('visible');
+
+                    selectedId = null;
+                    draw();
+                    return;
+                }
+
+                // Clicked on nothing
+                readout.classList.remove('visible');
+                selectedId = null;
+                draw();
             }
 
             // ── Compute Button ──
@@ -2289,8 +3437,11 @@
                 // Draw node diagrams on canvases (must be after innerHTML so canvases exist in DOM)
                 drawAllNodeDiagrams(nodeData, omega, result);
 
-                // Persist node labels so they survive redraws
+                // Persist results for probe tool
                 lastNodeData = nodeData;
+                lastSolution = result;
+                lastOmega = omega;
+                document.getElementById('btn-probe').style.display = '';
                 draw();
 
                 // Scroll walkthrough into view

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 21 — I/V & V/I Converters</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    // Theme bridge:
+    //   1. Priority: ?theme= URL param (presenter sets this when loading).
+    //   2. Fallback: sessionStorage, preserved across the reload triggered
+    //      by the module's themechange listener (theme.js always forces
+    //      'light' at parse time, so we need our own persistence).
+    // Also hides the per-slide toggle button when embedded in the presenter.
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+               : (ss === 'dark' || ss === 'light') ? ss
+               : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">22 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Polygon, Rectangle, Circle, Line, Text, MathTex, VGroup, Dot,
+      Create, Write, FadeIn, MoveAlongPath,
+      UP, DOWN, LEFT, RIGHT, WHITE, linear
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
+    const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
+    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    const title = new Text({ text: 'Converting Between Current and Voltage', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+
+    const bullets = [
+      'I-V converter (transresistance): ideal for photodiodes',
+      'V-I converter (transconductance): used for neural stimulation',
+      'A_TR = V_out / I = -R_f,   A_TC = I_out / V = 1 / R'
+    ];
+    const bulletObjs = [];
+    for (let i = 0; i < bullets.length; i++) {
+      const b = new Text({ text: '•  ' + bullets[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
+      await b.loadGlyphs?.();
+      b.moveTo([0, -2.55 - i * 0.24, 0]);
+      bulletObjs.push(b);
+    }
+
+    const opamp = (cx, cy) => new Polygon({
+      vertices: [[cx - 0.9, cy - 0.7, 0], [cx - 0.9, cy + 0.7, 0], [cx + 0.9, cy, 0]],
+      color: ACCENT, strokeWidth: 2, fillOpacity: 0
+    });
+
+    // ── LEFT: I → V ──
+    const LX = -3.0;
+    const triL = opamp(LX, 0);
+    const iSrcL = new Circle({ radius: 0.35, color: BLUE, strokeWidth: 2, fillOpacity: 0.1 });
+    iSrcL.moveTo([LX - 2.2, 0.3, 0]);
+    const iSrcArrow = new Line({ start: [LX - 2.2, -0.05, 0], end: [LX - 2.2, 0.3, 0], color: BLUE, strokeWidth: 2 });
+    const iLbl = new MathTex({ latex: 'I', color: BLUE });
+    const iLeadL = new Line({ start: [LX - 1.85, 0.3, 0], end: [LX - 0.9, 0.3, 0], color: FG });
+    const gndInL = new Line({ start: [LX - 0.9, -0.3, 0], end: [LX - 1.8, -0.3, 0], color: FG });
+    const gndL1 = new Line({ start: [LX - 1.8, -0.3, 0], end: [LX - 1.8, -0.9, 0], color: FG });
+    const gndLm = new Line({ start: [LX - 2.0, -0.9, 0], end: [LX - 1.6, -0.9, 0], color: FG, strokeWidth: 3 });
+    const gndSrc = new Line({ start: [LX - 2.2, -0.35, 0], end: [LX - 2.2, -0.9, 0], color: FG });
+    const gndSrcM = new Line({ start: [LX - 2.4, -0.9, 0], end: [LX - 2.0, -0.9, 0], color: FG, strokeWidth: 3 });
+
+    // R_f feedback
+    const fbL1 = new Line({ start: [LX - 0.9, 0.3, 0], end: [LX - 0.9, 1.2, 0], color: FG });
+    const fbL2 = new Line({ start: [LX - 0.9, 1.2, 0], end: [LX + 1.6, 1.2, 0], color: FG });
+    const fbL3 = new Line({ start: [LX + 1.6, 1.2, 0], end: [LX + 1.6, 0, 0], color: FG });
+    const Rf  = new Rectangle({ width: 0.7, height: 0.25, color: YELLOW, strokeWidth: 2 });
+    Rf.moveTo([LX + 0.3, 1.2, 0]);
+    const RfLbl = new MathTex({ latex: 'R_{f}', color: YELLOW });
+
+    const outL = new Line({ start: [LX + 0.9, 0, 0], end: [LX + 1.8, 0, 0], color: FG });
+    const voutL = new MathTex({ latex: 'V_{out}', color: YELLOW });
+    const eqnL = new MathTex({ latex: 'A_{TR}=\\dfrac{V_{out}}{I}=-R_f', color: ACCENT });
+
+    // ── RIGHT: V → I ──
+    const RX = 3.0;
+    const triR = opamp(RX, 0);
+    const vSrcR = new MathTex({ latex: 'V_{in}', color: BLUE });
+    const inR = new Line({ start: [RX - 2.8, 0.3, 0], end: [RX - 0.9, 0.3, 0], color: FG });
+    const Rx = new Rectangle({ width: 0.7, height: 0.25, color: ACCENT, strokeWidth: 2 });
+    Rx.moveTo([RX - 1.8, 0.3, 0]);
+    const RxLbl = new MathTex({ latex: 'R', color: ACCENT });
+    const gndInR = new Line({ start: [RX - 0.9, -0.3, 0], end: [RX - 1.6, -0.3, 0], color: FG });
+    const gndLR = new Line({ start: [RX - 1.6, -0.3, 0], end: [RX - 1.6, -0.9, 0], color: FG });
+    const gndLRm = new Line({ start: [RX - 1.8, -0.9, 0], end: [RX - 1.4, -0.9, 0], color: FG, strokeWidth: 3 });
+
+    // Load in feedback path
+    const fbR1 = new Line({ start: [RX - 0.9, 0.3, 0], end: [RX - 0.9, 1.2, 0], color: FG });
+    const fbR2 = new Line({ start: [RX - 0.9, 1.2, 0], end: [RX + 1.6, 1.2, 0], color: FG });
+    const fbR3 = new Line({ start: [RX + 1.6, 1.2, 0], end: [RX + 1.6, 0, 0], color: FG });
+    const load = new Rectangle({ width: 0.7, height: 0.3, color: RED, strokeWidth: 2 });
+    load.moveTo([RX + 0.3, 1.2, 0]);
+    const loadLbl = new MathTex({ latex: 'Z_{load}', color: RED });
+
+    const outR2 = new Line({ start: [RX + 0.9, 0, 0], end: [RX + 1.8, 0, 0], color: FG });
+    const iLbl2 = new MathTex({ latex: 'I_{load}', color: YELLOW });
+    const eqnR  = new MathTex({ latex: 'A_{TC}=\\dfrac{I_{out}}{V}=\\dfrac{1}{R}', color: ACCENT });
+
+    await Promise.all([
+      iLbl.waitForRender?.(), RfLbl.waitForRender?.(), voutL.waitForRender?.(), eqnL.waitForRender?.(),
+      vSrcR.waitForRender?.(), RxLbl.waitForRender?.(), loadLbl.waitForRender?.(), iLbl2.waitForRender?.(), eqnR.waitForRender?.()
+    ]);
+    iLbl.scale(0.55).nextTo(iSrcL, LEFT, 0.15);
+    RfLbl.scale(0.5).nextTo(Rf, UP, 0.1);
+    voutL.scale(0.55).nextTo([LX + 1.8, 0, 0], RIGHT, 0.1);
+    eqnL.scale(0.7).moveTo([LX, -2.5, 0]);
+
+    vSrcR.scale(0.55).nextTo([RX - 2.8, 0.3, 0], LEFT, 0.1);
+    RxLbl.scale(0.5).nextTo(Rx, UP, 0.1);
+    loadLbl.scale(0.5).nextTo(load, UP, 0.1);
+    iLbl2.scale(0.55).nextTo([RX + 1.8, 0, 0], RIGHT, 0.1);
+    eqnR.scale(0.7).moveTo([RX, -2.5, 0]);
+
+    // ── Sequence ──
+    await scene.play(new Write(title, { duration: 0.7 }));
+    await scene.play(new Create(triL), new Create(triR));
+    // LEFT build
+    await scene.play(
+      new Create(iSrcL), new Create(iSrcArrow), new Write(iLbl),
+      new Create(iLeadL),
+      new Create(gndInL), new Create(gndL1), new Create(gndLm),
+      new Create(gndSrc), new Create(gndSrcM),
+      new Create(fbL1), new Create(fbL2), new Create(fbL3),
+      new Create(Rf), new Write(RfLbl),
+      new Create(outL), new Write(voutL)
+    );
+    // RIGHT build
+    await scene.play(
+      new Write(vSrcR), new Create(inR),
+      new Create(Rx), new Write(RxLbl),
+      new Create(gndInR), new Create(gndLR), new Create(gndLRm),
+      new Create(fbR1), new Create(fbR2), new Create(fbR3),
+      new Create(load), new Write(loadLbl),
+      new Create(outR2), new Write(iLbl2)
+    );
+
+    // Current flow dots
+    const d1 = new Dot({ point: [LX - 2.2, 0.3, 0], color: BLUE, radius: 0.1 });
+    const d2 = new Dot({ point: [RX - 2.8, 0.3, 0], color: BLUE, radius: 0.1 });
+    scene.add(d1, d2);
+    await scene.play(
+      new MoveAlongPath(d1, { path: new Line({ start: [LX - 2.2, 0.3, 0], end: [LX + 1.6, 1.2, 0] }), duration: 1.4, rateFunc: linear }),
+      new MoveAlongPath(d2, { path: new Line({ start: [RX - 2.8, 0.3, 0], end: [RX + 1.6, 1.2, 0] }), duration: 1.4, rateFunc: linear })
+    );
+
+    await scene.play(new Write(eqnL), new Write(eqnR));
+    for (const b of bulletObjs) {
+      await scene.play(new FadeIn(b, { duration: 0.2 }));
+    }
+    await scene.wait(2);
+  </script>
+</body>
+</html>

@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 9 — Gain-Bandwidth Tradeoff with Feedback</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+  <style>
+    /* ── Interactive slider card (steps 4 & 5) ────────────────── */
+    .gbp-panel {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 7;
+      width: 268px;
+      padding: 14px 16px 16px;
+      background: var(--slide-surface);
+      border: 1px solid var(--slide-border);
+      border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      font-family: 'IBM Plex Sans', 'IBM Plex Mono', sans-serif;
+      color: var(--slide-text);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    [data-theme="light"] .gbp-panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+
+    .gbp-panel.visible {
+      display: flex;
+    }
+
+    .gbp-panel .gbp-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--slide-accent);
+      font-weight: 500;
+    }
+
+    .gbp-panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 18px;
+    }
+
+    .gbp-panel .gbp-readout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--slide-text);
+      line-height: 1.5;
+    }
+
+    .gbp-panel .gbp-readout .k {
+      color: var(--slide-text-dim);
+      font-size: 11px;
+    }
+
+    .gbp-panel .gbp-readout .v {
+      text-align: right;
+      color: var(--slide-text);
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+
+    .gbp-panel .gbp-readout .invariant {
+      grid-column: 1 / -1;
+      margin-top: 6px;
+      padding: 7px 10px;
+      background: rgba(251, 191, 36, 0.10);
+      border-left: 3px solid var(--slide-yellow);
+      border-radius: 4px;
+      color: var(--slide-yellow);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.2px;
+      line-height: 1.4;
+    }
+
+    [data-theme="light"] .gbp-panel .gbp-readout .invariant {
+      background: rgba(217, 119, 6, 0.08);
+    }
+  </style>
+</head>
+
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">10 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+
+    <div class="gbp-panel" id="gbpPanel" aria-hidden="true">
+      <div class="gbp-title">Closed-loop gain A<sub>CL</sub></div>
+      <input type="range" id="gainSlider" min="0" max="5" step="0.01" value="2">
+      <div class="gbp-readout">
+        <span class="k">A<sub>CL</sub></span><span class="v" id="rdGain">100</span>
+        <span class="k">BW</span><span class="v" id="rdBw">10.0 kHz</span>
+        <span class="k">t<sub>r</sub> ≈ 0.35/BW</span><span class="v" id="rdTr">35 µs</span>
+        <span class="invariant" id="rdProduct">A<sub>CL</sub> × BW = 1.00 MHz = GBP</span>
+      </div>
+    </div>
+
+    <div class="stepper-row" id="stepper">
+      <button type="button" class="stepper-btn" id="step-prev">← Prev Step</button>
+      <span class="step-indicator" id="step-indicator">Step 1/5</span>
+      <button type="button" class="stepper-btn" id="step-next">Next Step →</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Line, Rectangle, Circle, Arrow, Text, MathTex, VGroup,
+      Create, Write, FadeIn, FadeToColor
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    // ── Theme + modern colour palette ──
+    // Dark: deep indigo-black with mint accent, cool categorical hues.
+    // Light: off-white with saturated-but-soft versions of the same hues.
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG = IS_LIGHT ? '#fbfbfd' : '#0b0f17';
+    const SURFACE = IS_LIGHT ? '#ffffff' : '#141a26';
+    const FG = IS_LIGHT ? '#0f172a' : '#e8ecf3';
+    const MUTED = IS_LIGHT ? '#64748b' : '#8a94a7';   // body-muted text
+    const MUTED2 = IS_LIGHT ? '#cbd5e1' : '#2a3243';   // grid lines / subtle borders
+    const AXIS = IS_LIGHT ? '#475569' : '#a9b4c6';   // axis strokes + tick labels
+    const ACCENT = IS_LIGHT ? '#10b981' : '#5eead4';   // primary mint/teal
+    const YELLOW = IS_LIGHT ? '#d97706' : '#fbbf24';   // warm amber for GBP/invariant
+    const RED = IS_LIGHT ? '#dc2626' : '#f87171';
+    const BLUE = IS_LIGHT ? '#2563eb' : '#5b9cf8';   // open-loop
+    const MAG = IS_LIGHT ? '#7c3aed' : '#c77dff';   // DC gain highlight
+    const CYAN = IS_LIGHT ? '#0891b2' : '#22d3ee';   // bandwidth highlight
+    window.addEventListener('themechange', () => location.reload());
+
+    // ── Stage + scene ──
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    // ── Slide title (persistent across all steps) ──
+    const title = new Text({ text: 'Gain-Bandwidth Tradeoff with Feedback', fontSize: 30, color: FG, fontUrl: FONT_URL });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.40, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+    scene.add(title);
+
+    // Thin accent underline beneath the title for a modern section-heading look.
+    const titleRule = new Line({
+      start: [TITLE_LEFT_X, 3.05, 0],
+      end: [TITLE_LEFT_X + 1.4, 3.05, 0],
+      color: ACCENT, strokeWidth: 2.4
+    });
+    scene.add(titleRule);
+
+    // ── Op-amp & Bode constants ──
+    const A_OL = 1e5;          // open-loop DC gain (100 dB)
+    const F_P = 10;           // dominant pole (Hz)
+    const GBP = A_OL * F_P;   // 1 MHz (A_OL · f_p)
+    const A_OL_DB = 20 * Math.log10(A_OL);
+
+    // Bode frames are defined inline per step so each layout gets the right
+    // proportions. The axis labels and tick values live outside the inner
+    // drawing rect, so every frame leaves ~0.8 units of padding on the left
+    // and bottom for type to breathe.
+
+    // Log-decade axis mapping helpers bound to a frame.
+    const makeBodeMap = (f) => {
+      const F_MIN_LOG = 0;     // 1 Hz
+      const F_MAX_LOG = 7;     // 10 MHz
+      const DB_MIN = -20;
+      const DB_MAX = 120;
+      const mapF = (logF) => f.x0 + ((logF - F_MIN_LOG) / (F_MAX_LOG - F_MIN_LOG)) * (f.x1 - f.x0);
+      const mapDb = (db) => f.y0 + ((db - DB_MIN) / (DB_MAX - DB_MIN)) * (f.y1 - f.y0);
+      return { mapF, mapDb, F_MIN_LOG, F_MAX_LOG, DB_MIN, DB_MAX };
+    };
+
+    // ── ECG template + low-pass filter helpers ──
+    // Synthetic ECG: sum of Gaussians (P, Q, R, S, T). Plotted over normalised
+    // time; labelled "compressed time" on the axis so the numbers map onto the
+    // real GBP = 1 MHz without needing a separate demo op-amp.
+    const ECG_N = 512;
+    const ECG_T_TOTAL = 600e-6; // 600 µs → features around 10–40 kHz
+    const ECG_FS = ECG_N / ECG_T_TOTAL;
+    const ecgClean = new Float64Array(ECG_N);
+    const GAUSS = (t, mu, sigma, amp) => amp * Math.exp(-((t - mu) * (t - mu)) / (2 * sigma * sigma));
+    for (let i = 0; i < ECG_N; i++) {
+      const t = (i / ECG_N) * ECG_T_TOTAL;
+      const P = GAUSS(t, 120e-6, 18e-6, 0.12);
+      const Q = GAUSS(t, 220e-6, 5e-6, -0.10);
+      const R = GAUSS(t, 240e-6, 6e-6, 1.00);
+      const S = GAUSS(t, 262e-6, 6e-6, -0.25);
+      const Tw = GAUSS(t, 380e-6, 30e-6, 0.30);
+      ecgClean[i] = P + Q + R + S + Tw;
+    }
+    const lowpass = (input, fc, fs) => {
+      const out = new Float64Array(input.length);
+      const dt = 1 / fs;
+      const rc = 1 / (2 * Math.PI * Math.max(fc, 1e-3));
+      const alpha = dt / (rc + dt);
+      out[0] = input[0];
+      for (let i = 1; i < input.length; i++) {
+        out[i] = out[i - 1] + alpha * (input[i] - out[i - 1]);
+      }
+      return out;
+    };
+
+    // ───────────────────────────────────────────────────
+    // Reusable Bode plot builder
+    // ───────────────────────────────────────────────────
+    const makeBodeStatics = async (frame, includeOpenLoop = true) => {
+      const { mapF, mapDb, F_MIN_LOG, F_MAX_LOG, DB_MIN, DB_MAX } = makeBodeMap(frame);
+
+      // Subtle surface fill inside the frame for visual depth.
+      const surfaceRect = new Rectangle({
+        width: frame.x1 - frame.x0,
+        height: frame.y1 - frame.y0,
+        color: MUTED2,
+        strokeWidth: 0,
+        fillOpacity: IS_LIGHT ? 0.25 : 0.18
+      });
+      surfaceRect.moveTo([(frame.x0 + frame.x1) / 2, (frame.y0 + frame.y1) / 2, 0]);
+
+      // Lighter grid than before: one line per decade (x) and per 20 dB (y).
+      const gridX = [];
+      for (let d = F_MIN_LOG; d <= F_MAX_LOG; d++) {
+        const xg = mapF(d);
+        gridX.push(new Line({ start: [xg, frame.y0, 0], end: [xg, frame.y1, 0], color: MUTED2, strokeWidth: 0.6 }));
+      }
+      const gridY = [];
+      for (let db = 0; db <= 120; db += 20) {
+        const yg = mapDb(db);
+        gridY.push(new Line({ start: [frame.x0, yg, 0], end: [frame.x1, yg, 0], color: MUTED2, strokeWidth: 0.6 }));
+      }
+
+      // Frame outline in AXIS colour, emphasised left + bottom.
+      const axes = [
+        new Line({ start: [frame.x0, frame.y0, 0], end: [frame.x1, frame.y0, 0], color: AXIS, strokeWidth: 2.2 }),
+        new Line({ start: [frame.x0, frame.y0, 0], end: [frame.x0, frame.y1, 0], color: AXIS, strokeWidth: 2.2 }),
+        new Line({ start: [frame.x0, frame.y1, 0], end: [frame.x1, frame.y1, 0], color: MUTED2, strokeWidth: 1.0 }),
+        new Line({ start: [frame.x1, frame.y0, 0], end: [frame.x1, frame.y1, 0], color: MUTED2, strokeWidth: 1.0 })
+      ];
+
+      // Tick labels (bigger type, more breathing room).
+      const xTicks = [];
+      const xLabels = [];
+      const xLabelText = ['1 Hz', '10', '100', '1k', '10k', '100k', '1M', '10M'];
+      for (let d = F_MIN_LOG; d <= F_MAX_LOG; d++) {
+        const xg = mapF(d);
+        xTicks.push(new Line({ start: [xg, frame.y0, 0], end: [xg, frame.y0 - 0.10, 0], color: AXIS, strokeWidth: 1.4 }));
+        const lbl = new Text({ text: xLabelText[d], fontSize: 13, color: AXIS, fontUrl: FONT_URL });
+        await lbl.loadGlyphs?.();
+        lbl.moveTo([xg, frame.y0 - 0.30, 0]);
+        xLabels.push(lbl);
+      }
+
+      const yTicks = [];
+      const yLabels = [];
+      for (let db = 0; db <= 120; db += 20) {
+        const yg = mapDb(db);
+        yTicks.push(new Line({ start: [frame.x0 - 0.10, yg, 0], end: [frame.x0, yg, 0], color: AXIS, strokeWidth: 1.4 }));
+        const lbl = new Text({ text: String(db), fontSize: 13, color: AXIS, fontUrl: FONT_URL });
+        await lbl.loadGlyphs?.();
+        lbl.moveTo([frame.x0 - 0.34, yg, 0]);
+        yLabels.push(lbl);
+      }
+
+      const xAxisLbl = new Text({ text: 'Frequency  (Hz, log scale)', fontSize: 15, color: MUTED, fontUrl: FONT_URL });
+      await xAxisLbl.loadGlyphs?.();
+      xAxisLbl.moveTo([(frame.x0 + frame.x1) / 2, frame.y0 - 0.62, 0]);
+      const yAxisLbl = new Text({ text: 'Gain  (dB)', fontSize: 15, color: MUTED, fontUrl: FONT_URL });
+      await yAxisLbl.loadGlyphs?.();
+      yAxisLbl.rotate(Math.PI / 2).moveTo([frame.x0 - 0.78, (frame.y0 + frame.y1) / 2, 0]);
+
+      const items = [surfaceRect, ...gridX, ...gridY, ...axes, ...xTicks, ...xLabels, ...yTicks, ...yLabels, xAxisLbl, yAxisLbl];
+
+      if (includeOpenLoop) {
+        // Smooth single-pole magnitude response:
+        //   |a(f)|_dB = A_OL_DB − 10·log₁₀(1 + (f/f_p)²)
+        // Sampled across the plot and drawn as short line segments so the
+        // −3 dB knee near f_p is visible instead of the straight asymptotes.
+        const logFp = Math.log10(F_P);
+        const N = 80;
+        let prev = null;
+        for (let i = 0; i <= N; i++) {
+          const logF = F_MIN_LOG + (F_MAX_LOG - F_MIN_LOG) * i / N;
+          const db = A_OL_DB - 10 * Math.log10(1 + Math.pow(10, 2 * (logF - logFp)));
+          if (db < DB_MIN) { prev = null; continue; }
+          const px = mapF(logF);
+          const py = mapDb(db);
+          if (prev) items.push(new Line({ start: [prev[0], prev[1], 0], end: [px, py, 0], color: BLUE, strokeWidth: 3.4 }));
+          prev = [px, py];
+        }
+      }
+
+      return { items, frame, mapF, mapDb };
+    };
+
+    // ───────────────────────────────────────────────────
+    // STEP SUBTITLES
+    // ───────────────────────────────────────────────────
+    const stepSubtitleText = {
+      1: 'Step 1: The op-amp\'s open-loop response is fixed by its internal compensation capacitor.',
+      2: 'Step 2: Apply feedback and re-derive A_CL(f) — still a single pole, but moved outward.',
+      3: 'Step 3: Multiply DC gain × new bandwidth — the product collapses to a constant.',
+      4: 'Step 4: Drag the slider. Every gain choice lands on the same open-loop asymptote.',
+      5: 'Step 5: Time-domain consequence — a high-gain stage smears a biosignal.'
+    };
+    const stepSubtitle = {};
+    for (const k of Object.keys(stepSubtitleText)) {
+      const t = new Text({ text: stepSubtitleText[k], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
+      await t.loadGlyphs?.();
+      t.moveTo([0, 2.72, 0]);
+      if (typeof t.getLeft === 'function') {
+        t.shift([TITLE_LEFT_X - t.getLeft()[0], 0, 0]);
+      }
+      stepSubtitle[k] = t;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // STEP 1 — "The open-loop response is fixed"
+    // ═══════════════════════════════════════════════════
+    //
+    // Layout plan: narrow Bode plot pushed to the right (x ≈ 0.4 → 6.3),
+    // left column at x ∈ [-6.2, -0.3] for two hero bullets + a callout card.
+    const buildStep1 = async () => {
+      const frame = { x0: 0.4, x1: 6.3, y0: -2.55, y1: 2.30 };
+      const bode = await makeBodeStatics(frame, true);
+      const { mapF, mapDb } = bode;
+
+      // f_p marker (yellow dashed drop + label)
+      const fpX = mapF(Math.log10(F_P));
+      const fpDropSegs = [];
+      {
+        const top = mapDb(A_OL_DB), bot = frame.y0;
+        const seg = 0.12, gap = 0.08;
+        for (let y = bot; y < top - 1e-6; y += seg + gap) {
+          fpDropSegs.push(new Line({
+            start: [fpX, y, 0],
+            end: [fpX, Math.min(y + seg, top), 0],
+            color: YELLOW, strokeWidth: 1.6
+          }));
+        }
+      }
+      const fpDrop = new VGroup(...fpDropSegs);
+      const fpLbl = new MathTex({ latex: 'f_p', color: YELLOW });
+      await fpLbl.waitForRender?.();
+      fpLbl.scale(0.4).moveTo([fpX, frame.y0 - 0.5, 0]);
+
+      // f_unity (= GBP) marker
+      const fuX = mapF(Math.log10(GBP));
+      const fuDropSegs = [];
+      {
+        const top = mapDb(0), bot = frame.y0;
+        const seg = 0.12, gap = 0.08;
+        for (let y = bot; y < top - 1e-6; y += seg + gap) {
+          fuDropSegs.push(new Line({
+            start: [fuX, y, 0],
+            end: [fuX, Math.min(y + seg, top), 0],
+            color: YELLOW, strokeWidth: 1.6
+          }));
+        }
+      }
+      const fuDrop = new VGroup(...fuDropSegs);
+      const fuLbl = new MathTex({ latex: 'f_{unity}=GBP', color: YELLOW });
+      await fuLbl.waitForRender?.();
+      fuLbl.scale(0.4).moveTo([fuX, frame.y0 - 0.5, 0]);
+
+      // −20 dB/decade slope indicator: small arrow running down the slope + label
+      const slopeArrow = new Arrow({
+        start: [mapF(2.4), mapDb(72) + 0.35, 0],
+        end: [mapF(4.4), mapDb(32) + 0.35, 0],
+        color: BLUE, strokeWidth: 1.4, tipLength: 0.12
+      });
+      const slopeLbl = new Text({ text: '−20 dB / decade', fontSize: 13, color: BLUE, fontUrl: FONT_URL });
+      await slopeLbl.loadGlyphs?.();
+      slopeLbl.moveTo([mapF(3.65), mapDb(56) + 0.48, 0]);
+
+      // A_OL label on the right of the plot, linked to the flat top by a
+      // dotted horizontal leader line at y = A_OL.
+      const aolY = mapDb(A_OL_DB);
+      const aolLeaderSegs = [];
+      {
+        const xStart = mapF(0.3);
+        const xEnd = mapF(4.15);
+        const seg = 0.11, gap = 0.08;
+        for (let x = xStart; x < xEnd - 1e-6; x += seg + gap) {
+          aolLeaderSegs.push(new Line({
+            start: [x, aolY, 0],
+            end: [Math.min(x + seg, xEnd), aolY, 0],
+            color: BLUE, strokeWidth: 1.3
+          }));
+        }
+      }
+      const aolLeader = new VGroup(...aolLeaderSegs);
+
+      const aolLbl = new MathTex({ latex: 'A_{OL}\\approx 10^{5}\\;(100\\,\\text{dB})', color: BLUE });
+      await aolLbl.waitForRender?.();
+      aolLbl.scale(0.46).moveTo([mapF(5.2), aolY, 0]);
+      if (typeof aolLbl.getLeft === 'function') aolLbl.shift([mapF(4.30) - aolLbl.getLeft()[0], 0, 0]);
+
+      // ── Left column — two hero bullets + a callout card ──
+      const LEFT_X = -6.15;
+      const bulletX = LEFT_X + 0.25;
+
+      const makeBulletTex = async (latex, y, color) => {
+        const dot = new Circle({ radius: 0.08, color, strokeWidth: 0, fillOpacity: 1 });
+        dot.moveTo([LEFT_X + 0.08, y, 0]);
+        const t = new MathTex({ latex, color: FG });
+        await t.waitForRender?.();
+        t.scale(0.44).moveTo([bulletX, y, 0]);
+        if (typeof t.getLeft === 'function') t.shift([bulletX - t.getLeft()[0], 0, 0]);
+        return [dot, t];
+      };
+
+      const [b1dot, b1txt] = await makeBulletTex(
+        '\\text{Huge DC gain — but only up to } f_p \\approx 10\\,\\text{Hz.}',
+        2.25, ACCENT
+      );
+      const [b2dot, b2txt] = await makeBulletTex(
+        '\\text{Above } f_p\\text{: } -20\\,\\text{dB/dec until } f_{unity} = \\text{GBP.}',
+        1.70, ACCENT
+      );
+
+      // Callout card — Miller cap story
+      const calloutBox = new Rectangle({
+        width: 4.6, height: 1.85,
+        color: ACCENT, strokeWidth: 1.0, fillOpacity: IS_LIGHT ? 0.07 : 0.09
+      });
+      calloutBox.moveTo([-3.25, 0.35, 0]);
+      const calloutHdr = new Text({ text: 'WHY IT\'S FIXED', fontSize: 10, color: ACCENT, fontUrl: FONT_URL });
+      await calloutHdr.loadGlyphs?.();
+      calloutHdr.moveTo([-5.45, 1.05, 0]);
+      if (typeof calloutHdr.getLeft === 'function') calloutHdr.shift([-5.45 - calloutHdr.getLeft()[0], 0, 0]);
+
+      const c1 = new MathTex({ latex: 'GBP = A_{OL}\\,f_p = \\dfrac{g_m}{2\\pi\\,C_c}', color: ACCENT });
+      await c1.waitForRender?.();
+      c1.scale(0.62).moveTo([-3.25, 0.50, 0]);
+      const c2 = new MathTex({ latex: '\\text{Set inside the chip by the Miller compensation}', color: FG });
+      await c2.waitForRender?.();
+      c2.scale(0.38).moveTo([-3.25, -0.05, 0]);
+      const c3 = new MathTex({ latex: '\\text{capacitor } C_c', color: FG });
+      await c3.waitForRender?.();
+      c3.scale(0.38).moveTo([-3.25, -0.40, 0]);
+
+      // Bottom takeaway strip
+      const takeawayRule = new Line({
+        start: [-6.1, -1.30, 0], end: [-0.4, -1.30, 0],
+        color: MUTED2, strokeWidth: 1.0
+      });
+      const takeaway = new Text({ text: 'Takeaway — the open-loop curve is a fixed property of the chip.', fontSize: 12, color: FG, fontUrl: FONT_URL });
+      await takeaway.loadGlyphs?.();
+      takeaway.moveTo([-3.25, -1.70, 0]);
+      const takeaway2 = new Text({ text: 'Feedback can only move us along it — never off it.', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+      await takeaway2.loadGlyphs?.();
+      takeaway2.moveTo([-3.25, -2.10, 0]);
+
+      const items = [
+        ...bode.items,
+        fpDrop, fpLbl, fuDrop, fuLbl, slopeArrow, slopeLbl, aolLeader, aolLbl,
+        b1dot, b1txt, b2dot, b2txt,
+        calloutBox, calloutHdr, c1, c2, c3,
+        takeawayRule, takeaway, takeaway2
+      ];
+      const animated = [
+        b1dot, b1txt, b2dot, b2txt,
+        calloutBox, calloutHdr, c1, c2, c3,
+        takeawayRule, takeaway, takeaway2
+      ];
+      return { items, animated, bode };
+    };
+
+    // ═══════════════════════════════════════════════════
+    // STEP 2 — "Apply feedback, re-derive A_CL(f)"
+    // ═══════════════════════════════════════════════════
+    //
+    // Layout: top row = substitution equations side-by-side. Middle row =
+    // mini Bode of |a(f)| (left) + s-plane pole diagram (right) — two views
+    // of the same "single pole" object. Simplify strip + result cards below.
+    const buildStep2 = async () => {
+      const makeSectionHdr = async (text, x, y, color) => {
+        const t = new Text({ text, fontSize: 10, color, fontUrl: FONT_URL });
+        await t.loadGlyphs?.();
+        t.moveTo([x, y, 0]);
+        if (typeof t.getLeft === 'function') t.shift([x - t.getLeft()[0], 0, 0]);
+        return t;
+      };
+
+      // ── Row 1: starting equation + substitution side-by-side ──
+      const startHdr = await makeSectionHdr('START WITH', -6.05, 2.30, MUTED);
+      const startingEq = new MathTex({ latex: 'A_{CL}(f)=\\dfrac{a(f)}{1+a(f)\\,\\beta}', color: FG });
+      await startingEq.waitForRender?.();
+      startingEq.scale(0.45).moveTo([-3.3, 2, 0]);
+
+      const subHdr = await makeSectionHdr('SUBSTITUTE  (dominant-pole model)', 0.25, 2.30, MUTED);
+      const subEq = new MathTex({ latex: 'a(f)=\\dfrac{A_{OL}}{1 + j\\,f/f_p}', color: BLUE });
+      await subEq.waitForRender?.();
+      subEq.scale(0.45).moveTo([3.3, 2, 0]);
+
+      // ── Row 2a: mini Bode of |a(f)| (left side) ──
+      const bodeFrame = { x0: -6.00, x1: -0.30, y0: -0.20, y1: 1.45 };
+      const bSurface = new Rectangle({
+        width: bodeFrame.x1 - bodeFrame.x0,
+        height: bodeFrame.y1 - bodeFrame.y0,
+        color: MUTED2, strokeWidth: 0, fillOpacity: IS_LIGHT ? 0.25 : 0.18
+      });
+      bSurface.moveTo([(bodeFrame.x0 + bodeFrame.x1) / 2, (bodeFrame.y0 + bodeFrame.y1) / 2, 0]);
+      const bBorder = new Rectangle({
+        width: bodeFrame.x1 - bodeFrame.x0,
+        height: bodeFrame.y1 - bodeFrame.y0,
+        color: AXIS, strokeWidth: 1.4, fillOpacity: 0
+      });
+      bBorder.moveTo([(bodeFrame.x0 + bodeFrame.x1) / 2, (bodeFrame.y0 + bodeFrame.y1) / 2, 0]);
+
+      const { mapF: bMapF, mapDb: bMapDb } = makeBodeMap(bodeFrame);
+      const logFp = Math.log10(F_P);
+
+      // Open-loop curve — single pole, sampled then stitched.
+      const bodeCurveSegs = [];
+      {
+        const N = 70;
+        let prev = null;
+        for (let i = 0; i <= N; i++) {
+          const logF = (7 * i) / N;
+          const db = A_OL_DB - 10 * Math.log10(1 + Math.pow(10, 2 * (logF - logFp)));
+          if (db < -20) { prev = null; continue; }
+          const px = bMapF(logF), py = bMapDb(db);
+          if (prev) bodeCurveSegs.push(new Line({ start: [prev[0], prev[1], 0], end: [px, py, 0], color: BLUE, strokeWidth: 2.6 }));
+          prev = [px, py];
+        }
+      }
+
+      // Yellow dashed dropline at f_p (same pattern used in Step 1).
+      const fpX = bMapF(logFp);
+      const fpYTop = bMapDb(A_OL_DB);
+      const fpDropSegs = [];
+      {
+        const seg = 0.09, gap = 0.06;
+        for (let y = bodeFrame.y0; y < fpYTop - 1e-6; y += seg + gap) {
+          fpDropSegs.push(new Line({
+            start: [fpX, y, 0],
+            end: [fpX, Math.min(y + seg, fpYTop), 0],
+            color: YELLOW, strokeWidth: 1.3
+          }));
+        }
+      }
+      const fpDrop = new VGroup(...fpDropSegs);
+      const fpLbl = new MathTex({ latex: 'f_p', color: YELLOW });
+      await fpLbl.waitForRender?.();
+      fpLbl.scale(0.36).moveTo([fpX + 0.22, bodeFrame.y0 + 0.18, 0]);
+
+      // Sloped annotation: −20 dB/dec
+      const slopeArrow = new Arrow({
+        start: [bMapF(3.2), bMapDb(58) + 0.10, 0],
+        end: [bMapF(5.4), bMapDb(14) + 0.10, 0],
+        color: BLUE, strokeWidth: 1.2, tipLength: 0.10
+      });
+      const slopeLbl = new Text({ text: '−20 dB/dec', fontSize: 10, color: BLUE, fontUrl: FONT_URL });
+      await slopeLbl.loadGlyphs?.();
+      slopeLbl.moveTo([bMapF(4.25), bMapDb(40) + 0.30, 0]);
+
+      // A_OL tag on the flat plateau.
+      const aolLbl = new MathTex({ latex: 'A_{OL}', color: BLUE });
+      await aolLbl.waitForRender?.();
+      aolLbl.scale(0.34).moveTo([bMapF(0.6), bMapDb(A_OL_DB) - 0.18, 0]);
+
+      // Axis cue labels (compact, inside the frame corners).
+      const bYAxisLbl = new Text({ text: '|a(f)|  (dB)', fontSize: 10, color: MUTED, fontUrl: FONT_URL });
+      await bYAxisLbl.loadGlyphs?.();
+      bYAxisLbl.moveTo([bodeFrame.x0 + 0.55, bodeFrame.y1 - 0.15, 0]);
+      const bXAxisLbl = new Text({ text: 'frequency  (log)  →', fontSize: 10, color: MUTED, fontUrl: FONT_URL });
+      await bXAxisLbl.loadGlyphs?.();
+      bXAxisLbl.moveTo([bodeFrame.x1 - 0.82, bodeFrame.y0 + 0.15, 0]);
+
+      const bodeHdr = await makeSectionHdr('FREQUENCY DOMAIN — one knee at f_p', -6.05, 1.68, MUTED);
+
+      // ── Row 2b: s-plane pole diagram (right side) ──
+      const spFrame = { x0: 0.30, x1: 6.00, y0: -0.20, y1: 1.45 };
+      const spCx = (spFrame.x0 + spFrame.x1) / 2;
+      const spCy = (spFrame.y0 + spFrame.y1) / 2;
+      const spSurface = new Rectangle({
+        width: spFrame.x1 - spFrame.x0,
+        height: spFrame.y1 - spFrame.y0,
+        color: MUTED2, strokeWidth: 0, fillOpacity: IS_LIGHT ? 0.25 : 0.18
+      });
+      spSurface.moveTo([spCx, spCy, 0]);
+      const spBorder = new Rectangle({
+        width: spFrame.x1 - spFrame.x0,
+        height: spFrame.y1 - spFrame.y0,
+        color: AXIS, strokeWidth: 1.4, fillOpacity: 0
+      });
+      spBorder.moveTo([spCx, spCy, 0]);
+
+      // Origin sits to the right of centre so the negative real axis has room.
+      const spOriginX = spCx + 0.95;
+      const spOriginY = spCy - 0.08;
+      const spSigma = new Arrow({
+        start: [spFrame.x0 + 0.35, spOriginY, 0],
+        end: [spFrame.x1 - 0.25, spOriginY, 0],
+        color: AXIS, strokeWidth: 1.6, tipLength: 0.14
+      });
+      const spJw = new Arrow({
+        start: [spOriginX, spFrame.y0 + 0.25, 0],
+        end: [spOriginX, spFrame.y1 - 0.25, 0],
+        color: AXIS, strokeWidth: 1.6, tipLength: 0.14
+      });
+      const spSigmaLbl = new MathTex({ latex: '\\sigma', color: MUTED });
+      await spSigmaLbl.waitForRender?.();
+      spSigmaLbl.scale(0.40).moveTo([spFrame.x1 - 0.12, spOriginY - 0.24, 0]);
+      const spJwLbl = new MathTex({ latex: 'j\\omega', color: MUTED });
+      await spJwLbl.waitForRender?.();
+      spJwLbl.scale(0.40).moveTo([spOriginX + 0.28, spFrame.y1 - 0.22, 0]);
+
+      // Pole marker (X on negative real axis).
+      const poleX = spOriginX - 2.0;
+      const poleY = spOriginY;
+      const spPoleA = new Line({
+        start: [poleX - 0.13, poleY - 0.13, 0],
+        end: [poleX + 0.13, poleY + 0.13, 0],
+        color: YELLOW, strokeWidth: 2.6
+      });
+      const spPoleB = new Line({
+        start: [poleX - 0.13, poleY + 0.13, 0],
+        end: [poleX + 0.13, poleY - 0.13, 0],
+        color: YELLOW, strokeWidth: 2.6
+      });
+      const spPoleLbl = new MathTex({ latex: 's=-2\\pi f_p', color: YELLOW });
+      await spPoleLbl.waitForRender?.();
+      spPoleLbl.scale(0.38).moveTo([poleX, poleY - 0.36, 0]);
+
+      const spCaption = new Text({
+        text: 'One pole on the real axis  ⇒  one knee in  |a(f)|  ⇒  "dominant pole"',
+        fontSize: 10, color: MUTED, fontUrl: FONT_URL
+      });
+      await spCaption.loadGlyphs?.();
+      spCaption.moveTo([spCx, spFrame.y0 + 0.18, 0]);
+
+      const spHdr = await makeSectionHdr('s-PLANE — one pole on the negative real axis', 0.25, 1.68, MUTED);
+
+      // ── Row 3: simplified CL expression in an accent strip ──
+      const algCard = new Rectangle({
+        width: 12.0, height: 0.78,
+        color: ACCENT, strokeWidth: 1.4, fillOpacity: IS_LIGHT ? 0.05 : 0.07
+      });
+      algCard.moveTo([0, -0.85, 0]);
+      const algHdr = await makeSectionHdr('SIMPLIFY', -4, -0.50, ACCENT);
+      const alg = new MathTex({
+        latex: 'A_{CL}(f)=\\dfrac{A_{OL}/(1+A_{OL}\\beta)}{1+j\\,f\\,/\\,[\\,f_p(1+A_{OL}\\beta)\\,]}',
+        color: ACCENT
+      });
+      await alg.waitForRender?.();
+      alg.scale(0.56).moveTo([0.10, -0.92, 0]);
+
+      const observation = new Text({
+        text: 'Still a single pole — just rescaled in DC level and pushed outward in frequency.',
+        fontSize: 11, color: MUTED, fontUrl: FONT_URL
+      });
+      await observation.loadGlyphs?.();
+      observation.moveTo([0, -1.48, 0]);
+
+      // ── Row 4: result cards ──
+      const boxA = new Rectangle({
+        width: 5.9, height: 1.10,
+        color: MAG, strokeWidth: 1.8, fillOpacity: IS_LIGHT ? 0.06 : 0.09
+      });
+      boxA.moveTo([-3.15, -2.55, 0]);
+      const boxAHdr = await makeSectionHdr('NEW DC GAIN', -5.95, -1.85, MAG);
+      const boxAEq = new MathTex({
+        latex: 'A_{CL,0}=\\dfrac{A_{OL}}{1+A_{OL}\\beta}\\;\\approx\\;\\dfrac{1}{\\beta}',
+        color: MAG
+      });
+      await boxAEq.waitForRender?.();
+      boxAEq.scale(0.64).moveTo([-3.15, -2.68, 0]);
+
+      const boxB = new Rectangle({
+        width: 5.9, height: 1.10,
+        color: CYAN, strokeWidth: 1.8, fillOpacity: IS_LIGHT ? 0.06 : 0.09
+      });
+      boxB.moveTo([3.15, -2.55, 0]);
+      const boxBHdr = await makeSectionHdr('NEW CLOSED-LOOP POLE', 0.22, -1.85, CYAN);
+      const boxBEq = new MathTex({
+        latex: 'f_{3dB,CL}=f_p(1+A_{OL}\\beta)\\;\\approx\\;A_{OL}\\beta\\,f_p',
+        color: CYAN
+      });
+      await boxBEq.waitForRender?.();
+      boxBEq.scale(0.58).moveTo([3.15, -2.68, 0]);
+
+      const items = [
+        startHdr, startingEq, subHdr, subEq,
+        bodeHdr, bSurface, bBorder, ...bodeCurveSegs, fpDrop, fpLbl,
+        slopeArrow, slopeLbl, aolLbl, bYAxisLbl, bXAxisLbl,
+        spHdr, spSurface, spBorder, spSigma, spJw, spSigmaLbl, spJwLbl,
+        spPoleA, spPoleB, spPoleLbl, spCaption,
+        algCard, algHdr, alg,
+        observation,
+        boxA, boxAHdr, boxAEq,
+        boxB, boxBHdr, boxBEq
+      ];
+      const animated = [
+        startHdr, startingEq, subHdr, subEq,
+        bodeHdr, spHdr,
+        algCard, algHdr, alg,
+        observation,
+        boxA, boxAHdr, boxAEq,
+        boxB, boxBHdr, boxBEq
+      ];
+      return { items, animated };
+    };
+
+    // ═══════════════════════════════════════════════════
+    // STEP 3 — "Multiply them: the invariant"
+    // ═══════════════════════════════════════════════════
+    //
+    // Layout: full-width Bode plot showing the open-loop curve + three example
+    // closed-loop plateaus, all meeting the open-loop slope at the same
+    // f_unity = GBP. Chain equation + yellow hero invariant strip below.
+    const buildStep3 = async () => {
+      const frame = { x0: -5.60, x1: 5.30, y0: -0.35, y1: 2.55 };
+      const bode = await makeBodeStatics(frame, true);
+      const { mapF, mapDb, F_MIN_LOG, F_MAX_LOG, DB_MIN } = makeBodeMap(frame);
+
+      // Build a smooth closed-loop curve at a given log-gain, stitched as
+      // short line segments. Same formula as renderBodeSlider (kept local
+      // here so Step 3 does not depend on Step 4's slider state).
+      const makeClCurve = (logA, color) => {
+        const gainDb = 20 * logA;
+        const cornerLogF = Math.max(Math.log10(F_P), Math.log10(F_P) + (A_OL_DB - gainDb) / 20);
+        const clDB_fn = (logF) => Math.min(A_OL_DB, gainDb) - 10 * Math.log10(1 + Math.pow(10, 2 * (logF - cornerLogF)));
+        const N = 80;
+        const pts = [];
+        for (let i = 0; i <= N; i++) {
+          const logF = F_MIN_LOG + (F_MAX_LOG - F_MIN_LOG) * i / N;
+          const db = clDB_fn(logF);
+          if (db < DB_MIN) continue;
+          pts.push([mapF(logF), mapDb(db)]);
+        }
+        const segs = [];
+        for (let i = 1; i < pts.length; i++) {
+          segs.push(new Line({
+            start: [pts[i - 1][0], pts[i - 1][1], 0],
+            end: [pts[i][0], pts[i][1], 0],
+            color, strokeWidth: 2.4
+          }));
+        }
+        return { segs, cornerLogF, gainDb };
+      };
+
+      const curveA = makeClCurve(2, MAG);   // A_CL ≈ 100
+      const curveB = makeClCurve(3, ACCENT); // A_CL ≈ 1k
+      const curveC = makeClCurve(4, CYAN);   // A_CL ≈ 10k
+
+      // Plateau labels — a small "A_CL = X" tag at the flat region of each.
+      const mkPlateauLbl = async (latex, logA, color) => {
+        const t = new MathTex({ latex, color });
+        await t.waitForRender?.();
+        t.scale(0.38).moveTo([mapF(0.45), mapDb(20 * logA) + 0.18, 0]);
+        return t;
+      };
+      const lblA = await mkPlateauLbl('A_{CL}=100', 2, MAG);
+      const lblB = await mkPlateauLbl('A_{CL}=1{,}000', 3, ACCENT);
+      const lblC = await mkPlateauLbl('A_{CL}=10{,}000', 4, CYAN);
+
+      // Shared f_unity = GBP dropline — all three CL curves end here.
+      const fuLogF = Math.log10(GBP);
+      const fuX = mapF(fuLogF);
+      const fuDropSegs = [];
+      {
+        const top = mapDb(A_OL_DB + 5), bot = frame.y0;
+        const seg = 0.12, gap = 0.08;
+        for (let y = bot; y < top - 1e-6; y += seg + gap) {
+          fuDropSegs.push(new Line({
+            start: [fuX, y, 0],
+            end: [fuX, Math.min(y + seg, top), 0],
+            color: YELLOW, strokeWidth: 1.6
+          }));
+        }
+      }
+      const fuDrop = new VGroup(...fuDropSegs);
+      const fuLbl = new MathTex({ latex: 'f_{unity}=GBP', color: YELLOW });
+      await fuLbl.waitForRender?.();
+      fuLbl.scale(0.44).moveTo([fuX, frame.y1 - 0.22, 0]);
+
+      // Caption above the plot that frames the visual reading.
+      const plotCaption = new Text({
+        text: 'Every closed-loop plateau meets the open-loop slope at the SAME point.',
+        fontSize: 12, color: MUTED, fontUrl: FONT_URL
+      });
+      await plotCaption.loadGlyphs?.();
+      plotCaption.moveTo([(frame.x0 + frame.x1) / 2, frame.y1 + 0.30, 0]);
+
+      // Full product chain equation (kept from the old layout).
+      const chain = new MathTex({
+        latex: '\\dfrac{1}{\\beta}\\cdot A_{OL}\\beta\\,f_p\\;\\;=\\;\\;A_{OL}\\,f_p\\;\\;=\\;\\;\\mathbf{GBP}',
+        color: FG
+      });
+      await chain.waitForRender?.();
+      chain.scale(0.66).moveTo([0, -1.35, 0]);
+
+      // Hero invariant strip (same yellow card as before, compressed).
+      const invBox = new Rectangle({
+        width: 11.0, height: 1.30,
+        color: YELLOW, strokeWidth: 2.4, fillOpacity: IS_LIGHT ? 0.10 : 0.13
+      });
+      invBox.moveTo([0, -2.40, 0]);
+      const invEq = new MathTex({
+        latex: '\\boxed{\\;A_{CL}\\;\\times\\;BW_{CL}\\;=\\;\\text{constant}\\;=\\;GBP\\;}',
+        color: YELLOW
+      });
+      await invEq.waitForRender?.();
+      invEq.scale(0.72).moveTo([0, -2.22, 0]);
+      const invSub = new Text({
+        text: 'Every factor of gain you give up buys the same factor of bandwidth.',
+        fontSize: 11, color: YELLOW, fontUrl: FONT_URL
+      });
+      await invSub.loadGlyphs?.();
+      invSub.moveTo([0, -2.82, 0]);
+
+      const items = [
+        ...bode.items,
+        ...curveA.segs, ...curveB.segs, ...curveC.segs,
+        lblA, lblB, lblC,
+        fuDrop, fuLbl,
+        plotCaption,
+        chain, invBox, invEq, invSub
+      ];
+      const animated = [
+        plotCaption,
+        chain, invBox, invEq, invSub
+      ];
+      return { items, animated };
+    };
+
+    // ═══════════════════════════════════════════════════
+    // STEP 4 — Interactive Bode plot
+    // ═══════════════════════════════════════════════════
+    const buildStep4 = async () => {
+      // Use the full-width Bode frame; the slider panel lives over the top-right.
+      const frame = { x0: -5.3, x1: 5.2, y0: -2.55, y1: 2.05 };
+      const bode = await makeBodeStatics(frame, true);
+      const asympLbl = new Text({
+        text: 'Drag the slider — every closed-loop asymptote meets the open-loop line at  f_unity.',
+        fontSize: 12, color: MUTED, fontUrl: FONT_URL
+      });
+      await asympLbl.loadGlyphs?.();
+      asympLbl.moveTo([(frame.x0 + frame.x1) / 2, frame.y1 + 0.35, 0]);
+      const items = [...bode.items, asympLbl];
+      return { items, animated: [asympLbl], bode };
+    };
+
+    // ═══════════════════════════════════════════════════
+    // STEP 5 — ECG biosignal panel
+    // ═══════════════════════════════════════════════════
+    //
+    // Layout: small Bode plot on the left (x ≈ -6.1 → -0.6) + two stacked
+    // ECG frames on the right (x ≈ 0.3 → 6.2). Subtle surface fills, soft
+    // dashed baselines, axis labels sized to match the Bode plot.
+    const buildStep5 = async () => {
+      const bodeFrame = { x0: -5.3, x1: -0.7, y0: -2.55, y1: 2.05 };
+      const bode = await makeBodeStatics(bodeFrame, true);
+
+      // Two ECG frames (right side of stage). The ECG-input frame is shifted
+      // down from y1=2.20 to y1=1.95 so its top edge clears the slider panel
+      // that overlays the top-right corner of the canvas. Labels are placed
+      // INSIDE each frame (top-left of the surface fill) for the same reason.
+      const ecgIn = { x0: 0.55, x1: 6.25, y0: 0.40, y1: 1.95 };
+      const ecgOut = { x0: 0.55, x1: 6.25, y0: -2.40, y1: -0.85 };
+
+      const makeEcgFrame = async (f, titleText, color) => {
+        const surface = new Rectangle({
+          width: f.x1 - f.x0, height: f.y1 - f.y0,
+          color: MUTED2, strokeWidth: 0,
+          fillOpacity: IS_LIGHT ? 0.25 : 0.18
+        });
+        surface.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+        const border = new Rectangle({
+          width: f.x1 - f.x0, height: f.y1 - f.y0,
+          color: AXIS, strokeWidth: 1.6, fillOpacity: 0
+        });
+        border.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+        // Zero baseline as a dashed line
+        const mid = (f.y0 + f.y1) / 2;
+        const segs = [];
+        const seg = 0.10, gap = 0.08;
+        for (let x = f.x0 + 0.05; x < f.x1 - 0.05; x += seg + gap) {
+          segs.push(new Line({
+            start: [x, mid, 0],
+            end: [Math.min(x + seg, f.x1 - 0.05), mid, 0],
+            color: MUTED2, strokeWidth: 1.0
+          }));
+        }
+        const baseline = new VGroup(...segs);
+        const lbl = new Text({ text: titleText, fontSize: 11, color, fontUrl: FONT_URL });
+        await lbl.loadGlyphs?.();
+        lbl.moveTo([f.x0 + 0.22, f.y1 - 0.22, 0]);
+        if (typeof lbl.getLeft === 'function') lbl.shift([f.x0 + 0.22 - lbl.getLeft()[0], 0, 0]);
+        return { surface, border, baseline, lbl };
+      };
+
+      const frIn = await makeEcgFrame(ecgIn, 'Ideal ECG input', BLUE);
+      const frOut = await makeEcgFrame(ecgOut, 'Op-amp output  (1st-order LPF, f_c = GBP / A_CL)', ACCENT);
+
+      // x-axis label (common to both panels)
+      const tLbl = new Text({ text: 'compressed time  →', fontSize: 11, color: MUTED, fontUrl: FONT_URL });
+      await tLbl.loadGlyphs?.();
+      tLbl.moveTo([(ecgOut.x0 + ecgOut.x1) / 2, ecgOut.y0 - 0.32, 0]);
+
+      // Draw the clean ECG once; it's constant across slider updates.
+      const drawEcg = (frame, samples) => {
+        const lines = [];
+        const mid = (frame.y0 + frame.y1) / 2;
+        const scaleY = (frame.y1 - frame.y0) * 0.42;
+        let maxAbs = 0;
+        for (let i = 0; i < ecgClean.length; i++) {
+          if (Math.abs(ecgClean[i]) > maxAbs) maxAbs = Math.abs(ecgClean[i]);
+        }
+        if (maxAbs < 1e-9) maxAbs = 1;
+        const step = (frame.x1 - frame.x0) / (samples.length - 1);
+        for (let i = 1; i < samples.length; i++) {
+          const x0 = frame.x0 + (i - 1) * step;
+          const x1 = frame.x0 + i * step;
+          const y0 = mid + scaleY * (samples[i - 1] / maxAbs);
+          const y1 = mid + scaleY * (samples[i] / maxAbs);
+          lines.push([x0, y0, x1, y1]);
+        }
+        return lines;
+      };
+      const decimate = (src, n) => {
+        const out = new Float64Array(n);
+        const step = src.length / n;
+        for (let i = 0; i < n; i++) out[i] = src[Math.min(src.length - 1, Math.floor(i * step))];
+        return out;
+      };
+      const DECIM = 180;
+      const cleanDec = decimate(ecgClean, DECIM);
+
+      const inLines = drawEcg(ecgIn, cleanDec).map(([a, b, c, d]) =>
+        new Line({ start: [a, b, 0], end: [c, d, 0], color: BLUE, strokeWidth: 2.2 })
+      );
+
+      const items = [
+        ...bode.items,
+        frIn.surface, frIn.border, frIn.baseline, frIn.lbl,
+        frOut.surface, frOut.border, frOut.baseline, frOut.lbl,
+        tLbl,
+        ...inLines
+      ];
+      // Animate only the scaffolding; the input-trace segments appear instantly.
+      const animated = [frIn.border, frIn.lbl, frOut.border, frOut.lbl, tLbl];
+      return { items, animated, bode, ecgIn, ecgOut, cleanDec, drawEcg, DECIM };
+    };
+
+    // ═══════════════════════════════════════════════════
+    // Build all five steps in parallel
+    // ═══════════════════════════════════════════════════
+    const [s1, s2, s3, s4, s5] = await Promise.all([
+      buildStep1(), buildStep2(), buildStep3(), buildStep4(), buildStep5()
+    ]);
+    const stepData = { 1: s1, 2: s2, 3: s3, 4: s4, 5: s5 };
+
+    // Everything that can be shown on any step — the reset wipes all of it.
+    const allDynamic = [
+      ...Object.values(stepSubtitle),
+      ...s1.items, ...s2.items, ...s3.items, ...s4.items, ...s5.items
+    ];
+
+    // ═══════════════════════════════════════════════════
+    // SLIDER STATE  (shared by steps 4 and 5)
+    // ═══════════════════════════════════════════════════
+    const gbpPanel = document.getElementById('gbpPanel');
+    const gainSlider = document.getElementById('gainSlider');
+    const rdGain = document.getElementById('rdGain');
+    const rdBw = document.getElementById('rdBw');
+    const rdTr = document.getElementById('rdTr');
+    const rdProduct = document.getElementById('rdProduct');
+
+    const formatHz = (hz) => {
+      if (hz >= 1e6) return (hz / 1e6).toFixed(2) + ' MHz';
+      if (hz >= 1e3) return (hz / 1e3).toFixed(hz >= 1e5 ? 0 : 1) + ' kHz';
+      return hz.toFixed(1) + ' Hz';
+    };
+    const formatGain = (a) => {
+      if (a >= 1e4) return (a / 1e3).toFixed(0) + 'k';
+      if (a >= 1000) return (a / 1e3).toFixed(1) + 'k';
+      return a >= 10 ? a.toFixed(0) : a.toFixed(1);
+    };
+    const formatTime = (s) => {
+      if (s >= 1e-3) return (s * 1e3).toFixed(2) + ' ms';
+      if (s >= 1e-6) return (s * 1e6).toFixed(1) + ' µs';
+      return (s * 1e9).toFixed(0) + ' ns';
+    };
+
+    // Live-update primitives that get rebuilt on every slider input.
+    const sliderState = {
+      currentStep: 1,           // only 4 and 5 actually drive updates
+      live: [],                 // manim objects added during latest slider render
+    };
+
+    const clearLive = () => {
+      if (sliderState.live.length) {
+        scene.remove(...sliderState.live);
+        sliderState.live = [];
+      }
+    };
+
+    const renderBodeSlider = (logA, frame) => {
+      const { mapF, mapDb, F_MIN_LOG, F_MAX_LOG, DB_MIN } = makeBodeMap(frame);
+      const gain = Math.pow(10, logA);
+      const gainDb = 20 * logA;
+      // Corner frequency: intersection of horizontal CL line with open-loop slope.
+      // Open-loop slope: y_db = A_OL_DB - 20 * (log10(f) - log10(f_p)), for log10(f) >= log10(f_p)
+      // Solve for log10(f): log10(f) = log10(f_p) + (A_OL_DB - gainDb) / 20
+      const cornerLogF = Math.max(Math.log10(F_P), Math.log10(F_P) + (A_OL_DB - gainDb) / 20);
+      const cornerF = Math.pow(10, cornerLogF);
+      const gainDbClamped = Math.min(A_OL_DB, gainDb);
+      const yCl = mapDb(gainDbClamped);
+
+      // Smooth single-pole closed-loop response:
+      //   |A_CL(f)|_dB = gainDb − 10·log₁₀(1 + (f/f_CL)²)
+      // At high frequency this smoothly joins the open-loop asymptote.
+      const clDB_fn = (logF) => gainDbClamped - 10 * Math.log10(1 + Math.pow(10, 2 * (logF - cornerLogF)));
+      const N = 80;
+      const pts = [];
+      for (let i = 0; i <= N; i++) {
+        const logF = F_MIN_LOG + (F_MAX_LOG - F_MIN_LOG) * i / N;
+        const db = clDB_fn(logF);
+        if (db < DB_MIN) continue;
+        pts.push([mapF(logF), mapDb(db)]);
+      }
+      const clSegs = [];
+      for (let i = 1; i < pts.length; i++) {
+        clSegs.push(new Line({
+          start: [pts[i - 1][0], pts[i - 1][1], 0],
+          end: [pts[i][0], pts[i][1], 0],
+          color: ACCENT, strokeWidth: 2.8
+        }));
+      }
+
+      // Dashed dropline at corner — composed of short segments.
+      const dropSegs = [];
+      const dropX = mapF(cornerLogF);
+      const dropTop = yCl;
+      const dropBot = frame.y0;
+      const seg = 0.11, gap = 0.08;
+      for (let y = dropBot; y < dropTop - 1e-6; y += seg + gap) {
+        dropSegs.push(new Line({
+          start: [dropX, y, 0],
+          end: [dropX, Math.min(y + seg, dropTop), 0],
+          color: YELLOW, strokeWidth: 1.3
+        }));
+      }
+      const drop = new VGroup(...dropSegs);
+
+      return { objs: [...clSegs, drop], cornerF, gain };
+    };
+
+    const renderEcgSlider = (logA, frame, dataStep5) => {
+      const gain = Math.pow(10, logA);
+      const fc = GBP / gain;
+      const filtered = lowpass(ecgClean, fc, ECG_FS);
+      const decimated = new Float64Array(dataStep5.DECIM);
+      const step = filtered.length / dataStep5.DECIM;
+      for (let i = 0; i < dataStep5.DECIM; i++) {
+        decimated[i] = filtered[Math.min(filtered.length - 1, Math.floor(i * step))];
+      }
+      const segs = dataStep5.drawEcg(frame, decimated).map(([a, b, c, d]) =>
+        new Line({ start: [a, b, 0], end: [c, d, 0], color: ACCENT, strokeWidth: 1.8 })
+      );
+      // Label inside the frame: "fc = ..."
+      return { objs: segs, fc };
+    };
+
+    const rerenderSlider = (logA) => {
+      clearLive();
+      if (sliderState.currentStep === 4) {
+        const res = renderBodeSlider(logA, s4.bode.frame);
+        scene.add(...res.objs);
+        sliderState.live = res.objs;
+        // Update readouts
+        const gain = res.gain;
+        const bw = res.cornerF;
+        const tr = 0.35 / bw;
+        rdGain.textContent = '×' + formatGain(gain);
+        rdBw.textContent = formatHz(bw);
+        rdTr.textContent = formatTime(tr);
+        rdProduct.innerHTML = `A<sub>CL</sub> × BW = ${formatHz(gain * bw)} ≈ GBP`;
+      } else if (sliderState.currentStep === 5) {
+        const bodeRes = renderBodeSlider(logA, s5.bode.frame);
+        const ecgRes = renderEcgSlider(logA, s5.ecgOut, s5);
+        const all = [...bodeRes.objs, ...ecgRes.objs];
+        scene.add(...all);
+        sliderState.live = all;
+        const gain = bodeRes.gain;
+        const bw = bodeRes.cornerF;
+        const tr = 0.35 / bw;
+        rdGain.textContent = '×' + formatGain(gain);
+        rdBw.textContent = formatHz(bw);
+        rdTr.textContent = formatTime(tr);
+        rdProduct.innerHTML = `A<sub>CL</sub> × BW = ${formatHz(gain * bw)} ≈ GBP`;
+      }
+    };
+
+    // Slider input wiring
+    gainSlider.addEventListener('input', () => {
+      rerenderSlider(parseFloat(gainSlider.value));
+    });
+
+    // ═══════════════════════════════════════════════════
+    // STEPPER STATE MACHINE  (slide 08 pattern)
+    // ═══════════════════════════════════════════════════
+    const stepTitles = { 1: 'Step 1/5', 2: 'Step 2/5', 3: 'Step 3/5', 4: 'Step 4/5', 5: 'Step 5/5' };
+    const stepIndicator = document.getElementById('step-indicator');
+    const prevBtn = document.getElementById('step-prev');
+    const nextBtn = document.getElementById('step-next');
+
+    let currentStep = 1;
+    let isRendering = false;
+    let queuedStep = null;
+    let renderToken = 0;
+
+    const updateStepperUi = () => {
+      stepIndicator.textContent = stepTitles[currentStep];
+      prevBtn.disabled = currentStep === 1;
+      nextBtn.disabled = currentStep === 5;
+      const sliderActive = currentStep === 4 || currentStep === 5;
+      gbpPanel.classList.toggle('visible', sliderActive);
+      gbpPanel.setAttribute('aria-hidden', sliderActive ? 'false' : 'true');
+    };
+
+    const resetDynamic = () => {
+      scene.remove(...allDynamic);
+      clearLive();
+    };
+
+    const renderStep = async (animate = true, token = renderToken) => {
+      if (isRendering) return;
+      isRendering = true;
+      try {
+        const shouldAbort = () => token !== renderToken;
+        resetDynamic();
+
+        const data = stepData[currentStep];
+        // Add all static items instantly, animate the "animated" subset.
+        const nonAnimated = data.items.filter(o => !data.animated.includes(o));
+        if (nonAnimated.length) scene.add(...nonAnimated);
+
+        if (animate && data.animated && data.animated.length) {
+          for (const obj of data.animated) {
+            if (shouldAbort()) return;
+            const name = obj.constructor?.name || '';
+            if (name === 'Text' || name === 'MathTex') {
+              scene.remove(obj);
+              await scene.play(new Write(obj, { duration: 0.35 }));
+            } else {
+              scene.remove(obj);
+              await scene.play(new Create(obj, { duration: 0.35 }));
+            }
+            if (shouldAbort()) return;
+          }
+        } else if (data.animated) {
+          scene.add(...data.animated);
+        }
+
+        // After step content is on screen, if we're on step 4 or 5, seed the
+        // slider-driven primitives at the currently-selected gain.
+        sliderState.currentStep = currentStep;
+        if (currentStep === 4 || currentStep === 5) {
+          rerenderSlider(parseFloat(gainSlider.value));
+        }
+      } finally {
+        isRendering = false;
+      }
+
+      if (queuedStep !== null) {
+        const next = queuedStep;
+        queuedStep = null;
+        if (next !== currentStep) {
+          currentStep = next;
+          updateStepperUi();
+        }
+        await renderStep(false, renderToken);
+      }
+    };
+
+    const setStep = async (targetStep) => {
+      const step = Math.max(1, Math.min(5, targetStep));
+      if (isRendering) {
+        queuedStep = step;
+        renderToken += 1;
+        return;
+      }
+      if (step === currentStep) return;
+      currentStep = step;
+      updateStepperUi();
+      renderToken += 1;
+      await renderStep(true, renderToken);
+    };
+
+    prevBtn.addEventListener('click', () => setStep(currentStep - 1));
+    nextBtn.addEventListener('click', () => setStep(currentStep + 1));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        setStep(currentStep + 1);
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        setStep(currentStep - 1);
+      }
+    });
+
+    updateStepperUi();
+    renderToken += 1;
+    await renderStep(false, renderToken);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 20 — Isolation Amplifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    // Theme bridge:
+    //   1. Priority: ?theme= URL param (presenter sets this when loading).
+    //   2. Fallback: sessionStorage, preserved across the reload triggered
+    //      by the module's themechange listener (theme.js always forces
+    //      'light' at parse time, so we need our own persistence).
+    // Also hides the per-slide toggle button when embedded in the presenter.
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+               : (ss === 'dark' || ss === 'light') ? ss
+               : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">21 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Polygon, Rectangle, Circle, Line, Text, MathTex, VGroup, Dot,
+      Create, Write, FadeIn, FadeOut, MoveAlongPath,
+      UP, DOWN, LEFT, RIGHT, WHITE, linear
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
+    const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
+    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    const title = new Text({ text: 'Isolation Amplifier', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+
+    const bullets = [
+      'Galvanic isolation improves patient safety',
+      'Signal crosses barrier without direct electrical path',
+      'Methods: transformer, optical, capacitive coupling',
+      'Capacitive coupling: high performance, more CM/ESD sensitive'
+    ];
+    const bulletObjs = [];
+    for (let i = 0; i < bullets.length; i++) {
+      const b = new Text({ text: '•  ' + bullets[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
+      await b.loadGlyphs?.();
+      b.moveTo([0.0, -2.15 - i * 0.24, 0]);
+      bulletObjs.push(b);
+    }
+
+    // Two op-amp stages split by a barrier
+    const mkOpamp = (cx, cy) => new Polygon({
+      vertices: [[cx - 0.9, cy - 0.7, 0], [cx - 0.9, cy + 0.7, 0], [cx + 0.9, cy, 0]],
+      color: ACCENT, strokeWidth: 2, fillOpacity: 0
+    });
+
+    const A1 = mkOpamp(-3.0, 0);
+    const A2 = mkOpamp( 3.0, 0);
+
+    const inL = new Line({ start: [-5.5, 0, 0], end: [-3.9, 0, 0], color: FG });
+    const outR = new Line({ start: [3.9, 0, 0], end: [5.5, 0, 0], color: FG });
+    const inLbl = new MathTex({ latex: 'V_{IN}', color: BLUE });
+    const outLbl = new MathTex({ latex: 'V_{OUT}', color: YELLOW });
+    await inLbl.waitForRender?.();
+    await outLbl.waitForRender?.();
+    inLbl.scale(0.5).nextTo(inL.getStart(), LEFT, 0.1);
+    outLbl.scale(0.5).nextTo(outR.getEnd(), RIGHT, 0.1);
+
+    // Barrier dashed line
+    const barrier = [];
+    for (let i = 0; i < 12; i++) {
+      const y0 = -2.2 + i * 0.38;
+      barrier.push(new Line({ start: [0, y0, 0], end: [0, y0 + 0.18, 0], color: YELLOW, strokeWidth: 3 }));
+    }
+    const barrierLbl = new Text({ text: 'Isolation barrier', fontSize: 14, color: YELLOW, fontUrl: FONT_URL });
+    await barrierLbl.loadGlyphs?.();
+    barrierLbl.moveTo([0, 2.6, 0]);
+
+    // Two ground symbols
+    const gndL = new VGroup(
+      new Line({ start: [-3.0, -1.3, 0], end: [-3.0, -1.9, 0], color: FG }),
+      new Line({ start: [-3.3, -1.9, 0], end: [-2.7, -1.9, 0], color: FG, strokeWidth: 3 })
+    );
+    const gndR = new VGroup(
+      new Line({ start: [3.0, -1.3, 0], end: [3.0, -1.9, 0], color: FG }),
+      new Line({ start: [2.7, -1.9, 0], end: [3.3, -1.9, 0], color: FG, strokeWidth: 3 })
+    );
+    const gnd1L = new Text({ text: 'Gnd 1', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    const gnd2L = new Text({ text: 'Gnd 2', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    await Promise.all([gnd1L.loadGlyphs?.(), gnd2L.loadGlyphs?.()]);
+    gnd1L.moveTo([-3.0, -2.2, 0]);
+    gnd2L.moveTo([3.0, -2.2, 0]);
+
+    // Sequence: build the two stages
+    await scene.play(new Write(title, { duration: 0.7 }));
+    await scene.play(new Create(A1), new Create(A2));
+    await scene.play(
+      new Create(inL), new Create(outR),
+      new Write(inLbl), new Write(outLbl),
+      new Create(gndL), new Create(gndR),
+      new FadeIn(gnd1L), new FadeIn(gnd2L)
+    );
+    for (const b of barrier) scene.add(b);
+    await scene.play(new FadeIn(barrierLbl));
+
+    // Signal dot
+    const dot = new Dot({ point: [-5.5, 0, 0], color: BLUE, radius: 0.1 });
+    scene.add(dot);
+    const pathIn = new Line({ start: [-5.5, 0, 0], end: [-0.3, 0, 0] });
+    await scene.play(new MoveAlongPath(dot, { path: pathIn, duration: 1.2, rateFunc: linear }));
+    await scene.play(new FadeOut(dot));
+    const dot2 = new Dot({ point: [0.3, 0, 0], color: BLUE, radius: 0.1 });
+    scene.add(dot2);
+    await scene.play(new FadeIn(dot2));
+    await scene.play(new MoveAlongPath(dot2, { path: new Line({ start: [0.3, 0, 0], end: [5.5, 0, 0] }), duration: 1.2, rateFunc: linear }));
+
+    // Three coupling method icons along the bottom
+    const iconY = -3.0;
+    // Transformer (two coils)
+    const trCore = new Rectangle({ width: 0.6, height: 0.4, color: RED, strokeWidth: 2 });
+    trCore.moveTo([-3.5, iconY, 0]);
+    const trLbl = new Text({ text: 'Transformer', fontSize: 11, color: RED, fontUrl: FONT_URL });
+    await trLbl.loadGlyphs?.();
+    trLbl.moveTo([-3.5, iconY - 0.45, 0]);
+
+    // Optical (LED+photodiode)
+    const led = new Circle({ radius: 0.12, color: YELLOW, strokeWidth: 2, fillOpacity: 0.4 });
+    led.moveTo([-0.3, iconY, 0]);
+    const photo = new Circle({ radius: 0.12, color: YELLOW, strokeWidth: 2, fillOpacity: 0 });
+    photo.moveTo([0.3, iconY, 0]);
+    const optBeam = new Line({ start: [-0.15, iconY, 0], end: [0.15, iconY, 0], color: YELLOW });
+    const optLbl = new Text({ text: 'Optical', fontSize: 11, color: YELLOW, fontUrl: FONT_URL });
+    await optLbl.loadGlyphs?.();
+    optLbl.moveTo([0, iconY - 0.45, 0]);
+
+    // Capacitive (two plates)
+    const plate1 = new Line({ start: [3.2, iconY - 0.18, 0], end: [3.2, iconY + 0.18, 0], color: MAG, strokeWidth: 3 });
+    const plate2 = new Line({ start: [3.5, iconY - 0.18, 0], end: [3.5, iconY + 0.18, 0], color: MAG, strokeWidth: 3 });
+    const capLbl = new Text({ text: 'Capacitive', fontSize: 11, color: MAG, fontUrl: FONT_URL });
+    await capLbl.loadGlyphs?.();
+    capLbl.moveTo([3.35, iconY - 0.45, 0]);
+
+    await scene.play(
+      new Create(trCore), new FadeIn(trLbl),
+      new Create(led), new Create(photo), new Create(optBeam), new FadeIn(optLbl),
+      new Create(plate1), new Create(plate2), new FadeIn(capLbl)
+    );
+    for (const b of bulletObjs) {
+      await scene.play(new FadeIn(b, { duration: 0.18 }));
+    }
+    await scene.wait(2);
+  </script>
+</body>
+</html>

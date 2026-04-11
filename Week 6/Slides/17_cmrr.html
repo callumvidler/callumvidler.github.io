@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 17 — Common-Mode Rejection Ratio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    // Theme bridge:
+    //   1. Priority: ?theme= URL param (presenter sets this when loading).
+    //   2. Fallback: sessionStorage, preserved across the reload triggered
+    //      by the module's themechange listener (theme.js always forces
+    //      'light' at parse time, so we need our own persistence).
+    // Also hides the per-slide toggle button when embedded in the presenter.
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+               : (ss === 'dark' || ss === 'light') ? ss
+               : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">18 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Polygon, Rectangle, Circle, Line, Text, MathTex, VGroup, Dot,
+      Create, Write, FadeIn, MoveAlongPath,
+      UP, DOWN, LEFT, RIGHT, WHITE, linear
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
+    const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
+    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    const title = new Text({ text: 'Common-Mode Rejection Ratio (CMRR)', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+
+    const bullets = [
+      'CMRR = A_differential / A_common',
+      'Specified with frequency and source mismatch',
+      'Example: 120 dB @ 500 Hz, 1 kohm imbalance',
+      '1 V common-mode appears as ~1 uV differential'
+    ];
+    const bulletObjs = [];
+    for (let i = 0; i < bullets.length; i++) {
+      const b = new Text({ text: '•  ' + bullets[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
+      await b.loadGlyphs?.();
+      b.moveTo([2.35, 1.65 - i * 0.33, 0]);
+      bulletObjs.push(b);
+    }
+
+    // ── Body box with electrodes & impedance model ──
+    const bodyBox = new Rectangle({ width: 2.4, height: 2.0, color: MAG, strokeWidth: 2, fillOpacity: 0.1 });
+    bodyBox.moveTo([-3.6, 0.0, 0]);
+    const bodyLbl = new Text({ text: 'Body', fontSize: 16, color: MAG, fontUrl: FONT_URL });
+    await bodyLbl.loadGlyphs?.();
+    bodyLbl.moveTo([-3.6, 0.0, 0]);
+
+    // Z1, Z2, Z_body
+    const Z1 = new Rectangle({ width: 0.5, height: 0.3, color: ACCENT, strokeWidth: 2 });
+    Z1.moveTo([-1.7, 0.6, 0]);
+    const Z2 = new Rectangle({ width: 0.5, height: 0.3, color: ACCENT, strokeWidth: 2 });
+    Z2.moveTo([-1.7, -0.6, 0]);
+    const Zbody = new Rectangle({ width: 0.3, height: 0.6, color: ACCENT, strokeWidth: 2 });
+    Zbody.moveTo([-3.6, -1.6, 0]);
+    const Z1L = new MathTex({ latex: 'Z_{1}', color: ACCENT });
+    const Z2L = new MathTex({ latex: 'Z_{2}', color: ACCENT });
+    const ZBL = new MathTex({ latex: 'Z_{body}', color: ACCENT });
+    await Promise.all([Z1L.waitForRender?.(), Z2L.waitForRender?.(), ZBL.waitForRender?.()]);
+    Z1L.scale(0.5).nextTo(Z1, UP, 0.1);
+    Z2L.scale(0.5).nextTo(Z2, DOWN, 0.1);
+    ZBL.scale(0.5).nextTo(Zbody, RIGHT, 0.1);
+
+    // Lead wires to diff amp
+    const w1a = new Line({ start: [-2.4, 0.6, 0], end: [-1.95, 0.6, 0], color: FG });
+    const w1b = new Line({ start: [-1.45, 0.6, 0], end: [0.8, 0.6, 0], color: FG });
+    const w2a = new Line({ start: [-2.4, -0.6, 0], end: [-1.95, -0.6, 0], color: FG });
+    const w2b = new Line({ start: [-1.45, -0.6, 0], end: [0.8, -0.6, 0], color: FG });
+
+    const gndBody = new Line({ start: [-3.6, -1.0, 0], end: [-3.6, -1.25, 0], color: FG });
+    const gndBody2 = new Line({ start: [-3.6, -1.95, 0], end: [-3.6, -2.3, 0], color: FG });
+    const gndMark = new Line({ start: [-3.85, -2.3, 0], end: [-3.35, -2.3, 0], color: FG, strokeWidth: 3 });
+
+    // ── Differential amplifier triangle ──
+    const tri = new Polygon({
+      vertices: [[0.8, -1.1, 0], [0.8, 1.1, 0], [2.6, 0, 0]],
+      color: ACCENT, strokeWidth: 3, fillOpacity: 0
+    });
+    const pSym = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL }).moveTo([1.2, -0.45, 0]);
+    const mSym = new Text({ text: '−', fontSize: 18, color: RED,    fontUrl: FONT_URL }).moveTo([1.2,  0.45, 0]);
+    const outW = new Line({ start: [2.6, 0, 0], end: [4.2, 0, 0], color: FG });
+    const outLbl = new MathTex({ latex: 'V_{out}', color: YELLOW });
+    await outLbl.waitForRender?.();
+    outLbl.scale(0.55).nextTo([4.2, 0, 0], RIGHT, 0.1);
+
+    const eqn = new MathTex({ latex: 'CMRR = \\dfrac{A_{differential}}{A_{common}}', color: ACCENT });
+    await eqn.waitForRender?.();
+    eqn.scale(0.75).moveTo([-2.5, -3.0, 0]);
+
+    const numEx = new MathTex({ latex: '1\\,\\mathrm{V}_{cm} \\to 1\\,\\mu\\mathrm{V}_{diff}\\;\\text{at}\\;120\\,\\mathrm{dB}', color: YELLOW });
+    await numEx.waitForRender?.();
+    numEx.scale(0.7).moveTo([2.0, -3.0, 0]);
+
+    // ── Sequence ──
+    await scene.play(new Write(title, { duration: 0.7 }));
+    await scene.play(new Create(bodyBox), new Write(bodyLbl));
+    await scene.play(
+      new Create(w1a), new Create(w1b), new Create(Z1), new Write(Z1L),
+      new Create(w2a), new Create(w2b), new Create(Z2), new Write(Z2L),
+      new Create(gndBody), new Create(Zbody), new Write(ZBL),
+      new Create(gndBody2), new Create(gndMark)
+    );
+    await scene.play(
+      new Create(tri), new Write(pSym), new Write(mSym),
+      new Create(outW), new Write(outLbl)
+    );
+
+    // Common-mode dots (both leads, same color, large)
+    const d1 = new Dot({ point: [-2.4,  0.6, 0], color: RED, radius: 0.12 });
+    const d2 = new Dot({ point: [-2.4, -0.6, 0], color: RED, radius: 0.12 });
+    scene.add(d1, d2);
+    const p1 = new Line({ start: [-2.4,  0.6, 0], end: [0.8,  0.6, 0] });
+    const p2 = new Line({ start: [-2.4, -0.6, 0], end: [0.8, -0.6, 0] });
+    await scene.play(
+      new MoveAlongPath(d1, { path: p1, duration: 1.2, rateFunc: linear }),
+      new MoveAlongPath(d2, { path: p2, duration: 1.2, rateFunc: linear })
+    );
+
+    // Small output dot
+    const out = new Dot({ point: [2.6, 0, 0], color: YELLOW, radius: 0.05 });
+    scene.add(out);
+    await scene.play(new MoveAlongPath(out, { path: new Line({ start: [2.6, 0, 0], end: [4.2, 0, 0] }), duration: 1, rateFunc: linear }));
+
+    await scene.play(new Write(eqn), new Write(numEx));
+    for (const b of bulletObjs) {
+      await scene.play(new FadeIn(b, { duration: 0.2 }));
+    }
+    await scene.wait(2);
+  </script>
+</body>
+</html>

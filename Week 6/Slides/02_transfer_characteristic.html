@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 2 — Transfer Characteristic</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+               : (ss === 'dark' || ss === 'light') ? ss
+               : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">02 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Line, Rectangle, Polygon, MathTex, Text, VGroup,
+      Create, Write, FadeIn, Transform,
+      UP, DOWN, LEFT, RIGHT, ORIGIN, WHITE
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
+    const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
+    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+    const BULLET_LEFT_X = -6.1;
+    const PLOT_CY = -1.2;
+    const X_HALF = 2.8;
+    const Y_HALF = 1.9;
+    const RAIL_Y = 1.45;
+    const SAT_Y = 1.2;
+    const STEEP_HALF_X = 0.55;
+    const SHALLOW_HALF_X = 1.3;
+    const RAIL_SEG = 0.18;
+    const RAIL_GAP = 0.14;
+    const PLOT_RIGHT_X = -3.3 + X_HALF;
+
+    // ── Title ──
+    const title = new Text({ text: 'Transfer Characteristic', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+
+    // ── Axes (shifted left to leave space for equations) ──
+    const ox = -3.3;     // aligned so left plot edge matches bullet text edge
+    const xAxis = new Line({ start: [ox - X_HALF, PLOT_CY, 0], end: [ox + X_HALF, PLOT_CY, 0], color: MUTED, strokeWidth: 2 });
+    const yAxis = new Line({ start: [ox, PLOT_CY - Y_HALF, 0], end: [ox, PLOT_CY + Y_HALF, 0], color: MUTED, strokeWidth: 2 });
+    const xLabel = new MathTex({ latex: 'V_{in} = V_{+} - V_{-}',  color: FG , fontSize: 40});
+    const yLabel = new MathTex({ latex: 'V_{out}', color: FG , fontSize: 40});
+    await xLabel.waitForRender?.();
+    await yLabel.waitForRender?.();
+    xLabel.scale(0.5).nextTo(xAxis.getEnd(), RIGHT, 0.1);
+    yLabel.scale(0.55).nextTo(yAxis.getEnd(), UP, -0.2);
+
+    // ── Supply-rail dashed lines ──
+    function makeHorizontalDottedRail(y) {
+      const parts = [];
+      let x = ox - X_HALF;
+      while (x < ox + X_HALF) {
+        const xNext = Math.min(x + RAIL_SEG, ox + X_HALF);
+        parts.push(new Line({ start: [x, PLOT_CY + y, 0], end: [xNext, PLOT_CY + y, 0], color: YELLOW, strokeWidth: 1.5 }));
+        x = xNext + RAIL_GAP;
+      }
+      return new VGroup(...parts);
+    }
+    const railPlus  = makeHorizontalDottedRail(RAIL_Y);
+    const railMinus = makeHorizontalDottedRail(-RAIL_Y);
+    const railPlusL  = new MathTex({ latex: 'V_{S+}', color: YELLOW });
+    const railMinusL = new MathTex({ latex: 'V_{S-}', color: YELLOW });
+    await railPlusL.waitForRender?.();
+    await railMinusL.waitForRender?.();
+    railPlusL.scale(0.5).nextTo([PLOT_RIGHT_X, PLOT_CY + RAIL_Y, 0], RIGHT, 0.08);
+    railMinusL.scale(0.5).nextTo([PLOT_RIGHT_X, PLOT_CY - RAIL_Y, 0], RIGHT, 0.08);
+
+    // ── Transfer curve ──
+    const curveSteep = new VGroup(
+      new Line({ start: [ox - X_HALF, PLOT_CY - SAT_Y, 0], end: [ox - STEEP_HALF_X, PLOT_CY - SAT_Y, 0], color: ACCENT, strokeWidth: 3 }),
+      new Line({ start: [ox - STEEP_HALF_X, PLOT_CY - SAT_Y, 0], end: [ox + STEEP_HALF_X, PLOT_CY + SAT_Y, 0], color: ACCENT, strokeWidth: 3 }),
+      new Line({ start: [ox + STEEP_HALF_X, PLOT_CY + SAT_Y, 0], end: [ox + X_HALF, PLOT_CY + SAT_Y, 0], color: ACCENT, strokeWidth: 3 })
+    );
+    const curveShallow = new VGroup(
+      new Line({ start: [ox - X_HALF, PLOT_CY - SAT_Y, 0], end: [ox - SHALLOW_HALF_X, PLOT_CY - SAT_Y, 0], color: ACCENT, strokeWidth: 3 }),
+      new Line({ start: [ox - SHALLOW_HALF_X, PLOT_CY - SAT_Y, 0], end: [ox + SHALLOW_HALF_X, PLOT_CY + SAT_Y, 0], color: ACCENT, strokeWidth: 3 }),
+      new Line({ start: [ox + SHALLOW_HALF_X, PLOT_CY + SAT_Y, 0], end: [ox + X_HALF, PLOT_CY + SAT_Y, 0], color: ACCENT, strokeWidth: 3 })
+    );
+
+    // ── Delta annotations: right-triangle legs on the sloped line ──
+    function dashedSegment(start, end, color, seg = 0.08, gap = 0.05, strokeWidth = 2) {
+      const parts = [];
+      const dx = end[0] - start[0];
+      const dy = end[1] - start[1];
+      const len = Math.hypot(dx, dy);
+      const ux = dx / len;
+      const uy = dy / len;
+      let t = 0;
+      while (t < len) {
+        const t2 = Math.min(t + seg, len);
+        parts.push(new Line({
+          start: [start[0] + ux * t, start[1] + uy * t, 0],
+          end: [start[0] + ux * t2, start[1] + uy * t2, 0],
+          color,
+          strokeWidth
+        }));
+        t = t2 + gap;
+      }
+      return new VGroup(...parts);
+    }
+    const slopeM = SAT_Y / STEEP_HALF_X;
+    const x1 = ox + 0.18;
+    const x2 = ox + 0.50;
+    const yOnSlope = (x) => PLOT_CY + slopeM * (x - ox);
+    const triA = [x1, yOnSlope(x1), 0]; // on slope (lower point)
+    const triC = [x2, yOnSlope(x2), 0]; // on slope (upper point)
+    const triB = [x2, triA[1], 0];      // right-angle corner
+    const vinMid = [(triA[0] + triB[0]) / 2, (triA[1] + triB[1]) / 2, 0];
+    const voutMid = [(triB[0] + triC[0]) / 2, (triB[1] + triC[1]) / 2, 0];
+    const dVinEdge = dashedSegment(triA, triB, RED, 0.07, 0.04, 2);
+    const dVoutEdge = dashedSegment(triB, triC, ACCENT, 0.07, 0.04, 2);
+    const dVinLbl = new MathTex({ latex: '\\Delta V_{in}', color: RED });
+    await dVinLbl.waitForRender?.();
+    dVinLbl.scale(0.45).moveTo([vinMid[0] + 0.04, vinMid[1] - 0.16, 0]);
+    const dVoutLbl = new MathTex({ latex: '\\Delta V_{out}', color: ACCENT });
+    await dVoutLbl.waitForRender?.();
+    dVoutLbl.scale(0.45).moveTo([voutMid[0] + 0.32, voutMid[1], 0]);
+
+    // ── Equations (right side stack) ──
+    const eqX = 4.3;
+    const slopeEqn = new MathTex({ latex: 'A_{OL} = \\dfrac{\\Delta V_{out}}{\\Delta V_{in}}', color: ACCENT });
+    const linEqn   = new MathTex({ latex: 'V_{out} = A_{OL}\\cdot V_{in}', color: FG });
+    const fullEqn  = new MathTex({ latex: 'V_{out} = A_{OL}(V_{+} - V_{-})', color: FG });
+    const constr   = new MathTex({ latex: 'V_{S-} \\lesssim V_{out} \\lesssim V_{S+}', color: YELLOW , fontSize: 35});
+    await Promise.all([slopeEqn.waitForRender?.(), linEqn.waitForRender?.(), fullEqn.waitForRender?.(), constr.waitForRender?.()]);
+    linEqn.scale(0.55).moveTo([eqX, 1.35, 0]);
+    fullEqn.scale(0.55).moveTo([eqX, 0.6, 0]);
+    slopeEqn.scale(0.6).moveTo([eqX, -0.25, 0]);
+    constr.scale(0.62).moveTo([-5, -3.2, 0]);
+    const eqnBoxStyle = { color: MUTED2, strokeWidth: 2, fillOpacity: 0.06 };
+    const slopeEqnBox = new Rectangle({ width: 4.2, height: 0.95, ...eqnBoxStyle }).moveTo(slopeEqn.getCenter());
+
+    // ── Bullet points (left, introduced first) ──
+    const bullets = [
+      '\\bullet\\ \\text{Three regions: negative saturation, linear ramp, positive saturation}',
+      '\\bullet\\ \\text{Slope of linear region equals the open-loop gain }A_{OL}',
+      '\\bullet\\ \\text{Linear input window is only a few tens of microvolts wide}'
+    ];
+    const bulletObjs = [];
+    for (let i = 0; i < bullets.length; i++) {
+      const b = new MathTex({ latex: bullets[i], color: MUTED });
+      await b.waitForRender?.();
+      b.scale(0.36);
+      b.moveTo([BULLET_LEFT_X, 2.5 - i * 0.52, 0]);
+      b.shift([BULLET_LEFT_X - b.getLeft()[0], 0, 0]);
+      bulletObjs.push(b);
+    }
+
+    // ── Sequence ──
+    await scene.play(new Write(title, { duration: 0.7 }));
+    for (const b of bulletObjs) {
+      await scene.play(new FadeIn(b, { duration: 0.25 }));
+    }
+    await scene.play(new Create(xAxis), new Create(yAxis));
+    await scene.play(new Write(xLabel), new Write(yLabel));
+    await scene.play(new FadeIn(railPlus), new FadeIn(railMinus), new Write(railPlusL), new Write(railMinusL));
+
+    await scene.play(new Create(curveShallow, { duration: 1.2 }));
+    await scene.wait(0.3);
+    await scene.play(new Transform(curveShallow, curveSteep, { duration: 1.0 }));
+
+    await scene.play(new Create(dVinEdge), new Create(dVoutEdge));
+    await scene.play(new Write(dVinLbl), new Write(dVoutLbl));
+
+    await scene.play(new Write(linEqn));
+    await scene.play(new Write(fullEqn));
+    await scene.play(new Create(slopeEqnBox), new Write(slopeEqn));
+    await scene.play(new Write(constr));
+    await scene.wait(2);
+  </script>
+</body>
+</html>

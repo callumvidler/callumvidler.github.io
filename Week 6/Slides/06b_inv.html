@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 7 — Inverting Amplifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+               : (ss === 'dark' || ss === 'light') ? ss
+               : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+  <style>
+    /* SVG overlay — stretches exactly to match the manim canvas */
+    #trace-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease-out;
+    }
+    #trace-overlay .axis {
+      stroke: #6a6a72;
+      stroke-width: 2;
+      fill: none;
+    }
+    [data-theme="dark"] #trace-overlay .axis { stroke: #8892a4; }
+
+    #trace-overlay .axis-label {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 20px;
+      font-style: italic;
+      fill: #6a6a72;
+    }
+    [data-theme="dark"] #trace-overlay .axis-label { fill: #8892a4; }
+    #trace-overlay .axis-label .sub {
+      font-size: 14px;
+      font-style: italic;
+    }
+
+    #trace-overlay .trace {
+      stroke: #3d8b6e;
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      fill: none;
+    }
+    [data-theme="dark"] #trace-overlay .trace { stroke: #6aaa8e; }
+
+    /* Compact slider panel below the plot */
+    #ctrl-panel {
+      position: absolute;
+      left: 60.5%;
+      bottom: 4%;
+      width: 30%;
+      padding: 8px 12px 9px 12px;
+      background: rgba(125, 125, 135, 0.09);
+      border: 1px solid rgba(125, 125, 135, 0.28);
+      border-radius: 7px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 10.5px;
+      color: inherit;
+      opacity: 0;
+      transition: opacity 0.6s ease-out;
+      box-sizing: border-box;
+    }
+    #ctrl-panel .slider-row {
+      display: grid;
+      grid-template-columns: 20px 1fr 52px;
+      align-items: center;
+      gap: 8px;
+      margin: 2px 0;
+    }
+    #ctrl-panel .lbl {
+      font-weight: 600;
+      font-size: 12px;
+      font-style: italic;
+      color: #3d8b6e;
+    }
+    [data-theme="dark"] #ctrl-panel .lbl,
+    [data-theme="dark"] #ctrl-panel .gain-readout {
+      color: #6aaa8e;
+    }
+    #ctrl-panel .val {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      opacity: 0.82;
+      font-size: 10px;
+    }
+    #ctrl-panel input[type=range] {
+      width: 100%;
+      accent-color: #3d8b6e;
+      margin: 0;
+    }
+    [data-theme="dark"] #ctrl-panel input[type=range] {
+      accent-color: #6aaa8e;
+    }
+    #ctrl-panel .gain-readout {
+      margin-top: 5px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(125, 125, 135, 0.22);
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: #3d8b6e;
+      text-align: center;
+    }
+  </style>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">07 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene…</div>
+
+    <!-- Overlay: plot axes + dynamic trace, all in one consistent coord system -->
+    <svg id="trace-overlay" viewBox="0 0 1280 720" preserveAspectRatio="none">
+      <!-- x-axis and y-axis -->
+      <line class="axis" x1="770.5"  y1="450"   x2="1157.5" y2="450"/>
+      <line class="axis" x1="964"    y1="580.5" x2="964"    y2="319.5"/>
+      <!-- x-axis arrow tips -->
+      <line class="axis" x1="1157.5" y1="450"   x2="1145.8" y2="440.1"/>
+      <line class="axis" x1="1157.5" y1="450"   x2="1145.8" y2="459.9"/>
+      <!-- y-axis arrow tips -->
+      <line class="axis" x1="964"    y1="319.5" x2="954.1"  y2="331.2"/>
+      <line class="axis" x1="964"    y1="319.5" x2="973.9"  y2="331.2"/>
+      <!-- Axis labels -->
+      <text class="axis-label" x="1178" y="446" text-anchor="start"  dominant-baseline="middle">V<tspan class="sub" dy="5">in</tspan></text>
+      <text class="axis-label" x="934"  y="302" text-anchor="middle" dominant-baseline="middle">V<tspan class="sub" dy="5">out</tspan></text>
+      <!-- Dynamic trace line -->
+      <line id="trace-line" class="trace" x1="0" y1="0" x2="0" y2="0"/>
+    </svg>
+
+    <!-- Compact slider panel (below the plot) -->
+    <div id="ctrl-panel">
+      <div class="slider-row">
+        <span class="lbl">R₁</span>
+        <input type="range" id="r1-slider" min="1" max="20" step="0.5" value="10">
+        <span class="val" id="r1-val">10.0 kΩ</span>
+      </div>
+      <div class="slider-row">
+        <span class="lbl">R₂</span>
+        <input type="range" id="r2-slider" min="1" max="30" step="0.5" value="10">
+        <span class="val" id="r2-val">10.0 kΩ</span>
+      </div>
+      <div class="gain-readout" id="gain-val">A<sub>v</sub> = -1.00</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Polygon, Rectangle, Line, Circle, Dot, Text, MathTex,
+      Create, Write, FadeIn,
+      UP, DOWN, LEFT, RIGHT
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
+    const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    // ── Title ──
+    const title = new Text({ text: 'Inverting Amplifier', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+
+    // ── Layout constants (shifted down so feedback path clears the title) ──
+    const CX = -3.3, CY = 1.0;
+    const TRI_HALF_H = 0.9;
+    const TRI_IN_X   = CX - 0.9;    // -4.2
+    const TRI_APEX_X = CX + 0.8;    // -2.5
+    const LEFT_COL_X = -4.6;
+    const TAP_X      = -1.4;
+    const OUT_X      = -0.2;
+    const plusY      = CY - 0.35;   // 0.65 — (+) input on bottom
+    const minusY     = CY + 0.35;   // 1.35 — (−) input on top
+    const FB_Y       = 2.1;         // horizontal feedback run above triangle
+    const GND_Y      = -1.4;
+    const VIN_X      = -6.0;
+
+    // Plot constants (kept for equation placement; plot is drawn in SVG)
+    const PX = 3.6, PY = -1.0, PW = 2.0, PH = 1.3;
+
+    // ── Op-amp triangle ──
+    const tri = new Polygon({
+      vertices: [
+        [TRI_IN_X,   CY - TRI_HALF_H, 0],
+        [TRI_IN_X,   CY + TRI_HALF_H, 0],
+        [TRI_APEX_X, CY,              0]
+      ],
+      color: MUTED2, strokeWidth: 1.7, fillOpacity: 0.13
+    });
+
+    // ── + / − terminal markers (inverting: − on top, + on bottom) ──
+    const minusSign = new Text({ text: '−', fontSize: 18, color: RED,    fontUrl: FONT_URL });
+    const plusSign  = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL });
+    await Promise.all([minusSign.loadGlyphs?.(), plusSign.loadGlyphs?.()]);
+    minusSign.moveTo([TRI_IN_X + 0.3, minusY, 0]);
+    plusSign.moveTo([TRI_IN_X + 0.3, plusY,  0]);
+
+    // ── Output wire ──
+    const outWire  = new Line({ start: [TRI_APEX_X, CY, 0], end: [OUT_X, CY, 0], color: FG, strokeWidth: 1.8 });
+    const vOutPort = new Circle({ radius: 0.07, color: FG, strokeWidth: 2, fillColor: '#000000', fillOpacity: 1 }).moveTo([OUT_X, CY, 0]);
+    const vOutLbl  = new MathTex({ latex: 'V_{OUT}', color: YELLOW });
+    await vOutLbl.waitForRender?.();
+    vOutLbl.scale(0.7).nextTo([OUT_X, CY, 0], RIGHT, 0.14);
+
+    // ── Vin terminal ──
+    const vInPort = new Circle({ radius: 0.07, color: FG, strokeWidth: 2, fillColor: '#000000', fillOpacity: 1 }).moveTo([VIN_X, minusY, 0]);
+    const vInLbl  = new MathTex({ latex: 'V_{IN}', color: FG });
+    await vInLbl.waitForRender?.();
+    vInLbl.scale(0.7).nextTo([VIN_X, minusY, 0], LEFT, 0.14);
+
+    // ── R1 on the input branch to the summing node ──
+    const R1_W = 1.0, R1_H = 0.34;
+    const R1_CX = (VIN_X + LEFT_COL_X) / 2;   // -5.3
+    const inWireL = new Line({ start: [VIN_X, minusY, 0],            end: [R1_CX - R1_W / 2, minusY, 0], color: FG, strokeWidth: 1.8 });
+    const inWireR = new Line({ start: [R1_CX + R1_W / 2, minusY, 0], end: [LEFT_COL_X, minusY, 0],       color: FG, strokeWidth: 1.8 });
+    const inStub  = new Line({ start: [LEFT_COL_X, minusY, 0],       end: [TRI_IN_X, minusY, 0],         color: FG, strokeWidth: 1.8 });
+    const R1 = new Rectangle({ width: R1_W, height: R1_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+    R1.moveTo([R1_CX, minusY, 0]);
+    const R1Lbl = new MathTex({ latex: 'R_{1}', color: ACCENT });
+    await R1Lbl.waitForRender?.();
+    R1Lbl.scale(0.6).moveTo([R1_CX, minusY + R1_H / 2 + 0.18, 0]);
+
+    const sumDot = new Dot({ point: [LEFT_COL_X, minusY, 0], color: FG, radius: 0.06 });
+
+    // ── Feedback R2 (output tap → up → across above triangle → down to summing node) ──
+    const R2_W = 1.0, R2_H = 0.34;
+    const R2_CX = (TAP_X + LEFT_COL_X) / 2;   // -3.0
+    const fb1  = new Line({ start: [TAP_X, CY, 0],                end: [TAP_X, FB_Y, 0],                color: FG, strokeWidth: 1.8 });
+    const fb2R = new Line({ start: [TAP_X, FB_Y, 0],              end: [R2_CX + R2_W / 2, FB_Y, 0],     color: FG, strokeWidth: 1.8 });
+    const fb2L = new Line({ start: [R2_CX - R2_W / 2, FB_Y, 0],   end: [LEFT_COL_X, FB_Y, 0],           color: FG, strokeWidth: 1.8 });
+    const fb3  = new Line({ start: [LEFT_COL_X, FB_Y, 0],         end: [LEFT_COL_X, minusY, 0],         color: FG, strokeWidth: 1.8 });
+    const R2 = new Rectangle({ width: R2_W, height: R2_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+    R2.moveTo([R2_CX, FB_Y, 0]);
+    const R2Lbl = new MathTex({ latex: 'R_{2}', color: ACCENT });
+    await R2Lbl.waitForRender?.();
+    R2Lbl.scale(0.6).moveTo([R2_CX, FB_Y + R2_H / 2 + 0.18, 0]);
+
+    const tapDot = new Dot({ point: [TAP_X, CY, 0], color: FG, radius: 0.06 });
+
+    // ── + input grounded ──
+    const plusStub = new Line({ start: [TRI_IN_X, plusY, 0],    end: [LEFT_COL_X, plusY, 0], color: FG, strokeWidth: 1.8 });
+    const gndDrop  = new Line({ start: [LEFT_COL_X, plusY, 0],  end: [LEFT_COL_X, GND_Y, 0], color: FG, strokeWidth: 1.8 });
+    const gnd1 = new Line({ start: [LEFT_COL_X - 0.35, GND_Y,        0], end: [LEFT_COL_X + 0.35, GND_Y,        0], color: FG, strokeWidth: 3 });
+    const gnd2 = new Line({ start: [LEFT_COL_X - 0.22, GND_Y - 0.15, 0], end: [LEFT_COL_X + 0.22, GND_Y - 0.15, 0], color: FG, strokeWidth: 2 });
+    const gnd3 = new Line({ start: [LEFT_COL_X - 0.10, GND_Y - 0.28, 0], end: [LEFT_COL_X + 0.10, GND_Y - 0.28, 0], color: FG, strokeWidth: 1 });
+
+    // ── Equation (above the plot) ──
+    const eqn = new MathTex({ latex: 'A_v = -\\dfrac{R_{2}}{R_{1}}', color: ACCENT });
+    await eqn.waitForRender?.();
+    eqn.scale(0.8).moveTo([PX, PY + PH + 0.95, 0]);
+
+    // ── Sequence ──
+
+    // 1. Title
+    await scene.play(new Write(title, { duration: 0.7 }));
+
+    // 2. Op-amp shell: triangle, terminals, output wire/port/label
+    await scene.play(
+      new Create(tri),
+      new Write(plusSign), new Write(minusSign),
+      new Create(outWire), new Create(vOutPort), new Write(vOutLbl)
+    );
+
+    // 3. Gain-setting network: Vin → R1 → summing node, feedback R2, ground
+    await scene.play(
+      new Create(vInPort), new Write(vInLbl),
+      new Create(inWireL), new Create(inWireR), new Create(inStub),
+      new Create(R1), new Write(R1Lbl),
+      new Create(fb1), new Create(fb2R), new Create(fb2L), new Create(fb3),
+      new Create(R2), new Write(R2Lbl),
+      new Create(plusStub), new Create(gndDrop),
+      new Create(gnd1), new Create(gnd2), new Create(gnd3),
+      new FadeIn(tapDot), new FadeIn(sumDot)
+    );
+
+    // 4. Equation above the plot
+    await scene.play(new Write(eqn));
+
+    // 5. Reveal SVG plot + interactive slider panel
+    document.getElementById('trace-overlay').style.opacity = '1';
+    document.getElementById('ctrl-panel').style.opacity = '1';
+  </script>
+
+  <script>
+    // ── Interactive slider → SVG trace ──
+    (function () {
+      const PX = 3.6, PY = -1.0, PW = 2.0, PH = 1.3;
+
+      // Scene → SVG viewBox (1280 × 720, origin at centre, 90 px/unit)
+      const toSvg = (x, y) => [640 + x * 90, 360 - y * 90];
+
+      const traceEl = document.getElementById('trace-line');
+      const r1Slider = document.getElementById('r1-slider');
+      const r2Slider = document.getElementById('r2-slider');
+      const r1Val = document.getElementById('r1-val');
+      const r2Val = document.getElementById('r2-val');
+      const gainEl = document.getElementById('gain-val');
+
+      function update() {
+        const r1 = parseFloat(r1Slider.value);
+        const r2 = parseFloat(r2Slider.value);
+        const slope = -(r2 / r1);
+        const mag = Math.max(Math.abs(slope), 0.01);
+
+        const dx = Math.min(PW * 0.9, (PH * 0.9) / mag);
+        const [x1, y1] = toSvg(PX - dx, PY - slope * dx);
+        const [x2, y2] = toSvg(PX + dx, PY + slope * dx);
+        traceEl.setAttribute('x1', x1);
+        traceEl.setAttribute('y1', y1);
+        traceEl.setAttribute('x2', x2);
+        traceEl.setAttribute('y2', y2);
+
+        r1Val.textContent = r1.toFixed(1) + ' kΩ';
+        r2Val.textContent = r2.toFixed(1) + ' kΩ';
+        gainEl.innerHTML = 'A<sub>v</sub> = ' + slope.toFixed(2);
+      }
+
+      r1Slider.addEventListener('input', update);
+      r2Slider.addEventListener('input', update);
+      update();
+    })();
+  </script>
+</body>
+</html>

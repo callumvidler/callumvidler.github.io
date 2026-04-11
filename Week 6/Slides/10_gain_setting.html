@@ -503,6 +503,47 @@
     narrationSettled.moveTo(narration.getCenter());
     await scene.play(new Transform(narration, narrationSettled, { duration: 0.4 }));
 
+    // ── Part 2 — virtual short reveal ──
+    // Yellow dashed line between V+ and V− inside the triangle, matching the
+    // visual idiom used by slide 11 (virtual_short.html).
+    const vsDashes = [];
+    for (let i = 0; i < 6; i++) {
+      const xa = cx - 2.2 + i * 0.25;
+      vsDashes.push(new Line({
+        start: [xa,        cy + 0.7, 0],
+        end:   [xa + 0.15, cy - 0.7, 0],
+        color: YELLOW, strokeWidth: 1.5
+      }));
+    }
+    const vsGroup = new VGroup(...vsDashes);
+    const vsLabel = new Text({
+      text: 'V_+ ≈ V_−  (virtual short)',
+      fontSize: 12, color: YELLOW, fontUrl: FONT_URL
+    });
+    await vsLabel.loadGlyphs?.();
+    vsLabel.moveTo([cx - 0.5, cy + 1.9, 0]);
+
+    for (const d of vsDashes) scene.add(d);
+    await scene.play(
+      ...vsDashes.map(d => new Create(d, { duration: 0.25 })),
+      new FadeIn(vsLabel, { duration: 0.4 })
+    );
+
+    // ── Part 2 — closed-loop gain formula ──
+    const gainEqn = new MathTex({ latex: '\\dfrac{V_{out}}{V_{in}} = 1 + \\dfrac{R_f}{R_g} = 2', color: ACCENT });
+    await gainEqn.waitForRender?.();
+    gainEqn.scale(0.6).moveTo([-3.0, -2.6, 0]);
+    const gainSub = new Text({
+      text: 'Gain set by resistors — independent of A_OL.',
+      fontSize: 11, color: MUTED, fontUrl: FONT_URL
+    });
+    await gainSub.loadGlyphs?.();
+    gainSub.moveTo([-3.0, -3.75, 0]);
+
+    await scene.play(new Write(gainEqn, { duration: 0.6 }));
+    await scene.play(new FadeIn(gainSub, { duration: 0.4 }));
+    await scene.wait(0.8);
+
     // ── Interactive panel wiring ──
     // (filled in by Tasks 10–12)
 

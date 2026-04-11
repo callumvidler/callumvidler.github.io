@@ -304,8 +304,75 @@
       new FadeOut(partLabelP1,  { duration: 0.4 })
     );
 
-    // ── Part 2 ──
-    // (filled in by Tasks 6–9)
+    // ── Part 2 — label ──
+    const partLabelP2 = new Text({
+      text: 'Part 2 — With negative feedback',
+      fontSize: 14, color: MUTED, fontUrl: FONT_URL
+    });
+    await partLabelP2.loadGlyphs?.();
+    partLabelP2.moveTo([-4.25, 2.95, 0]);
+    await scene.play(new FadeIn(partLabelP2, { duration: 0.4 }));
+
+    // ── Part 2 — V_in source on V+ rail (re-introduced) ──
+    const vInSrcP2     = new Circle({ radius: 0.18, color: FG, strokeWidth: 2 });
+    vInSrcP2.moveTo([cx - 3.6, cy + 0.7, 0]);
+    const vInLblP2     = new Text({ text: 'V_in', fontSize: 11, color: FG, fontUrl: FONT_URL });
+    await vInLblP2.loadGlyphs?.();
+    vInLblP2.moveTo([cx - 3.6, cy + 1.15, 0]);
+    const vInLeadP2    = new Line({ start: [cx - 3.6, cy + 0.7, 0], end: [cx - 3.2, cy + 0.7, 0], color: FG });
+
+    // ── Part 2 — feedback wire loop ──
+    // Output tap at (cx+3.0, cy) goes up, over the top of the triangle, down to V− level,
+    // then passes through R_f to the R_f/R_g junction at (cx - 3.0, cy - 0.7), then R_g
+    // drops from that junction to ground at (cx - 3.0, cy - 2.0).
+    const tapX = cx + 3.0;  // where feedback branches off the output rail
+    const fbTopY = cy + 2.1;
+    const fbLeftX = cx - 3.0;
+
+    const fbUp    = new Line({ start: [tapX, cy, 0],   end: [tapX, fbTopY, 0],   color: ACCENT });
+    const fbOver  = new Line({ start: [tapX, fbTopY, 0], end: [fbLeftX, fbTopY, 0], color: ACCENT });
+    const fbDown1 = new Line({ start: [fbLeftX, fbTopY, 0], end: [fbLeftX, cy - 0.2, 0], color: ACCENT });
+    // R_f body (rectangle as a schematic resistor between (fbLeftX, cy-0.2) and (fbLeftX, cy-0.55))
+    const rfBody = new Rectangle({ width: 0.22, height: 0.35, color: ACCENT, strokeWidth: 2, fillOpacity: 0 });
+    rfBody.moveTo([fbLeftX, cy - 0.375, 0]);
+    const fbDown2 = new Line({ start: [fbLeftX, cy - 0.55, 0], end: [fbLeftX, cy - 0.7, 0], color: ACCENT });
+    // Horizontal stub from junction to V− rail
+    const fbStub  = new Line({ start: [fbLeftX, cy - 0.7, 0], end: [cx - 1.6, cy - 0.7, 0], color: ACCENT });
+    const rfLbl   = new Text({ text: 'R_f', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    await rfLbl.loadGlyphs?.();
+    rfLbl.moveTo([fbLeftX + 0.35, cy - 0.375, 0]);
+
+    // R_g drops from junction at (fbLeftX, cy - 0.7) to ground
+    const rgDown1 = new Line({ start: [fbLeftX, cy - 0.7, 0], end: [fbLeftX, cy - 1.0, 0], color: ACCENT });
+    const rgBody  = new Rectangle({ width: 0.22, height: 0.35, color: ACCENT, strokeWidth: 2, fillOpacity: 0 });
+    rgBody.moveTo([fbLeftX, cy - 1.175, 0]);
+    const rgDown2 = new Line({ start: [fbLeftX, cy - 1.35, 0], end: [fbLeftX, cy - 1.6, 0], color: ACCENT });
+    // Ground symbol at (fbLeftX, cy - 1.6)
+    const rgGndH1 = new Line({ start: [fbLeftX - 0.25, cy - 1.6, 0], end: [fbLeftX + 0.25, cy - 1.6, 0], color: FG });
+    const rgGndH2 = new Line({ start: [fbLeftX - 0.15, cy - 1.72, 0], end: [fbLeftX + 0.15, cy - 1.72, 0], color: FG });
+    const rgGndH3 = new Line({ start: [fbLeftX - 0.05, cy - 1.84, 0], end: [fbLeftX + 0.05, cy - 1.84, 0], color: FG });
+    const rgLbl   = new Text({ text: 'R_g', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    await rgLbl.loadGlyphs?.();
+    rgLbl.moveTo([fbLeftX + 0.35, cy - 1.175, 0]);
+
+    const fbNetwork = new VGroup(
+      fbUp, fbOver, fbDown1, rfBody, fbDown2, fbStub, rfLbl,
+      rgDown1, rgBody, rgDown2, rgGndH1, rgGndH2, rgGndH3, rgLbl
+    );
+
+    await scene.play(
+      new FadeIn(vInSrcP2), new FadeIn(vInLeadP2), new Write(vInLblP2)
+    );
+    await scene.play(new Create(fbNetwork, { duration: 1.2, lagRatio: 0.05 }));
+
+    // ── Part 2 — narration caption below circuit ──
+    const narration = new Text({
+      text: 'V_+ = 2 V applied.  V_− starts at 0.  Error = V_+ − V_− = 2 V.',
+      fontSize: 12, color: FG, fontUrl: FONT_URL
+    });
+    await narration.loadGlyphs?.();
+    narration.moveTo([-3.0, -3.2, 0]);
+    await scene.play(new FadeIn(narration, { duration: 0.4 }));
 
     // ── Interactive panel wiring ──
     // (filled in by Tasks 10–12)

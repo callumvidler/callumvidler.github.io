@@ -75,8 +75,59 @@
     const V_IN_AUTO = 2;
     const V_SAT = 13;
 
-    // ── Part 1 ──
-    // (filled in by Task 3)
+    // ── Part 1 — persistent stage ──
+    const title = new Text({
+      text: 'How Negative Feedback Controls the Gain',
+      fontSize: 34, color: FG, fontUrl: FONT_URL
+    });
+    await title.loadGlyphs?.();
+    title.moveTo([-3.5, 3.5, 0]);
+    const TITLE_LEFT_X = -6.2;
+    if (typeof title.getLeft === 'function') {
+      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+    }
+
+    const partLabelP1 = new Text({
+      text: 'Part 1 — Without feedback',
+      fontSize: 14, color: MUTED, fontUrl: FONT_URL
+    });
+    await partLabelP1.loadGlyphs?.();
+    partLabelP1.moveTo([-4.4, 2.95, 0]);
+
+    // Op-amp triangle centered around (−3.0, 0.2)
+    const cx = -3.0, cy = 0.2;
+    const triangle = new Polygon({
+      vertices: [[cx - 1.6, cy - 1.3, 0], [cx - 1.6, cy + 1.3, 0], [cx + 1.4, cy, 0]],
+      color: ACCENT, strokeWidth: 3, fillOpacity: 0
+    });
+
+    // Input rails (V+ on top, V− on bottom)
+    const inPlus  = new Line({ start: [cx - 3.2, cy + 0.7, 0], end: [cx - 1.6, cy + 0.7, 0], color: FG });
+    const inMinus = new Line({ start: [cx - 3.2, cy - 0.7, 0], end: [cx - 1.6, cy - 0.7, 0], color: FG });
+
+    // Output rail
+    const outRail = new Line({ start: [cx + 1.4, cy, 0], end: [cx + 3.2, cy, 0], color: FG });
+
+    // + / − symbols inside triangle
+    const plusSym  = new Text({ text: '+', fontSize: 22, color: ACCENT, fontUrl: FONT_URL });
+    const minusSym = new Text({ text: '−', fontSize: 22, color: RED,    fontUrl: FONT_URL });
+    await Promise.all([plusSym.loadGlyphs?.(), minusSym.loadGlyphs?.()]);
+    plusSym.moveTo([cx - 1.25, cy + 0.45, 0]);
+    minusSym.moveTo([cx - 1.25, cy - 0.45, 0]);
+
+    // ── Play sequence (Part 1 reveal) ──
+    await scene.play(new Write(title, { duration: 0.6 }));
+    await scene.play(new FadeIn(partLabelP1, { duration: 0.3 }));
+    await scene.play(new Create(triangle, { duration: 0.8 }));
+    await scene.play(
+      new FadeIn(inPlus,  { duration: 0.4 }),
+      new FadeIn(inMinus, { duration: 0.4 }),
+      new FadeIn(outRail, { duration: 0.4 }),
+      new Write(plusSym,  { duration: 0.4 }),
+      new Write(minusSym, { duration: 0.4 })
+    );
+
+    await scene.wait(0.1);
 
     // ── Transition to Part 2 ──
     // (filled in by Task 5)

@@ -32,6 +32,94 @@
       }
     })();
   </script>
+  <style>
+    .fb-panel {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 7;
+      width: 260px;
+      padding: 14px 16px 16px;
+      background: var(--slide-surface);
+      border: 1px solid var(--slide-border);
+      border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      font-family: 'IBM Plex Sans', 'IBM Plex Mono', sans-serif;
+      color: var(--slide-text);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    [data-theme="light"] .fb-panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+    .fb-panel.visible { display: flex; }
+    .fb-panel .fb-title {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      color: var(--slide-accent);
+      font-weight: 500;
+    }
+    .fb-panel .fb-row {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .fb-panel .fb-row label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--slide-text-dim);
+      display: flex; justify-content: space-between;
+    }
+    .fb-panel .fb-row label .val {
+      color: var(--slide-text);
+      font-variant-numeric: tabular-nums;
+    }
+    .fb-panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 18px;
+    }
+    .fb-panel .fb-readouts {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 3px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--slide-text);
+      line-height: 1.5;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid var(--slide-border);
+    }
+    .fb-panel .fb-readouts .k { color: var(--slide-text-dim); }
+    .fb-panel .fb-readouts .v {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+    }
+    .fb-panel .fb-reset {
+      align-self: flex-end;
+      margin-top: 2px;
+      background: transparent;
+      border: 1px solid var(--slide-border);
+      color: var(--slide-text-dim);
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .fb-panel .fb-reset:hover {
+      color: var(--slide-text);
+      border-color: var(--slide-accent);
+    }
+  </style>
 </head>
 <body class="slide">
   <header class="slide-header">
@@ -40,6 +128,26 @@
 
   <div id="stage" class="manim-stage">
     <div class="stage-fallback">Loading manim-web scene…</div>
+
+    <div class="fb-panel" id="fbPanel" aria-hidden="true">
+      <div class="fb-title">Try it</div>
+      <div class="fb-row">
+        <label>V<sub>in</sub> <span class="val" id="fbVinVal">2.00 V</span></label>
+        <input type="range" id="fbVinSlider" min="-4" max="4" step="0.1" value="2">
+      </div>
+      <div class="fb-row">
+        <label>A<sub>OL</sub> <span class="val" id="fbAolVal">1e6</span></label>
+        <input type="range" id="fbAolSlider" min="0" max="40" step="1" value="40">
+      </div>
+      <div class="fb-readouts">
+        <span class="k">V<sub>+</sub></span><span class="v" id="fbRvplus">2.00 V</span>
+        <span class="k">V<sub>−</sub></span><span class="v" id="fbRvminus">2.00 V</span>
+        <span class="k">error</span><span class="v" id="fbRerr">0.00 V</span>
+        <span class="k">V<sub>out</sub></span><span class="v" id="fbRvout">4.00 V</span>
+        <span class="k">A<sub>CL</sub></span><span class="v" id="fbRacl">2.00</span>
+      </div>
+      <button type="button" class="fb-reset" id="fbReset">reset</button>
+    </div>
   </div>
 
   <script type="module">

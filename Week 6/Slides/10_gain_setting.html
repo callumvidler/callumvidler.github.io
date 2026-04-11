@@ -127,6 +127,95 @@
       new Write(minusSym, { duration: 0.4 })
     );
 
+    // ── Part 1 — V_in source on V+, ground on V− ──
+    const vInSrcCircle = new Circle({ radius: 0.18, color: FG, strokeWidth: 2 });
+    vInSrcCircle.moveTo([cx - 3.6, cy + 0.7, 0]);
+    const vInLbl = new Text({ text: 'V_in', fontSize: 11, color: FG, fontUrl: FONT_URL });
+    await vInLbl.loadGlyphs?.();
+    vInLbl.moveTo([cx - 3.6, cy + 1.15, 0]);
+    // Extend input rail to the source circle
+    const vInLead = new Line({ start: [cx - 3.6, cy + 0.7, 0], end: [cx - 3.2, cy + 0.7, 0], color: FG });
+
+    // Ground tie on V− rail
+    const gndLead = new Line({ start: [cx - 3.6, cy - 0.7, 0], end: [cx - 3.2, cy - 0.7, 0], color: FG });
+    const gndV    = new Line({ start: [cx - 3.6, cy - 0.7, 0], end: [cx - 3.6, cy - 1.0, 0], color: FG });
+    const gndH1   = new Line({ start: [cx - 3.85, cy - 1.0, 0], end: [cx - 3.35, cy - 1.0, 0], color: FG });
+    const gndH2   = new Line({ start: [cx - 3.75, cy - 1.12, 0], end: [cx - 3.45, cy - 1.12, 0], color: FG });
+    const gndH3   = new Line({ start: [cx - 3.65, cy - 1.24, 0], end: [cx - 3.55, cy - 1.24, 0], color: FG });
+    const gndGroup = new VGroup(gndLead, gndV, gndH1, gndH2, gndH3);
+
+    // ── Part 1 — inset plot axes ──
+    const xAxis = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X1, PLOT_Y0, 0], color: MUTED });
+    const yAxis = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X0, PLOT_Y1, 0], color: MUTED });
+    const xLbl = new Text({ text: 'V_in (mV)', fontSize: 11, color: FG, fontUrl: FONT_URL });
+    const yLbl = new Text({ text: 'V_out (V)', fontSize: 11, color: FG, fontUrl: FONT_URL });
+    await Promise.all([xLbl.loadGlyphs?.(), yLbl.loadGlyphs?.()]);
+    xLbl.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.35, 0]);
+    yLbl.rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.35, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
+
+    // ±V_sat dashed rails
+    const satY = -2.0 + (V_SAT / 15) * 3.9; // y for +V_sat with 15 V ceiling mapping
+    // Top rail (+V_sat): horizontal dashed line
+    const satTopParts = [];
+    for (let i = 0; i < 16; i++) {
+      const xa = PLOT_X0 + i * 0.25;
+      satTopParts.push(new Line({ start: [xa, satY, 0], end: [xa + 0.15, satY, 0], color: RED, strokeWidth: 1 }));
+    }
+    const satBotParts = [];
+    for (let i = 0; i < 16; i++) {
+      const xa = PLOT_X0 + i * 0.25;
+      satBotParts.push(new Line({ start: [xa, -satY, 0], end: [xa + 0.15, -satY, 0], color: RED, strokeWidth: 1 }));
+    }
+    const vSatTopLbl = new Text({ text: '+V_sat', fontSize: 9, color: RED, fontUrl: FONT_URL });
+    const vSatBotLbl = new Text({ text: '−V_sat', fontSize: 9, color: RED, fontUrl: FONT_URL });
+    await Promise.all([vSatTopLbl.loadGlyphs?.(), vSatBotLbl.loadGlyphs?.()]);
+    vSatTopLbl.moveTo([PLOT_X1 + 0.35, satY, 0]);
+    vSatBotLbl.moveTo([PLOT_X1 + 0.35, -satY, 0]);
+
+    // ── Part 1 — nominal transfer curve (A_OL = 200k) ──
+    // At this axis scale, the curve is essentially a vertical step at V_in = 0.
+    const plotMidX = (PLOT_X0 + PLOT_X1) / 2; // 3.5
+    const nomLeft  = new Line({ start: [PLOT_X0, -satY, 0], end: [plotMidX - 0.02, -satY, 0], color: ACCENT, strokeWidth: 3 });
+    const nomStep  = new Line({ start: [plotMidX - 0.02, -satY, 0], end: [plotMidX + 0.02, satY, 0], color: ACCENT, strokeWidth: 3 });
+    const nomRight = new Line({ start: [plotMidX + 0.02, satY, 0], end: [PLOT_X1, satY, 0], color: ACCENT, strokeWidth: 3 });
+    const nomCurve = new VGroup(nomLeft, nomStep, nomRight);
+
+    // "Linear range ≈ ±65 μV" callout: small yellow bracket at x = plotMidX
+    const bracketL = new Line({ start: [plotMidX - 0.08, -0.25, 0], end: [plotMidX - 0.08, 0.25, 0], color: YELLOW, strokeWidth: 2 });
+    const bracketR = new Line({ start: [plotMidX + 0.08, -0.25, 0], end: [plotMidX + 0.08, 0.25, 0], color: YELLOW, strokeWidth: 2 });
+    const bracketTop = new Line({ start: [plotMidX - 0.08, 0.25, 0], end: [plotMidX + 0.08, 0.25, 0], color: YELLOW, strokeWidth: 2 });
+    const bracketBot = new Line({ start: [plotMidX - 0.08, -0.25, 0], end: [plotMidX + 0.08, -0.25, 0], color: YELLOW, strokeWidth: 2 });
+    const bracket = new VGroup(bracketL, bracketR, bracketTop, bracketBot);
+    const bracketArrow = new Line({ start: [plotMidX + 0.7, 0.9, 0], end: [plotMidX + 0.12, 0.1, 0], color: YELLOW, strokeWidth: 1.5 });
+    const bracketLbl = new Text({ text: 'Linear range ≈ ±65 μV', fontSize: 10, color: YELLOW, fontUrl: FONT_URL });
+    await bracketLbl.loadGlyphs?.();
+    bracketLbl.moveTo([plotMidX + 1.25, 1.05, 0]);
+
+    // Formula subcaption below plot
+    const eqnSub = new Text({
+      text: 'V_out = A_OL · V_in,  clipped at ±V_sat',
+      fontSize: 10, color: MUTED, fontUrl: FONT_URL
+    });
+    await eqnSub.loadGlyphs?.();
+    eqnSub.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.7, 0]);
+
+    await scene.play(
+      new FadeIn(vInSrcCircle), new FadeIn(vInLead), new Write(vInLbl),
+      new FadeIn(gndGroup)
+    );
+    await scene.play(
+      new Create(xAxis), new Create(yAxis), new Write(xLbl), new Write(yLbl)
+    );
+    for (const d of satTopParts) scene.add(d);
+    for (const d of satBotParts) scene.add(d);
+    await scene.play(
+      ...satTopParts.map(d => new Create(d, { duration: 0.2 })),
+      ...satBotParts.map(d => new Create(d, { duration: 0.2 })),
+      new FadeIn(vSatTopLbl), new FadeIn(vSatBotLbl)
+    );
+    await scene.play(new Create(nomCurve, { duration: 0.8, lagRatio: 0.02 }), new FadeIn(eqnSub));
+    await scene.play(new Create(bracket, { duration: 0.4 }), new Create(bracketArrow, { duration: 0.3 }), new FadeIn(bracketLbl));
+
     await scene.wait(0.1);
 
     // ── Transition to Part 2 ──

@@ -374,6 +374,35 @@
     narration.moveTo([-3.0, -3.2, 0]);
     await scene.play(new FadeIn(narration, { duration: 0.4 }));
 
+    // ── Part 2 — plot axes (Search step vs Voltage) ──
+    const xAxisP2 = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X1, PLOT_Y0, 0], color: MUTED });
+    const yAxisP2 = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X0, PLOT_Y1, 0], color: MUTED });
+    const xLblP2 = new Text({ text: 'Search step', fontSize: 11, color: FG, fontUrl: FONT_URL });
+    const yLblP2 = new Text({ text: 'Voltage (V)', fontSize: 11, color: FG, fontUrl: FONT_URL });
+    await Promise.all([xLblP2.loadGlyphs?.(), yLblP2.loadGlyphs?.()]);
+    xLblP2.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.35, 0]);
+    yLblP2.rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.35, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
+
+    // Coordinate helpers (voltage → plot y; step → plot x)
+    const stepToX = s => PLOT_X0 + s * 1.0;
+    const voltToY = v => PLOT_Y0 + (v / 5.0) * 3.9;
+
+    // V+ horizontal reference line at y = 2 V
+    const vPlusRefY = voltToY(V_IN_AUTO); // -2.0 + (2/5)*3.9 = -0.44
+    const vPlusLine = new Line({
+      start: [PLOT_X0, vPlusRefY, 0],
+      end:   [PLOT_X1, vPlusRefY, 0],
+      color: ACCENT, strokeWidth: 2
+    });
+    const vPlusLineLbl = new Text({ text: 'V_+ = 2 V', fontSize: 11, color: ACCENT, fontUrl: FONT_URL });
+    await vPlusLineLbl.loadGlyphs?.();
+    vPlusLineLbl.moveTo([PLOT_X1 + 0.55, vPlusRefY, 0]);
+
+    await scene.play(
+      new Create(xAxisP2), new Create(yAxisP2), new Write(xLblP2), new Write(yLblP2)
+    );
+    await scene.play(new Create(vPlusLine, { duration: 0.5 }), new FadeIn(vPlusLineLbl));
+
     // ── Interactive panel wiring ──
     // (filled in by Tasks 10–12)
 

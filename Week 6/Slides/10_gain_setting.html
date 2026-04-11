@@ -216,7 +216,63 @@
     await scene.play(new Create(nomCurve, { duration: 0.8, lagRatio: 0.02 }), new FadeIn(eqnSub));
     await scene.play(new Create(bracket, { duration: 0.4 }), new Create(bracketArrow, { duration: 0.3 }), new FadeIn(bracketLbl));
 
-    await scene.wait(0.1);
+    // ── Part 1 — punchline beat 1 ──
+    const punchline1 = new Text({
+      text: 'Any real input slams the output to a rail.',
+      fontSize: 14, color: YELLOW, fontUrl: FONT_URL
+    });
+    await punchline1.loadGlyphs?.();
+    punchline1.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 1.05, 0]);
+    await scene.play(new FadeIn(punchline1, { duration: 0.5 }));
+    await scene.wait(1.0);
+
+    // ── Part 1 — device/temperature jitter (three ghost curves) ──
+    // Visually exaggerate the slope of each ghost so the "family" is distinguishable.
+    // Real A_OL values would all look vertical at this axis scale — the subcaption
+    // makes this honesty explicit.
+    const mkGhost = (halfWidth, color) => {
+      const left   = new Line({ start: [PLOT_X0, -satY, 0], end: [plotMidX - halfWidth, -satY, 0], color, strokeWidth: 2 });
+      const middle = new Line({ start: [plotMidX - halfWidth, -satY, 0], end: [plotMidX + halfWidth, satY, 0], color, strokeWidth: 2 });
+      const right  = new Line({ start: [plotMidX + halfWidth, satY, 0], end: [PLOT_X1, satY, 0], color, strokeWidth: 2 });
+      return new VGroup(left, middle, right);
+    };
+    const ghost50k  = mkGhost(0.20, MUTED2);  // widest (most horizontal middle)
+    const ghost200k = mkGhost(0.10, MUTED2);
+    const ghost2M   = mkGhost(0.03, MUTED2);  // narrowest (most vertical)
+
+    const jitterSub = new Text({
+      text: 'A_OL = 50k … 2M across temperature and devices',
+      fontSize: 10, color: MUTED, fontUrl: FONT_URL
+    });
+    await jitterSub.loadGlyphs?.();
+    jitterSub.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.95, 0]);
+
+    await scene.play(new FadeIn(ghost50k,  { duration: 0.5 }));
+    await scene.play(new FadeIn(ghost200k, { duration: 0.5 }));
+    await scene.play(new FadeIn(ghost2M,   { duration: 0.5 }));
+
+    // ── Part 1 — punchline beat 2 ──
+    const punchline2 = new Text({
+      text: 'And A_OL itself varies ~10× with temperature and device.',
+      fontSize: 14, color: YELLOW, fontUrl: FONT_URL
+    });
+    await punchline2.loadGlyphs?.();
+    punchline2.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 1.05, 0]);
+
+    await scene.play(new FadeOut(punchline1, { duration: 0.3 }));
+    await scene.play(new FadeIn(jitterSub,  { duration: 0.4 }));
+    await scene.play(new FadeIn(punchline2, { duration: 0.4 }));
+    await scene.wait(0.8);
+
+    // ── Part 1 — final punchline ──
+    const punchlineFinal = new Text({
+      text: 'Open-loop: useless as a linear amplifier.',
+      fontSize: 16, color: YELLOW, fontUrl: FONT_URL
+    });
+    await punchlineFinal.loadGlyphs?.();
+    punchlineFinal.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 1.45, 0]);
+    await scene.play(new FadeIn(punchlineFinal, { duration: 0.5 }));
+    await scene.wait(1.5);
 
     // ── Transition to Part 2 ──
     // (filled in by Task 5)

@@ -275,7 +275,34 @@
     await scene.wait(1.5);
 
     // ── Transition to Part 2 ──
-    // (filled in by Task 5)
+    // Fade out everything Part 1-specific while leaving the triangle,
+    // input/output rails, and + / − symbols intact.
+    await scene.play(
+      new FadeOut(vInSrcCircle, { duration: 0.4 }),
+      new FadeOut(vInLead,      { duration: 0.4 }),
+      new FadeOut(vInLbl,       { duration: 0.4 }),
+      new FadeOut(gndGroup,     { duration: 0.4 }),
+      new FadeOut(xAxis,        { duration: 0.4 }),
+      new FadeOut(yAxis,        { duration: 0.4 }),
+      new FadeOut(xLbl,         { duration: 0.4 }),
+      new FadeOut(yLbl,         { duration: 0.4 }),
+      new FadeOut(vSatTopLbl,   { duration: 0.4 }),
+      new FadeOut(vSatBotLbl,   { duration: 0.4 }),
+      ...satTopParts.map(d => new FadeOut(d, { duration: 0.4 })),
+      ...satBotParts.map(d => new FadeOut(d, { duration: 0.4 })),
+      new FadeOut(nomCurve,     { duration: 0.4 }),
+      new FadeOut(bracket,      { duration: 0.4 }),
+      new FadeOut(bracketArrow, { duration: 0.4 }),
+      new FadeOut(bracketLbl,   { duration: 0.4 }),
+      new FadeOut(eqnSub,       { duration: 0.4 }),
+      new FadeOut(ghost50k,     { duration: 0.4 }),
+      new FadeOut(ghost200k,    { duration: 0.4 }),
+      new FadeOut(ghost2M,      { duration: 0.4 }),
+      new FadeOut(jitterSub,    { duration: 0.4 }),
+      new FadeOut(punchline2,   { duration: 0.4 }),
+      new FadeOut(punchlineFinal, { duration: 0.4 }),
+      new FadeOut(partLabelP1,  { duration: 0.4 })
+    );
 
     // ── Part 2 ──
     // (filled in by Tasks 6–9)

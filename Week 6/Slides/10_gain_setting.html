@@ -653,7 +653,69 @@
     await scene.wait(0.8);
 
     // ── Interactive panel wiring ──
-    // (filled in by Tasks 10–12)
+    const fbPanel     = document.getElementById('fbPanel');
+    const fbVinSlider = document.getElementById('fbVinSlider');
+    const fbVinVal    = document.getElementById('fbVinVal');
+    const fbAolSlider = document.getElementById('fbAolSlider');
+    const fbAolVal    = document.getElementById('fbAolVal');
+    const fbRvplus    = document.getElementById('fbRvplus');
+    const fbRvminus   = document.getElementById('fbRvminus');
+    const fbRerr      = document.getElementById('fbRerr');
+    const fbRvout     = document.getElementById('fbRvout');
+    const fbRacl      = document.getElementById('fbRacl');
+    const fbReset     = document.getElementById('fbReset');
+
+    // Log-scale A_OL: slider is 0..40, maps to 1e2..1e6
+    const aolFromSlider = s => Math.pow(10, 2 + (s / 40) * 4);
+    const fmtAol = a => {
+      if (a >= 1e6) return '1e6';
+      if (a >= 1e3) return (a / 1e3).toFixed(0) + 'k';
+      return a.toFixed(0);
+    };
+
+    const computeState = () => {
+      const Vplus = parseFloat(fbVinSlider.value);
+      const AOL   = aolFromSlider(parseFloat(fbAolSlider.value));
+      const VoutRaw = (AOL * Vplus) / (1 + AOL * BETA);
+      const Vout  = Math.max(-V_SAT, Math.min(V_SAT, VoutRaw));
+      const Vminus = BETA * Vout;
+      const err    = Vplus - Vminus;
+      const ACL    = Math.abs(Vplus) > 1e-3 ? Vout / Vplus : 1 / BETA;
+      return { Vplus, AOL, Vout, Vminus, err, ACL };
+    };
+
+    const updateReadouts = (s) => {
+      fbVinVal.textContent  = s.Vplus.toFixed(2) + ' V';
+      fbAolVal.textContent  = fmtAol(s.AOL);
+      fbRvplus.textContent  = s.Vplus.toFixed(2) + ' V';
+      fbRvminus.textContent = s.Vminus.toFixed(2) + ' V';
+      fbRerr.textContent    = s.err.toFixed(3) + ' V';
+      fbRvout.textContent   = s.Vout.toFixed(2) + ' V';
+      fbRacl.textContent    = s.ACL.toFixed(2);
+    };
+
+    const onSliderInput = () => {
+      const s = computeState();
+      updateReadouts(s);
+      // Task 12 will add live visual updates here
+      window.__fbState = s; // stash for Task 12
+    };
+
+    fbVinSlider.addEventListener('input', onSliderInput);
+    fbAolSlider.addEventListener('input', onSliderInput);
+
+    fbReset.addEventListener('click', () => {
+      fbVinSlider.value = '2';
+      fbAolSlider.value = '40';
+      onSliderInput();
+    });
+
+    // Show the panel after the auto-animation completes
+    fbPanel.classList.add('visible');
+    fbPanel.setAttribute('aria-hidden', 'false');
+    onSliderInput(); // seed readouts
+
+    await scene.wait(0.2);
 
     await scene.wait(0.1);
   </script>

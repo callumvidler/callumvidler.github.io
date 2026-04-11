@@ -403,6 +403,106 @@
     );
     await scene.play(new Create(vPlusLine, { duration: 0.5 }), new FadeIn(vPlusLineLbl));
 
+    // ── Part 2 — live voltage labels on circuit (mutated during search steps) ──
+    const voutLabel = new Text({ text: 'V_out = 0.0 V', fontSize: 11, color: FG, fontUrl: FONT_URL });
+    await voutLabel.loadGlyphs?.();
+    voutLabel.moveTo([cx + 2.5, cy + 0.35, 0]);
+    const vminusLabel = new Text({ text: 'V_\u2212 = 0 V', fontSize: 11, color: BLUE, fontUrl: FONT_URL });
+    await vminusLabel.loadGlyphs?.();
+    vminusLabel.moveTo([cx - 2.5, cy - 0.95, 0]);
+    const vplusLabel = new Text({ text: 'V_+ = 2 V', fontSize: 11, color: ACCENT, fontUrl: FONT_URL });
+    await vplusLabel.loadGlyphs?.();
+    vplusLabel.moveTo([cx - 2.5, cy + 0.95, 0]);
+    await scene.play(new FadeIn(voutLabel), new FadeIn(vminusLabel), new FadeIn(vplusLabel));
+
+    // "Push V_out ↑" arrow at output rail (persistent during steps 1–3, fades after step 4)
+    const pushArrow = new Line({
+      start: [cx + 2.5, cy + 1.15, 0],
+      end:   [cx + 2.5, cy + 0.65, 0],
+      color: YELLOW, strokeWidth: 3
+    });
+    const pushHead1 = new Line({ start: [cx + 2.4, cy + 0.78, 0], end: [cx + 2.5, cy + 0.65, 0], color: YELLOW, strokeWidth: 3 });
+    const pushHead2 = new Line({ start: [cx + 2.6, cy + 0.78, 0], end: [cx + 2.5, cy + 0.65, 0], color: YELLOW, strokeWidth: 3 });
+    const pushLbl = new Text({ text: 'Push V_out \u2191', fontSize: 10, color: YELLOW, fontUrl: FONT_URL });
+    await pushLbl.loadGlyphs?.();
+    pushLbl.moveTo([cx + 3.15, cy + 0.9, 0]);
+    const pushGroup = new VGroup(pushArrow, pushHead1, pushHead2, pushLbl);
+    await scene.play(new FadeIn(pushGroup, { duration: 0.3 }));
+
+    // Step helper — runs one search beat
+    // Each step: mutate voltage labels, drop a blue dot at (stepIdx, vMinusNew),
+    // extend the staircase, draw an error indicator with label.
+    const staircaseSegments = [];
+    const staircaseDots = [];
+    const errorIndicators = [];
+    let prevDotPos = [stepToX(0), voltToY(0), 0];
+
+    const runStep = async (stepIdx, voutNew, vMinusNew, errorVal) => {
+      const newVoutText = new Text({ text: `V_out = ${voutNew.toFixed(1)} V`, fontSize: 11, color: FG, fontUrl: FONT_URL });
+      await newVoutText.loadGlyphs?.();
+      newVoutText.moveTo(voutLabel.getCenter());
+      const newVminusText = new Text({ text: `V_\u2212 = ${vMinusNew.toFixed(1)} V`, fontSize: 11, color: BLUE, fontUrl: FONT_URL });
+      await newVminusText.loadGlyphs?.();
+      newVminusText.moveTo(vminusLabel.getCenter());
+
+      const dotX = stepToX(stepIdx);
+      const dotY = voltToY(vMinusNew);
+      const dot = new Dot({ point: [dotX, dotY, 0], color: BLUE, radius: 0.08 });
+      staircaseDots.push(dot);
+
+      // Staircase: horizontal from prev to (dotX, prevY), vertical from (dotX, prevY) to (dotX, dotY)
+      const hSeg = new Line({ start: prevDotPos, end: [dotX, prevDotPos[1], 0], color: BLUE, strokeWidth: 2 });
+      const vSeg = new Line({ start: [dotX, prevDotPos[1], 0], end: [dotX, dotY, 0], color: BLUE, strokeWidth: 2 });
+      staircaseSegments.push(hSeg, vSeg);
+
+      // Error indicator: dashed vertical from dot to V+ line
+      const errParts = [];
+      const dashY0 = dotY;
+      const dashY1 = vPlusRefY;
+      const dashCount = Math.max(3, Math.round(Math.abs(dashY1 - dashY0) / 0.1));
+      for (let i = 0; i < dashCount; i++) {
+        const y0 = dashY0 + (dashY1 - dashY0) * (i / dashCount);
+        const y1 = dashY0 + (dashY1 - dashY0) * ((i + 0.5) / dashCount);
+        errParts.push(new Line({ start: [dotX + 0.08, y0, 0], end: [dotX + 0.08, y1, 0], color: YELLOW, strokeWidth: 1.5 }));
+      }
+      const errLbl = new Text({ text: `error = ${errorVal.toFixed(1)} V`, fontSize: 10, color: YELLOW, fontUrl: FONT_URL });
+      await errLbl.loadGlyphs?.();
+      errLbl.moveTo([dotX + 0.7, (dashY0 + dashY1) / 2, 0]);
+      const errGroup = new VGroup(...errParts, errLbl);
+      errorIndicators.push(errGroup);
+
+      await scene.play(
+        new Transform(voutLabel,   newVoutText,   { duration: 0.3 }),
+        new Transform(vminusLabel, newVminusText, { duration: 0.3 }),
+        new Create(hSeg, { duration: 0.25 }),
+        new Create(vSeg, { duration: 0.25 }),
+        new FadeIn(dot,  { duration: 0.25 }),
+        new FadeIn(errGroup, { duration: 0.25 })
+      );
+      prevDotPos = [dotX, dotY, 0];
+    };
+
+    await runStep(1, 1.0, 0.5, 1.5);
+    // Fade error 1 before drawing error 2 so the plot doesn't get cluttered
+    await scene.play(new FadeOut(errorIndicators[0], { duration: 0.2 }));
+    await runStep(2, 2.0, 1.0, 1.0);
+    await scene.play(new FadeOut(errorIndicators[1], { duration: 0.2 }));
+    await runStep(3, 3.0, 1.5, 0.5);
+    await scene.play(new FadeOut(errorIndicators[2], { duration: 0.2 }));
+    await runStep(4, 4.0, 2.0, 0.0);
+
+    // Collapse the final error indicator and fade the push arrow
+    await scene.play(new FadeOut(errorIndicators[3], { duration: 0.4 }), new FadeOut(pushGroup, { duration: 0.4 }));
+
+    // Replace narration caption with settled text
+    const narrationSettled = new Text({
+      text: 'V_\u2212 = V_+.  Error = 0.  Output has settled.',
+      fontSize: 12, color: FG, fontUrl: FONT_URL
+    });
+    await narrationSettled.loadGlyphs?.();
+    narrationSettled.moveTo(narration.getCenter());
+    await scene.play(new Transform(narration, narrationSettled, { duration: 0.4 }));
+
     // ── Interactive panel wiring ──
     // (filled in by Tasks 10–12)
 

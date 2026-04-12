@@ -2046,85 +2046,112 @@
       stepYLabel.rotate(Math.PI / 2);
       const stepStatics = [stepSurface, stepBorder, stepXLabel, stepYLabel];
 
-      // ── Penalty Plot (bottom-right) ──
-      // Fixed data range, so axes can be static
+      // ── 2D Penalty Heatmap (bottom-right) ──
+      // Axes: R1 (x, log) vs R2 (y, log). Color = max penalty (green→yellow→red).
       const penFrame = { x0: -0.60, x1: 6.10, y0: -3.40, y1: -0.40 };
-      const penSurface = new Rectangle({
-        width: penFrame.x1 - penFrame.x0, height: penFrame.y1 - penFrame.y0,
-        color: MUTED2, strokeWidth: 0, fillOpacity: IS_LIGHT ? 0.25 : 0.18
-      });
-      penSurface.moveTo([(penFrame.x0 + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      const penLogMin = 2, penLogMax = 7; // 100Ω to 10MΩ
+      const penXRange = [penLogMin, penLogMax];
+      const penYRange = [penLogMin, penLogMax];
+      const GRID_N = 50;
+      const cellW = (penFrame.x1 - penFrame.x0) / GRID_N;
+      const cellH = (penFrame.y1 - penFrame.y0) / GRID_N;
+
+      // Penalty functions
+      const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
+      const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
+      const penParasitic = (r1v, r2v) => 10e3 * 2 * Math.PI * r2v * S4_CPAR;
+
+      // Color interpolation: green (0) → yellow (0.5) → red (1+)
+      const penColor = (penalty) => {
+        const p = clamp(penalty, 0, 1);
+        if (IS_LIGHT) {
+          // Light theme: green → amber → red
+          const r = Math.round(16 + p * 204);
+          const g_val = Math.round(185 - p * 147);
+          const b_val = Math.round(129 - p * 91);
+          return 'rgb(' + r + ',' + g_val + ',' + b_val + ')';
+        } else {
+          // Dark theme: teal-green → amber → red
+          const r = Math.round(30 + p * 194);
+          const g_val = Math.round(180 - p * 100);
+          const b_val = Math.round(110 - p * 80);
+          return 'rgb(' + r + ',' + g_val + ',' + b_val + ')';
+        }
+      };
+
+      const heatmapObjs = [];
+      for (let ix = 0; ix < GRID_N; ix++) {
+        for (let iy = 0; iy < GRID_N; iy++) {
+          const logR1 = penLogMin + (ix + 0.5) / GRID_N * (penLogMax - penLogMin);
+          const logR2 = penLogMin + (iy + 0.5) / GRID_N * (penLogMax - penLogMin);
+          const r1v = Math.pow(10, logR1);
+          const r2v = Math.pow(10, logR2);
+          const worstPenalty = Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v));
+          const cx = penFrame.x0 + (ix + 0.5) * cellW;
+          const cy = penFrame.y0 + (iy + 0.5) * cellH;
+          const cell = new Rectangle({
+            width: cellW + 0.01, height: cellH + 0.01,
+            color: penColor(worstPenalty), strokeWidth: 0, fillOpacity: 0.85
+          });
+          cell.moveTo([cx, cy, 0]);
+          heatmapObjs.push(cell);
+        }
+      }
+
+      // Border
       const penBorder = new Rectangle({
         width: penFrame.x1 - penFrame.x0, height: penFrame.y1 - penFrame.y0,
         color: AXIS, strokeWidth: 1.3, fillOpacity: 0
       });
       penBorder.moveTo([(penFrame.x0 + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
-      // X-axis at y=0 in data space (penalty=0 → bottom of plot)
-      const penXAxisY = penFrame.y0;
-      const penXAxis = new Line({ start: [penFrame.x0, penXAxisY, 0], end: [penFrame.x1, penXAxisY, 0], color: AXIS, strokeWidth: 1.4 });
-      // Y-axis at left edge
-      const penYAxis = new Line({ start: [penFrame.x0, penFrame.y0, 0], end: [penFrame.x0, penFrame.y1, 0], color: AXIS, strokeWidth: 1.4 });
-      const penTitle = await makeText('Resistor Sweet Spot', 14, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.18, 0]);
-      const penXLabel = await makeText('Resistor Value', 12, MUTED, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y0 - 0.32, 0]);
-      const penYLabel = await makeText('Penalty', 12, MUTED, [penFrame.x0 - 0.38, (penFrame.y0 + penFrame.y1) / 2, 0]);
-      penYLabel.rotate(Math.PI / 2);
-      const penStatics = [penSurface, penBorder, penXAxis, penYAxis, penXLabel, penYLabel];
 
-      // ── Penalty plot static overlays (built once, never redrawn) ──
-      const penLogMin = 1, penLogMax = 8;
-      const penXRange = [penLogMin, penLogMax];
-      const penYRange = [0, 1.15];
-
-      // Sweet-spot band
-      const sweetL = mapPoint(penFrame, Math.log10(10e3), 0, penXRange, penYRange);
-      const sweetR = mapPoint(penFrame, Math.log10(100e3), 0, penXRange, penYRange);
-      const sweetBand = new Rectangle({
-        width: sweetR[0] - sweetL[0],
-        height: penFrame.y1 - penFrame.y0,
-        color: ACCENT, strokeWidth: 0, fillOpacity: 0.12
+      // Sweet-spot outline (10kΩ–100kΩ for both R1 and R2)
+      const sweetX0 = penFrame.x0 + (4 - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
+      const sweetX1 = penFrame.x0 + (5 - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
+      const sweetY0 = penFrame.y0 + (4 - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
+      const sweetY1 = penFrame.y0 + (5 - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
+      const sweetOutline = new Rectangle({
+        width: sweetX1 - sweetX0, height: sweetY1 - sweetY0,
+        color: FG, strokeWidth: 2.0, fillOpacity: 0
       });
-      sweetBand.moveTo([(sweetL[0] + sweetR[0]) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      sweetOutline.moveTo([(sweetX0 + sweetX1) / 2, (sweetY0 + sweetY1) / 2, 0]);
+      const sweetLabel = await makeText('Sweet Spot', 12, FG, [(sweetX0 + sweetX1) / 2, sweetY1 + 0.14, 0]);
 
-      // Danger zone — low R
-      const dangerLR = mapPoint(penFrame, Math.log10(1e3), 0, penXRange, penYRange);
-      const dangerLow = new Rectangle({
-        width: dangerLR[0] - penFrame.x0,
-        height: penFrame.y1 - penFrame.y0,
-        color: RED, strokeWidth: 0, fillOpacity: 0.07
-      });
-      dangerLow.moveTo([(penFrame.x0 + dangerLR[0]) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      // Title and axis labels
+      const penTitle = await makeText('Resistor Design Space', 14, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.18, 0]);
+      const penXLabel = await makeText('R1', 13, MUTED, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y0 - 0.32, 0]);
+      const penYLabelText = await makeText('R2', 13, MUTED, [penFrame.x0 - 0.34, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      penYLabelText.rotate(Math.PI / 2);
 
-      // Danger zone — high R
-      const dangerHR = mapPoint(penFrame, Math.log10(1e6), 0, penXRange, penYRange);
-      const dangerHigh = new Rectangle({
-        width: penFrame.x1 - dangerHR[0],
-        height: penFrame.y1 - penFrame.y0,
-        color: YELLOW, strokeWidth: 0, fillOpacity: 0.07
-      });
-      dangerHigh.moveTo([(dangerHR[0] + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
-
-      const sweetLabel = await makeText('Sweet Spot', 12, ACCENT, [(sweetL[0] + sweetR[0]) / 2, penFrame.y1 - 0.20, 0]);
-
-      // Legend — top-right of penalty plot, stacked vertically for readability
-      const legX = penFrame.x1 - 1.30;
-      const legY0 = penFrame.y1 - 0.20;
-      const leg1 = await makeText('\u2014 Output Current', 11, RED, [legX, legY0, 0], legX);
-      const leg2 = await makeText('\u2014 Offset Voltage', 11, YELLOW, [legX, legY0 - 0.22, 0], legX);
-      const leg3 = await makeText('\u2014 Parasitic Pole', 11, BLUE, [legX, legY0 - 0.44, 0], legX);
-
-      // X-axis tick labels
+      // Tick labels for both axes
       const penTickLabelsArr = [];
-      const penTickValues = [1, 2, 3, 4, 5, 6, 7, 8];
-      const penTickNames = ['10', '100', '1k', '10k', '100k', '1M', '10M', '100M'];
-      for (let i = 0; i < penTickValues.length; i++) {
-        const tx = mapPoint(penFrame, penTickValues[i], 0, penXRange, penYRange)[0];
-        if (tx >= penFrame.x0 + 0.15 && tx <= penFrame.x1 - 0.15) {
-          const tickLabel = await makeText(penTickNames[i], 11, MUTED, [tx, penFrame.y0 - 0.18, 0]);
-          penTickLabelsArr.push(tickLabel);
-        }
+      const tickVals = [2, 3, 4, 5, 6, 7];
+      const tickNames = ['100', '1k', '10k', '100k', '1M', '10M'];
+      for (let i = 0; i < tickVals.length; i++) {
+        const px = penFrame.x0 + (tickVals[i] - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
+        const py = penFrame.y0 + (tickVals[i] - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
+        penTickLabelsArr.push(await makeText(tickNames[i], 10, MUTED, [px, penFrame.y0 - 0.16, 0]));
+        penTickLabelsArr.push(await makeText(tickNames[i], 10, MUTED, [penFrame.x0 - 0.32, py, 0]));
       }
 
-      const penStaticOverlays = [sweetBand, dangerLow, dangerHigh, sweetLabel, leg1, leg2, leg3, ...penTickLabelsArr];
+      // Color bar legend
+      const barX = penFrame.x1 + 0.18;
+      const barW = 0.16;
+      const barSteps = 20;
+      const barCellH = (penFrame.y1 - penFrame.y0) / barSteps;
+      const colorBarObjs = [];
+      for (let i = 0; i < barSteps; i++) {
+        const p = i / (barSteps - 1);
+        const cy = penFrame.y0 + (i + 0.5) * barCellH;
+        const cbar = new Rectangle({ width: barW, height: barCellH + 0.01, color: penColor(p), strokeWidth: 0, fillOpacity: 0.9 });
+        cbar.moveTo([barX, cy, 0]);
+        colorBarObjs.push(cbar);
+      }
+      const cbLow = await makeText('Safe', 10, ACCENT, [barX + 0.22, penFrame.y0 + 0.08, 0], barX + 0.22);
+      const cbHigh = await makeText('Danger', 10, RED, [barX + 0.22, penFrame.y1 - 0.08, 0], barX + 0.22);
+
+      const penStatics = [...heatmapObjs, penBorder, sweetOutline, sweetLabel, penXLabel, penYLabelText, ...penTickLabelsArr, ...colorBarObjs, cbLow, cbHigh];
+      const penStaticOverlays = [];
 
       objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle, ...penStaticOverlays);
       animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle, ...penStaticOverlays);
@@ -2141,8 +2168,6 @@
         live: { liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label },
         stepFrame,
         penFrame,
-        penXRange,
-        penYRange,
         penLogMin,
         penLogMax
       };
@@ -2288,41 +2313,33 @@
         }
       }
 
-      // ── PLOT 2: Penalty curves + marker (zones/legend/ticks are static from build) ──
-      const { penXRange, penYRange, penLogMin, penLogMax } = ctx;
-      const PEN_N = 120;
-      const ratio = r2 / r1;
-
-      const drawPenCurve = (penaltyFn, color) => {
-        let prevP = null;
-        for (let i = 0; i <= PEN_N; i++) {
-          const logR = penLogMin + (penLogMax - penLogMin) * (i / PEN_N);
-          const rScale = Math.pow(10, logR);
-          const pen = clamp(penaltyFn(rScale, rScale * ratio), 0, 1.1);
-          const p = mapPoint(penFrame, logR, pen, penXRange, penYRange);
-          if (prevP) {
-            g.push(new Line({ start: [prevP[0], prevP[1], 0], end: [p[0], p[1], 0], color, strokeWidth: 2.0 }));
-          }
-          prevP = p;
-        }
-      };
-
-      // Normalisation: penalty=1 at the threshold where problems become serious
-      // Current: 25mA is the op-amp output limit
-      drawPenCurve((r1s, r2s) => (S4_VOUT_REF / (r1s + r2s)) / 25e-3, RED);
-      // Offset: 10mV is where DC offset becomes problematic in most circuits
-      drawPenCurve((r1s, r2s) => (S4_IB * (r1s * r2s) / (r1s + r2s)) / 10e-3, YELLOW);
-      // Parasitic pole: 10kHz is where the parasitic pole starts cutting into useful bandwidth
-      drawPenCurve((r1s, r2s) => 10e3 / (1 / (2 * Math.PI * r2s * S4_CPAR)), BLUE);
-
-      // Vertical "you are here" marker
-      const rGeo = Math.sqrt(r1 * r2);
-      const markerLogR = Math.log10(rGeo);
-      if (markerLogR >= penLogMin && markerLogR <= penLogMax) {
-        const mx = mapPoint(penFrame, markerLogR, 0, penXRange, penYRange)[0];
-        g.push(new Line({ start: [mx, penFrame.y0 + 0.05, 0], end: [mx, penFrame.y1 - 0.05, 0], color: FG, strokeWidth: 2.2 }));
-        g.push(quickText('\u25C6 You are here', 11, FG, [mx + 0.12, penFrame.y1 - 0.34, 0]));
-      }
+      // ── PLOT 2: Cursor on 2D heatmap ──
+      const { penLogMin, penLogMax } = ctx;
+      const logR1 = Math.log10(r1);
+      const logR2 = Math.log10(r2);
+      // Map log(R) to frame coordinates
+      const cursorX = penFrame.x0 + (logR1 - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
+      const cursorY = penFrame.y0 + (logR2 - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
+      const cx = clamp(cursorX, penFrame.x0, penFrame.x1);
+      const cy = clamp(cursorY, penFrame.y0, penFrame.y1);
+      // Crosshair
+      g.push(new Line({ start: [cx, penFrame.y0, 0], end: [cx, penFrame.y1, 0], color: FG, strokeWidth: 1.0 }));
+      g.push(new Line({ start: [penFrame.x0, cy, 0], end: [penFrame.x1, cy, 0], color: FG, strokeWidth: 1.0 }));
+      // Dot
+      g.push(new Dot({ point: [cx, cy, 0], color: FG, radius: 0.08 }));
+      // Readout near cursor
+      const iOut = S4_VOUT_REF / (r1 + r2);
+      const vOff = S4_IB * (r1 * r2) / (r1 + r2);
+      const fPar = 1 / (2 * Math.PI * r2 * S4_CPAR);
+      const iStr = iOut >= 1e-3 ? (iOut * 1e3).toFixed(1) + 'mA' : (iOut * 1e6).toFixed(0) + '\u00B5A';
+      const vStr = vOff >= 1e-3 ? (vOff * 1e3).toFixed(1) + 'mV' : (vOff * 1e6).toFixed(0) + '\u00B5V';
+      const fStr = fPar >= 1e6 ? (fPar / 1e6).toFixed(1) + 'MHz' : fPar >= 1e3 ? (fPar / 1e3).toFixed(0) + 'kHz' : fPar.toFixed(0) + 'Hz';
+      // Position readout box in a clear corner
+      const rboxX = penFrame.x1 - 1.60;
+      const rboxY = penFrame.y0 + 0.12;
+      g.push(quickText('Iout=' + iStr, 11, RED, [rboxX, rboxY + 0.44, 0]));
+      g.push(quickText('Voff=' + vStr, 11, YELLOW, [rboxX, rboxY + 0.22, 0]));
+      g.push(quickText('fpar=' + fStr, 11, BLUE, [rboxX, rboxY, 0]));
 
       scene.add(...g);
       state.interactiveObjects = g;

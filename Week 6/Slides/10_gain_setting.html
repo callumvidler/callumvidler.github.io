@@ -175,6 +175,166 @@
       font-size: 14px;
       cursor: pointer;
     }
+
+    /* ── Section 3 Quiz ── */
+    #s3Quiz {
+      display: none;
+      position: absolute;
+      top: 52%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9;
+      width: 680px;
+      max-width: calc(100% - 40px);
+      padding: 24px 28px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--slide-border);
+      background: var(--slide-surface);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+    [data-theme="light"] #s3Quiz {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+    #s3Quiz.visible { display: block; }
+
+    .quiz-question {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--slide-text);
+      line-height: 1.5;
+      margin-bottom: 18px;
+    }
+
+    .quiz-option {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      border: 1.5px solid var(--slide-border);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--slide-text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      line-height: 1.45;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .quiz-option:hover:not(.locked) {
+      border-color: var(--slide-accent);
+      background: rgba(106, 170, 142, 0.08);
+    }
+    .quiz-option.correct {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.12);
+    }
+    .quiz-option.incorrect {
+      border-color: #e06050;
+      background: rgba(224, 96, 80, 0.10);
+      opacity: 0.7;
+    }
+    .quiz-option.locked { cursor: default; }
+    .quiz-option .opt-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      margin-right: 6px;
+      color: var(--slide-accent);
+    }
+
+    .quiz-explanation {
+      display: none;
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-left: 3px solid var(--slide-accent);
+      border-radius: 6px;
+      background: rgba(106, 170, 142, 0.08);
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--slide-text);
+    }
+    .quiz-explanation.visible { display: block; }
+    .quiz-explanation strong { color: var(--slide-accent); }
+
+    .quiz-reset {
+      display: none;
+      margin-top: 12px;
+      padding: 8px 18px;
+      border: 1px solid var(--slide-border);
+      border-radius: 8px;
+      background: var(--slide-surface);
+      color: var(--slide-text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .quiz-reset.visible { display: inline-block; }
+    .quiz-reset:hover { color: var(--slide-text); border-color: var(--slide-accent); }
+
+    /* ── Section 4 Controls ── */
+    #s4Panel {
+      position: absolute;
+      bottom: 54px;
+      left: 14px;
+      z-index: 9;
+      width: 220px;
+      padding: 12px 14px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--slide-border);
+      background: var(--slide-surface);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    [data-theme="light"] #s4Panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+    #s4Panel.visible { display: flex; }
+    #s4Panel .ol-title { font-family: 'IBM Plex Mono', monospace; color: var(--slide-accent); font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase; }
+    #s4Panel .ol-row { display: grid; gap: 4px; }
+    #s4Panel .ol-row label { display: flex; justify-content: space-between; color: var(--slide-text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 11px; }
+    #s4Panel .ol-row .v { color: var(--slide-text); font-variant-numeric: tabular-nums; }
+    #s4Panel input[type="range"] { width: 100%; accent-color: var(--slide-accent); cursor: pointer; height: 18px; }
+    .s4-compact {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      border-top: 1px solid var(--slide-border);
+      padding-top: 6px;
+    }
+    .s4-compact .k { color: var(--slide-text-dim); }
+    .s4-compact .v { text-align: right; color: var(--slide-text); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .s4-warning {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      line-height: 1.3;
+      padding: 5px 8px;
+      border-radius: 5px;
+      border-left: 3px solid transparent;
+    }
+    .s4-warning.warn-low {
+      color: var(--slide-red, #e06050);
+      border-left-color: var(--slide-red, #e06050);
+      background: rgba(224, 96, 80, 0.10);
+    }
+    .s4-warning.warn-high {
+      color: var(--slide-yellow, #ffcc44);
+      border-left-color: var(--slide-yellow, #ffcc44);
+      background: rgba(255, 204, 68, 0.10);
+    }
+    .s4-warning.warn-ok {
+      color: var(--slide-accent);
+      border-left-color: var(--slide-accent);
+      background: rgba(106, 170, 142, 0.08);
+    }
   </style>
 </head>
 
@@ -211,15 +371,55 @@
       <button type="button" id="s2ReplayBtn">&#x21bb;</button>
     </div>
 
+    <div id="s3Quiz">
+      <div class="quiz-question">
+        If the closed-loop gain is simply set by the ratio R<sub>2</sub>/R<sub>1</sub>, does it matter what actual values I choose for R<sub>2</sub> and R<sub>1</sub>?
+      </div>
+      <button class="quiz-option" data-answer="a">
+        <span class="opt-label">A)</span> No &mdash; any values of R<sub>2</sub> and R<sub>1</sub> giving the correct ratio will work identically.
+      </button>
+      <button class="quiz-option" data-answer="b">
+        <span class="opt-label">B)</span> Yes &mdash; resistors too low waste power and overload the output; too high introduces noise and offset errors.
+      </button>
+      <button class="quiz-option" data-answer="c">
+        <span class="opt-label">C)</span> Yes &mdash; but only because standard resistor values limit the available ratios.
+      </button>
+      <div class="quiz-explanation" id="s3Explanation">
+        <strong>Correct: B</strong><br><br>
+        The gain equation A<sub>CL</sub> = R<sub>2</sub>/R<sub>1</sub> only cares about the <em>ratio</em>, but practical constraints set a useful range &mdash; typically <strong>10 k&Omega; to 100 k&Omega;</strong>:<br><br>
+        <strong>Too low (&lt; 1 k&Omega;):</strong> The op-amp output must drive heavy current through low-value resistors. Most op-amps can only source ~20&ndash;25 mA, so small resistances cause the output to clip, distort, or overheat.<br><br>
+        <strong>Too high (&gt; 1 M&Omega;):</strong> Input bias currents (nA&ndash;&mu;A) flowing through large resistances create significant DC offset voltages at the output. Additionally, stray board capacitance (~pF) in parallel with high-value resistors forms unintended low-pass filters that limit bandwidth. Johnson (thermal) noise also scales with &radic;R.<br><br>
+        The "sweet spot" of <strong>10 k&Omega;&ndash;100 k&Omega;</strong> keeps current draw manageable, offsets small, and parasitic effects negligible.
+      </div>
+      <button class="quiz-reset" id="s3Reset">Try Again</button>
+    </div>
+
+    <div id="s4Panel">
+      <div class="ol-title">Resistor Controls</div>
+      <div class="ol-row">
+        <label>R<sub>1</sub> <span class="v" id="s4R1Val">10 kΩ</span></label>
+        <input type="range" id="s4R1Slider" min="0" max="100" step="1" value="40">
+      </div>
+      <div class="ol-row">
+        <label>R<sub>2</sub> <span class="v" id="s4R2Val">90 kΩ</span></label>
+        <input type="range" id="s4R2Slider" min="0" max="100" step="1" value="64">
+      </div>
+      <div class="s4-compact">
+        <span class="k">&beta;</span><span class="v" id="s4BetaVal">0.100</span>
+        <span class="k">A<sub>CL</sub></span><span class="v" id="s4AclVal">10.0</span>
+      </div>
+      <div class="s4-warning warn-ok" id="s4Warning">Optimal range.</div>
+    </div>
+
     <div class="stepper-row" id="stepper">
       <button type="button" class="stepper-btn" id="sec-prev">← Prev Section</button>
-      <span class="step-indicator" id="sec-indicator">Section 1/3</span>
+      <span class="step-indicator" id="sec-indicator">Section 1/4</span>
       <button type="button" class="stepper-btn" id="sec-next">Next Section →</button>
     </div>
   </div>
 
   <script type="module">
-    import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, Transform } from 'https://esm.sh/manim-web@0.3.18';
+    import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, Transform, MoveAlongPath, linear } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
     const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
@@ -254,10 +454,24 @@
     const s2StepLabel = document.getElementById('s2StepLabel');
     const s2ReplayBtn = document.getElementById('s2ReplayBtn');
 
+    const s3Quiz = document.getElementById('s3Quiz');
+    const s3Explanation = document.getElementById('s3Explanation');
+    const s3Reset = document.getElementById('s3Reset');
+    const s3Options = s3Quiz.querySelectorAll('.quiz-option');
+
+    const s4Panel = document.getElementById('s4Panel');
+    const s4R1Slider = document.getElementById('s4R1Slider');
+    const s4R2Slider = document.getElementById('s4R2Slider');
+    const s4R1Val = document.getElementById('s4R1Val');
+    const s4R2Val = document.getElementById('s4R2Val');
+    const s4BetaVal = document.getElementById('s4BetaVal');
+    const s4AclVal = document.getElementById('s4AclVal');
+    const s4Warning = document.getElementById('s4Warning');
+
     const secIndicator = document.getElementById('sec-indicator');
     const prevBtn = document.getElementById('sec-prev');
     const nextBtn = document.getElementById('sec-next');
-    const TOTAL_SECTIONS = 3;
+    const TOTAL_SECTIONS = 4;
     const V_SAT = 13;
 
     const state = {
@@ -281,7 +495,10 @@
       section2Ctx: null,
       section2ControlsReady: false,
       section2AnimObjects: [],
-      section2AnimToken: 0
+      section2AnimToken: 0,
+      section4Ctx: null,
+      section4ControlsReady: false,
+      section4DrawRaf: null
     };
 
     const makeText = async (text, fontSize, color, pos, leftAlignX = null) => {
@@ -359,12 +576,17 @@
       }
       state.section2AnimToken += 1;
       state.section2Ctx = null;
+      if (state.section4DrawRaf) {
+        cancelAnimationFrame(state.section4DrawRaf);
+        state.section4DrawRaf = null;
+      }
+      state.section4Ctx = null;
     };
 
-    const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain', 'Gain-bandwidth tradeoff (next)'][idx - 1];
+    const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain', 'Resistor value quiz', 'Beta & resistor explorer'][idx - 1];
 
     const updateNavUi = () => {
-      secIndicator.textContent = 'Section ' + state.currentSection + '/3 - ' + sectionLabel(state.currentSection);
+      secIndicator.textContent = 'Section ' + state.currentSection + '/' + TOTAL_SECTIONS + ' - ' + sectionLabel(state.currentSection);
       prevBtn.disabled = state.currentSection === 1;
       nextBtn.disabled = state.currentSection === TOTAL_SECTIONS;
       const showPanel = state.currentSection === 1 && state.section1ControlsReady;
@@ -372,6 +594,9 @@
       olPanel.setAttribute('aria-hidden', showPanel ? 'false' : 'true');
       const showS2 = state.currentSection === 2 && state.section2ControlsReady;
       s2Controls.classList.toggle('visible', showS2);
+      s3Quiz.classList.toggle('visible', state.currentSection === 3);
+      const showS4 = state.currentSection === 4 && state.section4ControlsReady;
+      s4Panel.classList.toggle('visible', showS4);
     };
 
     const buildPersistentChrome = async () => {
@@ -666,6 +891,14 @@
       bdBetaRect.moveTo([BD_BX, BD_FB_Y, 0]);
       const bdBetaLbl = await makeMath('\\beta', 0.52, BLUE, [BD_BX, BD_FB_Y, 0]);
 
+      // Highlight overlays for animation (not added to diagramObjs — temporary)
+      const bdSigmaHL = new Rectangle({ width: BD_JR * 2 + 0.10, height: BD_JR * 2 + 0.10, color: MUTED, strokeWidth: 3.0, fillOpacity: 0.22 });
+      bdSigmaHL.moveTo([BD_JX, BD_FWD_Y, 0]);
+      const bdAolHL = new Rectangle({ width: BD_AW + 0.10, height: BD_AH + 0.10, color: ACCENT, strokeWidth: 3.0, fillOpacity: 0.22 });
+      bdAolHL.moveTo([BD_AX, BD_FWD_Y, 0]);
+      const bdBetaHL = new Rectangle({ width: BD_BW + 0.10, height: BD_BH + 0.10, color: BLUE, strokeWidth: 3.0, fillOpacity: 0.22 });
+      bdBetaHL.moveTo([BD_BX, BD_FB_Y, 0]);
+
       const bdInArr = new Line({ start: [BD_IN, BD_FWD_Y, 0], end: [BD_JX - BD_JR, BD_FWD_Y, 0], color: FG, strokeWidth: 1.8 });
       const bdInTip = bdTip(BD_JX - BD_JR, BD_FWD_Y, 1, 0);
       const bdSumToA = new Line({ start: [BD_JX + BD_JR, BD_FWD_Y, 0], end: [BD_AX - BD_AW / 2, BD_FWD_Y, 0], color: FG, strokeWidth: 1.8 });
@@ -822,9 +1055,17 @@
       // For each iteration k we need values and operation labels.
       const OFF = [20, 20, 0]; // off-screen parking position
       const CHIP_SCALE = 0.30;
+      const DOT_ANIMATED_ITERS = 4; // first 4 iterations show dots, rest values-only
       const travelLabels = [];
       // Also pre-render the Vin chip (used at the start / at Σ each iteration)
       const vinChip = await makeMath(S2_V_IN.toFixed(1), CHIP_SCALE, FG, OFF);
+      // Zero-feedback chip for k=0 (feedback is initially 0)
+      const zeroFbChip = await makeMath('0.00', CHIP_SCALE, BLUE, OFF);
+      // Extra Vin chips for k>0 iterations (need separate instances)
+      const vinChips = [vinChip];
+      for (let i = 1; i < DOT_ANIMATED_ITERS; i++) {
+        vinChips.push(await makeMath(S2_V_IN.toFixed(1), CHIP_SCALE, FG, OFF));
+      }
       for (let k = 0; k < S2_STEPS; k++) {
         const vOutNew = s2Vouts[k + 1];
         const vd = S2_V_IN - S2_BETA * s2Vouts[k];
@@ -833,11 +1074,17 @@
         const tvd = await makeMath(vd.toFixed(2), CHIP_SCALE, ACCENT, OFF);
         const tvout = await makeMath(vOutNew.toFixed(1), CHIP_SCALE, CYAN, OFF);
         const tbv = await makeMath(bv.toFixed(2), CHIP_SCALE, BLUE, OFF);
+        // Duplicate Vout label for forward split (only for dot-animated iterations)
+        const tvoutFwd = k < DOT_ANIMATED_ITERS
+          ? await makeMath(vOutNew.toFixed(1), CHIP_SCALE, CYAN, OFF)
+          : null;
         // Operation labels shown briefly at each block
         const opAol = await makeMath('\\times A_{OL}=' + vOutNew.toFixed(1), CHIP_SCALE, CYAN, OFF);
         const opBeta = await makeMath('\\times\\beta=' + bv.toFixed(2), CHIP_SCALE, BLUE, OFF);
-        const opSigma = await makeMath(S2_V_IN.toFixed(1) + '-' + bv.toFixed(2) + '=' + vd.toFixed(2), CHIP_SCALE, ACCENT, OFF);
-        travelLabels.push({ tvd, tvout, tbv, opAol, opBeta, opSigma });
+        // Sigma operation: Vin - feedback_arriving = Vd (feedback arriving = beta * Vout[k])
+        const fbArriving = S2_BETA * s2Vouts[k];
+        const opSigma = await makeMath(S2_V_IN.toFixed(1) + '-' + fbArriving.toFixed(2) + '=' + vd.toFixed(2), CHIP_SCALE, ACCENT, OFF);
+        travelLabels.push({ tvd, tvout, tvoutFwd, tbv, opAol, opBeta, opSigma });
       }
 
       return {
@@ -857,7 +1104,10 @@
         bd,
         bdDynLabels,
         travelLabels,
-        vinChip
+        vinChip,
+        vinChips,
+        zeroFbChip,
+        highlights: { bdSigmaHL, bdAolHL, bdBetaHL }
       };
     };
 
@@ -1111,46 +1361,24 @@
       s2StepLabel.textContent = 'k=' + n;
     };
 
-    // Animate multiple objects moving together along waypoints using rAF.
-    // Returns a promise. Objects are already scene.add'd by the caller.
-    const moveAlongWaypoints = (objs, waypoints, durationSec, staleCheck) => new Promise((resolve) => {
-      if (waypoints.length < 2 || staleCheck()) { resolve(); return; }
+    // Build Line segments from waypoints for use with MoveAlongPath
+    const buildPathSegs = (waypoints) => {
       const segs = [];
-      let totalLen = 0;
       for (let i = 0; i < waypoints.length - 1; i++) {
-        const dx = waypoints[i + 1][0] - waypoints[i][0];
-        const dy = waypoints[i + 1][1] - waypoints[i][1];
-        const len = Math.sqrt(dx * dx + dy * dy);
-        segs.push({ sx: waypoints[i][0], sy: waypoints[i][1], dx, dy, len, cumLen: totalLen });
-        totalLen += len;
+        segs.push(new Line({
+          start: [waypoints[i][0], waypoints[i][1], 0],
+          end: [waypoints[i + 1][0], waypoints[i + 1][1], 0]
+        }));
       }
-      for (const o of objs) o.moveTo([waypoints[0][0], waypoints[0][1], 0]);
-      if (durationSec < 0.02) {
-        const last = waypoints[waypoints.length - 1];
-        for (const o of objs) o.moveTo([last[0], last[1], 0]);
-        resolve();
-        return;
-      }
-      const durationMs = durationSec * 1000;
-      const ease = (t) => t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
-      const t0 = performance.now();
-      const tick = (now) => {
-        if (staleCheck()) { resolve(); return; }
-        const rawT = clamp((now - t0) / durationMs, 0, 1);
-        const dist = ease(rawT) * totalLen;
-        let seg = segs[segs.length - 1];
-        for (let i = 0; i < segs.length; i++) {
-          if (dist <= segs[i].cumLen + segs[i].len) { seg = segs[i]; break; }
-        }
-        const segT = seg.len > 0.001 ? clamp((dist - seg.cumLen) / seg.len, 0, 1) : 1;
-        const px = seg.sx + seg.dx * segT;
-        const py = seg.sy + seg.dy * segT;
-        for (const o of objs) o.moveTo([px, py, 0]);
-        if (rawT >= 1) { resolve(); return; }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
+      return segs;
+    };
+
+    // Compute length of a Line segment
+    const segLen = (seg) => {
+      const s = seg.getStart(), e = seg.getEnd();
+      const dx = e[0] - s[0], dy = e[1] - s[1];
+      return Math.sqrt(dx * dx + dy * dy);
+    };
 
     const runSection2Animation = async (token) => {
       const runId = ++state.section2AnimToken;
@@ -1163,43 +1391,70 @@
       const tl = c.travelLabels;
       if (!tl) return;
 
-      // Waypoints on the actual wire paths (centered on lines)
-      const inputToSigma = [
+      const hl = c.highlights;
+
+      // Pre-build Line path segments for each wire route
+      const pathInputToSigma = buildPathSegs([
         [bd.BD_IN, bd.BD_FWD_Y],
         [bd.BD_JX - bd.BD_JR, bd.BD_FWD_Y],
-      ];
-      const sigmaToAol = [
+      ]);
+      const pathSigmaToAol = buildPathSegs([
         [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y],
         [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y],
-      ];
-      const aolToTap = [
+      ]);
+      const pathAolToTap = buildPathSegs([
         [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y],
         [bd.BD_TAP, bd.BD_FWD_Y],
-      ];
-      const tapToBeta = [
+      ]);
+      const pathTapToOutput = buildPathSegs([
+        [bd.BD_TAP, bd.BD_FWD_Y],
+        [bd.BD_OUT, bd.BD_FWD_Y],
+      ]);
+      const pathTapToBeta = buildPathSegs([
         [bd.BD_TAP, bd.BD_FWD_Y],
         [bd.BD_TAP, bd.BD_FB_Y],
         [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y],
-      ];
-      const betaToSigma = [
+      ]);
+      const pathBetaToSigma = buildPathSegs([
         [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y],
         [bd.BD_JX, bd.BD_FB_Y],
         [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
-      ];
+      ]);
 
       // Operation label positions
       const AOL_OP_POS = [bd.BD_AX, bd.BD_FWD_Y + 0.52];
       const BETA_OP_POS = [bd.BD_BX, bd.BD_FB_Y - 0.44];
       const SIGMA_OP_POS = [bd.BD_JX + 0.05, bd.BD_FWD_Y + 0.52];
 
-      // Speed ramp: seconds per full iteration — slow early, fast late
-      const durationFor = (k) => {
-        if (k <= 1) return 1.4;
-        if (k <= 3) return 0.8;
-        if (k <= 6) return 0.45;
-        if (k <= 10) return 0.22;
-        return 0.12;
+      // Uniform speed in scene-units per second; slower = more visible travel
+      const SPEED_BASE = 1.8; // units/sec at iteration 0
+      const speedFor = (k) => {
+        if (k === 0) return SPEED_BASE;
+        if (k === 1) return SPEED_BASE * 1.6;
+        if (k === 2) return SPEED_BASE * 2.5;
+        return SPEED_BASE * 3.5;
       };
+
+      // Duration for a segment based on its length and current speed
+      const segDurAt = (seg, speed) => Math.max(0.08, segLen(seg) / speed);
+
+      // How long to hold an operation label visible
+      const opHoldFor = (k) => {
+        if (k === 0) return 1.8;
+        if (k === 1) return 1.2;
+        if (k === 2) return 0.7;
+        return 0.4;
+      };
+
+      // Values-only delay for iterations after dots fade out
+      const valuesOnlyDelay = (k) => {
+        if (k <= 6) return 0.4;
+        if (k <= 10) return 0.25;
+        return 0.15;
+      };
+
+      const DOT_ITERS = 4;
+      const CHIP_R = 0.12;
 
       // Track temporary objects for cleanup
       let tempObjs = [];
@@ -1207,28 +1462,30 @@
       const hide = (...objs) => { for (const o of objs) { scene.remove(o); } tempObjs = tempObjs.filter(t => !objs.includes(t)); };
       const clearTemp = () => { for (const o of tempObjs) scene.remove(o); tempObjs = []; };
 
-      // Create a "chip": a filled circle behind a value label
-      const CHIP_R = 0.24;
-      const makeChip = (x, y, col) => {
-        const circle = new Dot({ point: [x, y, 0], color: col, radius: CHIP_R });
-        return circle;
+      const makeChipDot = (x, y, col) => new Dot({ point: [x, y, 0], color: col, radius: CHIP_R });
+
+      // Helper: play MoveAlongPath for multiple objects along one Line segment
+      const playSegment = async (objs, seg, speed) => {
+        if (stale()) return;
+        const dur = segDurAt(seg, speed);
+        await scene.play(
+          ...objs.map(o => new MoveAlongPath(o, { path: seg, duration: dur, rateFunc: linear }))
+        );
       };
 
-      // Move a chip (circle + label) along waypoints
-      const moveChip = async (label, color, waypoints, dur) => {
-        const sx = waypoints[0][0], sy = waypoints[0][1];
-        const chip = makeChip(sx, sy, color);
-        label.moveTo([sx, sy, 0]);
-        show(chip, label);
-        await moveAlongWaypoints([chip, label], waypoints, dur, stale);
-        return chip;
+      // Helper: move objects along a multi-segment path sequentially
+      const moveAlongPath = async (objs, segs, speed) => {
+        for (const seg of segs) {
+          if (stale()) return;
+          await playSegment(objs, seg, speed);
+        }
       };
 
-      // Flash an operation label at a position: appear, pause, disappear
-      const flashOp = async (opLabel, pos, dur) => {
+      // Flash an operation label at a position: appear, hold, disappear
+      const flashOp = async (opLabel, pos, holdSec) => {
         opLabel.moveTo([pos[0], pos[1], 0]);
         show(opLabel);
-        await scene.wait(dur);
+        await scene.wait(holdSec);
         if (stale()) return;
         hide(opLabel);
       };
@@ -1238,62 +1495,174 @@
       await scene.wait(0.5);
       if (stale()) return;
 
-      for (let k = 0; k < S2_STEPS; k++) {
+      try {
+      // ═══════════════════════════════════════════════════════════
+      // DOT-ANIMATED ITERATIONS (k = 0..3)
+      // ═══════════════════════════════════════════════════════════
+      let prevBvChip = null, prevBvLbl = null;
+
+      for (let k = 0; k < DOT_ITERS; k++) {
         if (stale()) return;
         clearTemp();
 
-        const dur = durationFor(k);
+        const speed = speedFor(k);
+        const hold = opHoldFor(k);
         const lab = tl[k];
 
-        // ── Phase 1: Vin enters from input → Σ (first iteration only) ──
+        // ── Phase A: Two dots converge on Σ ──
+        // IMPORTANT: scene.play() cannot be called concurrently, so for
+        // parallel movement we must put all MoveAlongPath in ONE scene.play().
         if (k === 0) {
-          const vinChip = await moveChip(c.vinChip, FG, inputToSigma, dur * 0.25);
+          const vinLbl = c.vinChips[0];
+          const fbLbl = c.zeroFbChip;
+          const vinSx = pathInputToSigma[0].getStart();
+          const fbSx = pathBetaToSigma[0].getStart();
+          const vinDot = makeChipDot(vinSx[0], vinSx[1], FG);
+          const fbDot = makeChipDot(fbSx[0], fbSx[1], BLUE);
+          vinLbl.moveTo(vinSx);
+          fbLbl.moveTo(fbSx);
+          show(vinDot, vinLbl, fbDot, fbLbl);
+          // betaToSigma has 2 segments, inputToSigma has 1 segment.
+          // First: fb dot alone along segment 0 (horizontal left)
+          await playSegment([fbDot, fbLbl], pathBetaToSigma[0], speed);
           if (stale()) return;
-          await scene.wait(dur * 0.06);
+          // Then: fb dot segment 1 (up to sigma) + vin dot (left to sigma)
+          // in one scene.play() so both arrive at sigma together
+          {
+            const fbSeg = pathBetaToSigma[1];
+            const vinSeg = pathInputToSigma[0];
+            const fbDur = segDurAt(fbSeg, speed);
+            const vinDur = segDurAt(vinSeg, speed);
+            const dur = Math.max(fbDur, vinDur); // sync to longer segment
+            await scene.play(
+              new MoveAlongPath(fbDot,  { path: fbSeg,  duration: dur, rateFunc: linear }),
+              new MoveAlongPath(fbLbl,  { path: fbSeg,  duration: dur, rateFunc: linear }),
+              new MoveAlongPath(vinDot, { path: vinSeg, duration: dur, rateFunc: linear }),
+              new MoveAlongPath(vinLbl, { path: vinSeg, duration: dur, rateFunc: linear }),
+            );
+          }
           if (stale()) return;
-          hide(vinChip, c.vinChip);
+          hide(vinDot, vinLbl, fbDot, fbLbl);
+        } else {
+          const vinLbl = c.vinChips[k];
+          const vinSx = pathInputToSigma[0].getStart();
+          const vinDot = makeChipDot(vinSx[0], vinSx[1], FG);
+          vinLbl.moveTo(vinSx);
+          show(vinDot, vinLbl);
+          await moveAlongPath([vinDot, vinLbl], pathInputToSigma, speed);
+          if (stale()) return;
+          hide(vinDot, vinLbl);
+          if (prevBvChip) { hide(prevBvChip, prevBvLbl); prevBvChip = null; prevBvLbl = null; }
         }
 
-        // ── Phase 2: Vd chip travels Σ → A_OL ──
-        const vdChip = await moveChip(lab.tvd, ACCENT, sigmaToAol, dur * 0.18);
+        // ── Phase B: Highlight Σ + flash operation label ──
+        show(hl.bdSigmaHL);
+        await flashOp(lab.opSigma, SIGMA_OP_POS, hold);
         if (stale()) return;
-        hide(vdChip, lab.tvd);
+        hide(hl.bdSigmaHL);
 
-        // ── Phase 3: Multiply at A_OL — flash "× A_OL = Vout" ──
-        await flashOp(lab.opAol, AOL_OP_POS, dur * 0.18);
+        // ── Phase C: Vd exits Σ → travels to A_OL ──
+        {
+          const sx = pathSigmaToAol[0].getStart();
+          const vdDot = makeChipDot(sx[0], sx[1], ACCENT);
+          lab.tvd.moveTo(sx);
+          show(vdDot, lab.tvd);
+          await moveAlongPath([vdDot, lab.tvd], pathSigmaToAol, speed);
+          if (stale()) return;
+          hide(vdDot, lab.tvd);
+        }
+
+        // Highlight A_OL + flash operation label
+        show(hl.bdAolHL);
+        await flashOp(lab.opAol, AOL_OP_POS, hold);
         if (stale()) return;
+        hide(hl.bdAolHL);
 
-        // ── Phase 4: Vout chip emerges from A_OL → tap ──
-        const voutChip = await moveChip(lab.tvout, CYAN, aolToTap, dur * 0.14);
-        if (stale()) return;
+        // ── Phase D: Vout exits A_OL → reaches tap point ──
+        {
+          const sx = pathAolToTap[0].getStart();
+          var voutDot = makeChipDot(sx[0], sx[1], CYAN);
+          lab.tvout.moveTo(sx);
+          show(voutDot, lab.tvout);
+          await moveAlongPath([voutDot, lab.tvout], pathAolToTap, speed);
+          if (stale()) return;
+        }
 
-        // Update settling graph
+        // ── Phase E: Dot splits — forward to Vout + feedback down to β ──
         drawSection2AtStep(k + 1);
         if (stale()) return;
 
-        // ── Phase 5: Vout chip travels feedback path → β ──
-        hide(voutChip);
-        const voutFbChip = await moveChip(lab.tvout, CYAN, tapToBeta, dur * 0.22);
-        if (stale()) return;
-        hide(voutFbChip, lab.tvout);
+        // Create duplicate for forward path at the tap point
+        {
+          const fwdSx = pathTapToOutput[0].getStart();
+          const fwdDot = makeChipDot(fwdSx[0], fwdSx[1], CYAN);
+          lab.tvoutFwd.moveTo(fwdSx);
+          show(fwdDot, lab.tvoutFwd);
 
-        // ── Phase 6: Multiply at β — flash "× β = βVout" ──
-        await flashOp(lab.opBeta, BETA_OP_POS, dur * 0.14);
-        if (stale()) return;
-
-        // ── Phase 7: βVout chip emerges from β → Σ ──
-        const bvChip = await moveChip(lab.tbv, BLUE, betaToSigma, dur * 0.18);
-        if (stale()) return;
-        hide(bvChip, lab.tbv);
-
-        // ── Phase 8: Subtraction at Σ — flash "Vin − βVout = Vd" ──
-        if (k < S2_STEPS - 1) {
-          await flashOp(tl[k + 1].opSigma, SIGMA_OP_POS, dur * 0.14);
+          // tapToBeta has 2 segments (down, then left), tapToOutput has 1 segment.
+          // Play first segments of both paths in one scene.play():
+          // fwd dot goes right, fb dot goes down — both start from tap point.
+          {
+            const fwdSeg = pathTapToOutput[0];
+            const fbSeg0 = pathTapToBeta[0];
+            const fwdDur = segDurAt(fwdSeg, speed);
+            const fbDur0 = segDurAt(fbSeg0, speed);
+            const dur = Math.max(fwdDur, fbDur0);
+            await scene.play(
+              new MoveAlongPath(fwdDot,      { path: fwdSeg, duration: dur, rateFunc: linear }),
+              new MoveAlongPath(lab.tvoutFwd, { path: fwdSeg, duration: dur, rateFunc: linear }),
+              new MoveAlongPath(voutDot,     { path: fbSeg0, duration: dur, rateFunc: linear }),
+              new MoveAlongPath(lab.tvout,   { path: fbSeg0, duration: dur, rateFunc: linear }),
+            );
+          }
           if (stale()) return;
+          // Forward dot done — hide it
+          hide(fwdDot, lab.tvoutFwd);
+
+          // Feedback dot continues along remaining segment (left to beta input)
+          if (pathTapToBeta.length > 1) {
+            await playSegment([voutDot, lab.tvout], pathTapToBeta[1], speed);
+            if (stale()) return;
+          }
+          hide(voutDot, lab.tvout);
+        }
+
+        // ── Phase F: Highlight β + flash, then bV exits β → traces to Σ ──
+        show(hl.bdBetaHL);
+        await flashOp(lab.opBeta, BETA_OP_POS, hold);
+        if (stale()) return;
+        hide(hl.bdBetaHL);
+
+        {
+          const sx = pathBetaToSigma[0].getStart();
+          const bvDot = makeChipDot(sx[0], sx[1], BLUE);
+          lab.tbv.moveTo(sx);
+          show(bvDot, lab.tbv);
+          await moveAlongPath([bvDot, lab.tbv], pathBetaToSigma, speed);
+          if (stale()) return;
+          if (k < DOT_ITERS - 1) {
+            prevBvChip = bvDot;
+            prevBvLbl = lab.tbv;
+          } else {
+            hide(bvDot, lab.tbv);
+          }
         }
       }
 
       clearTemp();
+
+      // ═══════════════════════════════════════════════════════════
+      // VALUES-ONLY MODE (k = DOT_ITERS..S2_STEPS-1)
+      // ═══════════════════════════════════════════════════════════
+      for (let k = DOT_ITERS; k < S2_STEPS; k++) {
+        if (stale()) return;
+        drawSection2AtStep(k + 1);
+        await scene.wait(valuesOnlyDelay(k));
+      }
+
+      } finally {
+        clearTemp();
+      }
     };
 
     const runSection1GuidedDemo = async (token = state.renderToken) => {
@@ -1465,21 +1834,326 @@
       queueSection1Draw({ force: true, sampleCount: 96 });
     };
 
-    const renderPlaceholder = async (idx) => {
-      const hdr = await makeText('SECTION ' + idx, 12, ACCENT, [-6.1, 1.9, 0], -6.1);
-      const t1 = await makeText(
-        idx === 2 ? 'Closed-loop gain section is scaffolded and ready next.' : 'Gain-bandwidth section is scaffolded and ready next.',
-        20, FG, [0, 0.7, 0]
-      );
-      const t2 = await makeText('Navigation is live now; this placeholder will be replaced in the next pass.', 14, MUTED, [0, 0.2, 0]);
-      const card = new Rectangle({ width: 10.8, height: 3.5, color: MUTED2, strokeWidth: 1.2, fillOpacity: IS_LIGHT ? 0.20 : 0.10 });
-      card.moveTo([0, 0.55, 0]);
-      const note = await makeText('Use Next/Prev section buttons or Arrow keys.', 12, ACCENT, [0, -0.6, 0]);
-      const objs = [card, hdr, t1, t2, note];
+    const buildSection3 = async () => {
+      const s3Tag = await makeText('SECTION 3 - RESISTOR VALUE QUIZ', 14, ACCENT, [-6.1, 2.86, 0], -6.1);
+      const objs = [s3Tag];
       scene.add(...objs);
       state.sectionObjects = objs;
-      await scene.play(new FadeIn(card, { duration: 0.25 }), new Write(t1, { duration: 0.35 }));
+      resetQuiz();
+      await scene.play(new Write(s3Tag, { duration: 0.35 }));
     };
+
+    const resetQuiz = () => {
+      s3Options.forEach(btn => {
+        btn.classList.remove('correct', 'incorrect', 'locked');
+      });
+      s3Explanation.classList.remove('visible');
+      s3Reset.classList.remove('visible');
+    };
+
+    s3Options.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('locked')) return;
+        s3Options.forEach(b => b.classList.add('locked'));
+        const answer = btn.getAttribute('data-answer');
+        if (answer === 'b') {
+          btn.classList.add('correct');
+        } else {
+          btn.classList.add('incorrect');
+          s3Options.forEach(b => {
+            if (b.getAttribute('data-answer') === 'b') b.classList.add('correct');
+          });
+        }
+        s3Explanation.classList.add('visible');
+        s3Reset.classList.add('visible');
+      });
+    });
+
+    s3Reset.addEventListener('click', () => resetQuiz());
+
+    // ── Section 4: Beta & Resistor Explorer ──
+    const S4_IB = 80e-9;       // Typical input bias current (LM741) in amps
+    const S4_CPAR = 5e-12;     // Stray parasitic capacitance in farads
+    const S4_VOUT_REF = 10;    // Reference output voltage for current calculation
+
+    const rFromSlider = (s) => {
+      // Log scale: 10 Ω to 100 MΩ
+      const logMin = 1, logMax = 8;
+      return Math.pow(10, logMin + (s / 100) * (logMax - logMin));
+    };
+
+    const formatR = (r) => {
+      if (r >= 1e6) return (r / 1e6).toFixed(r >= 10e6 ? 0 : 1) + ' MΩ';
+      if (r >= 1e3) return (r / 1e3).toFixed(r >= 10e3 ? 0 : 1) + ' kΩ';
+      return r.toFixed(0) + ' Ω';
+    };
+
+    const buildSection4 = async () => {
+      const objs = [];
+      const animated = [];
+
+      const s4Tag = await makeText('SECTION 4 - BETA & RESISTOR EXPLORER', 14, ACCENT, [-6.1, 2.86, 0], -6.1);
+
+      // Equation
+      const eq = await makeMath('\\beta=\\dfrac{R_{1}}{R_{1}+R_{2}}\\;,\\quad A_{CL}=1+\\dfrac{R_{2}}{R_{1}}=\\dfrac{1}{\\beta}', 0.50, CYAN, [-3.2, 2.04, 0]);
+
+      // Bullets
+      const b1 = await makeMath('\\bullet\\;\\text{Drag }R_1\\text{ and }R_2\\text{ to see how }\\beta\\text{ and gain change}', 0.36, FG, [-4.95, 1.48, 0]);
+      const b2 = await makeMath('\\bullet\\;\\text{Watch for warnings when values leave the 10\\,k\\Omega\\text{--}100\\,k\\Omega\\text{ sweet spot}}', 0.34, YELLOW, [-4.95, 1.10, 0]);
+      for (const b of [b1, b2]) {
+        if (typeof b.getLeft === 'function') b.shift([-6.1 - b.getLeft()[0], 0, 0]);
+      }
+
+      // ── Op-amp circuit (same layout as section 2) ──
+      const S4_CX = -4.60, S4_CY = -1.30;
+      const TRI_HALF_H = 0.85;
+      const TRI_IN_X = S4_CX - 0.90;
+      const TRI_APEX_X = S4_CX + 0.80;
+      const LEFT_COL_X = -5.85;
+      const TAP_X = -2.75;
+      const OUT_X = -2.05;
+      const VIN_X = -6.15;
+      const plusY = S4_CY + 0.35;
+      const minusY = S4_CY - 0.35;
+      const JUNC_Y = -2.65;
+      const GND_Y = -3.60;
+
+      const tri = new Polygon({
+        vertices: [[TRI_IN_X, S4_CY - TRI_HALF_H, 0], [TRI_IN_X, S4_CY + TRI_HALF_H, 0], [TRI_APEX_X, S4_CY, 0]],
+        color: MUTED2, strokeWidth: 1.7, fillOpacity: 0.13
+      });
+      const plusSym = await makeText('+', 18, ACCENT, [TRI_IN_X + 0.30, plusY, 0]);
+      const minusSym = await makeText('-', 18, RED, [TRI_IN_X + 0.30, minusY, 0]);
+      const vinLead = new Line({ start: [VIN_X, plusY, 0], end: [TRI_IN_X, plusY, 0], color: FG, strokeWidth: 1.8 });
+      const vinSrcDot = new Dot({ point: [VIN_X, plusY, 0], color: FG, radius: 0.07 });
+      const vinLabel = await makeMath('V_{in}', 0.50, FG, [VIN_X, plusY + 0.34, 0]);
+      const outApexToNode = new Line({ start: [TRI_APEX_X, S4_CY, 0], end: [TAP_X, S4_CY, 0], color: FG, strokeWidth: 1.8 });
+      const outToEnd = new Line({ start: [TAP_X, S4_CY, 0], end: [OUT_X, S4_CY, 0], color: FG, strokeWidth: 1.8 });
+      const outApexDot = new Dot({ point: [TAP_X, S4_CY, 0], color: FG, radius: 0.06 });
+      const outNodeDot = new Dot({ point: [OUT_X, S4_CY, 0], color: FG, radius: 0.07 });
+      const voutLabel = await makeMath('V_{out}', 0.50, YELLOW, [OUT_X + 0.26, S4_CY + 0.32, 0]);
+
+      const R2_W = 1.05, R2_H = 0.34;
+      const R2_CX = (LEFT_COL_X + TAP_X) / 2;
+      const r2Rect = new Rectangle({ width: R2_W, height: R2_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+      r2Rect.moveTo([R2_CX, JUNC_Y, 0]);
+      const r2Label = await makeMath('R_{2}', 0.50, ACCENT, [R2_CX, JUNC_Y + R2_H / 2 + 0.22, 0]);
+
+      const fbTap = new Line({ start: [TAP_X, S4_CY, 0], end: [TAP_X, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+      const fbAcrossR = new Line({ start: [TAP_X, JUNC_Y, 0], end: [R2_CX + R2_W / 2, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+      const fbAcrossL = new Line({ start: [R2_CX - R2_W / 2, JUNC_Y, 0], end: [LEFT_COL_X, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+      const fbLeftCol = new Line({ start: [LEFT_COL_X, JUNC_Y, 0], end: [LEFT_COL_X, minusY, 0], color: FG, strokeWidth: 1.8 });
+      const fbStub = new Line({ start: [LEFT_COL_X, minusY, 0], end: [TRI_IN_X, minusY, 0], color: FG, strokeWidth: 1.8 });
+
+      const R1_W = 0.34, R1_H = 0.78;
+      const R1_CY = (JUNC_Y + GND_Y) / 2;
+      const r1WireTop = new Line({ start: [LEFT_COL_X, JUNC_Y, 0], end: [LEFT_COL_X, R1_CY + R1_H / 2, 0], color: FG, strokeWidth: 1.8 });
+      const r1WireBot = new Line({ start: [LEFT_COL_X, R1_CY - R1_H / 2, 0], end: [LEFT_COL_X, GND_Y, 0], color: FG, strokeWidth: 1.8 });
+      const r1Rect = new Rectangle({ width: R1_W, height: R1_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+      r1Rect.moveTo([LEFT_COL_X, R1_CY, 0]);
+      const r1Label = await makeMath('R_{1}', 0.50, ACCENT, [LEFT_COL_X - 0.40, R1_CY, 0]);
+
+      const plusPinDot = new Dot({ point: [TRI_IN_X, plusY, 0], color: FG, radius: 0.045 });
+      const minusPinDot = new Dot({ point: [TRI_IN_X, minusY, 0], color: FG, radius: 0.045 });
+      const juncDot = new Dot({ point: [LEFT_COL_X, JUNC_Y, 0], color: FG, radius: 0.06 });
+      const gndBar1 = new Line({ start: [LEFT_COL_X - 0.32, GND_Y, 0], end: [LEFT_COL_X + 0.32, GND_Y, 0], color: FG, strokeWidth: 3 });
+      const gndBar2 = new Line({ start: [LEFT_COL_X - 0.20, GND_Y - 0.13, 0], end: [LEFT_COL_X + 0.20, GND_Y - 0.13, 0], color: FG, strokeWidth: 2 });
+      const gndBar3 = new Line({ start: [LEFT_COL_X - 0.09, GND_Y - 0.25, 0], end: [LEFT_COL_X + 0.09, GND_Y - 0.25, 0], color: FG, strokeWidth: 1 });
+
+      // ── Live readout labels on the canvas (updated by drawSection4) ──
+      // These are placed to the right of the circuit
+      const liveBetaLabel = await makeMath('\\beta=0.100', 0.52, BLUE, [0.5, -0.60, 0]);
+      const liveGainLabel = await makeMath('A_{CL}=10.0', 0.52, CYAN, [0.5, -1.10, 0]);
+      const liveR1Label = await makeMath('R_1=10\\,\\text{k}\\Omega', 0.44, ACCENT, [-4.30, -3.20, 0]);
+      const liveR2Label = await makeMath('R_2=90\\,\\text{k}\\Omega', 0.44, ACCENT, [-4.30, -3.60, 0]);
+
+      // ── Bar chart area: 3 bars showing current, offset, parasitic freq ──
+      const BAR_BASE_Y = -3.50;
+      const BAR_TOP_Y = -0.20;
+      const BAR_H = BAR_TOP_Y - BAR_BASE_Y;
+      const barFrame = new Rectangle({ width: 5.0, height: BAR_H, color: MUTED2, strokeWidth: 1.3, fillOpacity: IS_LIGHT ? 0.15 : 0.10 });
+      barFrame.moveTo([3.5, (BAR_BASE_Y + BAR_TOP_Y) / 2, 0]);
+
+      const barTitle = await makeText('Practical effects of resistor values', 14, FG, [1.0, BAR_TOP_Y + 0.18, 0], 1.0);
+
+      // Bar backgrounds (static)
+      const BAR_W = 1.10;
+      const BAR_X = [2.10, 3.50, 4.90];
+      const barBg0 = new Rectangle({ width: BAR_W, height: 0, color: RED, strokeWidth: 0, fillOpacity: 0.25 });
+      barBg0.moveTo([BAR_X[0], BAR_BASE_Y, 0]);
+      const barBg1 = new Rectangle({ width: BAR_W, height: 0, color: YELLOW, strokeWidth: 0, fillOpacity: 0.25 });
+      barBg1.moveTo([BAR_X[1], BAR_BASE_Y, 0]);
+      const barBg2 = new Rectangle({ width: BAR_W, height: 0, color: BLUE, strokeWidth: 0, fillOpacity: 0.25 });
+      barBg2.moveTo([BAR_X[2], BAR_BASE_Y, 0]);
+
+      // Bar labels
+      const barLabel0 = await makeText('I_out', 11, RED, [BAR_X[0], BAR_BASE_Y - 0.22, 0]);
+      const barLabel1 = await makeText('V_offset', 11, YELLOW, [BAR_X[1], BAR_BASE_Y - 0.22, 0]);
+      const barLabel2 = await makeText('f_parasitic', 11, BLUE, [BAR_X[2], BAR_BASE_Y - 0.22, 0]);
+
+      // Threshold lines
+      const threshGood0 = new Line({ start: [BAR_X[0] - BAR_W / 2, 0, 0], end: [BAR_X[0] + BAR_W / 2, 0, 0], color: ACCENT, strokeWidth: 1.2 });
+      const threshGood1 = new Line({ start: [BAR_X[1] - BAR_W / 2, 0, 0], end: [BAR_X[1] + BAR_W / 2, 0, 0], color: ACCENT, strokeWidth: 1.2 });
+      const threshGood2 = new Line({ start: [BAR_X[2] - BAR_W / 2, 0, 0], end: [BAR_X[2] + BAR_W / 2, 0, 0], color: ACCENT, strokeWidth: 1.2 });
+
+      const circuitStage = [
+        tri, plusSym, minusSym, vinLead, vinSrcDot, vinLabel,
+        outApexToNode, outToEnd, outApexDot, outNodeDot, voutLabel,
+        fbTap, fbAcrossR, fbAcrossL, fbLeftCol, fbStub,
+        r2Rect, r2Label, r1WireTop, r1WireBot, r1Rect, r1Label,
+        plusPinDot, minusPinDot, juncDot, gndBar1, gndBar2, gndBar3
+      ];
+
+      const liveLabels = [liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label];
+      const barObjs = [barFrame, barTitle, barBg0, barBg1, barBg2, barLabel0, barLabel1, barLabel2, threshGood0, threshGood1, threshGood2];
+
+      objs.push(s4Tag, eq, b1, b2, ...circuitStage, ...liveLabels, ...barObjs);
+      animated.push(eq, b1, b2, ...circuitStage, ...liveLabels, ...barObjs);
+
+      return {
+        objs,
+        animated,
+        groups: {
+          eqStage: [eq],
+          bulletStage: [b1, b2],
+          circuitStage,
+          liveLabels,
+          barObjs
+        },
+        bars: { barBg0, barBg1, barBg2, threshGood0, threshGood1, threshGood2 },
+        live: { liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label },
+        barLayout: { BAR_BASE_Y, BAR_TOP_Y, BAR_H, BAR_W, BAR_X }
+      };
+    };
+
+    const drawSection4 = async () => {
+      if (!state.section4Ctx) return;
+      const ctx = state.section4Ctx;
+      const { bars, barLayout } = ctx;
+      const { BAR_BASE_Y, BAR_H, BAR_W, BAR_X } = barLayout;
+
+      const r1 = rFromSlider(parseFloat(s4R1Slider.value));
+      const r2 = rFromSlider(parseFloat(s4R2Slider.value));
+      const beta = r1 / (r1 + r2);
+      const acl = 1 + r2 / r1;
+      const rParallel = (r1 * r2) / (r1 + r2);
+      const iOut = S4_VOUT_REF / (r1 + r2);       // Current through feedback network
+      const vOffset = S4_IB * rParallel;             // Offset from bias current
+      const fPar = 1 / (2 * Math.PI * r2 * S4_CPAR); // Parasitic pole from stray C on R2
+
+      // Update DOM readouts
+      s4R1Val.textContent = formatR(r1);
+      s4R2Val.textContent = formatR(r2);
+      s4BetaVal.textContent = beta.toFixed(4);
+      s4AclVal.textContent = acl < 1000 ? acl.toFixed(1) : acl.toFixed(0);
+
+      const iOutmA = iOut * 1e3;
+      s4IoutVal.textContent = iOutmA >= 1 ? iOutmA.toFixed(1) + ' mA' : (iOut * 1e6).toFixed(1) + ' µA';
+
+      const vOffuV = vOffset * 1e6;
+      const vOffmV = vOffset * 1e3;
+      s4VoffVal.textContent = vOffmV >= 1 ? vOffmV.toFixed(2) + ' mV' : vOffuV.toFixed(1) + ' µV';
+
+      if (fPar >= 1e6) s4FparVal.textContent = (fPar / 1e6).toFixed(1) + ' MHz';
+      else if (fPar >= 1e3) s4FparVal.textContent = (fPar / 1e3).toFixed(0) + ' kHz';
+      else s4FparVal.textContent = fPar.toFixed(0) + ' Hz';
+
+      // Warning logic
+      const rMin = Math.min(r1, r2);
+      const rMax = Math.max(r1, r2);
+      if (rMin < 1e3) {
+        s4Warning.className = 's4-warning warn-low';
+        s4Warning.textContent = 'Too low! Output is overloaded — op-amp may clip or overheat at ' + (iOutmA).toFixed(1) + ' mA through feedback.';
+      } else if (rMax > 1e6) {
+        s4Warning.className = 's4-warning warn-high';
+        s4Warning.textContent = 'Too high! Bias current offset = ' + (vOffmV >= 1 ? vOffmV.toFixed(1) + ' mV' : vOffuV.toFixed(0) + ' µV') + ', parasitic pole at ' + (fPar >= 1e3 ? (fPar / 1e3).toFixed(0) + ' kHz' : fPar.toFixed(0) + ' Hz') + '.';
+      } else if (rMin >= 10e3 && rMax <= 100e3) {
+        s4Warning.className = 's4-warning warn-ok';
+        s4Warning.innerHTML = 'Resistor values are in the optimal 10 k&Omega;&ndash;100 k&Omega; range.';
+      } else {
+        s4Warning.className = 's4-warning warn-ok';
+        s4Warning.innerHTML = 'Acceptable range. Sweet spot is 10 k&Omega;&ndash;100 k&Omega;.';
+      }
+
+      // ── Update bars ──
+      // Bar 0: Output current — normalise to 25mA max (op-amp limit)
+      const iNorm = clamp(iOut / 25e-3, 0, 1);
+      const iBarH = iNorm * BAR_H * 0.9;
+      scene.remove(bars.barBg0);
+      bars.barBg0 = new Rectangle({ width: BAR_W, height: iBarH, color: iOutmA > 20 ? RED : ACCENT, strokeWidth: 0, fillOpacity: 0.35 });
+      bars.barBg0.moveTo([BAR_X[0], BAR_BASE_Y + iBarH / 2, 0]);
+      scene.add(bars.barBg0);
+
+      // Bar 1: Offset voltage — normalise to 1mV max
+      const vNorm = clamp(vOffset / 1e-3, 0, 1);
+      const vBarH = vNorm * BAR_H * 0.9;
+      scene.remove(bars.barBg1);
+      bars.barBg1 = new Rectangle({ width: BAR_W, height: vBarH, color: vOffmV > 0.5 ? YELLOW : ACCENT, strokeWidth: 0, fillOpacity: 0.35 });
+      bars.barBg1.moveTo([BAR_X[1], BAR_BASE_Y + vBarH / 2, 0]);
+      scene.add(bars.barBg1);
+
+      // Bar 2: Parasitic frequency — invert: lower freq = taller bar (worse)
+      // Normalise: 1kHz (bad) → full bar, 10MHz (good) → tiny bar
+      const fNormLog = clamp((Math.log10(fPar) - 3) / 4, 0, 1); // 1kHz=0, 10MHz=1
+      const fBarH = (1 - fNormLog) * BAR_H * 0.9;
+      scene.remove(bars.barBg2);
+      bars.barBg2 = new Rectangle({ width: BAR_W, height: fBarH, color: fPar < 100e3 ? BLUE : ACCENT, strokeWidth: 0, fillOpacity: 0.35 });
+      bars.barBg2.moveTo([BAR_X[2], BAR_BASE_Y + fBarH / 2, 0]);
+      scene.add(bars.barBg2);
+
+      // Threshold lines at "good" level
+      const goodIY = BAR_BASE_Y + (1e-3 / 25e-3) * BAR_H * 0.9; // 1mA mark
+      bars.threshGood0.moveTo([BAR_X[0], goodIY, 0]);
+      const goodVY = BAR_BASE_Y + (8e-6 / 1e-3) * BAR_H * 0.9;  // 8uV mark
+      bars.threshGood1.moveTo([BAR_X[1], goodVY, 0]);
+      const goodFNorm = 1 - clamp((Math.log10(318e3) - 3) / 4, 0, 1);
+      const goodFY = BAR_BASE_Y + goodFNorm * BAR_H * 0.9;
+      bars.threshGood2.moveTo([BAR_X[2], goodFY, 0]);
+
+      // Update live canvas labels
+      const updateLiveLabel = async (old, latex, color, pos) => {
+        scene.remove(old);
+        const next = await makeMath(latex, old === ctx.live.liveBetaLabel || old === ctx.live.liveGainLabel ? 0.52 : 0.44, color, pos);
+        scene.add(next);
+        return next;
+      };
+
+      const betaStr = beta.toFixed(4);
+      const gainStr = acl < 1000 ? acl.toFixed(1) : acl.toFixed(0);
+      ctx.live.liveBetaLabel = await updateLiveLabel(ctx.live.liveBetaLabel, '\\beta=' + betaStr, BLUE, [0.5, -0.60, 0]);
+      ctx.live.liveGainLabel = await updateLiveLabel(ctx.live.liveGainLabel, 'A_{CL}=' + gainStr, CYAN, [0.5, -1.10, 0]);
+
+      const r1Latex = r1 >= 1e6 ? (r1 / 1e6).toFixed(r1 >= 10e6 ? 0 : 1) + '\\,\\text{M}\\Omega'
+        : r1 >= 1e3 ? (r1 / 1e3).toFixed(r1 >= 10e3 ? 0 : 1) + '\\,\\text{k}\\Omega'
+        : r1.toFixed(0) + '\\,\\Omega';
+      const r2Latex = r2 >= 1e6 ? (r2 / 1e6).toFixed(r2 >= 10e6 ? 0 : 1) + '\\,\\text{M}\\Omega'
+        : r2 >= 1e3 ? (r2 / 1e3).toFixed(r2 >= 10e3 ? 0 : 1) + '\\,\\text{k}\\Omega'
+        : r2.toFixed(0) + '\\,\\Omega';
+
+      // Color resistor labels based on range
+      const r1Color = r1 < 1e3 ? RED : r1 > 1e6 ? YELLOW : ACCENT;
+      const r2Color = r2 < 1e3 ? RED : r2 > 1e6 ? YELLOW : ACCENT;
+      ctx.live.liveR1Label = await updateLiveLabel(ctx.live.liveR1Label, 'R_1=' + r1Latex, r1Color, [-4.30, -3.20, 0]);
+      ctx.live.liveR2Label = await updateLiveLabel(ctx.live.liveR2Label, 'R_2=' + r2Latex, r2Color, [-4.30, -3.60, 0]);
+
+      // Update resistor rectangle colors on circuit
+      // We can't change color on existing Rectangle, so this is fine as visual feedback via labels
+    };
+
+    const queueSection4Draw = () => {
+      if (state.section4DrawRaf) return;
+      state.section4DrawRaf = requestAnimationFrame(() => {
+        state.section4DrawRaf = null;
+        drawSection4();
+      });
+    };
+
+    s4R1Slider.addEventListener('input', () => {
+      if (state.currentSection === 4 && state.section4ControlsReady) queueSection4Draw();
+    });
+    s4R2Slider.addEventListener('input', () => {
+      if (state.currentSection === 4 && state.section4ControlsReady) queueSection4Draw();
+    });
 
     const renderSection = async (animate = true, token = state.renderToken) => {
       if (state.isRendering) return;
@@ -1594,8 +2268,50 @@
           state.section2ControlsReady = true;
           updateNavUi();
           await runSection2Animation(token);
-        } else {
-          await renderPlaceholder(state.currentSection);
+        } else if (state.currentSection === 3) {
+          await buildSection3();
+          updateNavUi();
+        } else if (state.currentSection === 4) {
+          const sec = await buildSection4();
+          state.sectionObjects = sec.objs;
+          state.section4Ctx = sec;
+          const nonAnim = sec.objs.filter((o) => !sec.animated.includes(o));
+          if (nonAnim.length) scene.add(...nonAnim);
+          if (animate) {
+            const stale = () => token !== state.renderToken;
+            const playGroup = async (items, duration, textOnly = false) => {
+              for (const obj of items) scene.remove(obj);
+              const anims = items.map((obj) => {
+                const name = obj.constructor?.name || '';
+                if (textOnly || name === 'Text' || name === 'MathTex') return new Write(obj, { duration });
+                return new Create(obj, { duration });
+              });
+              if (anims.length) await scene.play(...anims);
+            };
+            await playGroup(sec.groups.eqStage, 1.0, true);
+            if (stale()) return;
+            await scene.wait(0.5);
+            if (stale()) return;
+            for (const bullet of sec.groups.bulletStage) {
+              await playGroup([bullet], 0.8, true);
+              if (stale()) return;
+              await scene.wait(0.25);
+              if (stale()) return;
+            }
+            await playGroup(sec.groups.circuitStage, 1.2, false);
+            if (stale()) return;
+            await scene.wait(0.3);
+            if (stale()) return;
+            await playGroup(sec.groups.liveLabels, 0.8, true);
+            if (stale()) return;
+            await playGroup(sec.groups.barObjs, 1.0, false);
+            if (stale()) return;
+          } else {
+            scene.add(...sec.animated);
+          }
+          state.section4ControlsReady = true;
+          updateNavUi();
+          await drawSection4();
         }
       } finally {
         state.isRendering = false;
@@ -1819,7 +2535,7 @@
 
     <div class="stepper-row" id="stepper">
       <button type="button" class="stepper-btn" id="sec-prev">← Prev Section</button>
-      <span class="step-indicator" id="sec-indicator">Section 1/3</span>
+      <span class="step-indicator" id="sec-indicator">Section 1/4</span>
       <button type="button" class="stepper-btn" id="sec-next">Next Section →</button>
     </div>
   </div>
@@ -1926,7 +2642,7 @@
     const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain (next)', 'Gain-bandwidth tradeoff (next)'][idx - 1];
 
     const updateNavUi = () => {
-      secIndicator.textContent = 'Section ' + state.currentSection + '/3 - ' + sectionLabel(state.currentSection);
+      secIndicator.textContent = 'Section ' + state.currentSection + '/' + TOTAL_SECTIONS + ' - ' + sectionLabel(state.currentSection);
       prevBtn.disabled = state.currentSection === 1;
       nextBtn.disabled = state.currentSection === TOTAL_SECTIONS;
       const showPanel = state.currentSection === 1;

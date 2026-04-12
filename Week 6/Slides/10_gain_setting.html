@@ -219,7 +219,7 @@
   </div>
 
   <script type="module">
-    import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, FadeOut, Transform, UpdateFromAlphaFunc } from 'https://esm.sh/manim-web@0.3.18';
+    import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, Transform } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
     const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
@@ -1111,11 +1111,10 @@
       s2StepLabel.textContent = 'k=' + n;
     };
 
-    // Smoothly move an object along waypoints using manim's UpdateFromAlphaFunc.
-    // This runs inside scene.play() for proper frame-synced rendering.
-    const shiftAlongWaypoints = async (obj, waypoints, totalDuration, staleCheck) => {
-      if (waypoints.length < 2 || staleCheck()) return;
-      // Build segments with cumulative lengths
+    // Animate multiple objects moving together along waypoints using rAF.
+    // Returns a promise. Objects are already scene.add'd by the caller.
+    const moveAlongWaypoints = (objs, waypoints, durationSec, staleCheck) => new Promise((resolve) => {
+      if (waypoints.length < 2 || staleCheck()) { resolve(); return; }
       const segs = [];
       let totalLen = 0;
       for (let i = 0; i < waypoints.length - 1; i++) {
@@ -1125,28 +1124,33 @@
         segs.push({ sx: waypoints[i][0], sy: waypoints[i][1], dx, dy, len, cumLen: totalLen });
         totalLen += len;
       }
-      obj.moveTo([waypoints[0][0], waypoints[0][1], 0]);
-      if (totalDuration < 0.02) {
-        obj.moveTo([waypoints[waypoints.length - 1][0], waypoints[waypoints.length - 1][1], 0]);
+      for (const o of objs) o.moveTo([waypoints[0][0], waypoints[0][1], 0]);
+      if (durationSec < 0.02) {
+        const last = waypoints[waypoints.length - 1];
+        for (const o of objs) o.moveTo([last[0], last[1], 0]);
+        resolve();
         return;
       }
-      await scene.play(new UpdateFromAlphaFunc(obj, (o, alpha) => {
-        const dist = alpha * totalLen;
+      const durationMs = durationSec * 1000;
+      const ease = (t) => t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+      const t0 = performance.now();
+      const tick = (now) => {
+        if (staleCheck()) { resolve(); return; }
+        const rawT = clamp((now - t0) / durationMs, 0, 1);
+        const dist = ease(rawT) * totalLen;
         let seg = segs[segs.length - 1];
         for (let i = 0; i < segs.length; i++) {
           if (dist <= segs[i].cumLen + segs[i].len) { seg = segs[i]; break; }
         }
         const segT = seg.len > 0.001 ? clamp((dist - seg.cumLen) / seg.len, 0, 1) : 1;
-        o.moveTo([seg.sx + seg.dx * segT, seg.sy + seg.dy * segT, 0]);
-      }, { duration: totalDuration }));
-    };
-
-    // Create a circle background for a value chip
-    const makeChipBg = (x, y, col) => {
-      const bg = new Rectangle({ width: 0.48, height: 0.36, color: col, strokeWidth: 1.5, fillOpacity: 0.20 });
-      bg.moveTo([x, y, 0]);
-      return bg;
-    };
+        const px = seg.sx + seg.dx * segT;
+        const py = seg.sy + seg.dy * segT;
+        for (const o of objs) o.moveTo([px, py, 0]);
+        if (rawT >= 1) { resolve(); return; }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
 
     const runSection2Animation = async (token) => {
       const runId = ++state.section2AnimToken;
@@ -1183,50 +1187,49 @@
         [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
       ];
 
-      // Positions for operation labels (shown at each block)
-      const AOL_OP_POS = [bd.BD_AX, bd.BD_FWD_Y + 0.50, 0];
-      const BETA_OP_POS = [bd.BD_BX, bd.BD_FB_Y - 0.42, 0];
-      const SIGMA_OP_POS = [bd.BD_JX, bd.BD_FWD_Y + 0.52, 0];
+      // Operation label positions
+      const AOL_OP_POS = [bd.BD_AX, bd.BD_FWD_Y + 0.52];
+      const BETA_OP_POS = [bd.BD_BX, bd.BD_FB_Y - 0.44];
+      const SIGMA_OP_POS = [bd.BD_JX + 0.05, bd.BD_FWD_Y + 0.52];
 
       // Speed ramp: seconds per full iteration — slow early, fast late
       const durationFor = (k) => {
-        if (k <= 1) return 1.2;
-        if (k <= 3) return 0.7;
-        if (k <= 6) return 0.40;
-        if (k <= 10) return 0.20;
-        return 0.10;
+        if (k <= 1) return 1.4;
+        if (k <= 3) return 0.8;
+        if (k <= 6) return 0.45;
+        if (k <= 10) return 0.22;
+        return 0.12;
       };
 
-      // Temporary objects that need cleanup between iterations
+      // Track temporary objects for cleanup
       let tempObjs = [];
       const show = (...objs) => { for (const o of objs) { scene.add(o); tempObjs.push(o); } };
-      const hide = (...objs) => { for (const o of objs) { scene.remove(o); tempObjs = tempObjs.filter(t => t !== o); } };
-      const clearTemp = () => { tempObjs.forEach(o => scene.remove(o)); tempObjs = []; };
+      const hide = (...objs) => { for (const o of objs) { scene.remove(o); } tempObjs = tempObjs.filter(t => !objs.includes(t)); };
+      const clearTemp = () => { for (const o of tempObjs) scene.remove(o); tempObjs = []; };
 
-      // Helper: show a chip (circle bg + label) at a position, move along path, return bg
-      const moveChip = async (label, color, waypoints, dur) => {
-        const startX = waypoints[0][0], startY = waypoints[0][1];
-        const bg = makeChipBg(startX, startY, color);
-        label.moveTo([startX, startY, 0]);
-        show(bg, label);
-        // Move both bg and label together
-        await Promise.all([
-          shiftAlongWaypoints(bg, waypoints, dur, stale),
-          shiftAlongWaypoints(label, waypoints, dur, stale),
-        ]);
-        return bg;
+      // Create a "chip": a filled circle behind a value label
+      const CHIP_R = 0.24;
+      const makeChip = (x, y, col) => {
+        const circle = new Dot({ point: [x, y, 0], color: col, radius: CHIP_R });
+        return circle;
       };
 
-      // Helper: show operation label, pause, fade out
+      // Move a chip (circle + label) along waypoints
+      const moveChip = async (label, color, waypoints, dur) => {
+        const sx = waypoints[0][0], sy = waypoints[0][1];
+        const chip = makeChip(sx, sy, color);
+        label.moveTo([sx, sy, 0]);
+        show(chip, label);
+        await moveAlongWaypoints([chip, label], waypoints, dur, stale);
+        return chip;
+      };
+
+      // Flash an operation label at a position: appear, pause, disappear
       const flashOp = async (opLabel, pos, dur) => {
-        opLabel.moveTo(pos);
-        scene.remove(opLabel);
-        await scene.play(new FadeIn(opLabel, { duration: dur * 0.3 }));
-        if (stale()) return;
+        opLabel.moveTo([pos[0], pos[1], 0]);
         show(opLabel);
-        await scene.wait(dur * 0.5);
+        await scene.wait(dur);
         if (stale()) return;
-        await scene.play(new FadeOut(opLabel, { duration: dur * 0.2 }));
         hide(opLabel);
       };
 
@@ -1242,55 +1245,50 @@
         const dur = durationFor(k);
         const lab = tl[k];
 
-        // ── Phase 1: Vin / Vd enters from left → Σ ──
+        // ── Phase 1: Vin enters from input → Σ (first iteration only) ──
         if (k === 0) {
-          // First iteration: Vin enters from the input
-          const vinBg = await moveChip(c.vinChip, FG, inputToSigma, dur * 0.3);
+          const vinChip = await moveChip(c.vinChip, FG, inputToSigma, dur * 0.25);
           if (stale()) return;
-          // No subtraction at Σ on first pass (no feedback yet)
-          await scene.wait(dur * 0.08);
+          await scene.wait(dur * 0.06);
           if (stale()) return;
-          hide(vinBg, c.vinChip);
+          hide(vinChip, c.vinChip);
         }
 
-        // ── Phase 2: Vd travels Σ → A_OL ──
-        const vdBg = await moveChip(lab.tvd, ACCENT, sigmaToAol, dur * 0.25);
+        // ── Phase 2: Vd chip travels Σ → A_OL ──
+        const vdChip = await moveChip(lab.tvd, ACCENT, sigmaToAol, dur * 0.18);
+        if (stale()) return;
+        hide(vdChip, lab.tvd);
+
+        // ── Phase 3: Multiply at A_OL — flash "× A_OL = Vout" ──
+        await flashOp(lab.opAol, AOL_OP_POS, dur * 0.18);
         if (stale()) return;
 
-        // ── Phase 3: Multiply at A_OL — show "× A_OL = Vout" ──
-        hide(vdBg, lab.tvd);
-        await flashOp(lab.opAol, AOL_OP_POS, dur * 0.25);
-        if (stale()) return;
-
-        // ── Phase 4: Vout emerges from A_OL → tap ──
-        const voutBg = await moveChip(lab.tvout, CYAN, aolToTap, dur * 0.2);
+        // ── Phase 4: Vout chip emerges from A_OL → tap ──
+        const voutChip = await moveChip(lab.tvout, CYAN, aolToTap, dur * 0.14);
         if (stale()) return;
 
         // Update settling graph
         drawSection2AtStep(k + 1);
         if (stale()) return;
-        await scene.wait(dur * 0.05);
+
+        // ── Phase 5: Vout chip travels feedback path → β ──
+        hide(voutChip);
+        const voutFbChip = await moveChip(lab.tvout, CYAN, tapToBeta, dur * 0.22);
+        if (stale()) return;
+        hide(voutFbChip, lab.tvout);
+
+        // ── Phase 6: Multiply at β — flash "× β = βVout" ──
+        await flashOp(lab.opBeta, BETA_OP_POS, dur * 0.14);
         if (stale()) return;
 
-        // ── Phase 5: Vout travels feedback path → β ──
-        hide(voutBg);
-        const voutFbBg = await moveChip(lab.tvout, CYAN, tapToBeta, dur * 0.3);
+        // ── Phase 7: βVout chip emerges from β → Σ ──
+        const bvChip = await moveChip(lab.tbv, BLUE, betaToSigma, dur * 0.18);
         if (stale()) return;
+        hide(bvChip, lab.tbv);
 
-        // ── Phase 6: Multiply at β — show "× β = βVout" ──
-        hide(voutFbBg, lab.tvout);
-        await flashOp(lab.opBeta, BETA_OP_POS, dur * 0.2);
-        if (stale()) return;
-
-        // ── Phase 7: βVout emerges from β → Σ ──
-        const bvBg = await moveChip(lab.tbv, BLUE, betaToSigma, dur * 0.25);
-        if (stale()) return;
-
-        // ── Phase 8: Subtraction at Σ — show "Vin - βVout = Vd" ──
-        hide(bvBg, lab.tbv);
+        // ── Phase 8: Subtraction at Σ — flash "Vin − βVout = Vd" ──
         if (k < S2_STEPS - 1) {
-          const nextLab = tl[k + 1];
-          await flashOp(nextLab.opSigma, SIGMA_OP_POS, dur * 0.2);
+          await flashOp(tl[k + 1].opSigma, SIGMA_OP_POS, dur * 0.14);
           if (stale()) return;
         }
       }

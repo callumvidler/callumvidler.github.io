@@ -523,8 +523,8 @@
       { label: 'Common-mode', x: 50, w: 550, mode: 'common' },
       { label: 'Differential-mode', x: 680, w: 550, mode: 'diff' }
     ];
-    const S1_WAVE_TOP = 120, S1_WAVE_H = 200, S1_WAVE_BOT = S1_WAVE_TOP + S1_WAVE_H;
-    const S1_DIFF_TOP = S1_WAVE_BOT + 50, S1_DIFF_H = 80;
+    const S1_WAVE_TOP = 180, S1_WAVE_H = 180, S1_WAVE_BOT = S1_WAVE_TOP + S1_WAVE_H;
+    const S1_DIFF_TOP = S1_WAVE_BOT + 40, S1_DIFF_H = 70;
     const S1_SURF_AMP = 40;
     const S1_WAVE_K = 2;
     const S1_DOT_R = 10;
@@ -555,7 +555,7 @@
 
         // Water surface — same traveling wave for both panels
         const surfFn = (xNorm) => {
-          return S1_SURF_AMP * Math.sin(S1_WAVE_K * xNorm * Math.PI * 2 - 2 * Math.PI * t * 0.8);
+          return S1_SURF_AMP * Math.sin(S1_WAVE_K * xNorm * Math.PI * 2 - 2 * Math.PI * t * 0.35);
         };
 
         // Draw water surface

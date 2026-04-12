@@ -359,7 +359,69 @@
     );
     await scene.play(new FadeOut(stage1All, { duration: 0.5 }));
 
-    // ── Stage 2: ECG scenario (Tasks 3–4) ──
+    // ── Stage 2: ECG scenario ────────────────────────────────────────────────
+    const SLIDE_TITLE_LEFT_X = -6.2;
+    const BED_CX = -2.8, BED_CY = -1.3, BED_W = 4.2, BED_H = 0.4;
+    const PATIENT_SHIFT = [-2.8, -1.1, 0];
+
+    const slideTitle = new Text({
+      text: 'Mains interference couples equally to both electrodes',
+      fontSize: 26, color: FG, fontUrl: FONT_URL
+    });
+    await slideTitle.loadGlyphs?.();
+    slideTitle.moveTo([0, 3.2, 0]);
+    if (typeof slideTitle.getLeft === 'function') {
+      slideTitle.shift([SLIDE_TITLE_LEFT_X - slideTitle.getLeft()[0], 0, 0]);
+    }
+
+    // Bed + legs + pillow
+    const bed = new Rectangle({ width: BED_W, height: BED_H, color: MUTED, strokeWidth: 2, fillOpacity: 0.08 });
+    bed.moveTo([BED_CX, BED_CY, 0]);
+    const bedLegL = new Line({
+      start: [BED_CX - BED_W / 2 + 0.15, BED_CY - BED_H / 2, 0],
+      end:   [BED_CX - BED_W / 2 + 0.15, BED_CY - BED_H / 2 - 0.55, 0],
+      color: MUTED, strokeWidth: 2
+    });
+    const bedLegR = new Line({
+      start: [BED_CX + BED_W / 2 - 0.15, BED_CY - BED_H / 2, 0],
+      end:   [BED_CX + BED_W / 2 - 0.15, BED_CY - BED_H / 2 - 0.55, 0],
+      color: MUTED, strokeWidth: 2
+    });
+    const pillow = new Polygon({
+      vertices: [
+        [BED_CX - BED_W / 2 - 0.05, BED_CY + BED_H / 2, 0],
+        [BED_CX - BED_W / 2 + 0.85, BED_CY + BED_H / 2, 0],
+        [BED_CX - BED_W / 2 + 0.85, BED_CY + BED_H / 2 + 0.22, 0],
+        [BED_CX - BED_W / 2 - 0.05, BED_CY + BED_H / 2 + 0.22, 0]
+      ],
+      color: MAG, strokeWidth: 1.5, fillOpacity: 0.18
+    });
+
+    // Patient silhouette — 25-vertex polygon, reclining side profile
+    const PATIENT_LOCAL = [
+      [-2.00,  0.40], [-1.78,  0.46], [-1.68,  0.30], [-1.60,  0.25],
+      [-1.54,  0.14], [-1.40,  0.12], [-1.20,  0.28], [-0.70,  0.32],
+      [-0.20,  0.26], [ 0.30,  0.28], [ 0.75,  0.32], [ 1.20,  0.28],
+      [ 1.65,  0.20], [ 1.95,  0.22], [ 2.10,  0.12], [ 2.05,  0.02],
+      [ 1.50,  0.00], [ 0.80,  0.00], [ 0.10,  0.00], [-0.60,  0.00],
+      [-1.20,  0.00], [-1.55,  0.05], [-1.80,  0.20], [-2.05,  0.32],
+      [-2.00,  0.40]
+    ];
+    const patient = new Polygon({
+      vertices: PATIENT_LOCAL.map(([x, y]) => [x + PATIENT_SHIFT[0], y + PATIENT_SHIFT[1], 0]),
+      color: FG, strokeWidth: 2, fillOpacity: 0.10
+    });
+
+    // TEMP play sequence — will be replaced in Task 4
+    await scene.play(new Write(slideTitle, { duration: 0.6 }));
+    await scene.play(
+      new Create(bed), new Create(bedLegL), new Create(bedLegR), new Create(pillow),
+      { duration: 0.4 }
+    );
+    await scene.play(new Create(patient, { duration: 1.2 }));
+    await scene.play(new FadeIn(patient, { duration: 0.3 }));
+    await scene.wait(1.0);
+
     // ── Compression transition (Task 5) ──
     // ── Stage 3: signal module + render loop + controls (Tasks 6–9) ──
 

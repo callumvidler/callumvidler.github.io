@@ -2134,6 +2134,32 @@
       const stepAnno2 = await makeText('Acl=' + gainStr, 11, CYAN, [stepFrame.x1 - 0.70, stepFrame.y1 - 0.38, 0]);
       g.push(stepAnno1, stepAnno2);
 
+      // Step response Y-axis tick labels
+      const yStep = yMax > 10 ? 5 : yMax > 2 ? 1 : yMax > 0.5 ? 0.2 : 0.05;
+      for (let v = yStep; v <= yMax; v += yStep) {
+        const py = mapPoint(stepFrame, 0, v, stepXRange, stepYRange)[1];
+        if (py > stepFrame.y0 + 0.10 && py < stepFrame.y1 - 0.10) {
+          const vStr = v >= 1 ? v.toFixed(0) + 'V' : (v * 1e3).toFixed(0) + 'mV';
+          const tickLbl = await makeText(vStr, 9, MUTED, [stepFrame.x0 - 0.28, py, 0]);
+          g.push(tickLbl);
+        }
+      }
+
+      // Step response X-axis tick labels
+      const tDiv = tSettle / 5;
+      for (let i = 1; i <= 4; i++) {
+        const t = tDiv * i;
+        const px = mapPoint(stepFrame, t, 0, stepXRange, stepYRange)[0];
+        if (px > stepFrame.x0 + 0.15 && px < stepFrame.x1 - 0.15) {
+          let tStr;
+          if (t >= 1e-3) tStr = (t * 1e3).toFixed(1) + 'ms';
+          else if (t >= 1e-6) tStr = (t * 1e6).toFixed(0) + '\u00B5s';
+          else tStr = (t * 1e9).toFixed(0) + 'ns';
+          const tickLbl = await makeText(tStr, 9, MUTED, [px, stepFrame.y0 - 0.16, 0]);
+          g.push(tickLbl);
+        }
+      }
+
       // ── PLOT 2: Penalty Sweet-Spot ──
       const PEN_N = 120;
       const penLogMin = 1, penLogMax = 8; // 10 Ω to 100 MΩ

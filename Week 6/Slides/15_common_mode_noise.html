@@ -412,7 +412,87 @@
       color: FG, strokeWidth: 2, fillOpacity: 0.10
     });
 
-    // TEMP play sequence — will be replaced in Task 4
+    // Electrodes (local coords shifted onto chest)
+    const ELEC1_LOCAL = [-1.00, 0.28];
+    const ELEC2_LOCAL = [-0.30, 0.24];
+    const elec1Pos = [ELEC1_LOCAL[0] + PATIENT_SHIFT[0], ELEC1_LOCAL[1] + PATIENT_SHIFT[1], 0];
+    const elec2Pos = [ELEC2_LOCAL[0] + PATIENT_SHIFT[0], ELEC2_LOCAL[1] + PATIENT_SHIFT[1], 0];
+    const elec1 = new Dot({ point: elec1Pos, color: YELLOW, radius: 0.09 });
+    const elec2 = new Dot({ point: elec2Pos, color: YELLOW, radius: 0.09 });
+
+    const elecLbl1 = new MathTex({ latex: 'v_{i1}', color: FG });
+    const elecLbl2 = new MathTex({ latex: 'v_{i2}', color: FG });
+    await elecLbl1.waitForRender?.();
+    await elecLbl2.waitForRender?.();
+    elecLbl1.scale(0.42).moveTo([elec1Pos[0] - 0.05, elec1Pos[1] + 0.26, 0]);
+    elecLbl2.scale(0.42).moveTo([elec2Pos[0] + 0.25, elec2Pos[1] + 0.22, 0]);
+
+    // Amp box — small rounded-feel rectangle to the right of the patient
+    const AMP_BOX_CX = 1.60, AMP_BOX_CY = -0.80;
+    const ampBox = new Rectangle({
+      width: 0.85, height: 0.65, color: FG, strokeWidth: 2, fillOpacity: 0.06
+    });
+    ampBox.moveTo([AMP_BOX_CX, AMP_BOX_CY, 0]);
+    const ampLbl = new Text({ text: 'to amp', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    await ampLbl.loadGlyphs?.();
+    ampLbl.moveTo([AMP_BOX_CX, AMP_BOX_CY, 0]);
+
+    const lead1 = new Line({
+      start: elec1Pos,
+      end:   [AMP_BOX_CX - 0.42, AMP_BOX_CY + 0.15, 0],
+      color: FG, strokeWidth: 2
+    });
+    const lead2 = new Line({
+      start: elec2Pos,
+      end:   [AMP_BOX_CX - 0.42, AMP_BOX_CY - 0.15, 0],
+      color: FG, strokeWidth: 2
+    });
+
+    // Mains cord + label
+    const MAINS_X = 4.80;
+    const mains = new Line({
+      start: [MAINS_X,  2.50, 0],
+      end:   [MAINS_X, -1.80, 0],
+      color: RED, strokeWidth: 3
+    });
+    const mainsLbl = new Text({ text: 'Mains 50 Hz', fontSize: 14, color: RED, fontUrl: FONT_URL });
+    await mainsLbl.loadGlyphs?.();
+    mainsLbl.moveTo([MAINS_X, 2.88, 0]);
+
+    // Capacitive coupling — two dashed paths, same dash count, same stroke, same color
+    const couple1 = [];
+    const couple2 = [];
+    function addDashes(target, xs, ys, xe, ye, n) {
+      for (let i = 0; i < n; i++) {
+        const t0 = i / n, t1 = (i + 0.55) / n;
+        target.push(new Line({
+          start: [xs + (xe - xs) * t0, ys + (ye - ys) * t0, 0],
+          end:   [xs + (xe - xs) * t1, ys + (ye - ys) * t1, 0],
+          color: MAG, strokeWidth: 2
+        }));
+      }
+    }
+    addDashes(couple1, MAINS_X, 0.90, elec1Pos[0], elec1Pos[1], 12);
+    addDashes(couple2, MAINS_X, 0.30, elec2Pos[0], elec2Pos[1], 12);
+    const couple1Group = new VGroup(...couple1);
+    const couple2Group = new VGroup(...couple2);
+
+    const capLbl = new Text({
+      text: 'C_couple (same on both leads)',
+      fontSize: 12, color: MAG, fontUrl: FONT_URL
+    });
+    await capLbl.loadGlyphs?.();
+    capLbl.moveTo([1.0, 0.95, 0]);
+
+    // Bottom caption for Stage 2
+    const stage2Caption = new Text({
+      text: 'Identical 50 Hz on v_i1 and v_i2  →  common-mode',
+      fontSize: 16, color: FG, fontUrl: FONT_URL
+    });
+    await stage2Caption.loadGlyphs?.();
+    stage2Caption.moveTo([0, -2.70, 0]);
+
+    // Stage 2 play sequence
     await scene.play(new Write(slideTitle, { duration: 0.6 }));
     await scene.play(
       new Create(bed), new Create(bedLegL), new Create(bedLegR), new Create(pillow),
@@ -420,6 +500,18 @@
     );
     await scene.play(new Create(patient, { duration: 1.2 }));
     await scene.play(new FadeIn(patient, { duration: 0.3 }));
+    await scene.play(
+      new FadeIn(elec1), new FadeIn(elec2),
+      new Create(lead1), new Create(lead2),
+      new Create(ampBox), new FadeIn(ampLbl),
+      { duration: 0.5 }
+    );
+    await scene.play(new Write(elecLbl1), new Write(elecLbl2), { duration: 0.3 });
+    await scene.play(new Create(mains), new FadeIn(mainsLbl), { duration: 0.4 });
+    await scene.play(new FadeIn(couple1Group, { duration: 0.4 }));
+    await scene.play(new FadeIn(couple2Group, { duration: 0.4 }));
+    await scene.play(new FadeIn(capLbl, { duration: 0.2 }));
+    await scene.play(new FadeIn(stage2Caption, { duration: 0.3 }));
     await scene.wait(1.0);
 
     // ── Compression transition (Task 5) ──

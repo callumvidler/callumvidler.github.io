@@ -2023,8 +2023,64 @@
       const penStatics = await frameStatics(penFrame, 'Resistor Scale (Ω)', 'Penalty', AXIS);
       const penTitle = await makeText('Resistor Sweet Spot', 12, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.16, 0]);
 
-      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle);
-      animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle);
+      // ── Penalty plot static overlays (built once, never redrawn) ──
+      const penLogMin = 1, penLogMax = 8;
+      const penXRange = [penLogMin, penLogMax];
+      const penYRange = [0, 1.15];
+
+      // Sweet-spot band
+      const sweetL = mapPoint(penFrame, Math.log10(10e3), 0, penXRange, penYRange);
+      const sweetR = mapPoint(penFrame, Math.log10(100e3), 0, penXRange, penYRange);
+      const sweetBand = new Rectangle({
+        width: sweetR[0] - sweetL[0],
+        height: penFrame.y1 - penFrame.y0,
+        color: ACCENT, strokeWidth: 0, fillOpacity: 0.12
+      });
+      sweetBand.moveTo([(sweetL[0] + sweetR[0]) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+
+      // Danger zone — low R
+      const dangerLR = mapPoint(penFrame, Math.log10(1e3), 0, penXRange, penYRange);
+      const dangerLow = new Rectangle({
+        width: dangerLR[0] - penFrame.x0,
+        height: penFrame.y1 - penFrame.y0,
+        color: RED, strokeWidth: 0, fillOpacity: 0.07
+      });
+      dangerLow.moveTo([(penFrame.x0 + dangerLR[0]) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+
+      // Danger zone — high R
+      const dangerHR = mapPoint(penFrame, Math.log10(1e6), 0, penXRange, penYRange);
+      const dangerHigh = new Rectangle({
+        width: penFrame.x1 - dangerHR[0],
+        height: penFrame.y1 - penFrame.y0,
+        color: YELLOW, strokeWidth: 0, fillOpacity: 0.07
+      });
+      dangerHigh.moveTo([(dangerHR[0] + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+
+      const sweetLabel = await makeText('Sweet Spot', 10, ACCENT, [(sweetL[0] + sweetR[0]) / 2, penFrame.y1 - 0.16, 0]);
+
+      // Legend
+      const legX = penFrame.x0 + 0.20;
+      const legY = penFrame.y1 - 0.18;
+      const leg1 = await makeText('\u2014 I_out', 9, RED, [legX, legY, 0], legX);
+      const leg2 = await makeText('\u2014 V_offset', 9, YELLOW, [legX + 1.2, legY, 0], legX + 1.2);
+      const leg3 = await makeText('\u2014 f_parasitic', 9, BLUE, [legX + 2.6, legY, 0], legX + 2.6);
+
+      // X-axis tick labels
+      const penTickLabelsArr = [];
+      const penTickValues = [1, 2, 3, 4, 5, 6, 7, 8];
+      const penTickNames = ['10', '100', '1k', '10k', '100k', '1M', '10M', '100M'];
+      for (let i = 0; i < penTickValues.length; i++) {
+        const tx = mapPoint(penFrame, penTickValues[i], 0, penXRange, penYRange)[0];
+        if (tx >= penFrame.x0 + 0.15 && tx <= penFrame.x1 - 0.15) {
+          const tickLabel = await makeText(penTickNames[i], 9, MUTED, [tx, penFrame.y0 - 0.16, 0]);
+          penTickLabelsArr.push(tickLabel);
+        }
+      }
+
+      const penStaticOverlays = [sweetBand, dangerLow, dangerHigh, sweetLabel, leg1, leg2, leg3, ...penTickLabelsArr];
+
+      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle, ...penStaticOverlays);
+      animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle, ...penStaticOverlays);
 
       return {
         objs,
@@ -2033,11 +2089,15 @@
           circuitStage: circuitObjs,
           liveLabels,
           stepPlot: [...stepStatics, stepTitle],
-          penPlot: [...penStatics, penTitle]
+          penPlot: [...penStatics, penTitle, ...penStaticOverlays]
         },
         live: { liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label },
         stepFrame,
-        penFrame
+        penFrame,
+        penXRange,
+        penYRange,
+        penLogMin,
+        penLogMax
       };
     };
 
@@ -2160,55 +2220,11 @@
         }
       }
 
-      // ── PLOT 2: Penalty Sweet-Spot ──
+      // ── PLOT 2: Penalty curves + marker (zones/legend/ticks are static from build) ──
+      const { penXRange, penYRange, penLogMin, penLogMax } = ctx;
       const PEN_N = 120;
-      const penLogMin = 1, penLogMax = 8; // 10 Ω to 100 MΩ
-      const penXRange = [penLogMin, penLogMax]; // log10(R) on x-axis
-      const penYRange = [0, 1.15];
-      const ratio = r2 / r1; // keep ratio fixed for curves
+      const ratio = r2 / r1;
 
-      // Sweet-spot band (green fill)
-      const sweetL = mapPoint(penFrame, Math.log10(10e3), 0, penXRange, penYRange);
-      const sweetR = mapPoint(penFrame, Math.log10(100e3), 0, penXRange, penYRange);
-      const sweetBand = new Rectangle({
-        width: sweetR[0] - sweetL[0],
-        height: penFrame.y1 - penFrame.y0,
-        color: ACCENT,
-        strokeWidth: 0,
-        fillOpacity: 0.12
-      });
-      sweetBand.moveTo([(sweetL[0] + sweetR[0]) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
-      g.push(sweetBand);
-
-      // Danger zone shading — low R (red tint)
-      const dangerLR = mapPoint(penFrame, Math.log10(1e3), 0, penXRange, penYRange);
-      if (dangerLR[0] > penFrame.x0) {
-        const dangerLow = new Rectangle({
-          width: dangerLR[0] - penFrame.x0,
-          height: penFrame.y1 - penFrame.y0,
-          color: RED, strokeWidth: 0, fillOpacity: 0.07
-        });
-        dangerLow.moveTo([(penFrame.x0 + dangerLR[0]) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
-        g.push(dangerLow);
-      }
-
-      // Danger zone shading — high R (amber tint)
-      const dangerHR = mapPoint(penFrame, Math.log10(1e6), 0, penXRange, penYRange);
-      if (dangerHR[0] < penFrame.x1) {
-        const dangerHigh = new Rectangle({
-          width: penFrame.x1 - dangerHR[0],
-          height: penFrame.y1 - penFrame.y0,
-          color: YELLOW, strokeWidth: 0, fillOpacity: 0.07
-        });
-        dangerHigh.moveTo([(dangerHR[0] + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
-        g.push(dangerHigh);
-      }
-
-      // Sweet spot label
-      const sweetLabel = await makeText('Sweet Spot', 10, ACCENT, [(sweetL[0] + sweetR[0]) / 2, penFrame.y1 - 0.16, 0]);
-      g.push(sweetLabel);
-
-      // Draw 3 penalty curves
       const drawPenCurve = (penaltyFn, color) => {
         let prevP = null;
         for (let i = 0; i <= PEN_N; i++) {
@@ -2223,13 +2239,8 @@
         }
       };
 
-      // Curve 1: Output current penalty (red) — rises at low R
       drawPenCurve((r1s, r2s) => (S4_VOUT_REF / (r1s + r2s)) / 25e-3, RED);
-
-      // Curve 2: Offset voltage penalty (yellow) — rises at high R
       drawPenCurve((r1s, r2s) => (S4_IB * (r1s * r2s) / (r1s + r2s)) / 1e-3, YELLOW);
-
-      // Curve 3: Parasitic pole penalty (blue) — rises at high R
       drawPenCurve((r1s, r2s) => 100e3 / (1 / (2 * Math.PI * r2s * S4_CPAR)), BLUE);
 
       // Vertical "you are here" marker
@@ -2240,25 +2251,6 @@
         g.push(new Line({ start: [mx, penFrame.y0 + 0.05, 0], end: [mx, penFrame.y1 - 0.05, 0], color: FG, strokeWidth: 2.2 }));
         const markerLabel = await makeText('\u25C6 You', 10, FG, [mx, penFrame.y1 - 0.34, 0]);
         g.push(markerLabel);
-      }
-
-      // Legend
-      const legX = penFrame.x0 + 0.20;
-      const legY = penFrame.y1 - 0.18;
-      const leg1 = await makeText('\u2014 I_out', 9, RED, [legX, legY, 0], legX);
-      const leg2 = await makeText('\u2014 V_offset', 9, YELLOW, [legX + 1.2, legY, 0], legX + 1.2);
-      const leg3 = await makeText('\u2014 f_parasitic', 9, BLUE, [legX + 2.6, legY, 0], legX + 2.6);
-      g.push(leg1, leg2, leg3);
-
-      // X-axis tick labels
-      const penTickValues = [1, 2, 3, 4, 5, 6, 7, 8];
-      const penTickLabels = ['10', '100', '1k', '10k', '100k', '1M', '10M', '100M'];
-      for (let i = 0; i < penTickValues.length; i++) {
-        const tx = mapPoint(penFrame, penTickValues[i], 0, penXRange, penYRange)[0];
-        if (tx >= penFrame.x0 + 0.15 && tx <= penFrame.x1 - 0.15) {
-          const tickLabel = await makeText(penTickLabels[i], 9, MUTED, [tx, penFrame.y0 - 0.16, 0]);
-          g.push(tickLabel);
-        }
       }
 
       scene.add(...g);

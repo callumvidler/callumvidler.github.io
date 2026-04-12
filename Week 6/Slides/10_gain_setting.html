@@ -394,6 +394,8 @@
       <button class="quiz-reset" id="s3Reset">Try Again</button>
     </div>
 
+    <canvas id="s4Heatmap" width="400" height="400" style="display:none;position:absolute;z-index:2;image-rendering:pixelated;border-radius:4px;"></canvas>
+
     <div id="s4Panel">
       <div class="ol-title">Resistor Controls</div>
       <div class="ol-row">
@@ -581,6 +583,7 @@
         state.section4DrawRaf = null;
       }
       state.section4Ctx = null;
+      document.getElementById('s4Heatmap').style.display = 'none';
     };
 
     const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain', 'Resistor value quiz', 'Beta & resistor explorer'][idx - 1];
@@ -597,6 +600,7 @@
       s3Quiz.classList.toggle('visible', state.currentSection === 3);
       const showS4 = state.currentSection === 4 && state.section4ControlsReady;
       s4Panel.classList.toggle('visible', showS4);
+      document.getElementById('s4Heatmap').style.display = showS4 ? 'block' : 'none';
     };
 
     const buildPersistentChrome = async () => {
@@ -2046,110 +2050,113 @@
       stepYLabel.rotate(Math.PI / 2);
       const stepStatics = [stepSurface, stepBorder, stepXLabel, stepYLabel];
 
-      // ── 2D Penalty Heatmap (bottom-right) ──
-      // Axes: R1 (x, log) vs R2 (y, log). Color = max penalty (green→yellow→red).
+      // ── 2D Penalty Heatmap (bottom-right) — rendered on HTML Canvas ──
       const penFrame = { x0: -0.60, x1: 6.10, y0: -3.40, y1: -0.40 };
       const penLogMin = 2, penLogMax = 7; // 100Ω to 10MΩ
-      const penXRange = [penLogMin, penLogMax];
-      const penYRange = [penLogMin, penLogMax];
-      const GRID_N = 40;
-      const cellW = (penFrame.x1 - penFrame.x0) / GRID_N;
-      const cellH = (penFrame.y1 - penFrame.y0) / GRID_N;
 
-      // Penalty functions
+      // Manim coords to screen %: scene is 14.22 wide (-7.11..+7.11), 8 tall (-4..+4)
+      const SCENE_W = 14.22, SCENE_H = 8.0;
+      const SCENE_X0 = -7.11, SCENE_Y0 = -4.0;
+      const toScreenPctX = (mx) => (mx - SCENE_X0) / SCENE_W * 100;
+      const toScreenPctY = (my) => (1 - (my - SCENE_Y0) / SCENE_H) * 100; // flip Y
+
+      // Paint heatmap onto canvas using ImageData (instant)
+      const hmCanvas = document.getElementById('s4Heatmap');
+      const GRID_N = 200; // high-res since it's just pixel data
+      hmCanvas.width = GRID_N;
+      hmCanvas.height = GRID_N;
+      const hmCtx = hmCanvas.getContext('2d');
+      const imgData = hmCtx.createImageData(GRID_N, GRID_N);
       const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
       const penParasitic = (r1v, r2v) => 10e3 * 2 * Math.PI * r2v * S4_CPAR;
 
-      // Color interpolation: green (0) → yellow (0.5) → red (1+). Returns hex.
-      const toHex = (n) => { const h = clamp(Math.round(n), 0, 255).toString(16); return h.length < 2 ? '0' + h : h; };
-      const penColor = (penalty) => {
-        const p = clamp(penalty, 0, 1);
-        let rv, gv, bv;
-        if (IS_LIGHT) {
-          rv = 16 + p * 204; gv = 185 - p * 147; bv = 129 - p * 91;
-        } else {
-          rv = 30 + p * 194; gv = 180 - p * 100; bv = 110 - p * 80;
-        }
-        return '#' + toHex(rv) + toHex(gv) + toHex(bv);
-      };
-
-      const heatmapObjs = [];
       for (let ix = 0; ix < GRID_N; ix++) {
         for (let iy = 0; iy < GRID_N; iy++) {
           const logR1 = penLogMin + (ix + 0.5) / GRID_N * (penLogMax - penLogMin);
           const logR2 = penLogMin + (iy + 0.5) / GRID_N * (penLogMax - penLogMin);
           const r1v = Math.pow(10, logR1);
           const r2v = Math.pow(10, logR2);
-          const worstPenalty = Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v));
-          const cx = penFrame.x0 + (ix + 0.5) * cellW;
-          const cy = penFrame.y0 + (iy + 0.5) * cellH;
-          const cell = new Rectangle({
-            width: cellW + 0.01, height: cellH + 0.01,
-            color: penColor(worstPenalty), strokeWidth: 0, fillOpacity: 0.85
-          });
-          cell.moveTo([cx, cy, 0]);
-          heatmapObjs.push(cell);
+          const p = clamp(Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v)), 0, 1);
+          let rv, gv, bv;
+          if (IS_LIGHT) {
+            rv = 16 + p * 204; gv = 185 - p * 147; bv = 129 - p * 91;
+          } else {
+            rv = 30 + p * 194; gv = 180 - p * 100; bv = 110 - p * 80;
+          }
+          // Canvas Y is flipped: row 0 = top = high R2
+          const row = GRID_N - 1 - iy;
+          const idx = (row * GRID_N + ix) * 4;
+          imgData.data[idx] = rv;
+          imgData.data[idx + 1] = gv;
+          imgData.data[idx + 2] = bv;
+          imgData.data[idx + 3] = 220; // alpha
         }
       }
+      hmCtx.putImageData(imgData, 0, 0);
 
-      // Border
-      const penBorder = new Rectangle({
-        width: penFrame.x1 - penFrame.x0, height: penFrame.y1 - penFrame.y0,
-        color: AXIS, strokeWidth: 1.3, fillOpacity: 0
-      });
-      penBorder.moveTo([(penFrame.x0 + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      // Sweet-spot outline drawn on canvas
+      const sweetFrac0 = (4 - penLogMin) / (penLogMax - penLogMin);
+      const sweetFrac1 = (5 - penLogMin) / (penLogMax - penLogMin);
+      hmCtx.strokeStyle = IS_LIGHT ? '#0f172a' : '#e8ecf3';
+      hmCtx.lineWidth = 3;
+      const sx0 = sweetFrac0 * GRID_N, sx1 = sweetFrac1 * GRID_N;
+      const sy0 = (1 - sweetFrac1) * GRID_N, sy1 = (1 - sweetFrac0) * GRID_N;
+      hmCtx.strokeRect(sx0, sy0, sx1 - sx0, sy1 - sy0);
+      // Label
+      hmCtx.fillStyle = IS_LIGHT ? '#0f172a' : '#e8ecf3';
+      hmCtx.font = 'bold 12px "IBM Plex Mono", monospace';
+      hmCtx.textAlign = 'center';
+      hmCtx.fillText('Sweet Spot', (sx0 + sx1) / 2, sy0 - 4);
 
-      // Sweet-spot outline (10kΩ–100kΩ for both R1 and R2)
-      const sweetX0 = penFrame.x0 + (4 - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
-      const sweetX1 = penFrame.x0 + (5 - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
-      const sweetY0 = penFrame.y0 + (4 - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
-      const sweetY1 = penFrame.y0 + (5 - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
-      const sweetOutline = new Rectangle({
-        width: sweetX1 - sweetX0, height: sweetY1 - sweetY0,
-        color: FG, strokeWidth: 2.0, fillOpacity: 0
-      });
-      sweetOutline.moveTo([(sweetX0 + sweetX1) / 2, (sweetY0 + sweetY1) / 2, 0]);
-      const sweetLabel = await makeText('Sweet Spot', 12, FG, [(sweetX0 + sweetX1) / 2, sweetY1 + 0.14, 0]);
+      // Color bar on canvas right edge
+      const cbW = 12, cbX = GRID_N - cbW - 2;
+      for (let i = 0; i < GRID_N; i++) {
+        const p = clamp(1 - i / GRID_N, 0, 1); // top=danger, bottom=safe
+        let rv, gv, bv;
+        if (IS_LIGHT) { rv = 16 + p * 204; gv = 185 - p * 147; bv = 129 - p * 91; }
+        else { rv = 30 + p * 194; gv = 180 - p * 100; bv = 110 - p * 80; }
+        hmCtx.fillStyle = 'rgb(' + Math.round(rv) + ',' + Math.round(gv) + ',' + Math.round(bv) + ')';
+        hmCtx.fillRect(cbX, i, cbW, 1);
+      }
+      hmCtx.fillStyle = IS_LIGHT ? '#dc2626' : '#e06050';
+      hmCtx.font = '10px "IBM Plex Mono", monospace';
+      hmCtx.textAlign = 'left';
+      hmCtx.fillText('Danger', cbX - 38, 12);
+      hmCtx.fillStyle = IS_LIGHT ? '#10b981' : '#6aaa8e';
+      hmCtx.fillText('Safe', cbX - 24, GRID_N - 4);
 
-      // Title and axis labels
-      const penTitle = await makeText('Resistor Design Space', 14, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.18, 0]);
-      const penXLabel = await makeText('R1', 13, MUTED, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y0 - 0.32, 0]);
-      const penYLabelText = await makeText('R2', 13, MUTED, [penFrame.x0 - 0.34, (penFrame.y0 + penFrame.y1) / 2, 0]);
-      penYLabelText.rotate(Math.PI / 2);
-
-      // Tick labels for both axes
-      const penTickLabelsArr = [];
+      // Axis tick labels drawn on canvas
       const tickVals = [2, 3, 4, 5, 6, 7];
       const tickNames = ['100', '1k', '10k', '100k', '1M', '10M'];
+      hmCtx.fillStyle = IS_LIGHT ? '#64748b' : '#8a94a7';
+      hmCtx.font = '11px "IBM Plex Mono", monospace';
       for (let i = 0; i < tickVals.length; i++) {
-        const px = penFrame.x0 + (tickVals[i] - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
-        const py = penFrame.y0 + (tickVals[i] - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
-        penTickLabelsArr.push(await makeText(tickNames[i], 10, MUTED, [px, penFrame.y0 - 0.16, 0]));
-        penTickLabelsArr.push(await makeText(tickNames[i], 10, MUTED, [penFrame.x0 - 0.32, py, 0]));
+        const frac = (tickVals[i] - penLogMin) / (penLogMax - penLogMin);
+        // X-axis ticks (bottom)
+        hmCtx.textAlign = 'center';
+        hmCtx.fillText(tickNames[i], frac * GRID_N, GRID_N - 2);
+        // Y-axis ticks (left)
+        hmCtx.textAlign = 'right';
+        hmCtx.fillText(tickNames[i], 28, (1 - frac) * GRID_N + 4);
+        // Tick marks
+        hmCtx.strokeStyle = IS_LIGHT ? '#64748b' : '#8a94a7';
+        hmCtx.lineWidth = 1;
+        hmCtx.beginPath();
+        hmCtx.moveTo(frac * GRID_N, GRID_N - 14); hmCtx.lineTo(frac * GRID_N, GRID_N - 10);
+        hmCtx.moveTo(30, (1 - frac) * GRID_N); hmCtx.lineTo(34, (1 - frac) * GRID_N);
+        hmCtx.stroke();
       }
 
-      // Color bar legend
-      const barX = penFrame.x1 + 0.18;
-      const barW = 0.16;
-      const barSteps = 20;
-      const barCellH = (penFrame.y1 - penFrame.y0) / barSteps;
-      const colorBarObjs = [];
-      for (let i = 0; i < barSteps; i++) {
-        const p = i / (barSteps - 1);
-        const cy = penFrame.y0 + (i + 0.5) * barCellH;
-        const cbar = new Rectangle({ width: barW, height: barCellH + 0.01, color: penColor(p), strokeWidth: 0, fillOpacity: 0.9 });
-        cbar.moveTo([barX, cy, 0]);
-        colorBarObjs.push(cbar);
-      }
-      const cbLow = await makeText('Safe', 10, ACCENT, [barX + 0.22, penFrame.y0 + 0.08, 0], barX + 0.22);
-      const cbHigh = await makeText('Danger', 10, RED, [barX + 0.22, penFrame.y1 - 0.08, 0], barX + 0.22);
+      // Manim overlays: title and axis labels only
+      const penTitle = await makeText('Resistor Design Space', 14, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.18, 0]);
+      const penXLabel = await makeText('R\u2081 (\u03A9)', 13, MUTED, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y0 - 0.28, 0]);
+      const penYLabelText = await makeText('R\u2082 (\u03A9)', 13, MUTED, [penFrame.x0 - 0.30, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      penYLabelText.rotate(Math.PI / 2);
 
-      // Heatmap cells are NOT animated (2500 objects) — added directly
-      const penChrome = [penBorder, sweetOutline, sweetLabel, penXLabel, penYLabelText, ...penTickLabelsArr, ...colorBarObjs, cbLow, cbHigh];
+      const penChrome = [penXLabel, penYLabelText];
 
-      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...heatmapObjs, ...penChrome, penTitle);
-      // Only animate the chrome, not the heatmap grid
+      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penChrome, penTitle);
       animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penChrome, penTitle);
 
       return {
@@ -2165,7 +2172,9 @@
         stepFrame,
         penFrame,
         penLogMin,
-        penLogMax
+        penLogMax,
+        toScreenPctX,
+        toScreenPctY
       };
     };
 
@@ -2309,28 +2318,37 @@
         }
       }
 
-      // ── PLOT 2: Cursor on 2D heatmap ──
-      const { penLogMin, penLogMax } = ctx;
+      // ── PLOT 2: Position canvas + draw crosshair overlay ──
+      const { penLogMin, penLogMax, toScreenPctX, toScreenPctY } = ctx;
+      // Position the canvas element over the penFrame area
+      const hmCanvas = document.getElementById('s4Heatmap');
+      const stageEl = document.getElementById('stage');
+      const stageRect = stageEl.getBoundingClientRect();
+      const hmLeft = toScreenPctX(penFrame.x0) / 100 * stageRect.width;
+      const hmTop = toScreenPctY(penFrame.y1) / 100 * stageRect.height; // y1 is top in manim
+      const hmWidth = (toScreenPctX(penFrame.x1) - toScreenPctX(penFrame.x0)) / 100 * stageRect.width;
+      const hmHeight = (toScreenPctY(penFrame.y0) - toScreenPctY(penFrame.y1)) / 100 * stageRect.height;
+      hmCanvas.style.left = hmLeft + 'px';
+      hmCanvas.style.top = hmTop + 'px';
+      hmCanvas.style.width = hmWidth + 'px';
+      hmCanvas.style.height = hmHeight + 'px';
+
+      // Crosshair on manim canvas (lightweight — just 3 objects)
       const logR1 = Math.log10(r1);
       const logR2 = Math.log10(r2);
-      // Map log(R) to frame coordinates
-      const cursorX = penFrame.x0 + (logR1 - penLogMin) / (penLogMax - penLogMin) * (penFrame.x1 - penFrame.x0);
-      const cursorY = penFrame.y0 + (logR2 - penLogMin) / (penLogMax - penLogMin) * (penFrame.y1 - penFrame.y0);
-      const cx = clamp(cursorX, penFrame.x0, penFrame.x1);
-      const cy = clamp(cursorY, penFrame.y0, penFrame.y1);
-      // Crosshair
-      g.push(new Line({ start: [cx, penFrame.y0, 0], end: [cx, penFrame.y1, 0], color: FG, strokeWidth: 1.0 }));
-      g.push(new Line({ start: [penFrame.x0, cy, 0], end: [penFrame.x1, cy, 0], color: FG, strokeWidth: 1.0 }));
-      // Dot
-      g.push(new Dot({ point: [cx, cy, 0], color: FG, radius: 0.08 }));
-      // Readout near cursor
+      const cursorX = penFrame.x0 + clamp((logR1 - penLogMin) / (penLogMax - penLogMin), 0, 1) * (penFrame.x1 - penFrame.x0);
+      const cursorY = penFrame.y0 + clamp((logR2 - penLogMin) / (penLogMax - penLogMin), 0, 1) * (penFrame.y1 - penFrame.y0);
+      g.push(new Line({ start: [cursorX, penFrame.y0, 0], end: [cursorX, penFrame.y1, 0], color: FG, strokeWidth: 1.0 }));
+      g.push(new Line({ start: [penFrame.x0, cursorY, 0], end: [penFrame.x1, cursorY, 0], color: FG, strokeWidth: 1.0 }));
+      g.push(new Dot({ point: [cursorX, cursorY, 0], color: FG, radius: 0.08 }));
+
+      // Readout values
       const iOut = S4_VOUT_REF / (r1 + r2);
       const vOff = S4_IB * (r1 * r2) / (r1 + r2);
       const fPar = 1 / (2 * Math.PI * r2 * S4_CPAR);
       const iStr = iOut >= 1e-3 ? (iOut * 1e3).toFixed(1) + 'mA' : (iOut * 1e6).toFixed(0) + '\u00B5A';
       const vStr = vOff >= 1e-3 ? (vOff * 1e3).toFixed(1) + 'mV' : (vOff * 1e6).toFixed(0) + '\u00B5V';
       const fStr = fPar >= 1e6 ? (fPar / 1e6).toFixed(1) + 'MHz' : fPar >= 1e3 ? (fPar / 1e3).toFixed(0) + 'kHz' : fPar.toFixed(0) + 'Hz';
-      // Position readout box in a clear corner
       const rboxX = penFrame.x1 - 1.60;
       const rboxY = penFrame.y0 + 0.12;
       g.push(quickText('Iout=' + iStr, 11, RED, [rboxX, rboxY + 0.44, 0]));

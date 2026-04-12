@@ -651,7 +651,7 @@
 
       const { Ra: ra, Rb: rb, Rc: rc, Rd: rd } = state.resistors;
       const Adiff = rb / ra;
-      const Acm = (rb * rc - ra * rd) / (ra * (rc + rd));
+      const Acm = (ra * rc - rb * rd) / (ra * (rc + rd));
       const absAcm = Math.abs(Acm);
 
       if (absAcm < 1e-12) {
@@ -726,7 +726,7 @@
       paintWire('B', Vcm);
 
       const { Ra: ra, Rb: rb, Rc: rc, Rd: rd } = state.resistors;
-      const Acm = (rb * rc - ra * rd) / (ra * (rc + rd));
+      const Acm = (ra * rc - rb * rd) / (ra * (rc + rd));
       const vO = Acm * Vcm;
 
       pushTrace(vO);
@@ -737,6 +737,7 @@
 
     // ── Section switching ──
     function setSection(name) {
+      if (state.rafId) cancelAnimationFrame(state.rafId);
       state.section = name;
       if (name === 'rejection') {
         rejPanel.classList.add('visible');

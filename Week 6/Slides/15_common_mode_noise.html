@@ -620,7 +620,109 @@
       return hi - lo;
     }
 
-    // ── Stage 3: canvas render loop (Task 7) ──
+    // ── Stage 3: canvas render loop ────────────────────────────────────────────
+    const canvas = document.getElementById('cm-graph');
+    const ctx = canvas.getContext('2d');
+
+    // Trace layout — three stacked rows in the canvas
+    const TRACES = [
+      { buf: buf_v1, label: 'v_i1',            color: BLUE   },
+      { buf: buf_v2, label: 'v_i2',            color: CYAN   },
+      { buf: buf_vd, label: 'v_i1 − v_i2',     color: ACCENT }
+    ];
+    const ROW_GAP = 10;            // px between trace rows
+    const LEFT_GUTTER = 80;        // px reserved for labels at the left
+    const RIGHT_GUTTER = 16;
+
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const cssW = canvas.clientWidth;
+      const cssH = canvas.clientHeight;
+      canvas.width  = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function drawFrame() {
+      const cssW = canvas.clientWidth;
+      const cssH = canvas.clientHeight;
+      ctx.clearRect(0, 0, cssW, cssH);
+
+      const rowH = (cssH - ROW_GAP * (TRACES.length - 1)) / TRACES.length;
+      const plotW = cssW - LEFT_GUTTER - RIGHT_GUTTER;
+
+      // Grid + baselines + labels per row
+      ctx.font = '11px "IBM Plex Mono", monospace';
+      ctx.textBaseline = 'middle';
+
+      for (let r = 0; r < TRACES.length; r++) {
+        const tr = TRACES[r];
+        const y0 = r * (rowH + ROW_GAP);
+        const yMid = y0 + rowH / 2;
+
+        // Row background: faint border top + bottom
+        ctx.strokeStyle = MUTED2;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(LEFT_GUTTER, y0);
+        ctx.lineTo(cssW - RIGHT_GUTTER, y0);
+        ctx.moveTo(LEFT_GUTTER, y0 + rowH);
+        ctx.lineTo(cssW - RIGHT_GUTTER, y0 + rowH);
+        ctx.stroke();
+
+        // Baseline (0 V)
+        ctx.strokeStyle = MUTED;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(LEFT_GUTTER, yMid);
+        ctx.lineTo(cssW - RIGHT_GUTTER, yMid);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Row label
+        ctx.fillStyle = MUTED;
+        ctx.textAlign = 'right';
+        ctx.fillText(tr.label, LEFT_GUTTER - 10, yMid);
+
+        // Trace
+        if (ringFilled > 1) {
+          // y-scale: ±3.5 R-peak units maps to ±(rowH/2 - 4px)
+          const yScale = (rowH / 2 - 4) / 3.5;
+          ctx.strokeStyle = tr.color;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          for (let i = 0; i < ringFilled; i++) {
+            const idx = (ringHead + i) % RING_LEN;
+            const x = LEFT_GUTTER + (i / (RING_LEN - 1)) * plotW;
+            const y = yMid - tr.buf[idx] * yScale;
+            if (i === 0) ctx.moveTo(x, y);
+            else         ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+    }
+
+    function tick(nowMs) {
+      const nowS = nowMs / 1000;
+      const dt = 1 / SAMPLE_RATE_HZ;
+      // Produce all samples up to the current wall-clock time (catch up if we
+      // dropped frames) so the waveforms stay phase-consistent.
+      while (lastSampleTime + dt <= nowS) {
+        lastSampleTime += dt;
+        const tRel = lastSampleTime - state.tStart;
+        const [v1, v2, vd] = sampleAt(tRel);
+        pushSample(v1, v2, vd);
+      }
+      drawFrame();
+      requestAnimationFrame(tick);
+    }
+
+    // Kick off the loop once the canvas has been laid out
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    requestAnimationFrame(tick);
+
     // ── Stage 3: control wiring (Task 8) ──
 
     await scene.wait(0.1);

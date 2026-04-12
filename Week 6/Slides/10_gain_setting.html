@@ -278,9 +278,9 @@
     #s4Panel {
       position: absolute;
       bottom: 54px;
-      left: 10px;
+      left: 80px;
       z-index: 9;
-      width: 190px;
+      width: 260px;
       padding: 6px 10px 6px;
       border-radius: 8px;
       border: 1px solid var(--slide-border);
@@ -2001,8 +2001,8 @@
       // Live labels on circuit
       const liveBetaLabel = await makeMath('\\beta=0.100', 0.44, BLUE, [-4.10, 2.30, 0]);
       const liveGainLabel = await makeMath('A_{CL}=10.0', 0.44, CYAN, [-4.10, 1.90, 0]);
-      const liveR1Label = await makeMath('R_1=10\\,\\text{k}\\Omega', 0.36, ACCENT, [-4.10, -1.60, 0]);
-      const liveR2Label = await makeMath('R_2=90\\,\\text{k}\\Omega', 0.36, ACCENT, [-4.10, -1.90, 0]);
+      const liveR1Label = await makeMath('R_1=10\\,\\text{k}\\Omega', 0.36, ACCENT, [-3.40, -0.80, 0]);
+      const liveR2Label = await makeMath('R_2=90\\,\\text{k}\\Omega', 0.36, ACCENT, [-3.40, -1.10, 0]);
 
       const circuitObjs = [
         tri, plusSym, minusSym, vinLead, vinDot, vinLabel,
@@ -2278,8 +2278,8 @@
         : r2.toFixed(0) + '\\,\\Omega';
       const r1Color = r1 < 1e3 ? RED : r1 > 1e6 ? YELLOW : ACCENT;
       const r2Color = r2 < 1e3 ? RED : r2 > 1e6 ? YELLOW : ACCENT;
-      ctx.live.liveR1Label = await updateLiveLabel(ctx.live.liveR1Label, 'R_1=' + r1Latex, r1Color, [-4.10, -1.60, 0]);
-      ctx.live.liveR2Label = await updateLiveLabel(ctx.live.liveR2Label, 'R_2=' + r2Latex, r2Color, [-4.10, -1.90, 0]);
+      ctx.live.liveR1Label = await updateLiveLabel(ctx.live.liveR1Label, 'R_1=' + r1Latex, r1Color, [-3.40, -0.80, 0]);
+      ctx.live.liveR2Label = await updateLiveLabel(ctx.live.liveR2Label, 'R_2=' + r2Latex, r2Color, [-3.40, -1.10, 0]);
 
       s4Drawing = false;
       if (s4DrawQueued) { s4DrawQueued = false; queueSection4Draw(); }

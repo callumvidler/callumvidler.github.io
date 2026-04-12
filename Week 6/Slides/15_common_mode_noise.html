@@ -207,72 +207,7 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
-    // ── Stage 1: concept panels ─────────────────────────────────────────────
-    const LEFT_PANEL_CX = -3.4, RIGHT_PANEL_CX = 3.4, PANEL_CY = 0.1;
-    const PANEL_W = 4.5, PANEL_H = 2.8;
-    const WIRE_Y_TOP = 0.35, WIRE_Y_BOT = -0.35, WIRE_HALF_LEN = 1.55;
-    const WAVE_AMP = 0.13, WAVE_CYCLES = 3;
-
-    // Build a panel: border + header + two wires + two waveforms + summing block + equation
-    function buildPanel({ cx, header, phaseBot, color, equationLatex }) {
-      const group = new VGroup();
-
-      const border = new Rectangle({
-        width: PANEL_W, height: PANEL_H,
-        color: MUTED2, strokeWidth: 2, fillOpacity: 0
-      });
-      border.moveTo([cx, PANEL_CY, 0]);
-
-      const headerText = new Text({ text: header, fontSize: 18, color: FG, fontUrl: FONT_URL });
-
-      // Two wires, stacked
-      const wireTop = new Line({
-        start: [cx - WIRE_HALF_LEN, PANEL_CY + WIRE_Y_TOP, 0],
-        end:   [cx + WIRE_HALF_LEN - 0.30, PANEL_CY + WIRE_Y_TOP, 0],
-        color: MUTED, strokeWidth: 2
-      });
-      const wireBot = new Line({
-        start: [cx - WIRE_HALF_LEN, PANEL_CY + WIRE_Y_BOT, 0],
-        end:   [cx + WIRE_HALF_LEN - 0.30, PANEL_CY + WIRE_Y_BOT, 0],
-        color: MUTED, strokeWidth: 2
-      });
-
-      // Summing circle + "−" glyph
-      const sumCircle = new Circle({ radius: 0.22, color: FG, strokeWidth: 2, fillOpacity: 0 });
-      const sumX = cx + WIRE_HALF_LEN - 0.05;
-      sumCircle.moveTo([sumX, PANEL_CY, 0]);
-      const sumMinus = new Text({ text: '−', fontSize: 16, color: FG, fontUrl: FONT_URL });
-
-      // Wires from wire ends into the summing node
-      const leadTop = new Line({
-        start: [sumX - 0.25, PANEL_CY + WIRE_Y_TOP, 0],
-        end:   [sumX - 0.05, PANEL_CY + 0.10, 0],
-        color: MUTED, strokeWidth: 2
-      });
-      const leadBot = new Line({
-        start: [sumX - 0.25, PANEL_CY + WIRE_Y_BOT, 0],
-        end:   [sumX - 0.05, PANEL_CY - 0.10, 0],
-        color: MUTED, strokeWidth: 2
-      });
-
-      // Output equation label below panel
-      const eqn = new MathTex({ latex: equationLatex, color: ACCENT });
-
-      // Header position
-      // (positioned after glyph load in sequence below)
-
-      // Store refs on group so we can position text after load
-      group._border = border;
-      group._headerText = headerText;
-      group._wireTop = wireTop; group._wireBot = wireBot;
-      group._sumCircle = sumCircle; group._sumMinus = sumMinus;
-      group._leadTop = leadTop; group._leadBot = leadBot;
-      group._eqn = eqn;
-      group._cx = cx;
-
-      return group;
-    }
-
+    // ── Stage 1: wave-pool concept panels (drawn entirely on s1-waves canvas) ──
     const stage1Title = new Text({
       text: 'Common-mode vs. differential-mode',
       fontSize: 26, color: FG, fontUrl: FONT_URL
@@ -281,35 +216,10 @@
       text: 'A differential amplifier rejects what is common, amplifies what is different.',
       fontSize: 16, color: MUTED, fontUrl: FONT_URL
     });
-
-    const leftPanel  = buildPanel({
-      cx: LEFT_PANEL_CX, header: 'Common-mode',
-      phaseBot: 0,          // both waves in phase → common-mode
-      color: BLUE,
-      equationLatex: 'v_{\\text{out}} = v_1 - v_2 = 0'
-    });
-    const rightPanel = buildPanel({
-      cx: RIGHT_PANEL_CX, header: 'Differential-mode',
-      phaseBot: Math.PI,    // wave inverted → differential
-      color: RED,
-      equationLatex: 'v_{\\text{out}} = v_1 - v_2 = 2v'
-    });
-
-    // Load glyphs and position labels
     await stage1Title.loadGlyphs?.();
     stage1Title.moveTo([0, 3.0, 0]);
-
     await stage1Caption.loadGlyphs?.();
     stage1Caption.moveTo([0, -2.7, 0]);
-
-    for (const p of [leftPanel, rightPanel]) {
-      await p._headerText.loadGlyphs?.();
-      p._headerText.moveTo([p._cx, PANEL_CY + PANEL_H / 2 - 0.28, 0]);
-      await p._sumMinus.loadGlyphs?.();
-      p._sumMinus.moveTo([p._cx + WIRE_HALF_LEN - 0.05, PANEL_CY, 0]);
-      await p._eqn.waitForRender?.();
-      p._eqn.scale(0.55).moveTo([p._cx, PANEL_CY - PANEL_H / 2 - 0.35, 0]);
-    }
 
     // ── Stage 2: ECG scenario ────────────────────────────────────────────────
     const SLIDE_TITLE_LEFT_X = -6.2;
@@ -445,17 +355,7 @@
     stage2Caption.moveTo([0, -2.70, 0]);
 
     // ── Stage groups ─────────────────────────────────────────────────────────
-    const stage1Group = new VGroup(
-      stage1Title, stage1Caption,
-      leftPanel._border, leftPanel._headerText,
-      leftPanel._wireTop, leftPanel._wireBot,
-      leftPanel._sumCircle, leftPanel._sumMinus,
-      leftPanel._leadTop, leftPanel._leadBot, leftPanel._eqn,
-      rightPanel._border, rightPanel._headerText,
-      rightPanel._wireTop, rightPanel._wireBot,
-      rightPanel._sumCircle, rightPanel._sumMinus,
-      rightPanel._leadTop, rightPanel._leadBot, rightPanel._eqn
-    );
+    const stage1Group = new VGroup(stage1Title, stage1Caption);
 
     const stage2Body = new VGroup(
       bed, bedLegL, bedLegR, pillow,
@@ -614,54 +514,159 @@
     }, 66);
     window.addEventListener('resize', resizeCanvas);
 
-    // ── Stage 1 animated waveforms (HTML canvas overlay) ────────────────────
+    // ── Stage 1 wave-pool animation (HTML canvas overlay) ───────────────────
     const s1Canvas = document.getElementById('s1-waves');
     const s1Ctx = s1Canvas.getContext('2d');
-    const FRAME_W = 14.222, FRAME_H = 8.0;
-    function worldToPixel(wx, wy) {
-      return [
-        (wx + FRAME_W / 2) * (1280 / FRAME_W),
-        (FRAME_H / 2 - wy) * (720 / FRAME_H)
-      ];
-    }
 
-    const WAVE_DEFS = [
-      { cx: LEFT_PANEL_CX,  y0: PANEL_CY + WIRE_Y_TOP, phase: 0,         color: BLUE },
-      { cx: LEFT_PANEL_CX,  y0: PANEL_CY + WIRE_Y_BOT, phase: 0,         color: BLUE },
-      { cx: RIGHT_PANEL_CX, y0: PANEL_CY + WIRE_Y_TOP, phase: 0,         color: RED  },
-      { cx: RIGHT_PANEL_CX, y0: PANEL_CY + WIRE_Y_BOT, phase: Math.PI,   color: RED  },
+    // Panel layout (canvas pixel coords, 1280×720)
+    const S1_PANELS = [
+      { label: 'Common-mode', x: 50, w: 550, mode: 'common' },
+      { label: 'Differential-mode', x: 680, w: 550, mode: 'diff' }
     ];
+    const S1_WAVE_TOP = 120, S1_WAVE_H = 200, S1_WAVE_BOT = S1_WAVE_TOP + S1_WAVE_H;
+    const S1_DIFF_TOP = S1_WAVE_BOT + 50, S1_DIFF_H = 80;
+    const S1_SURF_AMP = 40;
+    const S1_WAVE_K = 2.5;
+    const S1_DOT_R = 10;
 
     let s1AnimId = null;
     let s1Visible = false;
 
-    function drawWaves(time) {
-      s1Ctx.clearRect(0, 0, 1280, 720);
-      const tSec = time / 1000;
-      for (const w of WAVE_DEFS) {
-        const xL = w.cx - WIRE_HALF_LEN;
-        const xR = w.cx + WIRE_HALF_LEN - 0.30;
-        s1Ctx.strokeStyle = w.color;
-        s1Ctx.lineWidth = 2;
-        s1Ctx.beginPath();
-        const N = 120;
-        for (let i = 0; i <= N; i++) {
-          const t = i / N;
-          const wx = xL + t * (xR - xL);
-          const wy = w.y0 + WAVE_AMP * Math.sin(t * Math.PI * 2 * WAVE_CYCLES + w.phase + tSec * 3);
-          const [px, py] = worldToPixel(wx, wy);
-          if (i === 0) s1Ctx.moveTo(px, py);
-          else s1Ctx.lineTo(px, py);
+    function drawS1(time) {
+      const c = s1Ctx;
+      c.clearRect(0, 0, 1280, 720);
+      const t = time / 1000;
+
+      c.font = '600 17px "IBM Plex Sans", sans-serif';
+      c.textAlign = 'center';
+
+      for (const p of S1_PANELS) {
+        const cx = p.x + p.w / 2;
+        const waveY0 = S1_WAVE_TOP + S1_WAVE_H / 2;
+
+        // Panel border
+        c.strokeStyle = MUTED2;
+        c.lineWidth = 1.5;
+        c.strokeRect(p.x, S1_WAVE_TOP - 45, p.w, S1_WAVE_H + S1_DIFF_H + 115);
+
+        // Header
+        c.fillStyle = FG;
+        c.fillText(p.label, cx, S1_WAVE_TOP - 18);
+
+        // Water surface
+        const surfFn = (xNorm) => {
+          if (p.mode === 'common') {
+            return S1_SURF_AMP * Math.sin(2 * Math.PI * t * 0.8);
+          } else {
+            return S1_SURF_AMP * Math.sin(S1_WAVE_K * xNorm * Math.PI * 2 - 2 * Math.PI * t * 0.8);
+          }
+        };
+
+        // Draw water surface
+        c.strokeStyle = MUTED;
+        c.lineWidth = 2;
+        c.beginPath();
+        for (let i = 0; i <= 200; i++) {
+          const xNorm = i / 200;
+          const px = p.x + 30 + xNorm * (p.w - 60);
+          const py = waveY0 - surfFn(xNorm);
+          if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
         }
-        s1Ctx.stroke();
+        c.stroke();
+
+        // Water fill (subtle)
+        c.globalAlpha = 0.06;
+        c.fillStyle = p.mode === 'common' ? BLUE : RED;
+        c.lineTo(p.x + p.w - 30, S1_WAVE_BOT);
+        c.lineTo(p.x + 30, S1_WAVE_BOT);
+        c.closePath();
+        c.fill();
+        c.globalAlpha = 1.0;
+
+        // Dot positions — two dots at fixed x-positions on the surface
+        const dot1XNorm = 0.3, dot2XNorm = 0.7;
+        const dot1X = p.x + 30 + dot1XNorm * (p.w - 60);
+        const dot2X = p.x + 30 + dot2XNorm * (p.w - 60);
+        const dot1Y = waveY0 - surfFn(dot1XNorm);
+        const dot2Y = waveY0 - surfFn(dot2XNorm);
+
+        // Dashed line between dots
+        c.strokeStyle = FG;
+        c.lineWidth = 1.5;
+        c.setLineDash([4, 4]);
+        c.beginPath();
+        c.moveTo(dot1X, dot1Y);
+        c.lineTo(dot2X, dot2Y);
+        c.stroke();
+        c.setLineDash([]);
+
+        // Dots
+        c.fillStyle = BLUE;
+        c.beginPath(); c.arc(dot1X, dot1Y, S1_DOT_R, 0, Math.PI * 2); c.fill();
+        c.fillStyle = CYAN;
+        c.beginPath(); c.arc(dot2X, dot2Y, S1_DOT_R, 0, Math.PI * 2); c.fill();
+
+        // Dot labels
+        c.font = '12px "IBM Plex Mono", monospace';
+        c.fillStyle = BLUE; c.textAlign = 'center';
+        c.fillText('v\u2081', dot1X, dot1Y - 18);
+        c.fillStyle = CYAN;
+        c.fillText('v\u2082', dot2X, dot2Y - 18);
+
+        // Difference display below the wave pool
+        const diffY0 = S1_DIFF_TOP + S1_DIFF_H / 2;
+        const diff = dot1Y - dot2Y;
+
+        // Difference label
+        c.font = '12px "IBM Plex Mono", monospace';
+        c.fillStyle = MUTED; c.textAlign = 'left';
+        c.fillText('v\u2081 \u2212 v\u2082', p.x + 35, S1_DIFF_TOP - 6);
+
+        // Baseline
+        c.strokeStyle = MUTED2; c.lineWidth = 1;
+        c.setLineDash([2, 4]);
+        c.beginPath(); c.moveTo(p.x + 30, diffY0); c.lineTo(p.x + p.w - 30, diffY0); c.stroke();
+        c.setLineDash([]);
+
+        // Difference bar / indicator
+        const barW = 30, barX = cx - barW / 2;
+        const barH = diff * 0.8;
+        c.fillStyle = ACCENT;
+        c.globalAlpha = 0.5;
+        c.fillRect(barX, diffY0 - barH, barW, barH);
+        c.globalAlpha = 1.0;
+        c.strokeStyle = ACCENT; c.lineWidth = 2;
+        c.strokeRect(barX, diffY0 - barH, barW, barH);
+
+        // Difference value text
+        const diffVal = Math.abs(barH / 0.8).toFixed(0);
+        c.font = 'bold 14px "IBM Plex Mono", monospace';
+        c.fillStyle = ACCENT; c.textAlign = 'center';
+        if (p.mode === 'common') {
+          c.fillText('\u0394 = 0  (rejected)', cx, diffY0 + 24);
+        } else {
+          c.fillText('\u0394 oscillates  (amplified)', cx, diffY0 + 24);
+        }
+
+        // Sub-caption
+        c.font = '13px "IBM Plex Sans", sans-serif';
+        c.fillStyle = MUTED; c.textAlign = 'center';
+        if (p.mode === 'common') {
+          c.fillText('Both rise and fall together', cx, S1_DIFF_TOP + S1_DIFF_H + 38);
+        } else {
+          c.fillText('One rises while the other falls', cx, S1_DIFF_TOP + S1_DIFF_H + 38);
+        }
+
+        c.font = '600 17px "IBM Plex Sans", sans-serif';
       }
-      if (s1Visible) s1AnimId = requestAnimationFrame(drawWaves);
+
+      if (s1Visible) s1AnimId = requestAnimationFrame(drawS1);
     }
 
     function startS1Waves() {
       s1Visible = true;
       s1Canvas.style.display = '';
-      if (!s1AnimId) s1AnimId = requestAnimationFrame(drawWaves);
+      if (!s1AnimId) s1AnimId = requestAnimationFrame(drawS1);
     }
     function stopS1Waves() {
       s1Visible = false;
@@ -722,34 +727,8 @@
           stage1Animated = true;
           animating = true;
           await scene.play(new Write(stage1Title, { duration: 0.6 }));
-          await scene.play(
-            new Create(leftPanel._border, { duration: 0.5 }),
-            new Create(rightPanel._border, { duration: 0.5 }),
-            new Write(leftPanel._headerText, { duration: 0.5 }),
-            new Write(rightPanel._headerText, { duration: 0.5 })
-          );
-          await scene.play(
-            new Create(leftPanel._wireTop, { duration: 0.4 }),
-            new Create(leftPanel._wireBot, { duration: 0.4 }),
-            new Create(rightPanel._wireTop, { duration: 0.4 }),
-            new Create(rightPanel._wireBot, { duration: 0.4 }),
-            new Create(leftPanel._leadTop, { duration: 0.4 }),
-            new Create(leftPanel._leadBot, { duration: 0.4 }),
-            new Create(rightPanel._leadTop, { duration: 0.4 }),
-            new Create(rightPanel._leadBot, { duration: 0.4 })
-          );
           startS1Waves();
-          await scene.wait(0.8);
-          await scene.play(
-            new FadeIn(leftPanel._sumCircle, { duration: 0.3 }),
-            new Write(leftPanel._sumMinus, { duration: 0.3 }),
-            new FadeIn(rightPanel._sumCircle, { duration: 0.3 }),
-            new Write(rightPanel._sumMinus, { duration: 0.3 })
-          );
-          await scene.play(
-            new Write(leftPanel._eqn, { duration: 0.5 }),
-            new Write(rightPanel._eqn, { duration: 0.5 })
-          );
+          await scene.wait(1.0);
           await scene.play(new FadeIn(stage1Caption, { duration: 0.4 }));
           animating = false;
         } else {

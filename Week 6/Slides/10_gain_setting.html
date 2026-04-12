@@ -1943,7 +1943,7 @@
       const s4Tag = await makeText('SECTION 4 - BETA & RESISTOR EXPLORER', 14, ACCENT, [-6.1, 2.86, 0], -6.1);
 
       // ── Compact op-amp circuit (left column) ──
-      const CX = -4.30, CY = -0.60;
+      const CX = -4.30, CY = 0.40;
       const TRI_H = 0.70;
       const TRI_IN_X = CX - 0.75;
       const TRI_APEX_X = CX + 0.65;
@@ -1953,8 +1953,8 @@
       const VIN_X = -5.90;
       const plusY = CY + 0.28;
       const minusY = CY - 0.28;
-      const JUNC_Y = -1.80;
-      const GND_Y = -2.80;
+      const JUNC_Y = -0.80;
+      const GND_Y = -1.80;
 
       const tri = new Polygon({
         vertices: [[TRI_IN_X, CY - TRI_H, 0], [TRI_IN_X, CY + TRI_H, 0], [TRI_APEX_X, CY, 0]],
@@ -1999,10 +1999,10 @@
       const gndB3 = new Line({ start: [LEFT_X - 0.07, GND_Y - 0.19, 0], end: [LEFT_X + 0.07, GND_Y - 0.19, 0], color: FG, strokeWidth: 1.0 });
 
       // Live labels on circuit
-      const liveBetaLabel = await makeMath('\\beta=0.100', 0.44, BLUE, [-4.10, 0.80, 0]);
-      const liveGainLabel = await makeMath('A_{CL}=10.0', 0.44, CYAN, [-4.10, 0.40, 0]);
-      const liveR1Label = await makeMath('R_1=10\\,\\text{k}\\Omega', 0.36, ACCENT, [-4.10, -3.10, 0]);
-      const liveR2Label = await makeMath('R_2=90\\,\\text{k}\\Omega', 0.36, ACCENT, [-4.10, -3.40, 0]);
+      const liveBetaLabel = await makeMath('\\beta=0.100', 0.44, BLUE, [-4.10, 1.80, 0]);
+      const liveGainLabel = await makeMath('A_{CL}=10.0', 0.44, CYAN, [-4.10, 1.40, 0]);
+      const liveR1Label = await makeMath('R_1=10\\,\\text{k}\\Omega', 0.36, ACCENT, [-4.10, -2.10, 0]);
+      const liveR2Label = await makeMath('R_2=90\\,\\text{k}\\Omega', 0.36, ACCENT, [-4.10, -2.40, 0]);
 
       const circuitObjs = [
         tri, plusSym, minusSym, vinLead, vinDot, vinLabel,
@@ -2268,8 +2268,8 @@
         scene.add(next);
         return next;
       };
-      ctx.live.liveBetaLabel = await updateLiveLabel(ctx.live.liveBetaLabel, '\\beta=' + betaStr, BLUE, [-4.10, 0.80, 0]);
-      ctx.live.liveGainLabel = await updateLiveLabel(ctx.live.liveGainLabel, 'A_{CL}=' + gainStr, CYAN, [-4.10, 0.40, 0]);
+      ctx.live.liveBetaLabel = await updateLiveLabel(ctx.live.liveBetaLabel, '\\beta=' + betaStr, BLUE, [-4.10, 1.80, 0]);
+      ctx.live.liveGainLabel = await updateLiveLabel(ctx.live.liveGainLabel, 'A_{CL}=' + gainStr, CYAN, [-4.10, 1.40, 0]);
       const r1Latex = r1 >= 1e6 ? (r1 / 1e6).toFixed(r1 >= 10e6 ? 0 : 1) + '\\,\\text{M}\\Omega'
         : r1 >= 1e3 ? (r1 / 1e3).toFixed(r1 >= 10e3 ? 0 : 1) + '\\,\\text{k}\\Omega'
         : r1.toFixed(0) + '\\,\\Omega';
@@ -2278,8 +2278,8 @@
         : r2.toFixed(0) + '\\,\\Omega';
       const r1Color = r1 < 1e3 ? RED : r1 > 1e6 ? YELLOW : ACCENT;
       const r2Color = r2 < 1e3 ? RED : r2 > 1e6 ? YELLOW : ACCENT;
-      ctx.live.liveR1Label = await updateLiveLabel(ctx.live.liveR1Label, 'R_1=' + r1Latex, r1Color, [-4.10, -3.10, 0]);
-      ctx.live.liveR2Label = await updateLiveLabel(ctx.live.liveR2Label, 'R_2=' + r2Latex, r2Color, [-4.10, -3.40, 0]);
+      ctx.live.liveR1Label = await updateLiveLabel(ctx.live.liveR1Label, 'R_1=' + r1Latex, r1Color, [-4.10, -2.10, 0]);
+      ctx.live.liveR2Label = await updateLiveLabel(ctx.live.liveR2Label, 'R_2=' + r2Latex, r2Color, [-4.10, -2.40, 0]);
 
       s4Drawing = false;
       if (s4DrawQueued) { s4DrawQueued = false; queueSection4Draw(); }

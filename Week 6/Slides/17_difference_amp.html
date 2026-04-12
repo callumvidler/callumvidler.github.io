@@ -3,24 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 18 — Difference Amplifier</title>
+  <title>Slide 16 — Difference Amplifier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
   <script>
-    // Theme bridge:
-    //   1. Priority: ?theme= URL param (presenter sets this when loading).
-    //   2. Fallback: sessionStorage, preserved across the reload triggered
-    //      by the module's themechange listener (theme.js always forces
-    //      'light' at parse time, so we need our own persistence).
-    // Also hides the per-slide toggle button when embedded in the presenter.
     (function () {
       var qp = new URLSearchParams(location.search);
       var qt = qp.get('theme');
       var ss = null;
-      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) {}
       var pick = (qt === 'dark' || qt === 'light') ? qt
                : (ss === 'dark' || ss === 'light') ? ss
                : null;
@@ -29,7 +23,7 @@
         try {
           var t = e && e.detail && e.detail.theme;
           if (t) sessionStorage.setItem('slideTheme', t);
-        } catch (err) { /* ignore */ }
+        } catch (err) {}
       });
       if (window.parent !== window) {
         var style = document.createElement('style');
@@ -38,21 +32,306 @@
       }
     })();
   </script>
+  <style>
+    .da-panel {
+      position: absolute;
+      top: 10px;
+      right: 14px;
+      z-index: 9;
+      width: 340px;
+      max-height: calc(100% - 60px);
+      overflow-y: auto;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--slide-border);
+      background: var(--slide-surface);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    [data-theme="light"] .da-panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+
+    .da-panel.visible { display: flex; }
+
+    .da-section-title {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--slide-accent);
+      font-size: 10px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+    }
+
+    .da-bullets {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .da-bullets li {
+      font-size: 11px;
+      color: var(--slide-text-dim);
+      line-height: 1.5;
+      padding-left: 14px;
+      position: relative;
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+
+    .da-bullets li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: var(--slide-accent);
+    }
+
+    .da-eqn {
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      color: var(--slide-accent);
+      padding: 6px 0;
+      border-top: 1px solid var(--slide-border);
+      border-bottom: 1px solid var(--slide-border);
+    }
+
+    .da-row { display: grid; gap: 4px; }
+
+    .da-row label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--slide-text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    .da-row .v { color: var(--slide-text); font-variant-numeric: tabular-nums; }
+
+    .da-panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 18px;
+    }
+
+    .da-readout {
+      margin-top: 2px;
+      border-top: 1px solid var(--slide-border);
+      padding-top: 8px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    .da-readout .k { color: var(--slide-text-dim); }
+    .da-readout .v {
+      text-align: right;
+      color: var(--slide-text);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .da-pulse-btn, .da-reroll-btn {
+      background: var(--slide-surface);
+      color: var(--slide-text-dim);
+      border: 1px solid var(--slide-border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      width: 100%;
+    }
+
+    .da-pulse-btn:hover, .da-reroll-btn:hover {
+      color: var(--slide-text);
+      border-color: var(--slide-border-hover);
+    }
+
+    .da-tol-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .da-tol-row .quiz-btn {
+      flex: 1;
+      min-width: 60px;
+      text-align: center;
+    }
+
+    .da-resistor-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--slide-text-dim);
+    }
+
+    .da-resistor-grid .v {
+      color: var(--slide-yellow);
+      font-weight: 500;
+    }
+
+    .da-leakage-bar-container {
+      margin-top: 4px;
+    }
+
+    .da-leakage-bar-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--slide-text-dim);
+      margin-bottom: 3px;
+    }
+
+    .da-leakage-bar-track {
+      width: 100%;
+      height: 8px;
+      background: var(--slide-border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .da-leakage-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--slide-red);
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+
+    .da-trace-container {
+      margin-top: 4px;
+    }
+
+    .da-trace-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--slide-text-dim);
+      margin-bottom: 3px;
+    }
+
+    .da-trace-canvas {
+      width: 100%;
+      height: 30px;
+      border: 1px solid var(--slide-border);
+      border-radius: 4px;
+      display: block;
+    }
+
+    .da-svg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+  </style>
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">19 / 22</span>
+    <span class="slide-num">16 / 21</span>
   </header>
 
   <div id="stage" class="manim-stage">
     <div class="stage-fallback">Loading manim-web scene…</div>
+
+    <svg class="da-svg-overlay" id="svgOverlay">
+      <line id="wireA" stroke-width="3" stroke-linecap="round"/>
+      <line id="wireB" stroke-width="3" stroke-linecap="round"/>
+      <circle id="outputDot" r="4" fill="currentColor" opacity="0"/>
+      <text id="rValA" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" opacity="0"></text>
+      <text id="rValB" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" opacity="0"></text>
+      <text id="rValC" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" opacity="0"></text>
+      <text id="rValD" font-family="IBM Plex Mono, monospace" font-size="9" text-anchor="middle" fill="currentColor" opacity="0"></text>
+    </svg>
+
+    <!-- Section 1: Rejection -->
+    <div class="da-panel" id="rejectionPanel">
+      <div class="da-section-title">Section 1 · Rejection</div>
+      <ul class="da-bullets">
+        <li>Output amplifies V<sub>b</sub> − V<sub>a</sub> only</li>
+        <li>Equal voltages on both inputs cancel</li>
+        <li>Common-mode rejection is built into the topology</li>
+      </ul>
+      <div class="da-eqn">V<sub>o</sub> = (R<sub>b</sub>/R<sub>a</sub>)(V<sub>b</sub> − V<sub>a</sub>)&emsp;gain = ×10</div>
+      <div class="da-row">
+        <label>V<sub>cm</sub> <span class="v" id="vcmVal">+0.00 V</span></label>
+        <input type="range" id="vcmSlider" min="-200" max="200" step="1" value="0">
+      </div>
+      <div class="da-row">
+        <label>V<sub>diff</sub> <span class="v" id="vdiffVal">+0.00 V</span></label>
+        <input type="range" id="vdiffSlider" min="-50" max="50" step="1" value="0">
+      </div>
+      <div class="da-readout">
+        <span class="k">V<sub>a</sub></span><span class="v" id="vaVal">+0.00 V</span>
+        <span class="k">V<sub>b</sub></span><span class="v" id="vbVal">+0.00 V</span>
+        <span class="k">V<sub>o</sub></span><span class="v" id="voVal">+0.000 V</span>
+      </div>
+      <button type="button" class="da-pulse-btn" id="pulseBtn">Pulse common-mode</button>
+    </div>
+
+    <!-- Section 2: Tolerance -->
+    <div class="da-panel" id="tolerancePanel">
+      <div class="da-section-title">Section 2 · Tolerance</div>
+      <ul class="da-bullets">
+        <li>Real resistors aren't exactly equal</li>
+        <li>Mismatch leaks common-mode → output</li>
+        <li>Tolerance grade sets worst-case CMRR</li>
+        <li>Why ±0.1% parts cost 10× more</li>
+      </ul>
+      <div class="da-eqn">50 Hz mains hum, 1 V peak</div>
+      <div class="da-tol-row">
+        <button type="button" class="quiz-btn active" data-tol="0">Ideal</button>
+        <button type="button" class="quiz-btn" data-tol="0.001">±0.1%</button>
+        <button type="button" class="quiz-btn" data-tol="0.01">±1%</button>
+        <button type="button" class="quiz-btn" data-tol="0.05">±5%</button>
+      </div>
+      <button type="button" class="da-reroll-btn" id="rerollBtn">Re-roll resistors</button>
+      <div class="da-resistor-grid">
+        <span>R<sub>a</sub> = <span class="v" id="raDisp">1.000 kΩ</span></span>
+        <span>R<sub>b</sub> = <span class="v" id="rbDisp">10.00 kΩ</span></span>
+        <span>R<sub>d</sub> = <span class="v" id="rdDisp">1.000 kΩ</span></span>
+        <span>R<sub>c</sub> = <span class="v" id="rcDisp">10.00 kΩ</span></span>
+      </div>
+      <div class="da-readout">
+        <span class="k">V<sub>o</sub> leakage</span><span class="v" id="leakVal">0.0 mV</span>
+        <span class="k">CMRR</span><span class="v" id="cmrrVal">∞ dB</span>
+      </div>
+      <div class="da-leakage-bar-container">
+        <div class="da-leakage-bar-label">Leakage fraction</div>
+        <div class="da-leakage-bar-track"><div class="da-leakage-bar-fill" id="leakBar"></div></div>
+      </div>
+      <div class="da-trace-container">
+        <div class="da-trace-label">V<sub>o</sub>(t) output trace</div>
+        <canvas class="da-trace-canvas" id="traceCanvas" width="300" height="30"></canvas>
+      </div>
+    </div>
+
+    <div class="stepper-row" id="stepper">
+      <button type="button" class="stepper-btn" id="sec-prev" disabled>← Prev Section</button>
+      <span class="step-indicator" id="sec-indicator">Section 1 · Rejection</span>
+      <button type="button" class="stepper-btn" id="sec-next">Next Section →</button>
+    </div>
   </div>
 
   <script type="module">
     import {
-      Scene, Polygon, Rectangle, Line, Circle, Text, MathTex, VGroup, Dot,
-      Create, Write, FadeIn, FadeOut, MoveAlongPath,
-      UP, DOWN, LEFT, RIGHT, WHITE, linear
+      Scene, Polygon, Rectangle, Line, Text, MathTex,
+      Create, Write, FadeIn,
+      UP, DOWN, LEFT, RIGHT
     } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
@@ -60,97 +339,87 @@
     const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
     const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
     const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
-    const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
     const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
     const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
     const RED    = IS_LIGHT ? '#c74034' : '#e06050';
     const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
     const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
-    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
     window.addEventListener('themechange', () => location.reload());
 
     const stage = document.getElementById('stage');
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
-    const title = new Text({ text: 'Differential Amplifier', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    // ── Title ──
+    const title = new Text({ text: 'Difference Amplifier', fontSize: 40, color: FG, fontUrl: FONT_URL });
     await title.loadGlyphs?.();
     title.moveTo([-3.5, 3.5, 0]);
-    const TITLE_LEFT_X = -6.2;
     if (typeof title.getLeft === 'function') {
-      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+      title.shift([-6.2 - title.getLeft()[0], 0, 0]);
     }
 
-    const bullets = [
-      'Output amplifies V_b - V_a',
-      'Zero common-mode gain needs matched resistors',
-      'Choose R_a = R_c and R_b = R_d',
-      'Use tight tolerance parts (typically +/-0.1%)'
-    ];
-    const bulletObjs = [];
-    for (let i = 0; i < bullets.length; i++) {
-      const b = new Text({ text: '•  ' + bullets[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
-      await b.loadGlyphs?.();
-      b.moveTo([2.55, 1.7 - i * 0.34, 0]);
-      bulletObjs.push(b);
-    }
-
+    // ── Op-amp triangle ──
     const tri = new Polygon({
-      vertices: [[0.5, -1.2, 0], [0.5, 1.2, 0], [2.2, 0, 0]],
+      vertices: [[-0.4, -1.0, 0], [-0.4, 1.0, 0], [1.4, 0, 0]],
       color: ACCENT, strokeWidth: 2, fillOpacity: 0
     });
-    const pSym = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL }).moveTo([0.9, -0.45, 0]);
-    const mSym = new Text({ text: '−', fontSize: 18, color: RED,    fontUrl: FONT_URL }).moveTo([0.9,  0.45, 0]);
+    const pSym = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL }).moveTo([0.0, -0.4, 0]);
+    const mSym = new Text({ text: '−', fontSize: 18, color: RED, fontUrl: FONT_URL }).moveTo([0.0, 0.4, 0]);
 
-    // V_a → R_a → inverting, R_b feedback
+    // ── Input labels ──
     const Va = new MathTex({ latex: 'V_{a}', color: BLUE });
     const Vb = new MathTex({ latex: 'V_{b}', color: MAG });
-    await Va.waitForRender?.();
-    await Vb.waitForRender?.();
-    Va.scale(0.55).moveTo([-5.0,  0.6, 0]);
-    Vb.scale(0.55).moveTo([-5.0, -0.6, 0]);
+    await Va.waitForRender?.(); await Vb.waitForRender?.();
+    Va.scale(0.55).moveTo([-5.5, 0.7, 0]);
+    Vb.scale(0.55).moveTo([-5.5, -0.7, 0]);
 
-    const inA = new Line({ start: [-4.7,  0.6, 0], end: [0.5,  0.6, 0], color: FG });
-    const inB = new Line({ start: [-4.7, -0.6, 0], end: [0.5, -0.6, 0], color: FG });
-    const Ra  = new Rectangle({ width: 0.6, height: 0.25, color: ACCENT, strokeWidth: 2 });
-    Ra.moveTo([-2.3, 0.6, 0]);
-    const Rd  = new Rectangle({ width: 0.6, height: 0.25, color: ACCENT, strokeWidth: 2 });
-    Rd.moveTo([-2.3, -0.6, 0]);
-    const RaL = new MathTex({ latex: 'R_{a}', color: ACCENT });
-    const RdL = new MathTex({ latex: 'R_{d}', color: ACCENT });
+    // ── Input wires ──
+    const inA = new Line({ start: [-5.2, 0.7, 0], end: [-0.4, 0.7, 0], color: FG });
+    const inB = new Line({ start: [-5.2, -0.7, 0], end: [-0.4, -0.7, 0], color: FG });
 
-    // Feedback R_b (inverting)
-    const fb1 = new Line({ start: [0.5, 0.6, 0], end: [0.5, 1.8, 0], color: FG });
-    const fb2 = new Line({ start: [0.5, 1.8, 0], end: [3.0, 1.8, 0], color: FG });
-    const fb3 = new Line({ start: [3.0, 1.8, 0], end: [3.0, 0, 0], color: FG });
-    const Rb  = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
-    Rb.moveTo([1.75, 1.8, 0]);
-    const RbL = new MathTex({ latex: 'R_{b}', color: YELLOW });
-
-    // R_c from +input to ground
-    const RcLead = new Line({ start: [0.5, -0.6, 0], end: [0.5, -1.4, 0], color: FG });
-    const Rc    = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
+    // ── Resistors (all YELLOW, same size) ──
+    const Ra = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
+    Ra.moveTo([-3.0, 0.7, 0]);
+    const Rd = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
+    Rd.moveTo([-3.0, -0.7, 0]);
+    const Rb = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
+    Rb.moveTo([-0.1, 1.7, 0]);
+    const Rc = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
     Rc.rotate(Math.PI / 2);
-    Rc.moveTo([0.5, -1.95, 0]);
-    const RcL  = new MathTex({ latex: 'R_{c}', color: YELLOW });
-    const RcG  = new Line({ start: [0.3, -2.5, 0], end: [0.7, -2.5, 0], color: FG, strokeWidth: 3 });
+    Rc.moveTo([-0.4, -1.8, 0]);
 
-    await Promise.all([RaL.waitForRender?.(), RdL.waitForRender?.(), RbL.waitForRender?.(), RcL.waitForRender?.()]);
+    // ── Resistor labels ──
+    const RaL = new MathTex({ latex: 'R_{a}', color: YELLOW });
+    const RbL = new MathTex({ latex: 'R_{b}', color: YELLOW });
+    const RcL = new MathTex({ latex: 'R_{c}', color: YELLOW });
+    const RdL = new MathTex({ latex: 'R_{d}', color: YELLOW });
+    await Promise.all([RaL.waitForRender?.(), RbL.waitForRender?.(), RcL.waitForRender?.(), RdL.waitForRender?.()]);
     RaL.scale(0.5).nextTo(Ra, UP, 0.1);
     RdL.scale(0.5).nextTo(Rd, DOWN, 0.1);
     RbL.scale(0.5).nextTo(Rb, UP, 0.1);
     RcL.scale(0.5).nextTo(Rc, RIGHT, 0.1);
 
-    const outW = new Line({ start: [2.2, 0, 0], end: [4.0, 0, 0], color: FG });
-    const Vo   = new MathTex({ latex: 'V_{o}', color: YELLOW });
-    await Vo.waitForRender?.();
-    Vo.scale(0.55).nextTo([4.0, 0, 0], RIGHT, 0.1);
+    // ── Feedback wires (R_b loop) ──
+    const fb1 = new Line({ start: [-0.4, 0.7, 0], end: [-0.4, 1.7, 0], color: FG });
+    const fb2 = new Line({ start: [-0.4, 1.7, 0], end: [1.8, 1.7, 0], color: FG });
+    const fb3 = new Line({ start: [1.8, 1.7, 0], end: [1.8, 0, 0], color: FG });
 
+    // ── R_c to ground ──
+    const rcLead = new Line({ start: [-0.4, -0.7, 0], end: [-0.4, -1.45, 0], color: FG });
+    const rcGnd  = new Line({ start: [-0.6, -2.2, 0], end: [-0.2, -2.2, 0], color: FG, strokeWidth: 3 });
+
+    // ── Output wire ──
+    const outW = new Line({ start: [1.4, 0, 0], end: [2.4, 0, 0], color: FG });
+    const Vo = new MathTex({ latex: 'V_{o}', color: YELLOW });
+    await Vo.waitForRender?.();
+    Vo.scale(0.55).nextTo([2.4, 0, 0], RIGHT, 0.1);
+
+    // ── Equation ──
     const eqn = new MathTex({ latex: 'V_o = \\dfrac{R_b}{R_a}\\,(V_b - V_a)', color: ACCENT });
     await eqn.waitForRender?.();
-    eqn.scale(0.75).moveTo([-2, -3.1, 0]);
+    eqn.scale(0.75).moveTo([-2.5, -3.1, 0]);
 
-    // Sequence
+    // ── Build-in animation ──
     await scene.play(new Write(title, { duration: 0.7 }));
     await scene.play(
       new Create(tri), new Write(pSym), new Write(mSym),
@@ -159,45 +428,348 @@
       new Create(Ra), new Create(Rd), new Write(RaL), new Write(RdL),
       new Create(fb1), new Create(fb2), new Create(fb3),
       new Create(Rb), new Write(RbL),
-      new Create(RcLead), new Create(Rc), new Write(RcL), new Create(RcG),
+      new Create(rcLead), new Create(Rc), new Write(RcL), new Create(rcGnd),
       new Create(outW), new Write(Vo)
     );
     await scene.play(new Write(eqn));
 
-    // Demo 1: identical signals → zero output
-    const caption1 = new Text({ text: 'Identical inputs: output stays at 0', fontSize: 16, color: FG, fontUrl: FONT_URL });
-    await caption1.loadGlyphs?.();
-    caption1.moveTo([2.0, -3.1, 0]);
-    await scene.play(new FadeIn(caption1));
-    const d1 = new Dot({ point: [-4.7,  0.6, 0], color: RED, radius: 0.1 });
-    const d2 = new Dot({ point: [-4.7, -0.6, 0], color: RED, radius: 0.1 });
-    scene.add(d1, d2);
-    await scene.play(
-      new MoveAlongPath(d1, { path: new Line({ start: [-4.7, 0.6, 0], end: [0.5, 0.6, 0] }), duration: 1.1, rateFunc: linear }),
-      new MoveAlongPath(d2, { path: new Line({ start: [-4.7, -0.6, 0], end: [0.5, -0.6, 0] }), duration: 1.1, rateFunc: linear })
-    );
-    await scene.wait(0.5);
-    scene.remove(d1); scene.remove(d2); scene.remove(caption1);
+    // ══════════════════════════════════════════════════
+    // Interactive layer
+    // ══════════════════════════════════════════════════
 
-    // Demo 2: differential signal → output
-    const caption2 = new Text({ text: 'Differential inputs: amplified difference', fontSize: 16, color: ACCENT, fontUrl: FONT_URL });
-    await caption2.loadGlyphs?.();
-    caption2.moveTo([2.0, -3.1, 0]);
-    await scene.play(new FadeIn(caption2));
-    const d3 = new Dot({ point: [-4.7,  0.6, 0], color: BLUE, radius: 0.1 });
-    const d4 = new Dot({ point: [-4.7, -0.6, 0], color: MAG, radius: 0.1 });
-    scene.add(d3, d4);
-    await scene.play(
-      new MoveAlongPath(d3, { path: new Line({ start: [-4.7, 0.6, 0], end: [0.5, 0.6, 0] }), duration: 1.1, rateFunc: linear }),
-      new MoveAlongPath(d4, { path: new Line({ start: [-4.7, -0.6, 0], end: [0.5, -0.6, 0] }), duration: 1.1, rateFunc: linear })
-    );
-    const outDot = new Dot({ point: [2.2, 0, 0], color: YELLOW, radius: 0.12 });
-    scene.add(outDot);
-    await scene.play(new MoveAlongPath(outDot, { path: new Line({ start: [2.2, 0, 0], end: [4.0, 0, 0] }), duration: 0.8, rateFunc: linear }));
-    for (const b of bulletObjs) {
-      await scene.play(new FadeIn(b, { duration: 0.2 }));
+    // ── Coordinate bridge ──
+    function manimToPx(mx, my) {
+      const W = stage.clientWidth, H = stage.clientHeight;
+      return [W / 2 + mx * (W / 14.22), H / 2 - my * (H / 8)];
     }
-    await scene.wait(2);
+
+    // ── Anchor points (manim coords) ──
+    const WIRE_A = { x0: -4.7, y: 0.7, x1: -0.4 };
+    const WIRE_B = { x0: -4.7, y: -0.7, x1: -0.4 };
+    const R_POS = {
+      Ra: { x: -3.0, y: 0.7, offY: -0.35 },
+      Rb: { x: -0.1, y: 1.7, offY: -0.35 },
+      Rc: { x: -0.4, y: -1.8, offX: 0.45 },
+      Rd: { x: -3.0, y: -0.7, offY: 0.35 },
+    };
+    const OUT_POS = { x: 2.4, y: 0 };
+
+    // ── SVG elements ──
+    const svgOvl = document.getElementById('svgOverlay');
+    const wireAEl = document.getElementById('wireA');
+    const wireBEl = document.getElementById('wireB');
+    const outputDot = document.getElementById('outputDot');
+    const rValEls = {
+      Ra: document.getElementById('rValA'),
+      Rb: document.getElementById('rValB'),
+      Rc: document.getElementById('rValC'),
+      Rd: document.getElementById('rValD'),
+    };
+
+    function updateSvgAnchors() {
+      const [ax0, ay] = manimToPx(WIRE_A.x0, WIRE_A.y);
+      const [ax1] = manimToPx(WIRE_A.x1, WIRE_A.y);
+      wireAEl.setAttribute('x1', ax0); wireAEl.setAttribute('y1', ay);
+      wireAEl.setAttribute('x2', ax1); wireAEl.setAttribute('y2', ay);
+
+      const [bx0, by] = manimToPx(WIRE_B.x0, WIRE_B.y);
+      const [bx1] = manimToPx(WIRE_B.x1, WIRE_B.y);
+      wireBEl.setAttribute('x1', bx0); wireBEl.setAttribute('y1', by);
+      wireBEl.setAttribute('x2', bx1); wireBEl.setAttribute('y2', by);
+
+      const [ox, oy] = manimToPx(OUT_POS.x, OUT_POS.y);
+      outputDot.setAttribute('cx', ox);
+      outputDot.setAttribute('cy', oy);
+
+      for (const [key, pos] of Object.entries(R_POS)) {
+        const el = rValEls[key];
+        const [px, py] = manimToPx(pos.x + (pos.offX || 0), pos.y + (pos.offY || 0));
+        el.setAttribute('x', px);
+        el.setAttribute('y', py);
+      }
+    }
+    updateSvgAnchors();
+    new ResizeObserver(updateSvgAnchors).observe(stage);
+
+    // ── Voltage → colour helper (diverging BLUE ↔ MUTED ↔ RED) ──
+    function voltToColor(v, vMin, vMax) {
+      const t = Math.max(0, Math.min(1, (v - vMin) / (vMax - vMin)));
+      const bR = IS_LIGHT ? 0x3a : 0x5a, bG = IS_LIGHT ? 0x68 : 0x8d, bB = IS_LIGHT ? 0xc8 : 0xee;
+      const mR = IS_LIGHT ? 0x6a : 0x88, mG = IS_LIGHT ? 0x6a : 0x92, mB = IS_LIGHT ? 0x72 : 0xa4;
+      const rR = IS_LIGHT ? 0xc7 : 0xe0, rG = IS_LIGHT ? 0x40 : 0x60, rB = IS_LIGHT ? 0x34 : 0x50;
+      let r, g, b;
+      if (t < 0.5) {
+        const s = t / 0.5;
+        r = bR + (mR - bR) * s; g = bG + (mG - bG) * s; b = bB + (mB - bB) * s;
+      } else {
+        const s = (t - 0.5) / 0.5;
+        r = mR + (rR - mR) * s; g = mG + (rG - mG) * s; b = mB + (rB - mB) * s;
+      }
+      return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+    }
+
+    // ── State ──
+    const state = {
+      section: 'rejection',
+      Vcm: 0,
+      Vdiff: 0,
+      pulseT0: null,
+      tolerance: 0,
+      resistors: { Ra: 1000, Rb: 10000, Rc: 10000, Rd: 1000 },
+      rafId: null,
+    };
+
+    // ── DOM refs ──
+    const rejPanel = document.getElementById('rejectionPanel');
+    const tolPanel = document.getElementById('tolerancePanel');
+    const vcmSlider = document.getElementById('vcmSlider');
+    const vdiffSlider = document.getElementById('vdiffSlider');
+    const vcmVal = document.getElementById('vcmVal');
+    const vdiffVal = document.getElementById('vdiffVal');
+    const vaVal = document.getElementById('vaVal');
+    const vbVal = document.getElementById('vbVal');
+    const voVal = document.getElementById('voVal');
+    const pulseBtn = document.getElementById('pulseBtn');
+    const secIndicator = document.getElementById('sec-indicator');
+    const prevBtn = document.getElementById('sec-prev');
+    const nextBtn = document.getElementById('sec-next');
+
+    function fmtV(v) {
+      const sign = v >= 0 ? '+' : '';
+      return Math.abs(v) >= 1 ? `${sign}${v.toFixed(2)} V`
+           : Math.abs(v) >= 0.001 ? `${sign}${(v * 1000).toFixed(1)} mV`
+           : `${sign}${v.toFixed(3)} V`;
+    }
+
+    function fmtV3(v) {
+      const sign = v >= 0 ? '+' : '';
+      return `${sign}${v.toFixed(3)} V`;
+    }
+
+    // ── Paint helpers ──
+    function paintWire(wire, voltage) {
+      const el = wire === 'A' ? wireAEl : wireBEl;
+      el.setAttribute('stroke', voltToColor(voltage, -2, 2));
+      el.setAttribute('opacity', '1');
+    }
+
+    function setOutputDot(Vo) {
+      const scale = Math.min(Math.abs(Vo) / 5, 1);
+      outputDot.setAttribute('r', 3 + scale * 8);
+      outputDot.setAttribute('fill', YELLOW);
+      outputDot.setAttribute('opacity', scale > 0.01 ? String(0.3 + scale * 0.7) : '0');
+    }
+
+    // ── Rejection RAF loop ──
+    function rejectionFrame(tNow) {
+      let Vcm = state.Vcm;
+      if (state.pulseT0 !== null) {
+        const t = (tNow - state.pulseT0) / 1000;
+        if (t >= 2) {
+          state.pulseT0 = null;
+        } else {
+          Vcm = 1.5 * Math.sin(t * Math.PI);
+          vcmSlider.value = String(Math.round(Vcm * 100));
+          vcmVal.textContent = fmtV(Vcm);
+        }
+      }
+      const vA = Vcm - state.Vdiff / 2;
+      const vB = Vcm + state.Vdiff / 2;
+      const gain = state.resistors.Rb / state.resistors.Ra;
+      const vO = gain * (vB - vA);
+
+      paintWire('A', vA);
+      paintWire('B', vB);
+      vaVal.textContent = fmtV(vA);
+      vbVal.textContent = fmtV(vB);
+      voVal.textContent = fmtV3(vO);
+      setOutputDot(vO);
+
+      if (state.section === 'rejection') {
+        state.rafId = requestAnimationFrame(rejectionFrame);
+      }
+    }
+
+    // ── Slider wiring ──
+    vcmSlider.addEventListener('input', () => {
+      state.Vcm = parseInt(vcmSlider.value, 10) / 100;
+      vcmVal.textContent = fmtV(state.Vcm);
+      state.pulseT0 = null;
+    });
+
+    vdiffSlider.addEventListener('input', () => {
+      state.Vdiff = parseInt(vdiffSlider.value, 10) / 100;
+      vdiffVal.textContent = fmtV(state.Vdiff);
+    });
+
+    pulseBtn.addEventListener('click', () => {
+      state.Vcm = 0;
+      vcmSlider.value = '0';
+      state.pulseT0 = performance.now();
+    });
+
+    // ── Tolerance DOM refs ──
+    const tolBtns = document.querySelectorAll('.da-tol-row .quiz-btn');
+    const rerollBtn = document.getElementById('rerollBtn');
+    const raDisp = document.getElementById('raDisp');
+    const rbDisp = document.getElementById('rbDisp');
+    const rcDisp = document.getElementById('rcDisp');
+    const rdDisp = document.getElementById('rdDisp');
+    const leakValEl = document.getElementById('leakVal');
+    const cmrrValEl = document.getElementById('cmrrVal');
+    const leakBar = document.getElementById('leakBar');
+    const traceCanvas = document.getElementById('traceCanvas');
+    const traceCtx = traceCanvas.getContext('2d');
+
+    const NOMINAL = { Ra: 1000, Rb: 10000, Rc: 10000, Rd: 1000 };
+    const traceBuffer = new Float32Array(300);
+    let traceIdx = 0;
+
+    function fmtR(ohms) {
+      return ohms >= 1000 ? (ohms / 1000).toFixed(ohms >= 10000 ? 2 : 3) + ' kΩ' : ohms.toFixed(1) + ' Ω';
+    }
+
+    function rerollResistors() {
+      const tol = state.tolerance;
+      for (const key of ['Ra', 'Rb', 'Rc', 'Rd']) {
+        const nom = NOMINAL[key];
+        state.resistors[key] = tol === 0 ? nom : nom * (1 + (Math.random() * 2 - 1) * tol);
+      }
+      raDisp.textContent = fmtR(state.resistors.Ra);
+      rbDisp.textContent = fmtR(state.resistors.Rb);
+      rcDisp.textContent = fmtR(state.resistors.Rc);
+      rdDisp.textContent = fmtR(state.resistors.Rd);
+
+      rValEls.Ra.textContent = fmtR(state.resistors.Ra);
+      rValEls.Rb.textContent = fmtR(state.resistors.Rb);
+      rValEls.Rc.textContent = fmtR(state.resistors.Rc);
+      rValEls.Rd.textContent = fmtR(state.resistors.Rd);
+      for (const el of Object.values(rValEls)) {
+        el.setAttribute('fill', YELLOW);
+        el.setAttribute('opacity', '1');
+      }
+
+      const { Ra: ra, Rb: rb, Rc: rc, Rd: rd } = state.resistors;
+      const Adiff = rb / ra;
+      const Acm = (rb * rc - ra * rd) / (ra * (rc + rd));
+      const absAcm = Math.abs(Acm);
+
+      if (absAcm < 1e-12) {
+        cmrrValEl.textContent = '∞ dB';
+        leakValEl.textContent = '0.0 mV';
+        leakBar.style.width = '0%';
+      } else {
+        const cmrrDb = 20 * Math.log10(Math.abs(Adiff / Acm));
+        cmrrValEl.textContent = cmrrDb.toFixed(1) + ' dB';
+        const leakPk = absAcm * 1000;
+        leakValEl.textContent = leakPk.toFixed(1) + ' mV';
+        const barPct = Math.min(leakPk / 500 * 100, 100);
+        leakBar.style.width = barPct + '%';
+      }
+
+      traceBuffer.fill(0);
+      traceIdx = 0;
+    }
+
+    tolBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tolBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.tolerance = parseFloat(btn.dataset.tol);
+        rerollResistors();
+      });
+    });
+
+    rerollBtn.addEventListener('click', () => rerollResistors());
+
+    function pushTrace(vO) {
+      traceBuffer[traceIdx % 300] = vO;
+      traceIdx++;
+
+      const w = traceCanvas.width, h = traceCanvas.height;
+      const traceBg = IS_LIGHT ? '#f0f0f2' : '#0e1420';
+      const traceStroke = IS_LIGHT ? '#c74034' : '#e06050';
+      traceCtx.fillStyle = traceBg;
+      traceCtx.fillRect(0, 0, w, h);
+
+      traceCtx.strokeStyle = IS_LIGHT ? '#ddd' : '#1a2030';
+      traceCtx.beginPath();
+      traceCtx.moveTo(0, h / 2);
+      traceCtx.lineTo(w, h / 2);
+      traceCtx.stroke();
+
+      let maxV = 0.001;
+      for (let i = 0; i < 300; i++) {
+        const abs = Math.abs(traceBuffer[i]);
+        if (abs > maxV) maxV = abs;
+      }
+
+      traceCtx.strokeStyle = traceStroke;
+      traceCtx.lineWidth = 1.5;
+      traceCtx.beginPath();
+      for (let i = 0; i < 300; i++) {
+        const idx = (traceIdx + i) % 300;
+        const y = h / 2 - (traceBuffer[idx] / maxV) * (h / 2 - 2);
+        if (i === 0) traceCtx.moveTo(i, y);
+        else traceCtx.lineTo(i, y);
+      }
+      traceCtx.stroke();
+    }
+
+    function toleranceFrame(tNow) {
+      if (state.section !== 'tolerance') return;
+
+      const t = tNow / 1000;
+      const Vcm = Math.sin(2 * Math.PI * 1 * t);
+
+      paintWire('A', Vcm);
+      paintWire('B', Vcm);
+
+      const { Ra: ra, Rb: rb, Rc: rc, Rd: rd } = state.resistors;
+      const Acm = (rb * rc - ra * rd) / (ra * (rc + rd));
+      const vO = Acm * Vcm;
+
+      pushTrace(vO);
+      setOutputDot(vO * 10);
+
+      state.rafId = requestAnimationFrame(toleranceFrame);
+    }
+
+    // ── Section switching ──
+    function setSection(name) {
+      state.section = name;
+      if (name === 'rejection') {
+        rejPanel.classList.add('visible');
+        tolPanel.classList.remove('visible');
+        secIndicator.textContent = 'Section 1 · Rejection';
+        prevBtn.disabled = true;
+        nextBtn.disabled = false;
+        for (const el of Object.values(rValEls)) el.setAttribute('opacity', '0');
+        outputDot.setAttribute('opacity', '0');
+        state.rafId = requestAnimationFrame(rejectionFrame);
+      } else {
+        rejPanel.classList.remove('visible');
+        tolPanel.classList.add('visible');
+        secIndicator.textContent = 'Section 2 · Tolerance';
+        prevBtn.disabled = false;
+        nextBtn.disabled = true;
+        wireAEl.setAttribute('opacity', '1');
+        wireBEl.setAttribute('opacity', '1');
+        rerollResistors();
+        state.rafId = requestAnimationFrame(toleranceFrame);
+      }
+    }
+
+    prevBtn.addEventListener('click', () => { if (state.section === 'tolerance') setSection('rejection'); });
+    nextBtn.addEventListener('click', () => { if (state.section === 'rejection') setSection('tolerance'); });
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight' && state.section === 'rejection') setSection('tolerance');
+      if (e.key === 'ArrowLeft' && state.section === 'tolerance') setSection('rejection');
+    });
+
+    // ── Start ──
+    setSection('rejection');
   </script>
 </body>
 </html>

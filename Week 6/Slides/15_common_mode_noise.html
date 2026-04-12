@@ -723,7 +723,36 @@
     window.addEventListener('resize', resizeCanvas);
     requestAnimationFrame(tick);
 
-    // ── Stage 3: control wiring (Task 8) ──
+    // ── Stage 3: control wiring ────────────────────────────────────────────────
+    const ampSlider = document.getElementById('cm-amp');
+    const ampOut    = document.querySelector('[data-readout="amp"]');
+    const freqOut   = document.querySelector('[data-readout="freq"]');
+    const v1ppOut   = document.querySelector('[data-readout="v1pp"]');
+    const v2ppOut   = document.querySelector('[data-readout="v2pp"]');
+    const vdppOut   = document.querySelector('[data-readout="vdpp"]');
+    const freqButtons = cmPanel.querySelectorAll('.cm-toggle button');
+
+    ampSlider.addEventListener('input', () => {
+      state.amplitude = parseFloat(ampSlider.value);
+      ampOut.textContent = state.amplitude.toFixed(2) + '×';
+    });
+
+    freqButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const f = parseInt(btn.dataset.freq, 10);
+        state.frequency = f;
+        freqOut.textContent = f + ' Hz';
+        freqButtons.forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    // Readout refresh: piggyback on the animation loop via an interval
+    // (we update at ~15 Hz so the DOM writes do not thrash on every frame)
+    setInterval(() => {
+      v1ppOut.textContent = peakToPeak(buf_v1).toFixed(2);
+      v2ppOut.textContent = peakToPeak(buf_v2).toFixed(2);
+      vdppOut.textContent = peakToPeak(buf_vd).toFixed(2);
+    }, 66);
 
     await scene.wait(0.1);
   </script>

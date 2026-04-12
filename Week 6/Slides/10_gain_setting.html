@@ -1024,6 +1024,40 @@
       s2StepLabel.textContent = 'k=' + n;
     };
 
+    // Animate a dot sliding along a series of [x, y] waypoints
+    const animateDotAlongPath = (waypoints, color, durationMs, staleCheck) => new Promise((resolve) => {
+      if (waypoints.length < 2 || staleCheck()) { resolve(); return; }
+      const segs = [];
+      let totalLen = 0;
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const dx = waypoints[i + 1][0] - waypoints[i][0];
+        const dy = waypoints[i + 1][1] - waypoints[i][1];
+        const len = Math.sqrt(dx * dx + dy * dy);
+        segs.push({ sx: waypoints[i][0], sy: waypoints[i][1], dx, dy, len, cumLen: totalLen });
+        totalLen += len;
+      }
+      const dot = new Dot({ point: [waypoints[0][0], waypoints[0][1], 0], color, radius: 0.08 });
+      scene.add(dot);
+      const easeOut = (t) => 1 - (1 - t) * (1 - t);
+      const t0 = performance.now();
+      const tick = (now) => {
+        if (staleCheck()) { scene.remove(dot); resolve(); return; }
+        const rawT = clamp((now - t0) / durationMs, 0, 1);
+        const dist = easeOut(rawT) * totalLen;
+        let seg = segs[segs.length - 1];
+        for (let i = 0; i < segs.length; i++) {
+          if (dist <= segs[i].cumLen + segs[i].len) { seg = segs[i]; break; }
+        }
+        const segT = seg.len > 0.001 ? clamp((dist - seg.cumLen) / seg.len, 0, 1) : 1;
+        const px = seg.sx + seg.dx * segT;
+        const py = seg.sy + seg.dy * segT;
+        dot.moveTo([px, py, 0]);
+        if (rawT >= 1) { scene.remove(dot); resolve(); return; }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
     const runSection2Animation = async (token) => {
       const runId = ++state.section2AnimToken;
       const stale = () => token !== state.renderToken || runId !== state.section2AnimToken || state.currentSection !== 2;
@@ -1031,52 +1065,77 @@
       const c = state.section2Ctx;
       if (!c || !c.bd) return;
 
-      const easeOut = (t) => 1 - (1 - t) * (1 - t);
-      const mp = (x, y) => mapPoint(c.settleFrame, x, y, c.settleXRange, c.settleYRange);
+      const bd = c.bd;
+
+      // Define block-diagram path waypoints
+      const forwardPath = [
+        [bd.BD_IN, bd.BD_FWD_Y],
+        [bd.BD_JX - bd.BD_JR, bd.BD_FWD_Y],
+      ];
+      const sigmaToOutput = [
+        [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y],
+        [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y],
+      ];
+      const aolToTap = [
+        [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y],
+        [bd.BD_TAP, bd.BD_FWD_Y],
+      ];
+      const tapToOutput = [
+        [bd.BD_TAP, bd.BD_FWD_Y],
+        [bd.BD_OUT, bd.BD_FWD_Y],
+      ];
+      const feedbackPath = [
+        [bd.BD_TAP, bd.BD_FWD_Y],
+        [bd.BD_TAP, bd.BD_FB_Y],
+        [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y],
+      ];
+      const betaToSigma = [
+        [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y],
+        [bd.BD_JX, bd.BD_FB_Y],
+        [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
+      ];
 
       drawSection2AtStep(0);
+      if (stale()) return;
+      await scene.wait(0.4);
       if (stale()) return;
 
       for (let k = 0; k < S2_STEPS; k++) {
         if (stale()) return;
 
-        const startP = mp(k, s2Ys[k]);
-        const endP = mp(k + 1, s2Ys[k + 1]);
-        let inflightLine = null;
+        const isFirst = k === 0;
+        const pulseDur = isFirst ? 220 : 160;
 
-        await new Promise((resolve) => {
-          const durationMs = 300;
-          const t0 = performance.now();
-          const tick = (now) => {
-            if (stale()) { resolve(); return; }
-            const rawT = clamp((now - t0) / durationMs, 0, 1);
-            const t = easeOut(rawT);
-            const tipX = startP[0] + t * (endP[0] - startP[0]);
-            const tipY = startP[1] + t * (endP[1] - startP[1]);
+        // 1. Vin pulse enters summing junction
+        await animateDotAlongPath(forwardPath, CYAN, pulseDur, stale);
+        if (stale()) return;
 
-            if (inflightLine) { scene.remove(inflightLine); }
-            inflightLine = new Line({
-              start: [startP[0], startP[1], 0],
-              end: [tipX, tipY, 0],
-              color: CYAN, strokeWidth: 2.4
-            });
-            scene.add(inflightLine);
+        // 2. Pulse through Sigma -> A_OL (Vd computed here)
+        await animateDotAlongPath(sigmaToOutput, ACCENT, pulseDur, stale);
+        if (stale()) return;
 
-            if (rawT >= 1) { resolve(); return; }
-            requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        });
+        // 3. Pulse through A_OL -> tap point (Vout computed here)
+        await animateDotAlongPath(aolToTap, CYAN, pulseDur, stale);
+        if (stale()) return;
 
-        if (stale()) {
-          if (inflightLine) scene.remove(inflightLine);
-          return;
-        }
-        if (inflightLine) scene.remove(inflightLine);
-
+        // 4. Update the settling graph and labels to show the new state
         drawSection2AtStep(k + 1);
+        if (stale()) return;
 
-        const pauseDur = k === 0 ? 0.50 : 0.22;
+        // 5. Pulse exits to output (brief)
+        // Run output and feedback pulses: output exits right, feedback goes down
+        const outputPulse = animateDotAlongPath(tapToOutput, CYAN, pulseDur * 0.8, stale);
+        const fbPulse = (async () => {
+          await animateDotAlongPath(feedbackPath, BLUE, pulseDur * 1.2, stale);
+          if (stale()) return;
+          // 6. Beta output -> back to Sigma
+          await animateDotAlongPath(betaToSigma, BLUE, pulseDur * 1.0, stale);
+        })();
+        await Promise.all([outputPulse, fbPulse]);
+        if (stale()) return;
+
+        // Pause — longer on first iteration (saturation moment)
+        const pauseDur = isFirst ? 0.55 : 0.20;
         await scene.wait(pauseDur);
         if (stale()) return;
       }

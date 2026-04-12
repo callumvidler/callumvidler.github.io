@@ -189,7 +189,176 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
-    // ── Stage 1: concept panels (Task 2) ──
+    // ── Stage 1: concept panels ─────────────────────────────────────────────
+    const LEFT_PANEL_CX = -3.4, RIGHT_PANEL_CX = 3.4, PANEL_CY = 0.1;
+    const PANEL_W = 4.5, PANEL_H = 2.8;
+    const WIRE_Y_TOP = 0.35, WIRE_Y_BOT = -0.35, WIRE_HALF_LEN = 1.55;
+    const WAVE_AMP = 0.13, WAVE_CYCLES = 3;
+
+    // Build a panel: border + header + two wires + two waveforms + summing block + equation
+    function buildPanel({ cx, header, phaseBot, color, equationLatex }) {
+      const group = new VGroup();
+
+      const border = new Rectangle({
+        width: PANEL_W, height: PANEL_H,
+        color: MUTED2, strokeWidth: 2, fillOpacity: 0
+      });
+      border.moveTo([cx, PANEL_CY, 0]);
+
+      const headerText = new Text({ text: header, fontSize: 18, color: FG, fontUrl: FONT_URL });
+
+      // Two wires, stacked
+      const wireTop = new Line({
+        start: [cx - WIRE_HALF_LEN, PANEL_CY + WIRE_Y_TOP, 0],
+        end:   [cx + WIRE_HALF_LEN - 0.30, PANEL_CY + WIRE_Y_TOP, 0],
+        color: MUTED, strokeWidth: 2
+      });
+      const wireBot = new Line({
+        start: [cx - WIRE_HALF_LEN, PANEL_CY + WIRE_Y_BOT, 0],
+        end:   [cx + WIRE_HALF_LEN - 0.30, PANEL_CY + WIRE_Y_BOT, 0],
+        color: MUTED, strokeWidth: 2
+      });
+
+      // Waveform polylines
+      const mkWave = (y0, phase) => {
+        const segs = [];
+        const N = 80;
+        const xL = cx - WIRE_HALF_LEN, xR = cx + WIRE_HALF_LEN - 0.30;
+        for (let i = 1; i <= N; i++) {
+          const t0 = (i - 1) / N, t1 = i / N;
+          const xa = xL + t0 * (xR - xL), xb = xL + t1 * (xR - xL);
+          const ya = y0 + WAVE_AMP * Math.sin(t0 * Math.PI * 2 * WAVE_CYCLES + phase);
+          const yb = y0 + WAVE_AMP * Math.sin(t1 * Math.PI * 2 * WAVE_CYCLES + phase);
+          segs.push(new Line({ start: [xa, ya, 0], end: [xb, yb, 0], color, strokeWidth: 2 }));
+        }
+        return new VGroup(...segs);
+      };
+      const waveTop = mkWave(PANEL_CY + WIRE_Y_TOP, 0);
+      const waveBot = mkWave(PANEL_CY + WIRE_Y_BOT, phaseBot); // 0 = in-phase, PI = inverted
+
+      // Summing circle + "−" glyph
+      const sumCircle = new Circle({ radius: 0.22, color: FG, strokeWidth: 2, fillOpacity: 0 });
+      const sumX = cx + WIRE_HALF_LEN - 0.05;
+      sumCircle.moveTo([sumX, PANEL_CY, 0]);
+      const sumMinus = new Text({ text: '−', fontSize: 16, color: FG, fontUrl: FONT_URL });
+
+      // Wires from wire ends into the summing node
+      const leadTop = new Line({
+        start: [sumX - 0.25, PANEL_CY + WIRE_Y_TOP, 0],
+        end:   [sumX - 0.05, PANEL_CY + 0.10, 0],
+        color: MUTED, strokeWidth: 2
+      });
+      const leadBot = new Line({
+        start: [sumX - 0.25, PANEL_CY + WIRE_Y_BOT, 0],
+        end:   [sumX - 0.05, PANEL_CY - 0.10, 0],
+        color: MUTED, strokeWidth: 2
+      });
+
+      // Output equation label below panel
+      const eqn = new MathTex({ latex: equationLatex, color: ACCENT });
+
+      // Header position
+      // (positioned after glyph load in sequence below)
+
+      // Store refs on group so we can position text after load
+      group._border = border;
+      group._headerText = headerText;
+      group._wireTop = wireTop; group._wireBot = wireBot;
+      group._waveTop = waveTop; group._waveBot = waveBot;
+      group._sumCircle = sumCircle; group._sumMinus = sumMinus;
+      group._leadTop = leadTop; group._leadBot = leadBot;
+      group._eqn = eqn;
+      group._cx = cx;
+
+      return group;
+    }
+
+    const stage1Title = new Text({
+      text: 'Common-mode vs. differential-mode',
+      fontSize: 26, color: FG, fontUrl: FONT_URL
+    });
+    const stage1Caption = new Text({
+      text: 'A differential amplifier rejects what is common, amplifies what is different.',
+      fontSize: 16, color: MUTED, fontUrl: FONT_URL
+    });
+
+    const leftPanel  = buildPanel({
+      cx: LEFT_PANEL_CX, header: 'Common-mode',
+      phaseBot: 0,          // both waves in phase → common-mode
+      color: BLUE,
+      equationLatex: 'v_{\\text{out}} = v_1 - v_2 = 0'
+    });
+    const rightPanel = buildPanel({
+      cx: RIGHT_PANEL_CX, header: 'Differential-mode',
+      phaseBot: Math.PI,    // wave inverted → differential
+      color: RED,
+      equationLatex: 'v_{\\text{out}} = v_1 - v_2 = 2v'
+    });
+
+    // Load glyphs and position labels
+    await stage1Title.loadGlyphs?.();
+    stage1Title.moveTo([0, 3.0, 0]);
+
+    await stage1Caption.loadGlyphs?.();
+    stage1Caption.moveTo([0, -2.7, 0]);
+
+    for (const p of [leftPanel, rightPanel]) {
+      await p._headerText.loadGlyphs?.();
+      p._headerText.moveTo([p._cx, PANEL_CY + PANEL_H / 2 - 0.28, 0]);
+      await p._sumMinus.loadGlyphs?.();
+      p._sumMinus.moveTo([p._cx + WIRE_HALF_LEN - 0.05, PANEL_CY, 0]);
+      await p._eqn.waitForRender?.();
+      p._eqn.scale(0.55).moveTo([p._cx, PANEL_CY - PANEL_H / 2 - 0.35, 0]);
+    }
+
+    // Stage 1 play sequence
+    await scene.play(new Write(stage1Title, { duration: 0.6 }));
+    await scene.play(
+      new Create(leftPanel._border),  new Create(rightPanel._border),
+      new Write(leftPanel._headerText), new Write(rightPanel._headerText),
+      { duration: 0.5 }
+    );
+    await scene.play(
+      new Create(leftPanel._wireTop),  new Create(leftPanel._wireBot),
+      new Create(rightPanel._wireTop), new Create(rightPanel._wireBot),
+      new Create(leftPanel._leadTop),  new Create(leftPanel._leadBot),
+      new Create(rightPanel._leadTop), new Create(rightPanel._leadBot),
+      { duration: 0.4 }
+    );
+    await scene.play(
+      new Create(leftPanel._waveTop,  { duration: 1.1, lagRatio: 0.02 }),
+      new Create(leftPanel._waveBot,  { duration: 1.1, lagRatio: 0.02 }),
+      new Create(rightPanel._waveTop, { duration: 1.1, lagRatio: 0.02 }),
+      new Create(rightPanel._waveBot, { duration: 1.1, lagRatio: 0.02 })
+    );
+    await scene.play(
+      new FadeIn(leftPanel._sumCircle),  new Write(leftPanel._sumMinus),
+      new FadeIn(rightPanel._sumCircle), new Write(rightPanel._sumMinus),
+      { duration: 0.3 }
+    );
+    await scene.play(
+      new Write(leftPanel._eqn), new Write(rightPanel._eqn),
+      { duration: 0.5 }
+    );
+    await scene.play(new FadeIn(stage1Caption, { duration: 0.4 }));
+    await scene.wait(1.5);
+
+    // Fade Stage 1 out entirely
+    const stage1All = new VGroup(
+      stage1Title, stage1Caption,
+      leftPanel._border, leftPanel._headerText,
+      leftPanel._wireTop, leftPanel._wireBot,
+      leftPanel._waveTop, leftPanel._waveBot,
+      leftPanel._sumCircle, leftPanel._sumMinus,
+      leftPanel._leadTop, leftPanel._leadBot, leftPanel._eqn,
+      rightPanel._border, rightPanel._headerText,
+      rightPanel._wireTop, rightPanel._wireBot,
+      rightPanel._waveTop, rightPanel._waveBot,
+      rightPanel._sumCircle, rightPanel._sumMinus,
+      rightPanel._leadTop, rightPanel._leadBot, rightPanel._eqn
+    );
+    await scene.play(new FadeOut(stage1All, { duration: 0.5 }));
+
     // ── Stage 2: ECG scenario (Tasks 3–4) ──
     // ── Compression transition (Task 5) ──
     // ── Stage 3: signal module + render loop + controls (Tasks 6–9) ──

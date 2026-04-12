@@ -131,35 +131,6 @@
     .ol-readout .k { color: var(--slide-text-dim); }
     .ol-readout .v { color: var(--slide-text); text-align: right; }
 
-    .stage-nav {
-      position: absolute;
-      bottom: 6px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 11;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: var(--slide-text-dim);
-    }
-    .stage-nav button {
-      background: transparent;
-      border: 1px solid var(--slide-border);
-      border-radius: 6px;
-      padding: 5px 12px;
-      font-family: 'IBM Plex Mono', monospace;
-      font-size: 11px;
-      color: var(--slide-text-dim);
-      cursor: pointer;
-      transition: color 0.15s ease, border-color 0.15s ease;
-    }
-    .stage-nav button:hover:not(:disabled) {
-      color: var(--slide-text);
-      border-color: var(--slide-text-dim);
-    }
-    .stage-nav button:disabled { opacity: 0.25; cursor: default; }
   </style>
 </head>
 <body class="slide">
@@ -195,11 +166,11 @@
     </div>
   </aside>
 
-  <nav class="stage-nav" id="stage-nav">
-    <button id="nav-prev" disabled>&#8249; prev</button>
-    <span id="nav-indicator">1 / 3</span>
-    <button id="nav-next">next &#8250;</button>
-  </nav>
+  <div class="stepper-row" id="stepper">
+    <button type="button" class="stepper-btn" id="step-prev">&larr; Prev Step</button>
+    <span class="step-indicator" id="step-indicator">Step 1/3</span>
+    <button type="button" class="stepper-btn" id="step-next">Next Step &rarr;</button>
+  </div>
 
   <script type="module">
     import {
@@ -660,14 +631,14 @@
     let renderLoopStarted = false;
     let stage2OrigCenter = null;
 
-    const navPrev = document.getElementById('nav-prev');
-    const navNext = document.getElementById('nav-next');
-    const navInd  = document.getElementById('nav-indicator');
+    const navPrev = document.getElementById('step-prev');
+    const navNext = document.getElementById('step-next');
+    const navInd  = document.getElementById('step-indicator');
 
     function updateNav() {
       navPrev.disabled = currentStage <= 1;
       navNext.disabled = currentStage >= 3;
-      navInd.textContent = currentStage + ' / 3';
+      navInd.textContent = 'Step ' + currentStage + '/3';
     }
 
     function goTo(n) {

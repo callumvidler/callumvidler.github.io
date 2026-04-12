@@ -526,7 +526,7 @@
     const S1_WAVE_TOP = 120, S1_WAVE_H = 200, S1_WAVE_BOT = S1_WAVE_TOP + S1_WAVE_H;
     const S1_DIFF_TOP = S1_WAVE_BOT + 50, S1_DIFF_H = 80;
     const S1_SURF_AMP = 40;
-    const S1_WAVE_K = 2.5;
+    const S1_WAVE_K = 2;
     const S1_DOT_R = 10;
 
     let s1AnimId = null;
@@ -553,13 +553,9 @@
         c.fillStyle = FG;
         c.fillText(p.label, cx, S1_WAVE_TOP - 18);
 
-        // Water surface
+        // Water surface — same traveling wave for both panels
         const surfFn = (xNorm) => {
-          if (p.mode === 'common') {
-            return S1_SURF_AMP * Math.sin(2 * Math.PI * t * 0.8);
-          } else {
-            return S1_SURF_AMP * Math.sin(S1_WAVE_K * xNorm * Math.PI * 2 - 2 * Math.PI * t * 0.8);
-          }
+          return S1_SURF_AMP * Math.sin(S1_WAVE_K * xNorm * Math.PI * 2 - 2 * Math.PI * t * 0.8);
         };
 
         // Draw water surface
@@ -583,8 +579,9 @@
         c.fill();
         c.globalAlpha = 1.0;
 
-        // Dot positions — two dots at fixed x-positions on the surface
-        const dot1XNorm = 0.3, dot2XNorm = 0.7;
+        // Dot positions — common: 1 wavelength apart (same phase), diff: ½ wavelength apart (opposite phase)
+        const dot1XNorm = 0.25;
+        const dot2XNorm = p.mode === 'common' ? 0.75 : 0.50;
         const dot1X = p.x + 30 + dot1XNorm * (p.w - 60);
         const dot2X = p.x + 30 + dot2XNorm * (p.w - 60);
         const dot1Y = waveY0 - surfFn(dot1XNorm);

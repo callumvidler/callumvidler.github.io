@@ -2078,10 +2078,11 @@
 
       // Canvas layout: margins for labels outside the heatmap
       const hmCanvas = document.getElementById('s4Heatmap');
-      const C_W = 500, C_H = 380; // total canvas size (rectangular)
-      const MARGIN = { top: 28, right: 50, bottom: 40, left: 52 };
-      const PLOT_W = C_W - MARGIN.left - MARGIN.right;
-      const PLOT_H = C_H - MARGIN.top - MARGIN.bottom;
+      const MARGIN = { top: 30, right: 56, bottom: 44, left: 56 };
+      const PLOT_SIZE = 400; // square plot area
+      const PLOT_W = PLOT_SIZE, PLOT_H = PLOT_SIZE;
+      const C_W = PLOT_SIZE + MARGIN.left + MARGIN.right;
+      const C_H = PLOT_SIZE + MARGIN.top + MARGIN.bottom;
       hmCanvas.width = C_W;
       hmCanvas.height = C_H;
       const hmCtx = hmCanvas.getContext('2d');
@@ -2091,7 +2092,7 @@
       hmCtx.fillRect(0, 0, C_W, C_H);
 
       // Paint heatmap into the plot area using ImageData
-      const GRID_N = 200;
+      const GRID_N = 400;
       const imgData = hmCtx.createImageData(GRID_N, GRID_N);
       const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
@@ -2396,7 +2397,7 @@
       ccCtx.clearRect(0, 0, cc.width, cc.height);
 
       // Map R values to canvas plot coordinates (using same margins as build)
-      const HM_MARGIN = { top: 28, right: 50, bottom: 40, left: 52 };
+      const HM_MARGIN = { top: 30, right: 56, bottom: 44, left: 56 };
       const HM_PLOT_W = cc.width - HM_MARGIN.left - HM_MARGIN.right;
       const HM_PLOT_H = cc.height - HM_MARGIN.top - HM_MARGIN.bottom;
       const logR1 = Math.log10(r1);

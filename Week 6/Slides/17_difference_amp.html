@@ -358,35 +358,35 @@
       title.shift([-6.2 - title.getLeft()[0], 0, 0]);
     }
 
-    // ── Op-amp triangle ──
+    // ── Op-amp triangle (matches slide 14 geometry) ──
     const tri = new Polygon({
-      vertices: [[-0.4, -1.0, 0], [-0.4, 1.0, 0], [1.4, 0, 0]],
+      vertices: [[-2.4, -1.2, 0], [-2.4, 1.2, 0], [-0.6, 0, 0]],
       color: ACCENT, strokeWidth: 2, fillOpacity: 0
     });
-    const pSym = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL }).moveTo([0.0, -0.4, 0]);
-    const mSym = new Text({ text: '−', fontSize: 18, color: RED, fontUrl: FONT_URL }).moveTo([0.0, 0.4, 0]);
+    const pSym = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL }).moveTo([-1.98, -0.45, 0]);
+    const mSym = new Text({ text: '−', fontSize: 18, color: RED, fontUrl: FONT_URL }).moveTo([-1.98, 0.45, 0]);
 
     // ── Input labels ──
     const Va = new MathTex({ latex: 'V_{a}', color: BLUE });
     const Vb = new MathTex({ latex: 'V_{b}', color: MAG });
     await Va.waitForRender?.(); await Vb.waitForRender?.();
-    Va.scale(0.55).moveTo([-5.5, 0.7, 0]);
-    Vb.scale(0.55).moveTo([-5.5, -0.7, 0]);
+    Va.scale(0.55).moveTo([-6.0, 0.7, 0]);
+    Vb.scale(0.55).moveTo([-6.0, -0.7, 0]);
 
     // ── Input wires ──
-    const inA = new Line({ start: [-5.2, 0.7, 0], end: [-0.4, 0.7, 0], color: FG });
-    const inB = new Line({ start: [-5.2, -0.7, 0], end: [-0.4, -0.7, 0], color: FG });
+    const inA = new Line({ start: [-5.7, 0.7, 0], end: [-2.4, 0.7, 0], color: FG, strokeWidth: 1.8 });
+    const inB = new Line({ start: [-5.7, -0.7, 0], end: [-2.4, -0.7, 0], color: FG, strokeWidth: 1.8 });
 
     // ── Resistors (all YELLOW, same size) ──
     const Ra = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
-    Ra.moveTo([-3.0, 0.7, 0]);
+    Ra.moveTo([-4.2, 0.7, 0]);
     const Rd = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
-    Rd.moveTo([-3.0, -0.7, 0]);
+    Rd.moveTo([-4.2, -0.7, 0]);
     const Rb = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
-    Rb.moveTo([-0.1, 1.7, 0]);
+    Rb.moveTo([-1.5, 2.0, 0]);
     const Rc = new Rectangle({ width: 0.6, height: 0.25, color: YELLOW, strokeWidth: 2 });
     Rc.rotate(Math.PI / 2);
-    Rc.moveTo([-0.4, -1.8, 0]);
+    Rc.moveTo([-2.4, -1.8, 0]);
 
     // ── Resistor labels ──
     const RaL = new MathTex({ latex: 'R_{a}', color: YELLOW });
@@ -400,24 +400,24 @@
     RcL.scale(0.5).nextTo(Rc, RIGHT, 0.1);
 
     // ── Feedback wires (R_b loop) ──
-    const fb1 = new Line({ start: [-0.4, 0.7, 0], end: [-0.4, 1.7, 0], color: FG });
-    const fb2 = new Line({ start: [-0.4, 1.7, 0], end: [1.8, 1.7, 0], color: FG });
-    const fb3 = new Line({ start: [1.8, 1.7, 0], end: [1.8, 0, 0], color: FG });
+    const fb1 = new Line({ start: [-2.4, 0.7, 0], end: [-2.4, 2.0, 0], color: FG });
+    const fb2 = new Line({ start: [-2.4, 2.0, 0], end: [0.0, 2.0, 0], color: FG });
+    const fb3 = new Line({ start: [0.0, 2.0, 0], end: [0.0, 0, 0], color: FG });
 
     // ── R_c to ground ──
-    const rcLead = new Line({ start: [-0.4, -0.7, 0], end: [-0.4, -1.45, 0], color: FG });
-    const rcGnd  = new Line({ start: [-0.6, -2.2, 0], end: [-0.2, -2.2, 0], color: FG, strokeWidth: 3 });
+    const rcLead = new Line({ start: [-2.4, -0.7, 0], end: [-2.4, -1.45, 0], color: FG });
+    const rcGnd  = new Line({ start: [-2.6, -2.2, 0], end: [-2.2, -2.2, 0], color: FG, strokeWidth: 3 });
 
     // ── Output wire ──
-    const outW = new Line({ start: [1.4, 0, 0], end: [2.4, 0, 0], color: FG });
+    const outW = new Line({ start: [-0.6, 0, 0], end: [0.6, 0, 0], color: FG });
     const Vo = new MathTex({ latex: 'V_{o}', color: YELLOW });
     await Vo.waitForRender?.();
-    Vo.scale(0.55).nextTo([2.4, 0, 0], RIGHT, 0.1);
+    Vo.scale(0.55).nextTo([0.6, 0, 0], RIGHT, 0.1);
 
     // ── Equation ──
     const eqn = new MathTex({ latex: 'V_o = \\dfrac{R_b}{R_a}\\,(V_b - V_a)', color: ACCENT });
     await eqn.waitForRender?.();
-    eqn.scale(0.75).moveTo([-2.5, -3.1, 0]);
+    eqn.scale(0.75).moveTo([-3.5, -3.1, 0]);
 
     // ── Build-in animation ──
     await scene.play(new Write(title, { duration: 0.7 }));
@@ -444,15 +444,15 @@
     }
 
     // ── Anchor points (manim coords) ──
-    const WIRE_A = { x0: -4.7, y: 0.7, x1: -0.4 };
-    const WIRE_B = { x0: -4.7, y: -0.7, x1: -0.4 };
+    const WIRE_A = { x0: -5.2, y: 0.7, x1: -2.4 };
+    const WIRE_B = { x0: -5.2, y: -0.7, x1: -2.4 };
     const R_POS = {
-      Ra: { x: -3.0, y: 0.7, offY: -0.35 },
-      Rb: { x: -0.1, y: 1.7, offY: -0.35 },
-      Rc: { x: -0.4, y: -1.8, offX: 0.45 },
-      Rd: { x: -3.0, y: -0.7, offY: 0.35 },
+      Ra: { x: -4.2, y: 0.7, offY: -0.35 },
+      Rb: { x: -1.5, y: 2.0, offY: -0.35 },
+      Rc: { x: -2.4, y: -1.8, offX: 0.45 },
+      Rd: { x: -4.2, y: -0.7, offY: 0.35 },
     };
-    const OUT_POS = { x: 2.4, y: 0 };
+    const OUT_POS = { x: 0.6, y: 0 };
 
     // ── SVG elements ──
     const svgOvl = document.getElementById('svgOverlay');

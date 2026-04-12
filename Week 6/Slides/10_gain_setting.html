@@ -219,7 +219,7 @@
   </div>
 
   <script type="module">
-    import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, Transform } from 'https://esm.sh/manim-web@0.3.18';
+    import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, FadeOut, Transform, MoveAlongPath, Shift, UpdateFromAlphaFunc, ParametricFunction } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
     const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
@@ -1103,36 +1103,33 @@
       s2StepLabel.textContent = 'k=' + n;
     };
 
-    // Move an existing scene object along waypoints (obj must support .moveTo())
-    const animateObjAlongPath = (obj, waypoints, durationMs, staleCheck) => new Promise((resolve) => {
-      if (waypoints.length < 2 || staleCheck()) { resolve(); return; }
-      const segs = [];
+    // Smoothly shift an object along a series of waypoints using manim's scene.play(Shift).
+    // Each segment is a separate scene.play() call for smooth rendering.
+    const shiftAlongWaypoints = async (obj, waypoints, totalDuration, staleCheck) => {
+      if (waypoints.length < 2) return;
+      // Compute total path length to distribute time proportionally
       let totalLen = 0;
+      const segLens = [];
       for (let i = 0; i < waypoints.length - 1; i++) {
         const dx = waypoints[i + 1][0] - waypoints[i][0];
         const dy = waypoints[i + 1][1] - waypoints[i][1];
         const len = Math.sqrt(dx * dx + dy * dy);
-        segs.push({ sx: waypoints[i][0], sy: waypoints[i][1], dx, dy, len, cumLen: totalLen });
+        segLens.push(len);
         totalLen += len;
       }
       obj.moveTo([waypoints[0][0], waypoints[0][1], 0]);
-      const easeInOut = (t) => 0.5 - 0.5 * Math.cos(Math.PI * t);
-      const t0 = performance.now();
-      const tick = (now) => {
-        if (staleCheck()) { resolve(); return; }
-        const rawT = clamp((now - t0) / durationMs, 0, 1);
-        const dist = easeInOut(rawT) * totalLen;
-        let seg = segs[segs.length - 1];
-        for (let i = 0; i < segs.length; i++) {
-          if (dist <= segs[i].cumLen + segs[i].len) { seg = segs[i]; break; }
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        if (staleCheck()) return;
+        const dx = waypoints[i + 1][0] - waypoints[i][0];
+        const dy = waypoints[i + 1][1] - waypoints[i][1];
+        const segDur = totalLen > 0 ? totalDuration * (segLens[i] / totalLen) : totalDuration / (waypoints.length - 1);
+        if (segDur < 0.02) {
+          obj.moveTo([waypoints[i + 1][0], waypoints[i + 1][1], 0]);
+          continue;
         }
-        const segT = seg.len > 0.001 ? clamp((dist - seg.cumLen) / seg.len, 0, 1) : 1;
-        obj.moveTo([seg.sx + seg.dx * segT, seg.sy + seg.dy * segT, 0]);
-        if (rawT >= 1) { resolve(); return; }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
+        await scene.play(new Shift(obj, [dx, dy, 0]), { duration: segDur });
+      }
+    };
 
     const runSection2Animation = async (token) => {
       const runId = ++state.section2AnimToken;
@@ -1145,41 +1142,38 @@
       const tl = c.travelLabels;
       if (!tl) return;
 
-      // Waypoints for each segment of the block diagram
-      const tapToBetaEntrance = [
-        [bd.BD_TAP, bd.BD_FWD_Y],
-        [bd.BD_TAP, bd.BD_FB_Y],
-        [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y],
-      ];
-      const betaExitToSigma = [
-        [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y],
-        [bd.BD_JX, bd.BD_FB_Y],
-        [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
-      ];
-      const sigmaToAolEntrance = [
-        [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y],
-        [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y],
-      ];
-      const aolExitToTap = [
-        [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y],
-        [bd.BD_TAP, bd.BD_FWD_Y],
-      ];
-
-      // Position helpers — offset labels so they don't overlap the wires
+      // Waypoints for each leg of the block diagram (with Y offset for labels)
       const ABOVE = 0.28;
       const BELOW = -0.30;
+      const sigmaToAol = [
+        [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y + ABOVE],
+        [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y + ABOVE],
+      ];
+      const aolToTap = [
+        [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y + ABOVE],
+        [bd.BD_TAP, bd.BD_FWD_Y + ABOVE],
+      ];
+      const tapToBeta = [
+        [bd.BD_TAP, bd.BD_FWD_Y + BELOW],
+        [bd.BD_TAP, bd.BD_FB_Y + BELOW],
+        [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y + BELOW],
+      ];
+      const betaToSigma = [
+        [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y + BELOW],
+        [bd.BD_JX, bd.BD_FB_Y + BELOW],
+        [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR + BELOW],
+      ];
 
-      // Speed ramp: slow for first iterations, fast for later ones
-      // Returns a duration multiplier (higher = slower)
-      const speedFor = (k) => {
+      // Speed ramp: seconds per animation step — slow early, fast late
+      const durationFor = (k) => {
         if (k <= 1) return 1.0;
-        if (k <= 3) return 0.65;
+        if (k <= 3) return 0.6;
         if (k <= 6) return 0.35;
         if (k <= 10) return 0.18;
-        return 0.10;
+        return 0.08;
       };
 
-      // Temporary objects added during the animation that need cleanup
+      // Temporary objects that need cleanup between iterations
       let tempObjs = [];
       const addTemp = (obj) => { scene.add(obj); tempObjs.push(obj); };
       const clearTemp = () => { tempObjs.forEach(o => scene.remove(o)); tempObjs = []; };
@@ -1193,69 +1187,76 @@
         if (stale()) return;
         clearTemp();
 
-        const speed = speedFor(k);
-        const moveDur = Math.max(60, 400 * speed);
-        const pauseDur = Math.max(0.05, 0.4 * speed);
+        const dur = durationFor(k);
         const lab = tl[k];
 
         // ── Phase 1: Vd travels from Σ into A_OL ──
-        // Position Vd label at Σ output and move it to A_OL entrance
-        lab.tvd.moveTo([bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y + ABOVE, 0]);
-        addTemp(lab.tvd);
-        await animateObjAlongPath(lab.tvd,
-          sigmaToAolEntrance.map(([x, y]) => [x, y + ABOVE]),
-          moveDur, stale);
-        if (stale()) return;
-
-        // Brief pause at A_OL (Vd being amplified → Vout)
-        await scene.wait(pauseDur * 0.5);
-        if (stale()) return;
+        lab.tvd.moveTo([sigmaToAol[0][0], sigmaToAol[0][1], 0]);
         scene.remove(lab.tvd);
+        await scene.play(new FadeIn(lab.tvd, { duration: dur * 0.15 }));
+        if (stale()) return;
+        tempObjs.push(lab.tvd);
 
-        // ── Phase 2: Vout emerges from A_OL, travels to tap/output ──
-        lab.tvout.moveTo([bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y + ABOVE, 0]);
-        addTemp(lab.tvout);
-        await animateObjAlongPath(lab.tvout,
-          aolExitToTap.map(([x, y]) => [x, y + ABOVE]),
-          moveDur, stale);
+        await shiftAlongWaypoints(lab.tvd, sigmaToAol, dur * 0.4, stale);
         if (stale()) return;
 
-        // Update settling graph to show the new data point
+        // Pause at A_OL — Vd is being amplified
+        await scene.wait(dur * 0.15);
+        if (stale()) return;
+
+        // Vd fades out inside A_OL
+        await scene.play(new FadeOut(lab.tvd, { duration: dur * 0.1 }));
+        if (stale()) return;
+        tempObjs = tempObjs.filter(o => o !== lab.tvd);
+
+        // ── Phase 2: Vout emerges from A_OL → tap/output ──
+        lab.tvout.moveTo([aolToTap[0][0], aolToTap[0][1], 0]);
+        scene.remove(lab.tvout);
+        await scene.play(new FadeIn(lab.tvout, { duration: dur * 0.15 }));
+        if (stale()) return;
+        tempObjs.push(lab.tvout);
+
+        await shiftAlongWaypoints(lab.tvout, aolToTap, dur * 0.35, stale);
+        if (stale()) return;
+
+        // Update settling graph
         drawSection2AtStep(k + 1);
         if (stale()) return;
-
-        await scene.wait(pauseDur * 0.5);
+        await scene.wait(dur * 0.12);
         if (stale()) return;
 
-        // ── Phase 3: Vout value "copies" and travels along feedback path to β ──
-        // The original tvout stays briefly at the output, then we move the copy
-        lab.tvout.moveTo([bd.BD_TAP, bd.BD_FWD_Y + ABOVE, 0]);
-        await animateObjAlongPath(lab.tvout,
-          tapToBetaEntrance.map(([x, y]) => [x, y + BELOW]),
-          moveDur * 1.3, stale);
+        // ── Phase 3: Vout "copies" and travels feedback path → β ──
+        lab.tvout.moveTo([tapToBeta[0][0], tapToBeta[0][1], 0]);
+        await shiftAlongWaypoints(lab.tvout, tapToBeta, dur * 0.5, stale);
         if (stale()) return;
 
-        // Brief pause at β (multiplication happening)
-        await scene.wait(pauseDur * 0.7);
-        if (stale()) return;
-        scene.remove(lab.tvout);
-
-        // ── Phase 4: βVout emerges from β, travels to Σ ──
-        lab.tbv.moveTo([bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y + BELOW, 0]);
-        addTemp(lab.tbv);
-        await animateObjAlongPath(lab.tbv,
-          betaExitToSigma.map(([x, y]) => [x, y + BELOW]),
-          moveDur * 1.1, stale);
+        // Pause at β — multiplication happening
+        await scene.wait(dur * 0.15);
         if (stale()) return;
 
-        // Brief pause at Σ (subtraction happening)
-        await scene.wait(pauseDur * 0.5);
+        // Vout fades, βVout appears
+        await scene.play(new FadeOut(lab.tvout, { duration: dur * 0.1 }));
         if (stale()) return;
-        clearTemp();
+        tempObjs = tempObjs.filter(o => o !== lab.tvout);
 
-        // Pause between iterations
-        await scene.wait(pauseDur * 0.3);
+        // ── Phase 4: βVout emerges from β → Σ ──
+        lab.tbv.moveTo([betaToSigma[0][0], betaToSigma[0][1], 0]);
+        scene.remove(lab.tbv);
+        await scene.play(new FadeIn(lab.tbv, { duration: dur * 0.12 }));
         if (stale()) return;
+        tempObjs.push(lab.tbv);
+
+        await shiftAlongWaypoints(lab.tbv, betaToSigma, dur * 0.45, stale);
+        if (stale()) return;
+
+        // Pause at Σ — subtraction happening
+        await scene.wait(dur * 0.12);
+        if (stale()) return;
+
+        // βVout fades at Σ, ready for next loop
+        await scene.play(new FadeOut(lab.tbv, { duration: dur * 0.1 }));
+        if (stale()) return;
+        tempObjs = tempObjs.filter(o => o !== lab.tbv);
       }
 
       clearTemp();

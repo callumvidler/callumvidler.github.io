@@ -514,8 +514,41 @@
     await scene.play(new FadeIn(stage2Caption, { duration: 0.3 }));
     await scene.wait(1.0);
 
-    // ── Compression transition (Task 5) ──
-    // ── Stage 3: signal module + render loop + controls (Tasks 6–9) ──
+    // ── Compression transition ────────────────────────────────────────────────
+    const sceneGroup = new VGroup(
+      bed, bedLegL, bedLegR, pillow,
+      patient,
+      elec1, elec2, elecLbl1, elecLbl2,
+      lead1, lead2, ampBox, ampLbl,
+      mains, mainsLbl,
+      couple1Group, couple2Group, capLbl,
+      stage2Caption
+    );
+
+    // Scale the whole scenario down and move it into the top ~60% of the canvas,
+    // leaving the bottom ~40% clear for the interactive graph + panel.
+    const SCENE_GROUP_SCALE  = 0.55;
+    const SCENE_GROUP_TARGET = [0, 1.20, 0];
+
+    // Manim-web doesn't expose a Transform-to-target helper for arbitrary groups,
+    // so we scale in place, then moveTo. Both calls take effect before the next
+    // scene.play; we wrap in a short wait so the visual transition is perceptible.
+    sceneGroup.scale(SCENE_GROUP_SCALE);
+    sceneGroup.moveTo(SCENE_GROUP_TARGET);
+
+    // Trigger a no-op play so manim-web flushes the new positions to canvas
+    await scene.play(new FadeIn(sceneGroup, { duration: 0.01 }));
+    await scene.wait(0.3);
+
+    // Reveal Stage 3 overlays (canvas + control panel)
+    const cmGraphWrap = document.getElementById('cm-graph-wrap');
+    const cmPanel     = document.getElementById('cm-panel');
+    cmGraphWrap.classList.add('visible');
+    cmPanel.classList.add('visible');
+
+    // ── Stage 3: signal module (Task 6) ──
+    // ── Stage 3: canvas render loop (Task 7) ──
+    // ── Stage 3: control wiring (Task 8) ──
 
     await scene.wait(0.1);
   </script>

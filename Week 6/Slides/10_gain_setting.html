@@ -3,6 +3,1963 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 10 - Gain Setting by Feedback</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+  <style>
+    .ol-panel {
+      position: absolute;
+      top: 50%;
+      right: 14px;
+      transform: translateY(-50%);
+      z-index: 9;
+      width: 290px;
+      padding: 14px 16px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--slide-border);
+      background: var(--slide-surface);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    [data-theme="light"] .ol-panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+
+    .ol-panel.visible { display: flex; }
+
+    .ol-title {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--slide-accent);
+      font-size: 10px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+    }
+
+    .ol-row { display: grid; gap: 4px; }
+
+    .ol-row label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--slide-text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    .ol-row .v { color: var(--slide-text); font-variant-numeric: tabular-nums; }
+
+    .ol-panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 18px;
+    }
+
+    .ol-readout {
+      margin-top: 2px;
+      border-top: 1px solid var(--slide-border);
+      padding-top: 8px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    .ol-readout .k { color: var(--slide-text-dim); }
+    .ol-readout .v {
+      text-align: right;
+      color: var(--slide-text);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ol-strip {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      border-left: 3px solid var(--slide-yellow);
+      border-radius: 4px;
+      padding: 6px 8px;
+      background: rgba(255, 204, 68, 0.12);
+      color: var(--slide-yellow);
+      line-height: 1.4;
+      font-size: 10px;
+    }
+
+    #s2Controls {
+      display: none;
+      position: absolute;
+      bottom: 48px;
+      right: 14px;
+      z-index: 9;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.75;
+      transition: opacity 0.15s;
+    }
+    #s2Controls:hover { opacity: 1; }
+    #s2Controls.visible { display: flex; }
+
+    #s2StepSlider {
+      width: 100px;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 16px;
+    }
+
+    #s2StepLabel {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--slide-text-dim);
+      min-width: 28px;
+    }
+
+    #s2ReplayBtn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid var(--slide-border);
+      border-radius: 6px;
+      background: var(--slide-surface);
+      color: var(--slide-text-dim);
+      font-size: 14px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">12 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene...</div>
+
+    <div class="ol-panel" id="olPanel" aria-hidden="true">
+      <div class="ol-title">Section 1 Controls</div>
+      <div class="ol-row">
+        <label>V<sub>in</sub> = V<sub>+</sub>-V<sub>-</sub> <span class="v" id="vdVal">0 uV</span></label>
+        <input type="range" id="vdSlider" min="-2000" max="2000" step="10" value="0">
+      </div>
+      <div class="ol-row">
+        <label>A<sub>OL</sub> <span class="v" id="aolVal">200k</span></label>
+        <input type="range" id="aolSlider" min="0" max="100" step="1" value="65">
+      </div>
+      <div class="ol-readout">
+        <span class="k">Unclipped V<sub>out</sub></span><span class="v" id="voutRawVal">0.00 V</span>
+        <span class="k">Clipped V<sub>out</sub></span><span class="v" id="voutClipVal">0.00 V</span>
+        <span class="k">Linear limit ±V<sub>sat</sub>/A<sub>OL</sub></span><span class="v" id="linearVal">+/- 65 uV</span>
+        <span class="ol-strip" id="explainVal">The linear window is tiny, so a small Vin sends output to a rail.</span>
+      </div>
+    </div>
+
+    <div id="s2Controls">
+      <input type="range" id="s2StepSlider" min="0" max="8" step="1" value="8">
+      <span id="s2StepLabel">k=8</span>
+      <button type="button" id="s2ReplayBtn">&#x21bb;</button>
+    </div>
+
+    <div class="stepper-row" id="stepper">
+      <button type="button" class="stepper-btn" id="sec-prev">← Prev Section</button>
+      <span class="step-indicator" id="sec-indicator">Section 1/3</span>
+      <button type="button" class="stepper-btn" id="sec-next">Next Section →</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, Transform } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG = IS_LIGHT ? '#0f172a' : '#e8ecf3';
+    const MUTED = IS_LIGHT ? '#64748b' : '#8a94a7';
+    const MUTED2 = IS_LIGHT ? '#cbd5e1' : '#2a3243';
+    const AXIS = IS_LIGHT ? '#475569' : '#a9b4c6';
+    const ACCENT = IS_LIGHT ? '#10b981' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED = IS_LIGHT ? '#dc2626' : '#e06050';
+    const BLUE = IS_LIGHT ? '#2563eb' : '#5a8dee';
+    const CYAN = IS_LIGHT ? '#0891b2' : '#58c0d8';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    const olPanel = document.getElementById('olPanel');
+    const vdSlider = document.getElementById('vdSlider');
+    const aolSlider = document.getElementById('aolSlider');
+    const vdVal = document.getElementById('vdVal');
+    const aolVal = document.getElementById('aolVal');
+    const voutRawVal = document.getElementById('voutRawVal');
+    const voutClipVal = document.getElementById('voutClipVal');
+    const linearVal = document.getElementById('linearVal');
+    const explainVal = document.getElementById('explainVal');
+
+    const s2Controls = document.getElementById('s2Controls');
+    const s2StepSlider = document.getElementById('s2StepSlider');
+    const s2StepLabel = document.getElementById('s2StepLabel');
+    const s2ReplayBtn = document.getElementById('s2ReplayBtn');
+
+    const secIndicator = document.getElementById('sec-indicator');
+    const prevBtn = document.getElementById('sec-prev');
+    const nextBtn = document.getElementById('sec-next');
+    const TOTAL_SECTIONS = 3;
+    const V_SAT = 13;
+
+    const state = {
+      currentSection: 1,
+      renderToken: 0,
+      isRendering: false,
+      queuedSection: null,
+      persistent: [],
+      sectionObjects: [],
+      interactiveObjects: [],
+      section1Ctx: null,
+      section1ControlsReady: false,
+      guidedObjects: [],
+      section1DrawQueued: null,
+      section1DrawRaf: null,
+      section1LastDrawMs: 0,
+      section1LastDrawVd: null,
+      section1LastDrawAolSlider: null,
+      section1LastShowMain: null,
+      section1LastShowZoom: null,
+      section2Ctx: null,
+      section2ControlsReady: false,
+      section2AnimObjects: [],
+      section2AnimToken: 0
+    };
+
+    const makeText = async (text, fontSize, color, pos, leftAlignX = null) => {
+      const t = new Text({ text, fontSize, color, fontUrl: FONT_URL });
+      await t.loadGlyphs?.();
+      t.moveTo(pos);
+      if (leftAlignX !== null && typeof t.getLeft === 'function') {
+        t.shift([leftAlignX - t.getLeft()[0], 0, 0]);
+      }
+      return t;
+    };
+
+    const makeMath = async (latex, scale, color, pos) => {
+      const m = new MathTex({ latex, color });
+      await m.waitForRender?.();
+      m.scale(scale).moveTo(pos);
+      return m;
+    };
+
+    const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+
+    const aolFromSlider = (s) => {
+      const logMin = 4;
+      const logMax = 6;
+      return Math.pow(10, logMin + (s / 100) * (logMax - logMin));
+    };
+
+    const formatAol = (aol) => {
+      if (aol >= 1e6) return (aol / 1e6).toFixed(2) + 'M';
+      return (aol / 1e3).toFixed(0) + 'k';
+    };
+
+    const formatVd = (vd) => {
+      const uv = vd * 1e6;
+      if (Math.abs(uv) >= 1000) return (uv / 1000).toFixed(2) + ' mV';
+      return uv.toFixed(0) + ' uV';
+    };
+
+    const clearSection = () => {
+      if (state.sectionObjects.length) {
+        scene.remove(...state.sectionObjects);
+        state.sectionObjects = [];
+      }
+      if (state.guidedObjects.length) {
+        scene.remove(...state.guidedObjects);
+        state.guidedObjects = [];
+      }
+      if (state.interactiveObjects.length) {
+        scene.remove(...state.interactiveObjects);
+        state.interactiveObjects = [];
+      }
+      if (state.section1DrawRaf) {
+        cancelAnimationFrame(state.section1DrawRaf);
+        state.section1DrawRaf = null;
+      }
+      state.section1DrawQueued = null;
+      state.section1LastDrawMs = 0;
+      state.section1LastDrawVd = null;
+      state.section1LastDrawAolSlider = null;
+      state.section1LastShowMain = null;
+      state.section1LastShowZoom = null;
+      state.section1Ctx = null;
+      if (state.section2AnimObjects.length) {
+        scene.remove(...state.section2AnimObjects);
+        state.section2AnimObjects = [];
+      }
+      state.section2AnimToken += 1;
+      state.section2Ctx = null;
+    };
+
+    const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain', 'Gain-bandwidth tradeoff (next)'][idx - 1];
+
+    const updateNavUi = () => {
+      secIndicator.textContent = 'Section ' + state.currentSection + '/3 - ' + sectionLabel(state.currentSection);
+      prevBtn.disabled = state.currentSection === 1;
+      nextBtn.disabled = state.currentSection === TOTAL_SECTIONS;
+      const showPanel = state.currentSection === 1 && state.section1ControlsReady;
+      olPanel.classList.toggle('visible', showPanel);
+      olPanel.setAttribute('aria-hidden', showPanel ? 'false' : 'true');
+      const showS2 = state.currentSection === 2 && state.section2ControlsReady;
+      s2Controls.classList.toggle('visible', showS2);
+    };
+
+    const buildPersistentChrome = async () => {
+      const title = await makeText('Gain Setting by Feedback', 31, FG, [-3.5, 3.42, 0], -6.2);
+      const rule = new Line({ start: [-6.2, 3.10, 0], end: [-4.6, 3.10, 0], color: ACCENT, strokeWidth: 2.6 });
+      state.persistent = [title, rule];
+      scene.add(...state.persistent);
+    };
+
+    const frameStatics = async (f, xLabel, yLabel, borderColor = AXIS, xr = null, yr = null) => {
+      const surface = new Rectangle({
+        width: f.x1 - f.x0,
+        height: f.y1 - f.y0,
+        color: MUTED2,
+        strokeWidth: 0,
+        fillOpacity: IS_LIGHT ? 0.25 : 0.18
+      });
+      surface.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+      const border = new Rectangle({
+        width: f.x1 - f.x0,
+        height: f.y1 - f.y0,
+        color: borderColor,
+        strokeWidth: 1.3,
+        fillOpacity: 0
+      });
+      border.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+      const xAxisY = yr ? mapPoint(f, 0, 0, xr, yr)[1] : f.y0 + 0.18;
+      const yAxisX = xr ? mapPoint(f, 0, 0, xr, yr)[0] : f.x0 + 0.18;
+      const xAxis = new Line({ start: [f.x0 + 0.10, xAxisY, 0], end: [f.x1 - 0.10, xAxisY, 0], color: AXIS, strokeWidth: 1.4 });
+      const yAxis = new Line({ start: [yAxisX, f.y0 + 0.10, 0], end: [yAxisX, f.y1 - 0.10, 0], color: AXIS, strokeWidth: 1.4 });
+      const xTicks = [];
+      const yTicks = [];
+      for (let i = 1; i <= 6; i++) {
+        const tx = f.x0 + 0.24 + ((f.x1 - f.x0 - 0.48) * i) / 7;
+        xTicks.push(new Line({ start: [tx, xAxisY - 0.04, 0], end: [tx, xAxisY + 0.04, 0], color: MUTED2, strokeWidth: 1.0 }));
+      }
+      for (let i = 1; i <= 4; i++) {
+        const ty = f.y0 + 0.24 + ((f.y1 - f.y0 - 0.48) * i) / 5;
+        yTicks.push(new Line({ start: [yAxisX - 0.04, ty, 0], end: [yAxisX + 0.04, ty, 0], color: MUTED2, strokeWidth: 1.0 }));
+      }
+      const xt = await makeText(xLabel, 13, MUTED, [(f.x0 + f.x1) / 2, f.y0 - 0.30, 0]);
+      const yt = await makeText(yLabel, 13, MUTED, [f.x0 - 0.40, (f.y0 + f.y1) / 2, 0]);
+      yt.rotate(Math.PI / 2);
+      return [surface, border, xAxis, yAxis, ...xTicks, ...yTicks, xt, yt];
+    };
+
+    const buildSection1 = async () => {
+      const objs = [];
+      const animated = [];
+
+      const s1Tag = await makeText('SECTION 1 - OPEN-LOOP OP-AMP', 14, ACCENT, [-6.1, 2.86, 0], -6.1);
+
+      const OP_AMP = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
+      const OP_MINUS = IS_LIGHT ? '#c74034' : '#e06050';
+      const SCHEM_DX = 0.52;
+      const SCHEM_DY = -1.52;
+      const TRI_LEFT_X = -5.7 + SCHEM_DX;
+      const TRI_TOP_Y = 1.30 + SCHEM_DY;
+      const TRI_BOT_Y = -0.30 + SCHEM_DY;
+      const TRI_MID_Y = 0.50 + SCHEM_DY;
+      const TRI_APEX_X = -4.32 + SCHEM_DX;
+      const tri = new Polygon({
+        vertices: [[TRI_LEFT_X, TRI_TOP_Y, 0], [TRI_LEFT_X, TRI_BOT_Y, 0], [TRI_APEX_X, TRI_MID_Y, 0]],
+        color: OP_AMP,
+        strokeWidth: 2.5,
+        fillOpacity: IS_LIGHT ? 0.16 : 0.20
+      });
+      const inPlus = new Line({ start: [-6.45 + SCHEM_DX, 0.90 + SCHEM_DY, 0], end: [TRI_LEFT_X, 0.90 + SCHEM_DY, 0], color: FG });
+      const inMinus = new Line({ start: [-6.45 + SCHEM_DX, 0.10 + SCHEM_DY, 0], end: [TRI_LEFT_X, 0.10 + SCHEM_DY, 0], color: FG });
+      const out = new Line({ start: [TRI_APEX_X, TRI_MID_Y, 0], end: [-3.15 + SCHEM_DX, TRI_MID_Y, 0], color: FG });
+      const vccLeadSegs = [
+        new Line({ start: [-5.22 + SCHEM_DX, 1.06 + SCHEM_DY, 0], end: [-5.22 + SCHEM_DX, 1.13 + SCHEM_DY, 0], color: MUTED2, strokeWidth: 1.6 }),
+        new Line({ start: [-5.22 + SCHEM_DX, 1.17 + SCHEM_DY, 0], end: [-5.22 + SCHEM_DX, 1.24 + SCHEM_DY, 0], color: MUTED2, strokeWidth: 1.6 }),
+        new Line({ start: [-5.22 + SCHEM_DX, 1.28 + SCHEM_DY, 0], end: [-5.22 + SCHEM_DX, 1.35 + SCHEM_DY, 0], color: MUTED2, strokeWidth: 1.6 })
+      ];
+      const veeLeadSegs = [
+        new Line({ start: [-5.22 + SCHEM_DX, -0.06 + SCHEM_DY, 0], end: [-5.22 + SCHEM_DX, -0.13 + SCHEM_DY, 0], color: MUTED2, strokeWidth: 1.6 }),
+        new Line({ start: [-5.22 + SCHEM_DX, -0.17 + SCHEM_DY, 0], end: [-5.22 + SCHEM_DX, -0.24 + SCHEM_DY, 0], color: MUTED2, strokeWidth: 1.6 }),
+        new Line({ start: [-5.22 + SCHEM_DX, -0.28 + SCHEM_DY, 0], end: [-5.22 + SCHEM_DX, -0.35 + SCHEM_DY, 0], color: MUTED2, strokeWidth: 1.6 })
+      ];
+      const vccMarker = new Dot({ point: [-5.22 + SCHEM_DX, 1.35 + SCHEM_DY, 0], color: MUTED2, radius: 0.026 });
+      const veeMarker = new Dot({ point: [-5.22 + SCHEM_DX, -0.35 + SCHEM_DY, 0], color: MUTED2, radius: 0.026 });
+      const plusSrcDot = new Dot({ point: [-6.45 + SCHEM_DX, 0.90 + SCHEM_DY, 0], color: FG, radius: 0.028 });
+      const minusSrcDot = new Dot({ point: [-6.45 + SCHEM_DX, 0.10 + SCHEM_DY, 0], color: FG, radius: 0.028 });
+      const plusPinDot = new Dot({ point: [TRI_LEFT_X, 0.90 + SCHEM_DY, 0], color: FG, radius: 0.028 });
+      const minusPinDot = new Dot({ point: [TRI_LEFT_X, 0.10 + SCHEM_DY, 0], color: FG, radius: 0.028 });
+      const outPinDot = new Dot({ point: [TRI_APEX_X, TRI_MID_Y, 0], color: FG, radius: 0.030 });
+      const outNode = new Dot({ point: [-3.15 + SCHEM_DX, TRI_MID_Y, 0], color: FG, radius: 0.042 });
+      const plus = await makeText('+', 18, OP_AMP, [-5.45 + SCHEM_DX, 0.90 + SCHEM_DY, 0]);
+      const minus = await makeText('-', 18, OP_MINUS, [-5.45 + SCHEM_DX, 0.10 + SCHEM_DY, 0]);
+      const vinP = await makeMath('V_{+}', 0.46, FG, [-6.65 + SCHEM_DX, 1.10 + SCHEM_DY, 0]);
+      const vinM = await makeMath('V_{-}', 0.46, FG, [-6.65 + SCHEM_DX, -0.14 + SCHEM_DY, 0]);
+      const vinBrace = await makeText('{', 62, MUTED, [-6.88 + SCHEM_DX, 0.50 + SCHEM_DY, 0]);
+      const vinGroup = await makeMath('V_{in}', 0.42, FG, [-7.18 + SCHEM_DX, 0.50 + SCHEM_DY, 0]);
+      const vout = await makeMath('V_{out}', 0.48, FG, [-3.10 + SCHEM_DX, TRI_MID_Y + 0.22, 0]);
+      const satUp = await makeMath('+V_{sat}', 0.44, MUTED, [-4.86 + SCHEM_DX, 1.35 + SCHEM_DY, 0]);
+      const satDn = await makeMath('-V_{sat}', 0.44, MUTED, [-4.86 + SCHEM_DX, -0.35 + SCHEM_DY, 0]);
+      const eq = await makeMath('V_{out}=A_{OL}(V_{+}-V_{-})', 0.54, CYAN, [-4.5, 2.02, 0]);
+      const b1 = await makeMath('\\bullet\\;\\text{Open-loop gain is huge: }A_{OL}\\approx10^{5}\\text{ to }10^{6}', 0.39, FG, [-4.95, 1.46, 0]);
+      const b2 = await makeMath('\\bullet\\;\\text{Tiny }V_{in}\\text{ gives large }V_{out}\\text{, so rails are reached fast}', 0.39, FG, [-4.95, 1.06, 0]);
+      const b3 = await makeMath('\\bullet\\;\\text{Linear range is only }\\pm\\,V_{sat}/A_{OL}', 0.39, YELLOW, [-4.95, 0.66, 0]);
+      if (typeof b1.getLeft === 'function') b1.shift([-6.1 - b1.getLeft()[0], 0, 0]);
+      if (typeof b2.getLeft === 'function') b2.shift([-6.1 - b2.getLeft()[0], 0, 0]);
+      if (typeof b3.getLeft === 'function') b3.shift([-6.1 - b3.getLeft()[0], 0, 0]);
+
+      const tfXRange = [-2e-3, 2e-3];
+      const tfYRange = [-V_SAT, V_SAT];
+      const zoomXRange = [-150e-6, 150e-6];
+      const zoomYRange = [-V_SAT, V_SAT];
+      const tfFrame = { x0: -0.35, x1: 4.35, y0: -0.2, y1: 2.4 };
+      const zoomFrame = { x0: -0.35, x1: 4.35, y0: -2.85, y1: -0.95 };
+      const tfStatics = await frameStatics(tfFrame, 'Vin (mV)', 'Vout (V)', AXIS, tfXRange, tfYRange);
+      const zoomStatics = await frameStatics(zoomFrame, 'Vin (uV)', 'Vout (V)', AXIS, zoomXRange, zoomYRange);
+      const tfTitle = await makeText(
+        'Full transfer curve (saturates almost immediately)',
+        15,
+        FG,
+        [tfFrame.x0, tfFrame.y1 + 0.18, 0],
+        tfFrame.x0
+      );
+      const zoomTitle = await makeText(
+        'Zoomed Region',
+        15,
+        FG,
+        [zoomFrame.x0, zoomFrame.y1 + 0.18, 0],
+        zoomFrame.x0
+      );
+
+      objs.push(
+        s1Tag, tri, inPlus, inMinus, out, ...vccLeadSegs, ...veeLeadSegs, vccMarker, veeMarker,
+        plusSrcDot, minusSrcDot, plusPinDot, minusPinDot, outPinDot, outNode,
+        plus, minus, vinP, vinM, vinBrace, vinGroup, vout, satUp, satDn, eq, b1, b2, b3,
+        tfTitle, ...tfStatics, zoomTitle, ...zoomStatics
+      );
+      const eqStage = [eq];
+      const bulletStage = [b1, b2, b3];
+      const circuitBulkStage = [
+        tri, inPlus, inMinus, out, ...vccLeadSegs, ...veeLeadSegs, vccMarker, veeMarker,
+        plusSrcDot, minusSrcDot, plusPinDot, minusPinDot, outPinDot, outNode,
+        plus, minus, vout, satUp, satDn
+      ];
+      const circuitInputStage = [vinP, vinM, vinBrace, vinGroup];
+      const graphStage = [tfTitle, ...tfStatics];
+      const zoomGraphStage = [zoomTitle, ...zoomStatics];
+      animated.push(
+        ...eqStage, ...bulletStage,
+        ...circuitBulkStage, ...circuitInputStage,
+        ...graphStage, ...zoomGraphStage
+      );
+
+      return {
+        objs,
+        animated,
+        groups: {
+          eqStage,
+          bulletStage,
+          circuitBulkStage,
+          circuitInputStage,
+          graphStage,
+          zoomGraphStage
+        },
+        tfFrame,
+        zoomFrame,
+        tfXRange,
+        tfYRange,
+        zoomXRange,
+        zoomYRange
+      };
+    };
+
+    const buildSection2 = async () => {
+      const objs = [];
+      const animated = [];
+
+      const s2Tag = await makeText('SECTION 2 - CLOSED-LOOP GAIN', 14, ACCENT, [-6.1, 2.86, 0], -6.1);
+
+      const eq = await makeMath('V_{out}\\;=\\;V_{in}\\left(1+\\dfrac{R_{2}}{R_{1}}\\right)', 0.56, CYAN, [-4.3, 2.02, 0]);
+
+      const b1 = await makeMath('\\bullet\\;\\text{Feedback returns }\\beta=\\tfrac{R_{1}}{R_{1}+R_{2}}\\text{ of }V_{out}\\text{ to }V_{-}', 0.36, FG, [-4.95, 1.50, 0]);
+      const b2 = await makeMath('\\bullet\\;\\text{Op-amp forces }V_{+}\\approx V_{-}\\text{, so }V_{d}\\approx 0', 0.36, FG, [-4.95, 1.12, 0]);
+      const b3 = await makeMath('\\bullet\\;\\text{Gain is set by }R_{2}/R_{1}\\text{, not by }A_{OL}', 0.36, CYAN, [-4.95, 0.74, 0]);
+      const b4 = await makeMath('\\bullet\\;\\text{Result: a stable, predictable amplifier}', 0.36, FG, [-4.95, 0.36, 0]);
+      for (const b of [b1, b2, b3, b4]) {
+        if (typeof b.getLeft === 'function') b.shift([-6.1 - b.getLeft()[0], 0, 0]);
+      }
+
+      // Op-amp layout — matches the non-inverting amp style from slide 06.
+      const S2_CX = -4.60;
+      const S2_CY = -1.30;
+      const TRI_HALF_H = 0.85;
+      const TRI_IN_X   = S2_CX - 0.90;   // -5.50
+      const TRI_APEX_X = S2_CX + 0.80;   // -3.80
+      const LEFT_COL_X = -5.85;
+      const TAP_X      = -2.75;
+      const OUT_X      = -2.05;
+      const VIN_X      = -6.15;
+      const plusY      = S2_CY + 0.35;
+      const minusY     = S2_CY - 0.35;
+      const JUNC_Y     = -2.65;
+      const GND_Y      = -3.60;
+
+      const tri = new Polygon({
+        vertices: [
+          [TRI_IN_X,   S2_CY - TRI_HALF_H, 0],
+          [TRI_IN_X,   S2_CY + TRI_HALF_H, 0],
+          [TRI_APEX_X, S2_CY,              0]
+        ],
+        color: MUTED2,
+        strokeWidth: 1.7,
+        fillOpacity: 0.13
+      });
+
+      const plusSym  = await makeText('+', 18, ACCENT, [TRI_IN_X + 0.30, plusY,  0]);
+      const minusSym = await makeText('-', 18, RED,    [TRI_IN_X + 0.30, minusY, 0]);
+
+      const vinLead  = new Line({ start: [VIN_X, plusY, 0], end: [TRI_IN_X, plusY, 0], color: FG, strokeWidth: 1.8 });
+      const vinSrcDot = new Dot({ point: [VIN_X, plusY, 0], color: FG, radius: 0.07 });
+      const vinLabel  = await makeMath('V_{in}', 0.50, FG, [VIN_X, plusY + 0.34, 0]);
+
+      const outApexToNode = new Line({ start: [TRI_APEX_X, S2_CY, 0], end: [TAP_X, S2_CY, 0], color: FG, strokeWidth: 1.8 });
+      const outToEnd      = new Line({ start: [TAP_X,       S2_CY, 0], end: [OUT_X, S2_CY, 0], color: FG, strokeWidth: 1.8 });
+      const outApexDot    = new Dot({ point: [TAP_X, S2_CY, 0], color: FG, radius: 0.06 });
+      const outNodeDot    = new Dot({ point: [OUT_X, S2_CY, 0], color: FG, radius: 0.07 });
+      const voutLabel     = await makeMath('V_{out}', 0.50, YELLOW, [OUT_X + 0.26, S2_CY + 0.32, 0]);
+
+      const R2_W = 1.05;
+      const R2_H = 0.34;
+      const R2_CX = (LEFT_COL_X + TAP_X) / 2;
+      const r2Rect = new Rectangle({ width: R2_W, height: R2_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+      r2Rect.moveTo([R2_CX, JUNC_Y, 0]);
+      const r2Label = await makeMath('R_{2}', 0.50, ACCENT, [R2_CX, JUNC_Y + R2_H / 2 + 0.22, 0]);
+
+      const fbTap     = new Line({ start: [TAP_X, S2_CY, 0],             end: [TAP_X, JUNC_Y, 0],               color: FG, strokeWidth: 1.8 });
+      const fbAcrossR = new Line({ start: [TAP_X, JUNC_Y, 0],            end: [R2_CX + R2_W / 2, JUNC_Y, 0],    color: FG, strokeWidth: 1.8 });
+      const fbAcrossL = new Line({ start: [R2_CX - R2_W / 2, JUNC_Y, 0], end: [LEFT_COL_X, JUNC_Y, 0],          color: FG, strokeWidth: 1.8 });
+      const fbLeftCol = new Line({ start: [LEFT_COL_X, JUNC_Y, 0],       end: [LEFT_COL_X, minusY, 0],          color: FG, strokeWidth: 1.8 });
+      const fbStub    = new Line({ start: [LEFT_COL_X, minusY, 0],       end: [TRI_IN_X, minusY, 0],            color: FG, strokeWidth: 1.8 });
+
+      const R1_W = 0.34;
+      const R1_H = 0.78;
+      const R1_CY = (JUNC_Y + GND_Y) / 2;
+      const r1WireTop = new Line({ start: [LEFT_COL_X, JUNC_Y, 0],            end: [LEFT_COL_X, R1_CY + R1_H / 2, 0], color: FG, strokeWidth: 1.8 });
+      const r1WireBot = new Line({ start: [LEFT_COL_X, R1_CY - R1_H / 2, 0],  end: [LEFT_COL_X, GND_Y, 0],            color: FG, strokeWidth: 1.8 });
+      const r1Rect = new Rectangle({ width: R1_W, height: R1_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+      r1Rect.moveTo([LEFT_COL_X, R1_CY, 0]);
+      const r1Label = await makeMath('R_{1}', 0.50, ACCENT, [LEFT_COL_X - 0.40, R1_CY, 0]);
+
+      const plusPinDot  = new Dot({ point: [TRI_IN_X, plusY,   0], color: FG, radius: 0.045 });
+      const minusPinDot = new Dot({ point: [TRI_IN_X, minusY,  0], color: FG, radius: 0.045 });
+      const juncDot     = new Dot({ point: [LEFT_COL_X, JUNC_Y, 0], color: FG, radius: 0.06 });
+
+      const gndBar1 = new Line({ start: [LEFT_COL_X - 0.32, GND_Y,        0], end: [LEFT_COL_X + 0.32, GND_Y,        0], color: FG, strokeWidth: 3 });
+      const gndBar2 = new Line({ start: [LEFT_COL_X - 0.20, GND_Y - 0.13, 0], end: [LEFT_COL_X + 0.20, GND_Y - 0.13, 0], color: FG, strokeWidth: 2 });
+      const gndBar3 = new Line({ start: [LEFT_COL_X - 0.09, GND_Y - 0.25, 0], end: [LEFT_COL_X + 0.09, GND_Y - 0.25, 0], color: FG, strokeWidth: 1 });
+
+      const betaLabel = await makeMath('\\beta=\\dfrac{R_{1}}{R_{1}+R_{2}}', 0.44, BLUE, [5.20, 0.30, 0]);
+
+      // ── Block diagram (feedback loop, matches slide 08 style) ──
+      const BD_FWD_Y  = 2.10;
+      const BD_FB_Y   = 1.00;
+      const BD_JX     = 0.80;
+      const BD_JR     = 0.28;
+      const BD_AX     = 2.60;
+      const BD_AW     = 1.30;
+      const BD_AH     = 0.62;
+      const BD_BX     = 2.60;
+      const BD_BW     = 1.05;
+      const BD_BH     = 0.48;
+      const BD_TAP    = 4.40;
+      const BD_OUT    = 5.60;
+      const BD_IN     = -0.10;
+
+      const bdTip = (ex, ey, dx, dy, col = FG) => {
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 0.001) return null;
+        const ux = dx / len, uy = dy / len;
+        const px = -uy, py = ux;
+        const hl = 0.13, hw = 0.07;
+        return new Polygon({
+          vertices: [[ex, ey, 0], [ex - ux * hl + px * hw, ey - uy * hl + py * hw, 0], [ex - ux * hl - px * hw, ey - uy * hl - py * hw, 0]],
+          color: col, strokeWidth: 0, fillOpacity: 0.85
+        });
+      };
+
+      const bdJunc = new Rectangle({ width: BD_JR * 2, height: BD_JR * 2, color: MUTED, strokeWidth: 1.8, fillOpacity: 0.06 });
+      bdJunc.moveTo([BD_JX, BD_FWD_Y, 0]);
+      const bdSigma = await makeMath('\\Sigma', 0.48, MUTED, [BD_JX, BD_FWD_Y, 0]);
+      const bdAolRect = new Rectangle({ width: BD_AW, height: BD_AH, color: ACCENT, strokeWidth: 1.8, fillOpacity: 0.06 });
+      bdAolRect.moveTo([BD_AX, BD_FWD_Y, 0]);
+      const bdAolLbl = await makeMath('A_{OL}', 0.52, ACCENT, [BD_AX, BD_FWD_Y, 0]);
+      const bdBetaRect = new Rectangle({ width: BD_BW, height: BD_BH, color: BLUE, strokeWidth: 1.8, fillOpacity: 0.06 });
+      bdBetaRect.moveTo([BD_BX, BD_FB_Y, 0]);
+      const bdBetaLbl = await makeMath('\\beta', 0.52, BLUE, [BD_BX, BD_FB_Y, 0]);
+
+      const bdInArr   = new Line({ start: [BD_IN, BD_FWD_Y, 0],            end: [BD_JX - BD_JR, BD_FWD_Y, 0],    color: FG, strokeWidth: 1.8 });
+      const bdInTip   = bdTip(BD_JX - BD_JR, BD_FWD_Y, 1, 0);
+      const bdSumToA  = new Line({ start: [BD_JX + BD_JR, BD_FWD_Y, 0],    end: [BD_AX - BD_AW / 2, BD_FWD_Y, 0], color: FG, strokeWidth: 1.8 });
+      const bdSumTip  = bdTip(BD_AX - BD_AW / 2, BD_FWD_Y, 1, 0);
+      const bdOutArr  = new Line({ start: [BD_AX + BD_AW / 2, BD_FWD_Y, 0], end: [BD_OUT, BD_FWD_Y, 0],           color: FG, strokeWidth: 1.8 });
+      const bdOutTip  = bdTip(BD_OUT, BD_FWD_Y, 1, 0);
+
+      const bdFbDown  = new Line({ start: [BD_TAP, BD_FWD_Y, 0],           end: [BD_TAP, BD_FB_Y, 0],            color: BLUE, strokeWidth: 1.8 });
+      const bdFbRight = new Line({ start: [BD_TAP, BD_FB_Y, 0],            end: [BD_BX + BD_BW / 2, BD_FB_Y, 0], color: BLUE, strokeWidth: 1.8 });
+      const bdFbLeft  = new Line({ start: [BD_BX - BD_BW / 2, BD_FB_Y, 0], end: [BD_JX, BD_FB_Y, 0],             color: BLUE, strokeWidth: 1.8 });
+      const bdFbUp    = new Line({ start: [BD_JX, BD_FB_Y, 0],             end: [BD_JX, BD_FWD_Y - BD_JR, 0],    color: BLUE, strokeWidth: 1.8 });
+      const bdFbUpTip = bdTip(BD_JX, BD_FWD_Y - BD_JR, 0, 1, BLUE);
+      const bdTapDot  = new Dot({ point: [BD_TAP, BD_FWD_Y, 0], color: FG, radius: 0.055 });
+
+      const bdPlusLbl = await makeMath('+', 0.38, FG, [BD_JX - BD_JR - 0.18, BD_FWD_Y + 0.18, 0]);
+      const bdMinLbl  = await makeMath('-', 0.38, FG, [BD_JX + 0.18, BD_FWD_Y - BD_JR - 0.18, 0]);
+
+      const bdVinLbl  = await makeMath('V_{in}', 0.48, FG, [BD_IN - 0.30, BD_FWD_Y + 0.30, 0]);
+      const bdVoutStatic = await makeMath('V_{out}', 0.48, FG, [BD_OUT + 0.05, BD_FWD_Y + 0.30, 0]);
+
+      // Pre-render dynamic labels for each step (0..8) so the slider works synchronously
+      const VD_LBL_X = (BD_JX + BD_JR + BD_AX - BD_AW / 2) / 2;
+      const VD_LBL_Y = BD_FWD_Y + 0.42;
+      const VOUT_LBL_X = (BD_AX + BD_AW / 2 + BD_TAP) / 2;
+      const VOUT_LBL_Y = BD_FWD_Y + 0.42;
+      const VFB_LBL_X = (BD_BX - BD_BW / 2 + BD_JX) / 2;
+      const VFB_LBL_Y = BD_FB_Y - 0.38;
+
+      const bdDynLabels = [];
+      for (let n = 0; n <= S2_STEPS; n++) {
+        const vOut = s2Vouts[n];
+        const vd = S2_V_IN - S2_BETA * vOut;
+        const vfb = S2_BETA * vOut;
+        const vdL = await makeMath('V_d=' + vd.toFixed(2), 0.38, ACCENT, [VD_LBL_X, VD_LBL_Y, 0]);
+        const voL = await makeMath('V_{out}=' + vOut.toFixed(1) + '\\text{ V}', 0.38, n === 1 ? RED : CYAN, [VOUT_LBL_X, VOUT_LBL_Y, 0]);
+        const vfL = await makeMath('\\beta V_{out}=' + vfb.toFixed(2), 0.36, BLUE, [VFB_LBL_X, VFB_LBL_Y, 0]);
+        bdDynLabels.push({ vdL, voL, vfL });
+      }
+
+      const bdBetaCalloutParts = [];
+      const bcP0x = 5.20, bcP0y = 0.65;
+      const bcCPx = 4.20, bcCPy = 0.30;
+      const bcP2x = BD_BX + BD_BW / 2, bcP2y = BD_FB_Y;
+      const bcSegs = 14;
+      const bcBez = (t) => {
+        const u = 1 - t;
+        return [u * u * bcP0x + 2 * u * t * bcCPx + t * t * bcP2x,
+                u * u * bcP0y + 2 * u * t * bcCPy + t * t * bcP2y];
+      };
+      for (let i = 0; i < bcSegs; i++) {
+        const [x0, y0] = bcBez(i / bcSegs);
+        const [x1, y1] = bcBez((i + 1) / bcSegs);
+        bdBetaCalloutParts.push(new Line({
+          start: [x0, y0, 0], end: [x1, y1, 0],
+          color: BLUE, strokeWidth: 1.4
+        }));
+      }
+      const [bcTipX, bcTipY] = bcBez(1);
+      const [bcPreX, bcPreY] = bcBez(1 - 1 / bcSegs);
+      const bcTip = bdTip(bcTipX, bcTipY, bcTipX - bcPreX, bcTipY - bcPreY, BLUE);
+
+      const diagramObjs = [
+        bdJunc, bdSigma, bdAolRect, bdAolLbl, bdBetaRect, bdBetaLbl,
+        bdInArr, bdInTip, bdSumToA, bdSumTip, bdOutArr, bdOutTip,
+        bdFbDown, bdFbRight, bdFbLeft, bdFbUp, bdFbUpTip, bdTapDot,
+        bdPlusLbl, bdMinLbl, bdVinLbl, bdVoutStatic
+      ].filter(Boolean);
+
+      const betaCalloutObjs = [
+        betaLabel, ...bdBetaCalloutParts, bcTip
+      ].filter(Boolean);
+
+      // ── Settle graph (shorter, below block diagram) ──
+      const settleXRange = [-0.3, 8.8];
+      const settleYRange = [-0.08, 1.45];
+      const settleFrame = { x0: 0.35, x1: 5.55, y0: -3.00, y1: -0.80 };
+      const settleStatics = await frameStatics(settleFrame, 'step k', 'V_out / V_final', AXIS, settleXRange, settleYRange);
+      const settleTitle = await makeText(
+        'Iterative feedback settling',
+        14,
+        FG,
+        [settleFrame.x0, settleFrame.y1 + 0.18, 0],
+        settleFrame.x0
+      );
+
+      objs.push(
+        s2Tag, eq, b1, b2, b3, b4,
+        tri, plusSym, minusSym,
+        vinLead, vinSrcDot, vinLabel,
+        outApexToNode, outToEnd, outApexDot, outNodeDot, voutLabel,
+        fbTap, fbAcrossR, fbAcrossL, fbLeftCol, fbStub,
+        r2Rect, r2Label,
+        r1WireTop, r1WireBot, r1Rect, r1Label,
+        plusPinDot, minusPinDot, juncDot,
+        gndBar1, gndBar2, gndBar3,
+        ...diagramObjs,
+        ...betaCalloutObjs,
+        settleTitle, ...settleStatics
+      );
+
+      const eqStage = [eq];
+      const bulletStage = [b1, b2, b3, b4];
+      const circuitStage = [
+        tri, plusSym, minusSym,
+        vinLead, vinSrcDot, vinLabel,
+        outApexToNode, outToEnd, outApexDot, outNodeDot, voutLabel,
+        fbTap, fbAcrossR, fbAcrossL, fbLeftCol, fbStub,
+        r2Rect, r2Label,
+        r1WireTop, r1WireBot, r1Rect, r1Label,
+        plusPinDot, minusPinDot, juncDot,
+        gndBar1, gndBar2, gndBar3
+      ];
+      const diagramStage = diagramObjs;
+      const betaCalloutStage = betaCalloutObjs;
+      const graphStage = [settleTitle, ...settleStatics];
+
+      animated.push(...eqStage, ...bulletStage, ...circuitStage, ...diagramStage, ...betaCalloutStage, ...graphStage);
+
+      const bd = { BD_FWD_Y, BD_FB_Y, BD_JX, BD_JR, BD_AX, BD_AW, BD_BX, BD_BW, BD_TAP, BD_OUT, BD_IN };
+
+      return {
+        objs,
+        animated,
+        groups: {
+          eqStage,
+          bulletStage,
+          circuitStage,
+          diagramStage,
+          betaCalloutStage,
+          graphStage
+        },
+        settleFrame,
+        settleXRange,
+        settleYRange,
+        bd,
+        bdDynLabels
+      };
+    };
+
+    const mapPoint = (frame, x, y, xr, yr) => {
+      const px = frame.x0 + ((x - xr[0]) / (xr[1] - xr[0])) * (frame.x1 - frame.x0);
+      const py = frame.y0 + ((y - yr[0]) / (yr[1] - yr[0])) * (frame.y1 - frame.y0);
+      return [px, py];
+    };
+
+    const drawSection1Interactive = (opts = {}) => {
+      const showMain = opts.showMain !== false;
+      const showZoom = opts.showZoom !== false;
+      const sampleCount = opts.sampleCount ?? 110;
+      const mainReveal = clamp(opts.mainRevealProgress ?? opts.revealProgress ?? 1, 0, 1);
+      const zoomReveal = clamp(opts.zoomRevealProgress ?? opts.revealProgress ?? 1, 0, 1);
+      if (!state.section1Ctx) return;
+      if (state.interactiveObjects.length) {
+        scene.remove(...state.interactiveObjects);
+        state.interactiveObjects = [];
+      }
+
+      const vd = parseFloat(vdSlider.value) * 1e-6;
+      const aol = aolFromSlider(parseFloat(aolSlider.value));
+      const vRaw = aol * vd;
+      const vClip = clamp(vRaw, -V_SAT, V_SAT);
+      const lin = V_SAT / aol;
+
+      vdVal.textContent = formatVd(vd);
+      aolVal.textContent = formatAol(aol);
+      voutRawVal.textContent = vRaw.toFixed(2) + ' V';
+      voutClipVal.textContent = vClip.toFixed(2) + ' V';
+      linearVal.textContent = '+/- ' + Math.round(lin * 1e6) + ' uV';
+      explainVal.textContent = (Math.abs(vd) <= lin)
+        ? 'Inside linear zone: output is still proportional to Vin.'
+        : 'Outside linear zone: output clips at a supply rail.';
+
+      const g = [];
+      const c = state.section1Ctx;
+      const mainAxisY = mapPoint(c.tfFrame, 0, 0, c.tfXRange, c.tfYRange)[1];
+      const zoomAxisY = mapPoint(c.zoomFrame, 0, 0, c.zoomXRange, c.zoomYRange)[1];
+      const N = sampleCount;
+      const vinLabelMain = 'Vin = ' + (vd * 1e3).toFixed(3) + ' mV';
+      const vinLabelZoom = 'Vin = ' + (vd * 1e6).toFixed(1) + ' uV';
+      const aolLabel = 'A_OL = ' + formatAol(aol);
+      let prev = null;
+
+      if (showMain) {
+        const mainSteps = Math.max(1, Math.round(N * mainReveal));
+        for (let i = 0; i <= mainSteps; i++) {
+          const x = c.tfXRange[0] + (c.tfXRange[1] - c.tfXRange[0]) * (i / N);
+          const y = clamp(aol * x, -V_SAT, V_SAT);
+          const p = mapPoint(c.tfFrame, x, y, c.tfXRange, c.tfYRange);
+          if (prev) g.push(new Line({ start: [prev[0], prev[1], 0], end: [p[0], p[1], 0], color: BLUE, strokeWidth: 2.5 }));
+          prev = p;
+        }
+        if (mainReveal >= 0.999) {
+          const markerTf = mapPoint(c.tfFrame, vd, vClip, c.tfXRange, c.tfYRange);
+          g.push(new Dot({ point: [markerTf[0], markerTf[1], 0], color: ACCENT, radius: 0.065 }));
+          g.push(new Line({ start: [markerTf[0], mainAxisY, 0], end: [markerTf[0], markerTf[1], 0], color: MUTED2, strokeWidth: 1.2 }));
+          const mainVinText = new Text({ text: vinLabelMain, fontSize: 16, color: FG, fontUrl: FONT_URL });
+          mainVinText.moveTo([markerTf[0], mainAxisY - 0.22, 0]);
+          const mainAolText = new Text({ text: aolLabel, fontSize: 16, color: CYAN, fontUrl: FONT_URL });
+          mainAolText.moveTo([c.tfFrame.x1 - 0.90, c.tfFrame.y1 - 0.22, 0]);
+          g.push(mainVinText, mainAolText);
+        }
+      }
+
+      if (showZoom) {
+        prev = null;
+        const zoomSteps = Math.max(1, Math.round(N * zoomReveal));
+        for (let i = 0; i <= zoomSteps; i++) {
+          const x = c.zoomXRange[0] + (c.zoomXRange[1] - c.zoomXRange[0]) * (i / N);
+          const y = clamp(aol * x, -V_SAT, V_SAT);
+          const p = mapPoint(c.zoomFrame, x, y, c.zoomXRange, c.zoomYRange);
+          if (prev) g.push(new Line({ start: [prev[0], prev[1], 0], end: [p[0], p[1], 0], color: CYAN, strokeWidth: 2.5 }));
+          prev = p;
+        }
+
+        const linLeft = mapPoint(c.zoomFrame, -lin, 0, c.zoomXRange, c.zoomYRange)[0];
+        const linRight = mapPoint(c.zoomFrame, lin, 0, c.zoomXRange, c.zoomYRange)[0];
+        if (linLeft >= c.zoomFrame.x0 && linLeft <= c.zoomFrame.x1) {
+          g.push(new Line({ start: [linLeft, c.zoomFrame.y0, 0], end: [linLeft, c.zoomFrame.y1, 0], color: YELLOW, strokeWidth: 1.2 }));
+        }
+        if (linRight >= c.zoomFrame.x0 && linRight <= c.zoomFrame.x1) {
+          g.push(new Line({ start: [linRight, c.zoomFrame.y0, 0], end: [linRight, c.zoomFrame.y1, 0], color: YELLOW, strokeWidth: 1.2 }));
+        }
+
+        if (zoomReveal >= 0.999) {
+          const markerZoom = mapPoint(c.zoomFrame, vd, vClip, c.zoomXRange, c.zoomYRange);
+          if (markerZoom[0] >= c.zoomFrame.x0 && markerZoom[0] <= c.zoomFrame.x1) {
+            g.push(new Dot({ point: [markerZoom[0], markerZoom[1], 0], color: ACCENT, radius: 0.055 }));
+            g.push(new Line({ start: [markerZoom[0], zoomAxisY, 0], end: [markerZoom[0], markerZoom[1], 0], color: MUTED2, strokeWidth: 1.1 }));
+            const zoomVinText = new Text({ text: vinLabelZoom, fontSize: 15, color: FG, fontUrl: FONT_URL });
+            zoomVinText.moveTo([markerZoom[0], zoomAxisY - 0.20, 0]);
+            g.push(zoomVinText);
+          }
+        }
+      }
+
+      scene.add(...g);
+      state.interactiveObjects = g;
+    };
+
+    const queueSection1Draw = (opts = {}) => {
+      if (!state.section1Ctx || state.currentSection !== 1) return;
+      const prev = state.section1DrawQueued || {};
+      state.section1DrawQueued = { ...prev, ...opts };
+      if (state.section1DrawRaf) return;
+      state.section1DrawRaf = requestAnimationFrame((ts) => {
+        state.section1DrawRaf = null;
+        if (!state.section1Ctx || state.currentSection !== 1) {
+          state.section1DrawQueued = null;
+          return;
+        }
+        const pending = state.section1DrawQueued || {};
+        state.section1DrawQueued = null;
+        const showMain = pending.showMain !== false;
+        const showZoom = pending.showZoom !== false;
+        const minIntervalMs = pending.minIntervalMs ?? 14;
+        const vdNow = parseFloat(vdSlider.value);
+        const aolNow = parseFloat(aolSlider.value);
+        const vdDelta = state.section1LastDrawVd === null ? Infinity : Math.abs(vdNow - state.section1LastDrawVd);
+        const aolDelta = state.section1LastDrawAolSlider === null ? Infinity : Math.abs(aolNow - state.section1LastDrawAolSlider);
+        const modeChanged = showMain !== state.section1LastShowMain || showZoom !== state.section1LastShowZoom;
+        const elapsed = ts - state.section1LastDrawMs;
+        const shouldDraw = pending.force === true || modeChanged || elapsed >= minIntervalMs || vdDelta >= 1.5 || aolDelta >= 0.4;
+        if (shouldDraw) {
+          drawSection1Interactive(pending);
+          state.section1LastDrawMs = ts;
+          state.section1LastDrawVd = vdNow;
+          state.section1LastDrawAolSlider = aolNow;
+          state.section1LastShowMain = showMain;
+          state.section1LastShowZoom = showZoom;
+        }
+        if (state.section1DrawQueued && !state.section1DrawRaf) {
+          queueSection1Draw({});
+        }
+      });
+    };
+
+    const S2_V_IN = 1;
+    const S2_BETA = 0.1;
+    const S2_V_FINAL = 10;
+    const S2_VSAT = 13;
+    const S2_TAU = 1.2;
+    const S2_STEPS = 8;
+    const s2Vouts = [0, S2_VSAT];
+    for (let i = 2; i <= S2_STEPS; i++) s2Vouts.push(S2_V_FINAL + (S2_VSAT - S2_V_FINAL) * Math.exp(-(i - 1) / S2_TAU));
+    const s2Ys = s2Vouts.map(v => v / S2_V_FINAL);
+
+    const drawSection2AtStep = (n) => {
+      const c = state.section2Ctx;
+      if (!c || !c.bd) return;
+
+      if (state.section2AnimObjects.length) {
+        scene.remove(...state.section2AnimObjects);
+        state.section2AnimObjects = [];
+      }
+
+      const objs = [];
+      state.section2AnimObjects = objs;
+      const mp = (x, y) => mapPoint(c.settleFrame, x, y, c.settleXRange, c.settleYRange);
+      const bd = c.bd;
+
+      const makeArrowhead = (sx, sy, ex, ey) => {
+        const dx = ex - sx, dy = ey - sy;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len < 0.001) return null;
+        const ux = dx / len, uy = dy / len;
+        const px = -uy, py = ux;
+        return new Polygon({
+          vertices: [[ex, ey, 0], [ex - ux * 0.10 + px * 0.06, ey - uy * 0.10 + py * 0.06, 0], [ex - ux * 0.10 - px * 0.06, ey - uy * 0.10 - py * 0.06, 0]],
+          color: CYAN, strokeWidth: 0, fillOpacity: 1
+        });
+      };
+
+      const fLeft = mp(c.settleXRange[0], 1);
+      const fRight = mp(c.settleXRange[1], 1);
+      const totalW = fRight[0] - fLeft[0];
+      for (let i = 0; i < 28; i++) {
+        if (i % 2 !== 0) continue;
+        const d = new Line({
+          start: [fLeft[0] + totalW * (i / 28), fLeft[1], 0],
+          end: [fLeft[0] + totalW * ((i + 1) / 28), fLeft[1], 0],
+          color: YELLOW, strokeWidth: 1.4
+        });
+        objs.push(d);
+        scene.add(d);
+      }
+      const vfLbl = new Text({ text: 'V_final', fontSize: 13, color: YELLOW, fontUrl: FONT_URL });
+      vfLbl.moveTo([c.settleFrame.x1 - 0.50, fLeft[1] + 0.16, 0]);
+      objs.push(vfLbl);
+      scene.add(vfLbl);
+
+      const originPt = mp(0, 0);
+      const originDot = new Dot({ point: [originPt[0], originPt[1], 0], color: ACCENT, radius: 0.050 });
+      objs.push(originDot);
+      scene.add(originDot);
+
+      for (let k = 0; k < n; k++) {
+        const sp = mp(k, s2Ys[k]);
+        const ep = mp(k + 1, s2Ys[k + 1]);
+        const shaft = new Line({ start: [sp[0], sp[1], 0], end: [ep[0], ep[1], 0], color: CYAN, strokeWidth: 2.4 });
+        objs.push(shaft);
+        scene.add(shaft);
+        const head = makeArrowhead(sp[0], sp[1], ep[0], ep[1]);
+        if (head) { objs.push(head); scene.add(head); }
+        const landDot = new Dot({ point: [ep[0], ep[1], 0], color: ACCENT, radius: 0.050 });
+        objs.push(landDot);
+        scene.add(landDot);
+        if (k > 0) {
+          const dimDot = new Dot({ point: [sp[0], sp[1], 0], color: MUTED2, radius: 0.035 });
+          objs.push(dimDot);
+          scene.add(dimDot);
+        }
+      }
+
+      const labels = c.bdDynLabels[n];
+      objs.push(labels.vdL, labels.voL, labels.vfL);
+      scene.add(labels.vdL, labels.voL, labels.vfL);
+
+      if (n === S2_STEPS) {
+        const finalLbl = new Text({ text: 'Settled: V_d \u2192 0', fontSize: 13, color: ACCENT, fontUrl: FONT_URL });
+        finalLbl.moveTo([c.settleFrame.x1 - 0.90, c.settleFrame.y0 + 0.28, 0]);
+        objs.push(finalLbl);
+        scene.add(finalLbl);
+      }
+
+      s2StepSlider.value = String(n);
+      s2StepLabel.textContent = 'k=' + n;
+    };
+
+    const runSection2Animation = async (token) => {
+      const runId = ++state.section2AnimToken;
+      const stale = () => token !== state.renderToken || runId !== state.section2AnimToken || state.currentSection !== 2;
+
+      const c = state.section2Ctx;
+      if (!c || !c.bd) return;
+
+      const easeOut = (t) => 1 - (1 - t) * (1 - t);
+      const mp = (x, y) => mapPoint(c.settleFrame, x, y, c.settleXRange, c.settleYRange);
+
+      drawSection2AtStep(0);
+      if (stale()) return;
+
+      for (let k = 0; k < S2_STEPS; k++) {
+        if (stale()) return;
+
+        const startP = mp(k, s2Ys[k]);
+        const endP = mp(k + 1, s2Ys[k + 1]);
+        let inflightLine = null;
+
+        await new Promise((resolve) => {
+          const durationMs = 300;
+          const t0 = performance.now();
+          const tick = (now) => {
+            if (stale()) { resolve(); return; }
+            const rawT = clamp((now - t0) / durationMs, 0, 1);
+            const t = easeOut(rawT);
+            const tipX = startP[0] + t * (endP[0] - startP[0]);
+            const tipY = startP[1] + t * (endP[1] - startP[1]);
+
+            if (inflightLine) { scene.remove(inflightLine); }
+            inflightLine = new Line({
+              start: [startP[0], startP[1], 0],
+              end: [tipX, tipY, 0],
+              color: CYAN, strokeWidth: 2.4
+            });
+            scene.add(inflightLine);
+
+            if (rawT >= 1) { resolve(); return; }
+            requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
+
+        if (stale()) {
+          if (inflightLine) scene.remove(inflightLine);
+          return;
+        }
+        if (inflightLine) scene.remove(inflightLine);
+
+        drawSection2AtStep(k + 1);
+
+        const pauseDur = k === 0 ? 0.50 : 0.22;
+        await scene.wait(pauseDur);
+        if (stale()) return;
+      }
+    };
+
+    const runSection1GuidedDemo = async (token = state.renderToken) => {
+      if (!state.section1Ctx) return;
+      const stale = () => token !== state.renderToken;
+      const startVd = vdSlider.value;
+      const startAol = aolSlider.value;
+      const c = state.section1Ctx;
+      const guidedObjects = [];
+      state.guidedObjects = guidedObjects;
+      const easeInOut = (t) => 0.5 - 0.5 * Math.cos(Math.PI * t);
+      const easeElasticDrag = (t) => {
+        const base = easeInOut(t);
+        const wobble = 0.07 * Math.sin(8 * Math.PI * t) * (1 - Math.abs(2 * t - 1));
+        return clamp(base + wobble, 0, 1);
+      };
+      const sliderFromAol = (aol) => clamp(((Math.log10(aol) - 4) / 2) * 100, 0, 100);
+      const animateSlider = (fromVal, toVal, seconds, update, opts = {}) => new Promise((resolve) => {
+        if (!state.section1Ctx || state.currentSection !== 1 || stale()) {
+          resolve();
+          return;
+        }
+        const durationMs = Math.max(1, seconds * 1000);
+        const startMs = performance.now();
+        const tick = (nowMs) => {
+          if (!state.section1Ctx || state.currentSection !== 1 || stale()) {
+            resolve();
+            return;
+          }
+          const rawT = clamp((nowMs - startMs) / durationMs, 0, 1);
+          const t = opts.linear ? rawT : (opts.elastic ? easeElasticDrag(rawT) : easeInOut(rawT));
+          update(fromVal + (toVal - fromVal) * t);
+          queueSection1Draw({
+            ...(opts.plot || { showMain: true, showZoom: false }),
+            sampleCount: opts.sampleCount ?? 96,
+            minIntervalMs: opts.minIntervalMs ?? 12,
+            force: rawT >= 1
+          });
+          if (rawT >= 1) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+      const animateCurveReveal = (seconds, opts = {}) => new Promise((resolve) => {
+        if (stale()) { resolve(); return; }
+        const durationMs = Math.max(1, seconds * 1000);
+        const startMs = performance.now();
+        const tick = (nowMs) => {
+          if (stale()) { resolve(); return; }
+          const rawT = clamp((nowMs - startMs) / durationMs, 0, 1);
+          queueSection1Draw({
+            ...(opts.plot || { showMain: true, showZoom: false }),
+            sampleCount: opts.sampleCount ?? 102,
+            mainRevealProgress: opts.mainRevealProgress !== undefined ? opts.mainRevealProgress : (opts.revealMain ? rawT : 1),
+            zoomRevealProgress: opts.zoomRevealProgress !== undefined ? opts.zoomRevealProgress : (opts.revealZoom ? rawT : 1),
+            force: true
+          });
+          if (rawT >= 1) {
+            resolve();
+            return;
+          }
+          requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+
+      const guideAol = 1e5;
+      const guideAolSlider = sliderFromAol(guideAol);
+      const guideSatEdgeUv = (V_SAT / guideAol) * 1e6;
+      const vinSweepEdgeUv = clamp(guideSatEdgeUv * 1.18, 80, 420);
+      const zoomSweepEdgeUv = clamp(guideSatEdgeUv * 1.12, 50, 180);
+
+      aolSlider.value = String(Math.round(guideAolSlider));
+      vdSlider.value = '0';
+      await animateCurveReveal(1.45, { plot: { showMain: true, showZoom: false }, revealMain: true, revealZoom: false, sampleCount: 112 });
+      if (stale()) return;
+      await scene.wait(0.18);
+      if (stale()) return;
+
+      await animateSlider(0, vinSweepEdgeUv, 1.15, (v) => { vdSlider.value = String(v.toFixed(0)); }, { sampleCount: 98, elastic: true });
+      if (stale()) return;
+      await animateSlider(vinSweepEdgeUv, -vinSweepEdgeUv, 1.45, (v) => { vdSlider.value = String(v.toFixed(0)); }, { sampleCount: 98, elastic: true });
+      if (stale()) return;
+      await animateSlider(-vinSweepEdgeUv, 0.35 * vinSweepEdgeUv, 1.0, (v) => { vdSlider.value = String(v.toFixed(0)); }, { sampleCount: 98, elastic: true });
+      if (stale()) return;
+      await scene.wait(0.20);
+      if (stale()) return;
+
+      const aolLowSlider = sliderFromAol(2e4);
+      await animateSlider(guideAolSlider, aolLowSlider, 1.45, (v) => { aolSlider.value = String(v.toFixed(0)); }, { sampleCount: 98, elastic: true });
+      if (stale()) return;
+      await animateSlider(aolLowSlider, guideAolSlider, 1.45, (v) => { aolSlider.value = String(v.toFixed(0)); }, { sampleCount: 98, elastic: true });
+      if (stale()) return;
+      await scene.wait(0.25);
+      if (stale()) return;
+
+      const xL = mapPoint(c.tfFrame, c.zoomXRange[0], 0, c.tfXRange, c.tfYRange)[0];
+      const xR = mapPoint(c.tfFrame, c.zoomXRange[1], 0, c.tfXRange, c.tfYRange)[0];
+      const roiBand = new Rectangle({
+        width: Math.max(0.12, xR - xL),
+        height: c.tfFrame.y1 - c.tfFrame.y0,
+        color: YELLOW,
+        strokeWidth: 2.0,
+        fillOpacity: IS_LIGHT ? 0.08 : 0.12
+      });
+      roiBand.moveTo([(xL + xR) / 2, (c.tfFrame.y0 + c.tfFrame.y1) / 2, 0]);
+      guidedObjects.push(roiBand);
+      scene.remove(roiBand);
+      await scene.play(new Create(roiBand, { duration: 1.15 }));
+      if (stale()) return;
+      await scene.wait(0.30);
+      if (stale()) return;
+      const zoomTargetRect = new Rectangle({
+        width: c.zoomFrame.x1 - c.zoomFrame.x0,
+        height: c.zoomFrame.y1 - c.zoomFrame.y0,
+        color: YELLOW,
+        strokeWidth: 2.0,
+        fillOpacity: 0
+      });
+      zoomTargetRect.moveTo([(c.zoomFrame.x0 + c.zoomFrame.x1) / 2, (c.zoomFrame.y0 + c.zoomFrame.y1) / 2, 0]);
+      guidedObjects.push(zoomTargetRect);
+      scene.remove(zoomTargetRect);
+      await scene.play(new Transform(roiBand, zoomTargetRect, { duration: 1.45 }));
+      if (stale()) return;
+
+      const zoomScaffold = c.groups?.zoomGraphStage || [];
+      for (const obj of zoomScaffold) scene.remove(obj);
+      const zoomAnims = zoomScaffold.map((obj) => {
+        const name = obj.constructor?.name || '';
+        if (name === 'Text' || name === 'MathTex') return new Write(obj, { duration: 1.1 });
+        return new Create(obj, { duration: 1.1 });
+      });
+      if (zoomAnims.length) await scene.play(...zoomAnims);
+      if (stale()) return;
+      await animateCurveReveal(1.25, {
+        plot: { showMain: true, showZoom: true },
+        revealMain: false,
+        revealZoom: true,
+        mainRevealProgress: 1,
+        zoomRevealProgress: 0,
+        sampleCount: 100
+      });
+      if (stale()) return;
+
+      const zoomStartVdUv = parseFloat(vdSlider.value);
+      await animateSlider(zoomStartVdUv, zoomSweepEdgeUv, 1.25, (v) => { vdSlider.value = String(v.toFixed(0)); }, { plot: { showMain: true, showZoom: true }, sampleCount: 86, elastic: true });
+      if (stale()) return;
+      await animateSlider(zoomSweepEdgeUv, -zoomSweepEdgeUv, 1.6, (v) => { vdSlider.value = String(v.toFixed(0)); }, { plot: { showMain: true, showZoom: true }, sampleCount: 86, elastic: true });
+      if (stale()) return;
+      await animateSlider(-zoomSweepEdgeUv, 0, 1.25, (v) => { vdSlider.value = String(v.toFixed(0)); }, { plot: { showMain: true, showZoom: true }, sampleCount: 86, elastic: true });
+      if (stale()) return;
+
+      if (guidedObjects.length) scene.remove(...guidedObjects);
+      state.guidedObjects = [];
+      const endVd = parseFloat(vdSlider.value);
+      const endAol = parseFloat(aolSlider.value);
+      const targetVd = parseFloat(startVd);
+      const targetAol = parseFloat(startAol);
+      await animateSlider(0, 1, 0.75, (t) => {
+        const eased = easeInOut(t);
+        vdSlider.value = String((endVd + (targetVd - endVd) * eased).toFixed(0));
+        aolSlider.value = String((endAol + (targetAol - endAol) * eased).toFixed(0));
+      }, { plot: { showMain: true, showZoom: true }, sampleCount: 96, minIntervalMs: 10, linear: true });
+      vdSlider.value = startVd;
+      aolSlider.value = startAol;
+      queueSection1Draw({ force: true, sampleCount: 96 });
+    };
+
+    const renderPlaceholder = async (idx) => {
+      const hdr = await makeText('SECTION ' + idx, 12, ACCENT, [-6.1, 1.9, 0], -6.1);
+      const t1 = await makeText(
+        idx === 2 ? 'Closed-loop gain section is scaffolded and ready next.' : 'Gain-bandwidth section is scaffolded and ready next.',
+        20, FG, [0, 0.7, 0]
+      );
+      const t2 = await makeText('Navigation is live now; this placeholder will be replaced in the next pass.', 14, MUTED, [0, 0.2, 0]);
+      const card = new Rectangle({ width: 10.8, height: 3.5, color: MUTED2, strokeWidth: 1.2, fillOpacity: IS_LIGHT ? 0.20 : 0.10 });
+      card.moveTo([0, 0.55, 0]);
+      const note = await makeText('Use Next/Prev section buttons or Arrow keys.', 12, ACCENT, [0, -0.6, 0]);
+      const objs = [card, hdr, t1, t2, note];
+      scene.add(...objs);
+      state.sectionObjects = objs;
+      await scene.play(new FadeIn(card, { duration: 0.25 }), new Write(t1, { duration: 0.35 }));
+    };
+
+    const renderSection = async (animate = true, token = state.renderToken) => {
+      if (state.isRendering) return;
+      state.isRendering = true;
+      try {
+        if (token !== state.renderToken) return;
+        clearSection();
+        state.section1ControlsReady = false;
+        state.section2ControlsReady = false;
+        updateNavUi();
+        if (state.currentSection === 1) {
+          const sec = await buildSection1();
+          state.sectionObjects = sec.objs;
+          state.section1Ctx = sec;
+          const nonAnim = sec.objs.filter((o) => !sec.animated.includes(o));
+          if (nonAnim.length) scene.add(...nonAnim);
+          if (animate && sec.groups) {
+            const stale = () => token !== state.renderToken;
+            const playGroup = async (items, duration, textOnly = false) => {
+              for (const obj of items) scene.remove(obj);
+              const anims = items.map((obj) => {
+                const name = obj.constructor?.name || '';
+                if (textOnly || name === 'Text' || name === 'MathTex') return new Write(obj, { duration });
+                return new Create(obj, { duration });
+              });
+              if (anims.length) await scene.play(...anims);
+            };
+            await playGroup(sec.groups.eqStage, 1.05, true);
+            if (stale()) return;
+            await scene.wait(0.90);
+            if (stale()) return;
+            for (const bullet of sec.groups.bulletStage) {
+              await playGroup([bullet], 0.95, true);
+              if (stale()) return;
+              await scene.wait(0.40);
+              if (stale()) return;
+            }
+            await playGroup(sec.groups.circuitBulkStage, 1.25, false);
+            if (stale()) return;
+            await scene.wait(0.25);
+            if (stale()) return;
+            await playGroup(sec.groups.circuitInputStage, 1.00, true);
+            if (stale()) return;
+            await scene.wait(0.35);
+            if (stale()) return;
+            await playGroup(sec.groups.graphStage, 1.05, false);
+            if (stale()) return;
+            queueSection1Draw({ showMain: true, showZoom: false, force: true });
+            await runSection1GuidedDemo(token);
+            if (stale()) return;
+          } else if (animate) {
+            for (const obj of sec.animated) {
+              if (token !== state.renderToken) return;
+              const name = obj.constructor?.name || '';
+              scene.remove(obj);
+              if (name === 'Text' || name === 'MathTex') {
+                await scene.play(new Write(obj, { duration: 0.25 }));
+              } else {
+                await scene.play(new Create(obj, { duration: 0.25 }));
+              }
+            }
+          } else {
+            scene.add(...sec.animated);
+          }
+          state.section1ControlsReady = true;
+          updateNavUi();
+          queueSection1Draw({ force: true });
+        } else if (state.currentSection === 2) {
+          const sec = await buildSection2();
+          state.sectionObjects = sec.objs;
+          state.section2Ctx = sec;
+          const nonAnim = sec.objs.filter((o) => !sec.animated.includes(o));
+          if (nonAnim.length) scene.add(...nonAnim);
+          if (animate && sec.groups) {
+            const stale = () => token !== state.renderToken;
+            const playGroup = async (items, duration, textOnly = false) => {
+              for (const obj of items) scene.remove(obj);
+              const anims = items.map((obj) => {
+                const name = obj.constructor?.name || '';
+                if (textOnly || name === 'Text' || name === 'MathTex') return new Write(obj, { duration });
+                return new Create(obj, { duration });
+              });
+              if (anims.length) await scene.play(...anims);
+            };
+            await playGroup(sec.groups.eqStage, 1.05, true);
+            if (stale()) return;
+            await scene.wait(0.70);
+            if (stale()) return;
+            for (const bullet of sec.groups.bulletStage) {
+              await playGroup([bullet], 0.90, true);
+              if (stale()) return;
+              await scene.wait(0.30);
+              if (stale()) return;
+            }
+            await playGroup(sec.groups.circuitStage, 1.30, false);
+            if (stale()) return;
+            await scene.wait(0.30);
+            if (stale()) return;
+            await playGroup(sec.groups.diagramStage, 1.10, false);
+            if (stale()) return;
+            await scene.wait(0.30);
+            if (stale()) return;
+            await playGroup(sec.groups.betaCalloutStage, 0.90, false);
+            if (stale()) return;
+            await scene.wait(0.25);
+            if (stale()) return;
+            await playGroup(sec.groups.graphStage, 1.05, false);
+            if (stale()) return;
+          } else {
+            scene.add(...sec.animated);
+          }
+          state.section2ControlsReady = true;
+          updateNavUi();
+          await runSection2Animation(token);
+        } else {
+          await renderPlaceholder(state.currentSection);
+        }
+      } finally {
+        state.isRendering = false;
+      }
+
+      if (state.queuedSection !== null) {
+        const q = state.queuedSection;
+        state.queuedSection = null;
+        if (q !== state.currentSection) {
+          state.currentSection = q;
+          updateNavUi();
+          await renderSection(false, state.renderToken);
+        }
+      }
+    };
+
+    const setSection = async (n) => {
+      const target = clamp(n, 1, TOTAL_SECTIONS);
+      if (target === state.currentSection) return;
+      if (state.isRendering) {
+        state.queuedSection = target;
+        state.renderToken += 1;
+        return;
+      }
+      state.currentSection = target;
+      updateNavUi();
+      state.renderToken += 1;
+      await renderSection(true, state.renderToken);
+    };
+
+    vdSlider.addEventListener('input', () => {
+      if (state.currentSection === 1) queueSection1Draw({ minIntervalMs: 8 });
+    });
+    aolSlider.addEventListener('input', () => {
+      if (state.currentSection === 1) queueSection1Draw({ minIntervalMs: 8 });
+    });
+    s2StepSlider.addEventListener('input', () => {
+      if (state.currentSection !== 2 || !state.section2Ctx) return;
+      state.section2AnimToken += 1;
+      drawSection2AtStep(parseInt(s2StepSlider.value, 10));
+    });
+    s2ReplayBtn.addEventListener('click', () => {
+      if (state.currentSection !== 2 || !state.section2Ctx) return;
+      runSection2Animation(state.renderToken);
+    });
+    prevBtn.addEventListener('click', () => setSection(state.currentSection - 1));
+    nextBtn.addEventListener('click', () => setSection(state.currentSection + 1));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        setSection(state.currentSection + 1);
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        setSection(state.currentSection - 1);
+      }
+    });
+
+    await buildPersistentChrome();
+    updateNavUi();
+    state.renderToken += 1;
+    await renderSection(true, state.renderToken);
+  </script>
+</body>
+</html>
+<!--
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 10 - Gain Setting by Feedback</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+  <style>
+    .ol-panel {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 9;
+      width: 290px;
+      padding: 14px 16px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--slide-border);
+      background: var(--slide-surface);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    [data-theme="light"] .ol-panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+
+    .ol-panel.visible {
+      display: flex;
+    }
+
+    .ol-title {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--slide-accent);
+      font-size: 10px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+    }
+
+    .ol-row {
+      display: grid;
+      gap: 4px;
+    }
+
+    .ol-row label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--slide-text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    .ol-row .v {
+      color: var(--slide-text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ol-panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 18px;
+    }
+
+    .ol-readout {
+      margin-top: 2px;
+      border-top: 1px solid var(--slide-border);
+      padding-top: 8px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    .ol-readout .k { color: var(--slide-text-dim); }
+    .ol-readout .v {
+      text-align: right;
+      color: var(--slide-text);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ol-strip {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      border-left: 3px solid var(--slide-yellow);
+      border-radius: 4px;
+      padding: 6px 8px;
+      background: rgba(255, 204, 68, 0.12);
+      color: var(--slide-yellow);
+      line-height: 1.4;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">12 / 22</span>
+  </header>
+
+  <div id="stage" class="manim-stage">
+    <div class="stage-fallback">Loading manim-web scene...</div>
+
+    <div class="ol-panel" id="olPanel" aria-hidden="true">
+      <div class="ol-title">Section 1 Controls</div>
+      <div class="ol-row">
+        <label>V<sub>d</sub> = V<sub>+</sub>-V<sub>-</sub> <span class="v" id="vdVal">0 uV</span></label>
+        <input type="range" id="vdSlider" min="-2000" max="2000" step="10" value="0">
+      </div>
+      <div class="ol-row">
+        <label>A<sub>OL</sub> <span class="v" id="aolVal">200k</span></label>
+        <input type="range" id="aolSlider" min="0" max="100" step="1" value="65">
+      </div>
+      <div class="ol-readout">
+        <span class="k">Unclipped V<sub>out</sub></span><span class="v" id="voutRawVal">0.00 V</span>
+        <span class="k">Clipped V<sub>out</sub></span><span class="v" id="voutClipVal">0.00 V</span>
+        <span class="k">Linear limit ±V<sub>sat</sub>/A<sub>OL</sub></span><span class="v" id="linearVal">+/- 65 uV</span>
+        <span class="ol-strip" id="explainVal">The linear window is tiny, so a small Vd sends output to a rail.</span>
+      </div>
+    </div>
+
+    <div class="stepper-row" id="stepper">
+      <button type="button" class="stepper-btn" id="sec-prev">← Prev Section</button>
+      <span class="step-indicator" id="sec-indicator">Section 1/3</span>
+      <button type="button" class="stepper-btn" id="sec-next">Next Section →</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      Scene, Line, Rectangle, Polygon, Circle, Dot, Text, MathTex, VGroup,
+      Create, Write, FadeIn
+    } from 'https://esm.sh/manim-web@0.3.18';
+
+    const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
+    const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
+    const BG = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG = IS_LIGHT ? '#0f172a' : '#e8ecf3';
+    const MUTED = IS_LIGHT ? '#64748b' : '#8a94a7';
+    const MUTED2 = IS_LIGHT ? '#cbd5e1' : '#2a3243';
+    const AXIS = IS_LIGHT ? '#475569' : '#a9b4c6';
+    const ACCENT = IS_LIGHT ? '#10b981' : '#6aaa8e';
+    const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
+    const RED = IS_LIGHT ? '#dc2626' : '#e06050';
+    const BLUE = IS_LIGHT ? '#2563eb' : '#5a8dee';
+    const CYAN = IS_LIGHT ? '#0891b2' : '#58c0d8';
+    window.addEventListener('themechange', () => location.reload());
+
+    const stage = document.getElementById('stage');
+    stage.querySelector('.stage-fallback')?.remove();
+    const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
+
+    const olPanel = document.getElementById('olPanel');
+    const vdSlider = document.getElementById('vdSlider');
+    const aolSlider = document.getElementById('aolSlider');
+    const vdVal = document.getElementById('vdVal');
+    const aolVal = document.getElementById('aolVal');
+    const voutRawVal = document.getElementById('voutRawVal');
+    const voutClipVal = document.getElementById('voutClipVal');
+    const linearVal = document.getElementById('linearVal');
+    const explainVal = document.getElementById('explainVal');
+
+    const secIndicator = document.getElementById('sec-indicator');
+    const prevBtn = document.getElementById('sec-prev');
+    const nextBtn = document.getElementById('sec-next');
+    const TOTAL_SECTIONS = 3;
+    const V_SAT = 13;
+
+    const state = {
+      currentSection: 1,
+      renderToken: 0,
+      isRendering: false,
+      queuedSection: null,
+      persistent: [],
+      sectionObjects: [],
+      interactiveObjects: [],
+      section1Ctx: null
+    };
+
+    const makeText = async (text, fontSize, color, pos, leftAlignX = null) => {
+      const t = new Text({ text, fontSize, color, fontUrl: FONT_URL });
+      await t.loadGlyphs?.();
+      t.moveTo(pos);
+      if (leftAlignX !== null && typeof t.getLeft === 'function') {
+        t.shift([leftAlignX - t.getLeft()[0], 0, 0]);
+      }
+      return t;
+    };
+
+    const makeMath = async (latex, scale, color, pos) => {
+      const m = new MathTex({ latex, color });
+      await m.waitForRender?.();
+      m.scale(scale).moveTo(pos);
+      return m;
+    };
+
+    const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+
+    const aolFromSlider = (s) => {
+      const logMin = 4;
+      const logMax = 6;
+      return Math.pow(10, logMin + (s / 100) * (logMax - logMin));
+    };
+
+    const formatAol = (aol) => {
+      if (aol >= 1e6) return (aol / 1e6).toFixed(2) + 'M';
+      return (aol / 1e3).toFixed(0) + 'k';
+    };
+
+    const formatVd = (vd) => {
+      const uv = vd * 1e6;
+      if (Math.abs(uv) >= 1000) return (uv / 1000).toFixed(2) + ' mV';
+      return uv.toFixed(0) + ' uV';
+    };
+
+    const clearSection = () => {
+      if (state.sectionObjects.length) {
+        scene.remove(...state.sectionObjects);
+        state.sectionObjects = [];
+      }
+      if (state.interactiveObjects.length) {
+        scene.remove(...state.interactiveObjects);
+        state.interactiveObjects = [];
+      }
+      state.section1Ctx = null;
+    };
+
+    const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain (next)', 'Gain-bandwidth tradeoff (next)'][idx - 1];
+
+    const updateNavUi = () => {
+      secIndicator.textContent = 'Section ' + state.currentSection + '/3 - ' + sectionLabel(state.currentSection);
+      prevBtn.disabled = state.currentSection === 1;
+      nextBtn.disabled = state.currentSection === TOTAL_SECTIONS;
+      const showPanel = state.currentSection === 1;
+      olPanel.classList.toggle('visible', showPanel);
+      olPanel.setAttribute('aria-hidden', showPanel ? 'false' : 'true');
+    };
+
+    const buildPersistentChrome = async () => {
+      const title = await makeText('Gain Setting by Feedback', 31, FG, [-3.5, 3.42, 0], -6.2);
+      const subtitle = await makeText('Sectioned redesign - focus now: Open-loop behavior', 13, MUTED, [-3.5, 2.92, 0], -6.2);
+      const rule = new Line({ start: [-6.2, 3.10, 0], end: [-4.6, 3.10, 0], color: ACCENT, strokeWidth: 2.6 });
+      state.persistent = [title, subtitle, rule];
+      scene.add(...state.persistent);
+    };
+
+    const frameStatics = async (f, xLabel, yLabel, borderColor = AXIS) => {
+      const surface = new Rectangle({
+        width: f.x1 - f.x0,
+        height: f.y1 - f.y0,
+        color: MUTED2,
+        strokeWidth: 0,
+        fillOpacity: IS_LIGHT ? 0.25 : 0.18
+      });
+      surface.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+      const border = new Rectangle({
+        width: f.x1 - f.x0,
+        height: f.y1 - f.y0,
+        color: borderColor,
+        strokeWidth: 1.3,
+        fillOpacity: 0
+      });
+      border.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+      const xt = await makeText(xLabel, 11, MUTED, [(f.x0 + f.x1) / 2, f.y0 - 0.28, 0]);
+      const yt = await makeText(yLabel, 11, MUTED, [f.x0 - 0.36, (f.y0 + f.y1) / 2, 0]);
+      yt.rotate(Math.PI / 2);
+      return [surface, border, xt, yt];
+    };
+
+    const buildSection1 = async () => {
+      const objs = [];
+      const animated = [];
+
+      const s1Tag = await makeText('SECTION 1 - OPEN-LOOP OP-AMP', 11, ACCENT, [-6.1, 2.45, 0], -6.1);
+      const explA = await makeText('Open-loop gain is huge: A_OL is often around 10^5 to 10^6.', 13, FG, [-5.6, -1.95, 0], -6.1);
+      const explB = await makeText('Because V_out = A_OL * V_d, microvolts of V_d can force saturation.', 13, FG, [-5.6, -2.35, 0], -6.1);
+      const explC = await makeText('Linear region width is only about +/- V_sat/A_OL.', 13, YELLOW, [-5.6, -2.75, 0], -6.1);
+
+      const tri = new Polygon({
+        vertices: [[-5.8, 1.4, 0], [-5.8, -0.4, 0], [-3.15, 0.5, 0]],
+        color: ACCENT,
+        strokeWidth: 2.8,
+        fillOpacity: 0
+      });
+      const inPlus = new Line({ start: [-6.7, 0.95, 0], end: [-5.8, 0.95, 0], color: FG });
+      const inMinus = new Line({ start: [-6.7, 0.05, 0], end: [-5.8, 0.05, 0], color: FG });
+      const out = new Line({ start: [-3.15, 0.5, 0], end: [-2.2, 0.5, 0], color: FG });
+      const outNode = new Dot({ point: [-2.2, 0.5, 0], color: FG, radius: 0.045 });
+      const plus = await makeText('+', 20, ACCENT, [-5.5, 0.95, 0]);
+      const minus = await makeText('-', 20, RED, [-5.5, 0.05, 0]);
+      const vinP = await makeMath('V_{+}', 0.48, FG, [-6.95, 1.2, 0]);
+      const vinM = await makeMath('V_{-}', 0.48, FG, [-6.95, -0.15, 0]);
+      const vout = await makeMath('V_{out}', 0.50, FG, [-1.95, 0.82, 0]);
+      const satUp = await makeMath('+V_{sat}', 0.46, MUTED, [-4.65, 1.68, 0]);
+      const satDn = await makeMath('-V_{sat}', 0.46, MUTED, [-4.65, -0.72, 0]);
+      const eq = await makeMath('V_{out}=A_{OL}(V_{+}-V_{-})', 0.62, CYAN, [-4.5, 2.0, 0]);
+
+      const tfFrame = { x0: -1.1, x1: 5.9, y0: -0.2, y1: 2.4 };
+      const zoomFrame = { x0: -1.1, x1: 5.9, y0: -2.7, y1: -0.8 };
+      const tfStatics = await frameStatics(tfFrame, 'Vd (mV)', 'Vout (V)', AXIS);
+      const zoomStatics = await frameStatics(zoomFrame, 'Vd (uV)', 'Vout (V)', AXIS);
+      const tfTitle = await makeText('Full transfer curve (saturates almost immediately)', 12, FG, [2.4, 2.72, 0]);
+      const zoomTitle = await makeText('Zoom around zero: the only tiny linear window', 12, FG, [2.4, -0.46, 0]);
+
+      objs.push(
+        s1Tag, tri, inPlus, inMinus, out, outNode, plus, minus, vinP, vinM, vout, satUp, satDn, eq,
+        tfTitle, ...tfStatics, zoomTitle, ...zoomStatics,
+        explA, explB, explC
+      );
+      animated.push(s1Tag, tri, inPlus, inMinus, out, outNode, eq, tfTitle, zoomTitle, explA, explB, explC);
+
+      return {
+        objs,
+        animated,
+        tfFrame,
+        zoomFrame,
+        tfXRange: [-2e-3, 2e-3],
+        tfYRange: [-15, 15],
+        zoomXRange: [-200e-6, 200e-6],
+        zoomYRange: [-15, 15]
+      };
+    };
+
+    const mapPoint = (frame, x, y, xr, yr) => {
+      const px = frame.x0 + ((x - xr[0]) / (xr[1] - xr[0])) * (frame.x1 - frame.x0);
+      const py = frame.y0 + ((y - yr[0]) / (yr[1] - yr[0])) * (frame.y1 - frame.y0);
+      return [px, py];
+    };
+
+    const drawSection1Interactive = () => {
+      if (!state.section1Ctx) return;
+      if (state.interactiveObjects.length) {
+        scene.remove(...state.interactiveObjects);
+        state.interactiveObjects = [];
+      }
+
+      const vd = parseFloat(vdSlider.value) * 1e-6;
+      const aol = aolFromSlider(parseFloat(aolSlider.value));
+      const vRaw = aol * vd;
+      const vClip = clamp(vRaw, -V_SAT, V_SAT);
+      const lin = V_SAT / aol;
+
+      vdVal.textContent = formatVd(vd);
+      aolVal.textContent = formatAol(aol);
+      voutRawVal.textContent = vRaw.toFixed(2) + ' V';
+      voutClipVal.textContent = vClip.toFixed(2) + ' V';
+      linearVal.textContent = '+/- ' + Math.round(lin * 1e6) + ' uV';
+      explainVal.textContent = (Math.abs(vd) <= lin)
+        ? 'Inside linear zone: output is still proportional to Vd.'
+        : 'Outside linear zone: output clips at a supply rail.';
+
+      const g = [];
+      const c = state.section1Ctx;
+      const N = 180;
+      let prev = null;
+      for (let i = 0; i <= N; i++) {
+        const x = c.tfXRange[0] + (c.tfXRange[1] - c.tfXRange[0]) * (i / N);
+        const y = clamp(aol * x, -V_SAT, V_SAT);
+        const p = mapPoint(c.tfFrame, x, y, c.tfXRange, c.tfYRange);
+        if (prev) g.push(new Line({ start: [prev[0], prev[1], 0], end: [p[0], p[1], 0], color: BLUE, strokeWidth: 2.5 }));
+        prev = p;
+      }
+
+      const markerTf = mapPoint(c.tfFrame, vd, vClip, c.tfXRange, c.tfYRange);
+      g.push(new Dot({ point: [markerTf[0], markerTf[1], 0], color: ACCENT, radius: 0.065 }));
+      g.push(new Line({ start: [markerTf[0], c.tfFrame.y0, 0], end: [markerTf[0], c.tfFrame.y1, 0], color: MUTED2, strokeWidth: 1 }));
+
+      prev = null;
+      for (let i = 0; i <= N; i++) {
+        const x = c.zoomXRange[0] + (c.zoomXRange[1] - c.zoomXRange[0]) * (i / N);
+        const y = clamp(aol * x, -V_SAT, V_SAT);
+        const p = mapPoint(c.zoomFrame, x, y, c.zoomXRange, c.zoomYRange);
+        if (prev) g.push(new Line({ start: [prev[0], prev[1], 0], end: [p[0], p[1], 0], color: CYAN, strokeWidth: 2.5 }));
+        prev = p;
+      }
+
+      const linLeft = mapPoint(c.zoomFrame, -lin, 0, c.zoomXRange, c.zoomYRange)[0];
+      const linRight = mapPoint(c.zoomFrame, lin, 0, c.zoomXRange, c.zoomYRange)[0];
+      if (linLeft >= c.zoomFrame.x0 && linLeft <= c.zoomFrame.x1) {
+        g.push(new Line({ start: [linLeft, c.zoomFrame.y0, 0], end: [linLeft, c.zoomFrame.y1, 0], color: YELLOW, strokeWidth: 1.2 }));
+      }
+      if (linRight >= c.zoomFrame.x0 && linRight <= c.zoomFrame.x1) {
+        g.push(new Line({ start: [linRight, c.zoomFrame.y0, 0], end: [linRight, c.zoomFrame.y1, 0], color: YELLOW, strokeWidth: 1.2 }));
+      }
+
+      const markerZoom = mapPoint(c.zoomFrame, vd, vClip, c.zoomXRange, c.zoomYRange);
+      if (markerZoom[0] >= c.zoomFrame.x0 && markerZoom[0] <= c.zoomFrame.x1) {
+        g.push(new Dot({ point: [markerZoom[0], markerZoom[1], 0], color: ACCENT, radius: 0.055 }));
+      }
+
+      scene.add(...g);
+      state.interactiveObjects = g;
+    };
+
+    const renderPlaceholder = async (idx) => {
+      const hdr = await makeText('SECTION ' + idx, 12, ACCENT, [-6.1, 1.9, 0], -6.1);
+      const t1 = await makeText(idx === 2 ? 'Closed-loop gain section is scaffolded and ready next.' : 'Gain-bandwidth section is scaffolded and ready next.', 20, FG, [0, 0.7, 0]);
+      const t2 = await makeText('Navigation is live now; this placeholder will be replaced in the next pass.', 14, MUTED, [0, 0.2, 0]);
+      const card = new Rectangle({ width: 10.8, height: 3.5, color: MUTED2, strokeWidth: 1.2, fillOpacity: IS_LIGHT ? 0.20 : 0.10 });
+      card.moveTo([0, 0.55, 0]);
+      const note = await makeText('Use Next/Prev section buttons or Arrow keys.', 12, ACCENT, [0, -0.6, 0]);
+      const objs = [card, hdr, t1, t2, note];
+      scene.add(...objs);
+      state.sectionObjects = objs;
+      await scene.play(new FadeIn(card, { duration: 0.25 }), new Write(t1, { duration: 0.35 }));
+    };
+
+    const renderSection = async (animate = true, token = state.renderToken) => {
+      if (state.isRendering) return;
+      state.isRendering = true;
+      try {
+        if (token !== state.renderToken) return;
+        clearSection();
+        if (state.currentSection === 1) {
+          const sec = await buildSection1();
+          state.sectionObjects = sec.objs;
+          state.section1Ctx = sec;
+
+          const nonAnim = sec.objs.filter((o) => !sec.animated.includes(o));
+          if (nonAnim.length) scene.add(...nonAnim);
+          if (animate) {
+            for (const obj of sec.animated) {
+              if (token !== state.renderToken) return;
+              const name = obj.constructor?.name || '';
+              scene.remove(obj);
+              if (name === 'Text' || name === 'MathTex') {
+                await scene.play(new Write(obj, { duration: 0.25 }));
+              } else {
+                await scene.play(new Create(obj, { duration: 0.25 }));
+              }
+            }
+          } else {
+            scene.add(...sec.animated);
+          }
+          drawSection1Interactive();
+        } else {
+          await renderPlaceholder(state.currentSection);
+        }
+      } finally {
+        state.isRendering = false;
+      }
+
+      if (state.queuedSection !== null) {
+        const q = state.queuedSection;
+        state.queuedSection = null;
+        if (q !== state.currentSection) {
+          state.currentSection = q;
+          updateNavUi();
+        }
+        await renderSection(false, state.renderToken);
+      }
+    };
+
+    const setSection = async (n) => {
+      const target = clamp(n, 1, TOTAL_SECTIONS);
+      if (state.isRendering) {
+        state.queuedSection = target;
+        state.renderToken += 1;
+        return;
+      }
+      if (target === state.currentSection) return;
+      state.currentSection = target;
+      updateNavUi();
+      state.renderToken += 1;
+      await renderSection(true, state.renderToken);
+    };
+
+    vdSlider.addEventListener('input', () => {
+      if (state.currentSection === 1) drawSection1Interactive();
+    });
+    aolSlider.addEventListener('input', () => {
+      if (state.currentSection === 1) drawSection1Interactive();
+    });
+
+    prevBtn.addEventListener('click', () => setSection(state.currentSection - 1));
+    nextBtn.addEventListener('click', () => setSection(state.currentSection + 1));
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        setSection(state.currentSection + 1);
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        setSection(state.currentSection - 1);
+      }
+    });
+
+    await buildPersistentChrome();
+    updateNavUi();
+    state.renderToken += 1;
+    await renderSection(false, state.renderToken);
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slide 10 — How Negative Feedback Controls the Gain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -186,7 +2143,7 @@
     // ── Part 1 — persistent stage ──
     const title = new Text({
       text: 'How Negative Feedback Controls the Gain',
-      fontSize: 34, color: FG, fontUrl: FONT_URL
+      fontSize: 40, color: FG, fontUrl: FONT_URL
     });
     await title.loadGlyphs?.();
     title.moveTo([-3.5, 3.5, 0]);
@@ -197,13 +2154,13 @@
 
     const partLabelP1 = new Text({
       text: 'Part 1 — Without feedback',
-      fontSize: 14, color: MUTED, fontUrl: FONT_URL
+      fontSize: 18, color: MUTED, fontUrl: FONT_URL
     });
     await partLabelP1.loadGlyphs?.();
     partLabelP1.moveTo([-4.4, 2.95, 0]);
 
-    // Op-amp triangle centered around (−3.0, 0.2)
-    const cx = -3.0, cy = 0.2;
+    // Op-amp triangle centered around (−2.2, 0.2)
+    const cx = -2.2, cy = 0.2;
     const triangle = new Polygon({
       vertices: [[cx - 1.6, cy - 1.3, 0], [cx - 1.6, cy + 1.3, 0], [cx + 1.4, cy, 0]],
       color: ACCENT, strokeWidth: 3, fillOpacity: 0
@@ -217,8 +2174,8 @@
     const outRail = new Line({ start: [cx + 1.4, cy, 0], end: [cx + 3.2, cy, 0], color: FG });
 
     // + / − symbols inside triangle
-    const plusSym  = new Text({ text: '+', fontSize: 22, color: ACCENT, fontUrl: FONT_URL });
-    const minusSym = new Text({ text: '−', fontSize: 22, color: RED,    fontUrl: FONT_URL });
+    const plusSym  = new Text({ text: '+', fontSize: 28, color: ACCENT, fontUrl: FONT_URL });
+    const minusSym = new Text({ text: '−', fontSize: 28, color: RED,    fontUrl: FONT_URL });
     await Promise.all([plusSym.loadGlyphs?.(), minusSym.loadGlyphs?.()]);
     plusSym.moveTo([cx - 1.25, cy + 0.45, 0]);
     minusSym.moveTo([cx - 1.25, cy - 0.45, 0]);
@@ -238,9 +2195,9 @@
     // ── Part 1 — V_in source on V+, ground on V− ──
     const vInSrcCircle = new Circle({ radius: 0.18, color: FG, strokeWidth: 2 });
     vInSrcCircle.moveTo([cx - 3.6, cy + 0.7, 0]);
-    const vInLbl = new Text({ text: 'V_in', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    await vInLbl.loadGlyphs?.();
-    vInLbl.moveTo([cx - 3.6, cy + 1.15, 0]);
+    const vInLbl = new MathTex({ latex: 'V_{in}', color: FG });
+    await vInLbl.waitForRender?.();
+    vInLbl.scale(0.55).moveTo([cx - 3.6, cy + 1.15, 0]);
     // Extend input rail to the source circle
     const vInLead = new Line({ start: [cx - 3.6, cy + 0.7, 0], end: [cx - 3.2, cy + 0.7, 0], color: FG });
 
@@ -255,11 +2212,11 @@
     // ── Part 1 — inset plot axes ──
     const xAxis = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X1, PLOT_Y0, 0], color: MUTED });
     const yAxis = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X0, PLOT_Y1, 0], color: MUTED });
-    const xLbl = new Text({ text: 'V_in (mV)', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    const yLbl = new Text({ text: 'V_out (V)', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    await Promise.all([xLbl.loadGlyphs?.(), yLbl.loadGlyphs?.()]);
-    xLbl.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.35, 0]);
-    yLbl.rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.35, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
+    const xLbl = new MathTex({ latex: 'V_{in}\\;(\\mathrm{mV})', color: FG });
+    const yLbl = new MathTex({ latex: 'V_{out}\\;(\\mathrm{V})', color: FG });
+    await Promise.all([xLbl.waitForRender?.(), yLbl.waitForRender?()]);
+    xLbl.scale(0.55).moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.38, 0]);
+    yLbl.scale(0.55).rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.40, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
 
     // ±V_sat dashed rails
     const satY = -2.0 + (V_SAT / 15) * 3.9; // y for +V_sat with 15 V ceiling mapping
@@ -274,11 +2231,11 @@
       const xa = PLOT_X0 + i * 0.25;
       satBotParts.push(new Line({ start: [xa, -satY, 0], end: [xa + 0.15, -satY, 0], color: RED, strokeWidth: 1 }));
     }
-    const vSatTopLbl = new Text({ text: '+V_sat', fontSize: 9, color: RED, fontUrl: FONT_URL });
-    const vSatBotLbl = new Text({ text: '−V_sat', fontSize: 9, color: RED, fontUrl: FONT_URL });
-    await Promise.all([vSatTopLbl.loadGlyphs?.(), vSatBotLbl.loadGlyphs?.()]);
-    vSatTopLbl.moveTo([PLOT_X1 + 0.35, satY, 0]);
-    vSatBotLbl.moveTo([PLOT_X1 + 0.35, -satY, 0]);
+    const vSatTopLbl = new MathTex({ latex: '+V_{sat}', color: RED });
+    const vSatBotLbl = new MathTex({ latex: '-V_{sat}', color: RED });
+    await Promise.all([vSatTopLbl.waitForRender?.(), vSatBotLbl.waitForRender?()]);
+    vSatTopLbl.scale(0.52).moveTo([PLOT_X1 + 0.40, satY, 0]);
+    vSatBotLbl.scale(0.52).moveTo([PLOT_X1 + 0.40, -satY, 0]);
 
     // ── Part 1 — nominal transfer curve (A_OL = 200k) ──
     // At this axis scale, the curve is essentially a vertical step at V_in = 0.
@@ -295,17 +2252,17 @@
     const bracketBot = new Line({ start: [plotMidX - 0.08, -0.25, 0], end: [plotMidX + 0.08, -0.25, 0], color: YELLOW, strokeWidth: 2 });
     const bracket = new VGroup(bracketL, bracketR, bracketTop, bracketBot);
     const bracketArrow = new Line({ start: [plotMidX + 0.7, 0.9, 0], end: [plotMidX + 0.12, 0.1, 0], color: YELLOW, strokeWidth: 1.5 });
-    const bracketLbl = new Text({ text: 'Linear range ≈ ±65 μV', fontSize: 10, color: YELLOW, fontUrl: FONT_URL });
-    await bracketLbl.loadGlyphs?.();
-    bracketLbl.moveTo([plotMidX + 1.25, 1.05, 0]);
+    const bracketLbl = new MathTex({ latex: '\\text{Linear range} \\approx \\pm 65\\,\\mu\\mathrm{V}', color: YELLOW });
+    await bracketLbl.waitForRender?.();
+    bracketLbl.scale(0.52).moveTo([plotMidX + 1.45, 1.05, 0]);
 
     // Formula subcaption below plot
-    const eqnSub = new Text({
-      text: 'V_out = A_OL · V_in,  clipped at ±V_sat',
-      fontSize: 10, color: MUTED, fontUrl: FONT_URL
+    const eqnSub = new MathTex({
+      latex: 'V_{out} = A_{OL} \\cdot V_{in},\\quad \\text{clipped at } \\pm V_{sat}',
+      color: MUTED
     });
-    await eqnSub.loadGlyphs?.();
-    eqnSub.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.7, 0]);
+    await eqnSub.waitForRender?.();
+    eqnSub.scale(0.52).moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.72, 0]);
 
     await scene.play(
       new FadeIn(vInSrcCircle), new FadeIn(vInLead), new Write(vInLbl),
@@ -327,7 +2284,7 @@
     // ── Part 1 — punchline beat 1 ──
     const punchline1 = new Text({
       text: 'Any real input slams the output to a rail.',
-      fontSize: 14, color: YELLOW, fontUrl: FONT_URL
+      fontSize: 18, color: YELLOW, fontUrl: FONT_URL
     });
     await punchline1.loadGlyphs?.();
     punchline1.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 1.05, 0]);
@@ -348,12 +2305,12 @@
     const ghost200k = mkGhost(0.10, MUTED2);
     const ghost2M   = mkGhost(0.03, MUTED2);  // narrowest (most vertical)
 
-    const jitterSub = new Text({
-      text: 'A_OL = 50k … 2M across temperature and devices',
-      fontSize: 10, color: MUTED, fontUrl: FONT_URL
+    const jitterSub = new MathTex({
+      latex: 'A_{OL} = 50\\mathrm{k}\\ldots 2\\mathrm{M} \\text{ across temperature and devices}',
+      color: MUTED
     });
-    await jitterSub.loadGlyphs?.();
-    jitterSub.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.95, 0]);
+    await jitterSub.waitForRender?.();
+    jitterSub.scale(0.48).moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.95, 0]);
 
     await scene.play(new FadeIn(ghost50k,  { duration: 0.5 }));
     await scene.play(new FadeIn(ghost200k, { duration: 0.5 }));
@@ -362,7 +2319,7 @@
     // ── Part 1 — punchline beat 2 ──
     const punchline2 = new Text({
       text: 'And A_OL itself varies ~10× with temperature and device.',
-      fontSize: 14, color: YELLOW, fontUrl: FONT_URL
+      fontSize: 18, color: YELLOW, fontUrl: FONT_URL
     });
     await punchline2.loadGlyphs?.();
     punchline2.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 1.05, 0]);
@@ -375,7 +2332,7 @@
     // ── Part 1 — final punchline ──
     const punchlineFinal = new Text({
       text: 'Open-loop: useless as a linear amplifier.',
-      fontSize: 16, color: YELLOW, fontUrl: FONT_URL
+      fontSize: 20, color: YELLOW, fontUrl: FONT_URL
     });
     await punchlineFinal.loadGlyphs?.();
     punchlineFinal.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 1.45, 0]);
@@ -415,7 +2372,7 @@
     // ── Part 2 — label ──
     const partLabelP2 = new Text({
       text: 'Part 2 — With negative feedback',
-      fontSize: 14, color: MUTED, fontUrl: FONT_URL
+      fontSize: 18, color: MUTED, fontUrl: FONT_URL
     });
     await partLabelP2.loadGlyphs?.();
     partLabelP2.moveTo([-4.25, 2.95, 0]);
@@ -424,9 +2381,9 @@
     // ── Part 2 — V_in source on V+ rail (re-introduced) ──
     const vInSrcP2     = new Circle({ radius: 0.18, color: FG, strokeWidth: 2 });
     vInSrcP2.moveTo([cx - 3.6, cy + 0.7, 0]);
-    const vInLblP2     = new Text({ text: 'V_in', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    await vInLblP2.loadGlyphs?.();
-    vInLblP2.moveTo([cx - 3.6, cy + 1.15, 0]);
+    const vInLblP2     = new MathTex({ latex: 'V_{in}', color: FG });
+    await vInLblP2.waitForRender?.();
+    vInLblP2.scale(0.55).moveTo([cx - 3.6, cy + 1.15, 0]);
     const vInLeadP2    = new Line({ start: [cx - 3.6, cy + 0.7, 0], end: [cx - 3.2, cy + 0.7, 0], color: FG });
 
     // ── Part 2 — feedback wire loop ──
@@ -446,9 +2403,9 @@
     const fbDown2 = new Line({ start: [fbLeftX, cy - 0.55, 0], end: [fbLeftX, cy - 0.7, 0], color: ACCENT });
     // Horizontal stub from junction to V− rail
     const fbStub  = new Line({ start: [fbLeftX, cy - 0.7, 0], end: [cx - 1.6, cy - 0.7, 0], color: ACCENT });
-    const rfLbl   = new Text({ text: 'R_f', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
-    await rfLbl.loadGlyphs?.();
-    rfLbl.moveTo([fbLeftX + 0.35, cy - 0.375, 0]);
+    const rfLbl   = new MathTex({ latex: 'R_f', color: MUTED });
+    await rfLbl.waitForRender?.();
+    rfLbl.scale(0.55).moveTo([fbLeftX + 0.35, cy - 0.375, 0]);
 
     // R_g drops from junction at (fbLeftX, cy - 0.7) to ground
     const rgDown1 = new Line({ start: [fbLeftX, cy - 0.7, 0], end: [fbLeftX, cy - 1.0, 0], color: ACCENT });
@@ -459,9 +2416,9 @@
     const rgGndH1 = new Line({ start: [fbLeftX - 0.25, cy - 1.6, 0], end: [fbLeftX + 0.25, cy - 1.6, 0], color: FG });
     const rgGndH2 = new Line({ start: [fbLeftX - 0.15, cy - 1.72, 0], end: [fbLeftX + 0.15, cy - 1.72, 0], color: FG });
     const rgGndH3 = new Line({ start: [fbLeftX - 0.05, cy - 1.84, 0], end: [fbLeftX + 0.05, cy - 1.84, 0], color: FG });
-    const rgLbl   = new Text({ text: 'R_g', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
-    await rgLbl.loadGlyphs?.();
-    rgLbl.moveTo([fbLeftX + 0.35, cy - 1.175, 0]);
+    const rgLbl   = new MathTex({ latex: 'R_g', color: MUTED });
+    await rgLbl.waitForRender?.();
+    rgLbl.scale(0.55).moveTo([fbLeftX + 0.35, cy - 1.175, 0]);
 
     const fbNetwork = new VGroup(
       fbUp, fbOver, fbDown1, rfBody, fbDown2, fbStub, rfLbl,
@@ -474,22 +2431,22 @@
     await scene.play(new Create(fbNetwork, { duration: 1.2, lagRatio: 0.05 }));
 
     // ── Part 2 — narration caption below circuit ──
-    const narration = new Text({
-      text: 'V_+ = 2 V applied.  V_− starts at 0.  Error = V_+ − V_− = 2 V.',
-      fontSize: 12, color: FG, fontUrl: FONT_URL
+    const narration = new MathTex({
+      latex: 'V_{+} = 2\\,\\mathrm{V\ applied.}\\quad V_{-}\\text{ starts at }0.\\quad \\text{Error} = V_{+} - V_{-} = 2\\,\\mathrm{V}.',
+      color: FG
     });
-    await narration.loadGlyphs?.();
-    narration.moveTo([-3.0, -3.2, 0]);
+    await narration.waitForRender?.();
+    narration.scale(0.52).moveTo([-3.0, -3.2, 0]);
     await scene.play(new FadeIn(narration, { duration: 0.4 }));
 
     // ── Part 2 — plot axes (Search step vs Voltage) ──
     const xAxisP2 = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X1, PLOT_Y0, 0], color: MUTED });
     const yAxisP2 = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X0, PLOT_Y1, 0], color: MUTED });
-    const xLblP2 = new Text({ text: 'Search step', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    const yLblP2 = new Text({ text: 'Voltage (V)', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    await Promise.all([xLblP2.loadGlyphs?.(), yLblP2.loadGlyphs?.()]);
-    xLblP2.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.35, 0]);
-    yLblP2.rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.35, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
+    const xLblP2 = new Text({ text: 'Search step', fontSize: 16, color: FG, fontUrl: FONT_URL });
+    const yLblP2 = new MathTex({ latex: '\\text{Voltage}\\;(\\mathrm{V})', color: FG });
+    await Promise.all([xLblP2.loadGlyphs?.(), yLblP2.waitForRender?()]);
+    xLblP2.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.38, 0]);
+    yLblP2.scale(0.55).rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.40, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
 
     // Coordinate helpers (voltage → plot y; step → plot x)
     const stepToX = s => PLOT_X0 + s * 1.0;
@@ -502,9 +2459,9 @@
       end:   [PLOT_X1, vPlusRefY, 0],
       color: ACCENT, strokeWidth: 2
     });
-    const vPlusLineLbl = new Text({ text: 'V_+ = 2 V', fontSize: 11, color: ACCENT, fontUrl: FONT_URL });
-    await vPlusLineLbl.loadGlyphs?.();
-    vPlusLineLbl.moveTo([PLOT_X1 + 0.55, vPlusRefY, 0]);
+    const vPlusLineLbl = new MathTex({ latex: 'V_{+} = 2\\,\\mathrm{V}', color: ACCENT });
+    await vPlusLineLbl.waitForRender?.();
+    vPlusLineLbl.scale(0.55).moveTo([PLOT_X1 + 0.60, vPlusRefY, 0]);
 
     await scene.play(
       new Create(xAxisP2), new Create(yAxisP2), new Write(xLblP2), new Write(yLblP2)
@@ -512,15 +2469,15 @@
     await scene.play(new Create(vPlusLine, { duration: 0.5 }), new FadeIn(vPlusLineLbl));
 
     // ── Part 2 — live voltage labels on circuit (mutated during search steps) ──
-    const voutLabel = new Text({ text: 'V_out = 0.0 V', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    await voutLabel.loadGlyphs?.();
-    voutLabel.moveTo([cx + 2.5, cy + 0.35, 0]);
-    const vminusLabel = new Text({ text: 'V_\u2212 = 0 V', fontSize: 11, color: BLUE, fontUrl: FONT_URL });
-    await vminusLabel.loadGlyphs?.();
-    vminusLabel.moveTo([cx - 2.5, cy - 0.95, 0]);
-    const vplusLabel = new Text({ text: 'V_+ = 2 V', fontSize: 11, color: ACCENT, fontUrl: FONT_URL });
-    await vplusLabel.loadGlyphs?.();
-    vplusLabel.moveTo([cx - 2.5, cy + 0.95, 0]);
+    const voutLabel = new MathTex({ latex: 'V_{out} = 0.0\\,\\mathrm{V}', color: FG });
+    await voutLabel.waitForRender?.();
+    voutLabel.scale(0.55).moveTo([cx + 2.5, cy + 0.35, 0]);
+    const vminusLabel = new MathTex({ latex: 'V_{-} = 0\\,\\mathrm{V}', color: BLUE });
+    await vminusLabel.waitForRender?.();
+    vminusLabel.scale(0.55).moveTo([cx - 2.5, cy - 0.95, 0]);
+    const vplusLabel = new MathTex({ latex: 'V_{+} = 2\\,\\mathrm{V}', color: ACCENT });
+    await vplusLabel.waitForRender?.();
+    vplusLabel.scale(0.55).moveTo([cx - 2.5, cy + 0.95, 0]);
     await scene.play(new FadeIn(voutLabel), new FadeIn(vminusLabel), new FadeIn(vplusLabel));
 
     // "Push V_out ↑" arrow at output rail (persistent during steps 1–3, fades after step 4)
@@ -531,9 +2488,9 @@
     });
     const pushHead1 = new Line({ start: [cx + 2.4, cy + 0.78, 0], end: [cx + 2.5, cy + 0.65, 0], color: YELLOW, strokeWidth: 3 });
     const pushHead2 = new Line({ start: [cx + 2.6, cy + 0.78, 0], end: [cx + 2.5, cy + 0.65, 0], color: YELLOW, strokeWidth: 3 });
-    const pushLbl = new Text({ text: 'Push V_out \u2191', fontSize: 10, color: YELLOW, fontUrl: FONT_URL });
-    await pushLbl.loadGlyphs?.();
-    pushLbl.moveTo([cx + 3.15, cy + 0.9, 0]);
+    const pushLbl = new MathTex({ latex: '\\text{Push }V_{out}\\!\\uparrow', color: YELLOW });
+    await pushLbl.waitForRender?.();
+    pushLbl.scale(0.52).moveTo([cx + 3.15, cy + 0.9, 0]);
     const pushGroup = new VGroup(pushArrow, pushHead1, pushHead2, pushLbl);
     await scene.play(new FadeIn(pushGroup, { duration: 0.3 }));
 
@@ -546,12 +2503,12 @@
     let prevDotPos = [stepToX(0), voltToY(0), 0];
 
     const runStep = async (stepIdx, voutNew, vMinusNew, errorVal) => {
-      const newVoutText = new Text({ text: `V_out = ${voutNew.toFixed(1)} V`, fontSize: 11, color: FG, fontUrl: FONT_URL });
-      await newVoutText.loadGlyphs?.();
-      newVoutText.moveTo(voutLabel.getCenter());
-      const newVminusText = new Text({ text: `V_\u2212 = ${vMinusNew.toFixed(1)} V`, fontSize: 11, color: BLUE, fontUrl: FONT_URL });
-      await newVminusText.loadGlyphs?.();
-      newVminusText.moveTo(vminusLabel.getCenter());
+      const newVoutText = new MathTex({ latex: `V_{out} = ${voutNew.toFixed(1)}\\,\\mathrm{V}`, color: FG });
+      await newVoutText.waitForRender?.();
+      newVoutText.scale(0.55).moveTo(voutLabel.getCenter());
+      const newVminusText = new MathTex({ latex: `V_{-} = ${vMinusNew.toFixed(1)}\\,\\mathrm{V}`, color: BLUE });
+      await newVminusText.waitForRender?.();
+      newVminusText.scale(0.55).moveTo(vminusLabel.getCenter());
 
       const dotX = stepToX(stepIdx);
       const dotY = voltToY(vMinusNew);
@@ -573,9 +2530,9 @@
         const y1 = dashY0 + (dashY1 - dashY0) * ((i + 0.5) / dashCount);
         errParts.push(new Line({ start: [dotX + 0.08, y0, 0], end: [dotX + 0.08, y1, 0], color: YELLOW, strokeWidth: 1.5 }));
       }
-      const errLbl = new Text({ text: `error = ${errorVal.toFixed(1)} V`, fontSize: 10, color: YELLOW, fontUrl: FONT_URL });
-      await errLbl.loadGlyphs?.();
-      errLbl.moveTo([dotX + 0.7, (dashY0 + dashY1) / 2, 0]);
+      const errLbl = new MathTex({ latex: `\\text{error} = ${errorVal.toFixed(1)}\\,\\mathrm{V}`, color: YELLOW });
+      await errLbl.waitForRender?.();
+      errLbl.scale(0.52).moveTo([dotX + 0.7, (dashY0 + dashY1) / 2, 0]);
       const errGroup = new VGroup(...errParts, errLbl);
       errorIndicators.push(errGroup);
 
@@ -603,12 +2560,12 @@
     await scene.play(new FadeOut(errorIndicators[3], { duration: 0.4 }), new FadeOut(pushGroup, { duration: 0.4 }));
 
     // Replace narration caption with settled text
-    const narrationSettled = new Text({
-      text: 'V_\u2212 = V_+.  Error = 0.  Output has settled.',
-      fontSize: 12, color: FG, fontUrl: FONT_URL
+    const narrationSettled = new MathTex({
+      latex: 'V_{-} = V_{+}.\\quad \\text{Error} = 0.\\quad \\text{Output has settled.}',
+      color: FG
     });
-    await narrationSettled.loadGlyphs?.();
-    narrationSettled.moveTo(narration.getCenter());
+    await narrationSettled.waitForRender?.();
+    narrationSettled.scale(0.52).moveTo(narration.getCenter());
     await scene.play(new Transform(narration, narrationSettled, { duration: 0.4 }));
 
     // ── Part 2 — virtual short reveal ──
@@ -624,12 +2581,12 @@
       }));
     }
     const vsGroup = new VGroup(...vsDashes);
-    const vsLabel = new Text({
-      text: 'V_+ ≈ V_−  (virtual short)',
-      fontSize: 12, color: YELLOW, fontUrl: FONT_URL
+    const vsLabel = new MathTex({
+      latex: 'V_{+} \\approx V_{-} \\quad (\\text{virtual short})',
+      color: YELLOW
     });
-    await vsLabel.loadGlyphs?.();
-    vsLabel.moveTo([cx - 0.5, cy + 1.9, 0]);
+    await vsLabel.waitForRender?.();
+    vsLabel.scale(0.58).moveTo([cx - 0.5, cy + 1.9, 0]);
 
     for (const d of vsDashes) scene.add(d);
     await scene.play(
@@ -641,12 +2598,12 @@
     const gainEqn = new MathTex({ latex: '\\dfrac{V_{out}}{V_{in}} = 1 + \\dfrac{R_f}{R_g} = 2', color: ACCENT });
     await gainEqn.waitForRender?.();
     gainEqn.scale(0.6).moveTo([-3.0, -2.6, 0]);
-    const gainSub = new Text({
-      text: 'Gain set by resistors — independent of A_OL.',
-      fontSize: 11, color: MUTED, fontUrl: FONT_URL
+    const gainSub = new MathTex({
+      latex: '\\text{Gain set by resistors — independent of } A_{OL}.',
+      color: MUTED
     });
-    await gainSub.loadGlyphs?.();
-    gainSub.moveTo([-3.0, -3.75, 0]);
+    await gainSub.waitForRender?.();
+    gainSub.scale(0.52).moveTo([-3.0, -3.75, 0]);
 
     await scene.play(new Write(gainEqn, { duration: 0.6 }));
     await scene.play(new FadeIn(gainSub, { duration: 0.4 }));
@@ -744,11 +2701,11 @@
     // Transfer-curve inset — same plot region, new labels
     const tcXAxis = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X1, PLOT_Y0, 0], color: MUTED });
     const tcYAxis = new Line({ start: [PLOT_X0, PLOT_Y0, 0], end: [PLOT_X0, PLOT_Y1, 0], color: MUTED });
-    const tcXLbl = new Text({ text: 'V_in (V)', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    const tcYLbl = new Text({ text: 'V_out (V)', fontSize: 11, color: FG, fontUrl: FONT_URL });
-    await Promise.all([tcXLbl.loadGlyphs?.(), tcYLbl.loadGlyphs?.()]);
-    tcXLbl.moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.35, 0]);
-    tcYLbl.rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.35, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
+    const tcXLbl = new MathTex({ latex: 'V_{in}\\;(\\mathrm{V})', color: FG });
+    const tcYLbl = new MathTex({ latex: 'V_{out}\\;(\\mathrm{V})', color: FG });
+    await Promise.all([tcXLbl.waitForRender?.(), tcYLbl.waitForRender?()]);
+    tcXLbl.scale(0.55).moveTo([(PLOT_X0 + PLOT_X1) / 2, PLOT_Y0 - 0.38, 0]);
+    tcYLbl.scale(0.55).rotate(Math.PI / 2).moveTo([PLOT_X0 - 0.40, (PLOT_Y0 + PLOT_Y1) / 2, 0]);
 
     // Transfer-curve mapping helpers (panel slider range is V_in ∈ [−4, +4], V_out ∈ [−13, +13])
     const tcXFromVin  = v => PLOT_X0 + ((v + 4) / 8) * (PLOT_X1 - PLOT_X0);

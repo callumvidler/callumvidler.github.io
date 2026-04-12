@@ -546,7 +546,80 @@
     cmGraphWrap.classList.add('visible');
     cmPanel.classList.add('visible');
 
-    // ── Stage 3: signal module (Task 6) ──
+    // ── Stage 3: signal module ────────────────────────────────────────────────
+
+    // Mutable state read by the render loop on every frame
+    const state = {
+      amplitude: 1.5,   // noise amplitude in R-peak units
+      frequency: 50,    // mains frequency in Hz
+      tStart:   performance.now() / 1000
+    };
+
+    // Synthesized ECG — sum of five Gaussians (P, Q, R, S, T) over one beat
+    const HEART_PERIOD_S = 60 / 72;  // 0.8333... s
+    const GAUSSIANS = [
+      { center: 0.12, amp:  0.15, sigma: 0.025 }, // P
+      { center: 0.30, amp: -0.10, sigma: 0.008 }, // Q
+      { center: 0.32, amp:  1.00, sigma: 0.010 }, // R (peak = 1.0)
+      { center: 0.34, amp: -0.25, sigma: 0.010 }, // S
+      { center: 0.48, amp:  0.30, sigma: 0.040 }  // T
+    ];
+    function ecg(t) {
+      const tBeat = ((t % HEART_PERIOD_S) + HEART_PERIOD_S) % HEART_PERIOD_S;
+      let y = 0;
+      for (const g of GAUSSIANS) {
+        const d = tBeat - g.center;
+        y += g.amp * Math.exp(-(d * d) / (2 * g.sigma * g.sigma));
+      }
+      return y;
+    }
+
+    function mainsNoise(t) {
+      return state.amplitude * Math.sin(2 * Math.PI * state.frequency * t);
+    }
+
+    // Ring buffers — one per trace, each 3 s of history at 120 Hz = 360 samples
+    const SAMPLE_RATE_HZ = 120;
+    const TIME_WINDOW_S  = 3.0;
+    const RING_LEN       = SAMPLE_RATE_HZ * TIME_WINDOW_S; // 360
+    const buf_v1 = new Float32Array(RING_LEN);
+    const buf_v2 = new Float32Array(RING_LEN);
+    const buf_vd = new Float32Array(RING_LEN);
+    let ringHead = 0;          // index of the oldest sample
+    let ringFilled = 0;         // samples written so far (caps at RING_LEN)
+    let lastSampleTime = state.tStart;
+
+    function pushSample(v1, v2, vd) {
+      const idx = (ringHead + ringFilled) % RING_LEN;
+      buf_v1[idx] = v1;
+      buf_v2[idx] = v2;
+      buf_vd[idx] = vd;
+      if (ringFilled < RING_LEN) {
+        ringFilled++;
+      } else {
+        ringHead = (ringHead + 1) % RING_LEN;
+      }
+    }
+
+    function sampleAt(t) {
+      const v1 = ecg(t) + mainsNoise(t);
+      const v2 = 0      + mainsNoise(t);
+      const vd = v1 - v2;   // = ecg(t), analytically
+      return [v1, v2, vd];
+    }
+
+    function peakToPeak(buf) {
+      if (ringFilled === 0) return 0;
+      let lo = Infinity, hi = -Infinity;
+      for (let i = 0; i < ringFilled; i++) {
+        const idx = (ringHead + i) % RING_LEN;
+        const x = buf[idx];
+        if (x < lo) lo = x;
+        if (x > hi) hi = x;
+      }
+      return hi - lo;
+    }
+
     // ── Stage 3: canvas render loop (Task 7) ──
     // ── Stage 3: control wiring (Task 8) ──
 

@@ -630,6 +630,8 @@
     let stage2Compressed = false;
     let renderLoopStarted = false;
     let stage2OrigCenter = null;
+    let stage1Animated = false;
+    let animating = false;
 
     const navPrev = document.getElementById('step-prev');
     const navNext = document.getElementById('step-next');
@@ -641,8 +643,8 @@
       navInd.textContent = 'Step ' + currentStage + '/3';
     }
 
-    function goTo(n) {
-      if (n === currentStage || n < 1 || n > 3) return;
+    async function goTo(n) {
+      if (n === currentStage || n < 1 || n > 3 || animating) return;
 
       // ── Hide current stage ──
       if (currentStage === 1) {
@@ -663,10 +665,51 @@
       }
 
       currentStage = n;
+      updateNav();
 
       // ── Show new stage ──
       if (n === 1) {
-        scene.add(stage1Group);
+        if (!stage1Animated) {
+          stage1Animated = true;
+          animating = true;
+          await scene.play(new Write(stage1Title, { duration: 0.6 }));
+          await scene.play(
+            new Create(leftPanel._border, { duration: 0.5 }),
+            new Create(rightPanel._border, { duration: 0.5 }),
+            new Write(leftPanel._headerText, { duration: 0.5 }),
+            new Write(rightPanel._headerText, { duration: 0.5 })
+          );
+          await scene.play(
+            new Create(leftPanel._wireTop, { duration: 0.4 }),
+            new Create(leftPanel._wireBot, { duration: 0.4 }),
+            new Create(rightPanel._wireTop, { duration: 0.4 }),
+            new Create(rightPanel._wireBot, { duration: 0.4 }),
+            new Create(leftPanel._leadTop, { duration: 0.4 }),
+            new Create(leftPanel._leadBot, { duration: 0.4 }),
+            new Create(rightPanel._leadTop, { duration: 0.4 }),
+            new Create(rightPanel._leadBot, { duration: 0.4 })
+          );
+          await scene.play(
+            new Create(leftPanel._waveTop, { duration: 1.1, lagRatio: 0.02 }),
+            new Create(leftPanel._waveBot, { duration: 1.1, lagRatio: 0.02 }),
+            new Create(rightPanel._waveTop, { duration: 1.1, lagRatio: 0.02 }),
+            new Create(rightPanel._waveBot, { duration: 1.1, lagRatio: 0.02 })
+          );
+          await scene.play(
+            new FadeIn(leftPanel._sumCircle, { duration: 0.3 }),
+            new Write(leftPanel._sumMinus, { duration: 0.3 }),
+            new FadeIn(rightPanel._sumCircle, { duration: 0.3 }),
+            new Write(rightPanel._sumMinus, { duration: 0.3 })
+          );
+          await scene.play(
+            new Write(leftPanel._eqn, { duration: 0.5 }),
+            new Write(rightPanel._eqn, { duration: 0.5 })
+          );
+          await scene.play(new FadeIn(stage1Caption, { duration: 0.4 }));
+          animating = false;
+        } else {
+          scene.add(stage1Group);
+        }
       } else if (n === 2) {
         scene.add(slideTitle);
         scene.add(stage2Body);
@@ -687,8 +730,6 @@
           requestAnimationFrame(tick);
         }
       }
-
-      updateNav();
     }
 
     navPrev.addEventListener('click', () => goTo(currentStage - 1));

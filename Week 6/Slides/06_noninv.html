@@ -132,7 +132,7 @@
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">06 / 22</span>
+    <span class="slide-num">07 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">
@@ -290,6 +290,47 @@
     await eqn.waitForRender?.();
     eqn.scale(0.8).moveTo([PX, PY + PH + 0.95, 0]);
 
+    // ── Explanatory bullet points ──
+    const NOTES_X = -6.0;
+    const NOTES_Y0 = -2.0;
+    const NOTES_DY = 0.6;
+    const NOTE_FONT = 19;
+    const NOTE_SCALE = 0.55;
+
+    // Each note: { text: string } for Text, or { latex: string } for MathTex
+    const noteDefs = [
+      { text: 'Input applied to (+) terminal \u2014 output in phase' },
+      { text: 'R1 and R2 form a feedback divider to (\u2212) input' },
+      { latex: '\\text{Gain always} \\geq 1 \\text{:} \\quad A_v = 1 + \\dfrac{R_2}{R_1}' },
+      { text: 'Very high input impedance (negligible current draw)' },
+    ];
+    const noteBullets = [];
+    for (let i = 0; i < noteDefs.length; i++) {
+      const dot = new Text({ text: '\u25b8', fontSize: NOTE_FONT, color: ACCENT, fontUrl: FONT_URL });
+      await dot.loadGlyphs?.();
+
+      let item;
+      const def = noteDefs[i];
+      if (def.latex) {
+        item = new MathTex({ latex: def.latex, color: MUTED });
+        await item.waitForRender?.();
+        item.scale(NOTE_SCALE);
+      } else {
+        item = new Text({ text: def.text, fontSize: NOTE_FONT, color: MUTED, fontUrl: FONT_URL });
+        await item.loadGlyphs?.();
+      }
+
+      dot.moveTo([NOTES_X, NOTES_Y0 - i * NOTES_DY, 0]);
+      item.moveTo([NOTES_X + 0.4, NOTES_Y0 - i * NOTES_DY, 0]);
+      if (typeof item.getLeft === 'function') {
+        item.shift([NOTES_X + 0.4 - item.getLeft()[0], 0, 0]);
+      }
+      if (typeof dot.getLeft === 'function') {
+        dot.shift([NOTES_X - dot.getLeft()[0], 0, 0]);
+      }
+      noteBullets.push(dot, item);
+    }
+
     // ── Sequence ──
 
     // 1. Title
@@ -319,6 +360,9 @@
     // 5. Reveal SVG plot + interactive slider panel
     document.getElementById('trace-overlay').style.opacity = '1';
     document.getElementById('ctrl-panel').style.opacity = '1';
+
+    // 6. Fade in explanatory notes
+    await scene.play(...noteBullets.map(b => new FadeIn(b)));
   </script>
 
   <script>

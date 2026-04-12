@@ -10,26 +10,20 @@
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
   <script>
-    // Theme bridge:
-    //   1. Priority: ?theme= URL param (presenter sets this when loading).
-    //   2. Fallback: sessionStorage, preserved across the reload triggered
-    //      by the module's themechange listener (theme.js always forces
-    //      'light' at parse time, so we need our own persistence).
-    // Also hides the per-slide toggle button when embedded in the presenter.
     (function () {
       var qp = new URLSearchParams(location.search);
       var qt = qp.get('theme');
       var ss = null;
-      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { }
       var pick = (qt === 'dark' || qt === 'light') ? qt
-               : (ss === 'dark' || ss === 'light') ? ss
-               : null;
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
       if (pick) document.documentElement.setAttribute('data-theme', pick);
       window.addEventListener('themechange', function (e) {
         try {
           var t = e && e.detail && e.detail.theme;
           if (t) sessionStorage.setItem('slideTheme', t);
-        } catch (err) { /* ignore */ }
+        } catch (err) { }
       });
       if (window.parent !== window) {
         var style = document.createElement('style');
@@ -38,21 +32,150 @@
       }
     })();
   </script>
+  <style>
+    /* ── Section 2 RHS: Safety Demo Panel ── */
+    .safety-panel {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 50%;
+      height: calc(100% - 50px);
+      z-index: 4;
+      display: none;
+      flex-direction: column;
+    }
+    .safety-panel.visible { display: flex; }
+
+    #safetyCanvas {
+      width: 100%;
+      flex: 1;
+      display: block;
+    }
+
+    .safety-controls {
+      width: 100%;
+      z-index: 6;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--slide-surface);
+      border-top: 1px solid var(--slide-border);
+      flex-shrink: 0;
+    }
+
+    .safety-slider-row {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .safety-slider-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+    }
+    .safety-slider-group label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--slide-text-dim);
+      white-space: nowrap;
+    }
+    .safety-slider-group input[type="range"] {
+      width: 90px;
+      accent-color: var(--slide-accent);
+      flex: 1;
+    }
+    .safety-slider-group .slider-val {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      color: var(--slide-text);
+      min-width: 52px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .safety-readout {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+      border-top: 1px solid var(--slide-border);
+      padding-top: 6px;
+    }
+    .safety-readout .k { color: var(--slide-text-dim); }
+    .safety-readout .v {
+      text-align: right;
+      color: var(--slide-text);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .safety-status {
+      grid-column: 1 / -1;
+      margin-top: 4px;
+      border-radius: 4px;
+      padding: 6px 8px;
+      line-height: 1.4;
+      font-size: 10px;
+      border-left: 3px solid var(--slide-accent);
+      background: rgba(106, 170, 142, 0.12);
+      color: var(--slide-accent);
+      transition: all 0.3s;
+    }
+    .safety-status.danger {
+      border-left-color: var(--slide-red, #e06050);
+      background: rgba(224, 96, 80, 0.12);
+      color: var(--slide-red, #e06050);
+    }
+  </style>
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">21 / 22</span>
+    <span class="slide-num">18 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">
     <div class="stage-fallback">Loading manim-web scene…</div>
+
+    <!-- Section 2 RHS: Safety Demo -->
+    <div class="safety-panel" id="safetyPanel">
+      <canvas id="safetyCanvas"></canvas>
+      <div class="safety-controls">
+        <div class="safety-slider-row">
+          <div class="safety-slider-group">
+            <label>C<sub>barrier</sub></label>
+            <input type="range" id="capSlider" min="0" max="1000" step="1" value="300">
+            <span class="slider-val" id="capVal">5.0 pF</span>
+          </div>
+          <div class="safety-slider-group">
+            <label>Frequency</label>
+            <input type="range" id="freqSlider" min="0" max="1000" step="1" value="0">
+            <span class="slider-val" id="freqVal">50 Hz</span>
+          </div>
+        </div>
+        <div class="safety-readout">
+          <span class="k">X<sub>C</sub> (barrier)</span><span class="v" id="xcVal">636.6 MΩ</span>
+          <span class="k">I<sub>leakage</sub></span><span class="v" id="ileakVal">0.38 µA</span>
+          <span class="k">Threshold</span><span class="v">10 µA (IEC 60601)</span>
+          <div class="safety-status" id="safetyStatus">SAFE — Leakage current within IEC 60601 limits</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stepper-row" id="stepper" style="display:none">
+      <button type="button" class="stepper-btn" id="sec-prev" disabled>← Prev Section</button>
+      <span class="step-indicator" id="sec-indicator">Section 1 · Circuit</span>
+      <button type="button" class="stepper-btn" id="sec-next">Next Section →</button>
+    </div>
   </div>
 
   <script type="module">
     import {
-      Scene, Polygon, Rectangle, Circle, Line, Text, MathTex, VGroup, Dot,
+      Scene, Polygon, Rectangle, Circle, Line, Dot, Text, MathTex, VGroup,
       Create, Write, FadeIn, FadeOut, MoveAlongPath,
-      UP, DOWN, LEFT, RIGHT, WHITE, linear
+      UP, DOWN, LEFT, RIGHT, linear
     } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
@@ -73,129 +196,917 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
+    // ── Title ──
     const title = new Text({ text: 'Isolation Amplifier', fontSize: 40, color: FG, fontUrl: FONT_URL });
     await title.loadGlyphs?.();
     title.moveTo([-3.5, 3.5, 0]);
-    const TITLE_LEFT_X = -6.2;
     if (typeof title.getLeft === 'function') {
-      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+      title.shift([-6.2 - title.getLeft()[0], 0, 0]);
     }
 
-    const bullets = [
-      'Galvanic isolation improves patient safety',
-      'Signal crosses barrier without direct electrical path',
-      'Methods: transformer, optical, capacitive coupling',
-      'Capacitive coupling: high performance, more CM/ESD sensitive'
+    // ═══════════════════════════════════════════════
+    //  SECTION 1: CIRCUIT DIAGRAM — left half
+    // ═══════════════════════════════════════════════
+
+    const TRI_HALF_H = 0.55;
+    const TRI_HALF_W = 0.5;
+    const R_W = 0.6, R_H = 0.22;
+
+    // Op-amp positions — compact layout, shifted left to leave room for RHS bullets
+    const A1_CX = -5.1, A1_CY = 0.5;
+    const A2_CX = 0.1, A2_CY = 0.5;
+
+    // Helper: create op-amp triangle
+    function mkOpamp(cx, cy) {
+      return new Polygon({
+        vertices: [
+          [cx - TRI_HALF_W, cy - TRI_HALF_H, 0],
+          [cx - TRI_HALF_W, cy + TRI_HALF_H, 0],
+          [cx + TRI_HALF_W, cy, 0]
+        ],
+        color: MUTED2, strokeWidth: 1.7, fillOpacity: 0.13
+      });
+    }
+
+    const triA1 = mkOpamp(A1_CX, A1_CY);
+    const triA2 = mkOpamp(A2_CX, A2_CY);
+
+    // +/- symbols
+    async function mkTerminals(cx, cy) {
+      const pY = cy - 0.25, mY = cy + 0.25;
+      const p = new Text({ text: '+', fontSize: 14, color: ACCENT, fontUrl: FONT_URL });
+      const m = new Text({ text: '−', fontSize: 14, color: RED, fontUrl: FONT_URL });
+      await Promise.all([p.loadGlyphs?.(), m.loadGlyphs?.()]);
+      p.moveTo([cx - TRI_HALF_W + 0.22, pY, 0]);
+      m.moveTo([cx - TRI_HALF_W + 0.22, mY, 0]);
+      return { plus: p, minus: m, plusY: pY, minusY: mY };
+    }
+
+    const t1 = await mkTerminals(A1_CX, A1_CY);
+    const t2 = await mkTerminals(A2_CX, A2_CY);
+
+    // Op-amp labels
+    const a1Lbl = new Text({ text: 'A₁', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    const a2Lbl = new Text({ text: 'A₂', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    await Promise.all([a1Lbl.loadGlyphs?.(), a2Lbl.loadGlyphs?.()]);
+    a1Lbl.moveTo([A1_CX - 0.05, A1_CY, 0]);
+    a2Lbl.moveTo([A2_CX - 0.05, A2_CY, 0]);
+
+    // ── Input: V_IN → A1 ──
+    const VIN_X = -6.5;
+    const vinLbl = new MathTex({ latex: 'V_{IN}', color: BLUE });
+    await vinLbl.waitForRender?.();
+    vinLbl.scale(0.55).moveTo([VIN_X, t1.plusY, 0]);
+
+    const inWireL = new Line({ start: [VIN_X + 0.3, t1.plusY, 0], end: [A1_CX - TRI_HALF_W, t1.plusY, 0], color: FG, strokeWidth: 1.8 });
+
+    // A1 minus input → feedback
+    const NODE1_X = -6.0;
+    const FB1_Y = A1_CY + 1.0;
+    const A1_OUT_X = A1_CX + TRI_HALF_W;
+    const TAP1_X = -4.1;
+
+    const stub1 = new Line({ start: [NODE1_X, t1.minusY, 0], end: [A1_CX - TRI_HALF_W, t1.minusY, 0], color: FG, strokeWidth: 1.8 });
+    const fb1Vert = new Line({ start: [NODE1_X, t1.minusY, 0], end: [NODE1_X, FB1_Y, 0], color: FG, strokeWidth: 1.8 });
+    const R1_CX = (NODE1_X + TAP1_X) / 2;
+    const fb1toR = new Line({ start: [NODE1_X, FB1_Y, 0], end: [R1_CX - R_W / 2, FB1_Y, 0], color: FG, strokeWidth: 1.8 });
+    const Rf1 = new Rectangle({ width: R_W, height: R_H, color: MAG, strokeWidth: 2, fillOpacity: 0.22 });
+    Rf1.moveTo([R1_CX, FB1_Y, 0]);
+    const Rf1L = new MathTex({ latex: 'R_F', color: MAG });
+    await Rf1L.waitForRender?.();
+    Rf1L.scale(0.45).moveTo([R1_CX, FB1_Y + R_H / 2 + 0.16, 0]);
+    const fb1fromR = new Line({ start: [R1_CX + R_W / 2, FB1_Y, 0], end: [TAP1_X, FB1_Y, 0], color: FG, strokeWidth: 1.8 });
+    const fb1down = new Line({ start: [TAP1_X, FB1_Y, 0], end: [TAP1_X, A1_CY, 0], color: FG, strokeWidth: 1.8 });
+    const node1Dot = new Dot({ point: [NODE1_X, t1.minusY, 0], color: FG, radius: 0.05 });
+
+    // A1 output wire
+    const outW1 = new Line({ start: [A1_OUT_X, A1_CY, 0], end: [TAP1_X, A1_CY, 0], color: FG, strokeWidth: 1.8 });
+    const tap1Dot = new Dot({ point: [TAP1_X, A1_CY, 0], color: FG, radius: 0.05 });
+
+    // ── Modulator block ──
+    const MOD_CX = -3.4, MOD_W = 0.8, MOD_H = 0.6;
+    const modBox = new Rectangle({ width: MOD_W, height: MOD_H, color: CYAN, strokeWidth: 2, fillOpacity: 0.08 });
+    modBox.moveTo([MOD_CX, A1_CY, 0]);
+    const modLbl = new Text({ text: 'MOD', fontSize: 10, color: CYAN, fontUrl: FONT_URL });
+    await modLbl.loadGlyphs?.();
+    modLbl.moveTo([MOD_CX, A1_CY, 0]);
+    const modWireIn = new Line({ start: [TAP1_X, A1_CY, 0], end: [MOD_CX - MOD_W / 2, A1_CY, 0], color: FG, strokeWidth: 1.8 });
+
+    // ── Isolation barrier ──
+    const BARRIER_X = -2.5;
+    const barrierDashes = [];
+    for (let i = 0; i < 14; i++) {
+      const y0 = -2.4 + i * 0.38;
+      barrierDashes.push(new Line({ start: [BARRIER_X, y0, 0], end: [BARRIER_X, y0 + 0.18, 0], color: YELLOW, strokeWidth: 3 }));
+    }
+    const barrierLbl = new Text({ text: 'Isolation Barrier', fontSize: 12, color: YELLOW, fontUrl: FONT_URL });
+    await barrierLbl.loadGlyphs?.();
+    barrierLbl.moveTo([BARRIER_X, 2.8, 0]);
+
+    // Transformer symbol between MOD and DEMOD
+    const TX_X = BARRIER_X;
+    const TX_Y = A1_CY;
+    // Primary coil (left)
+    const coilL1 = new Line({ start: [TX_X - 0.22, TX_Y + 0.25, 0], end: [TX_X - 0.22, TX_Y - 0.25, 0], color: ACCENT, strokeWidth: 2.5 });
+    // Secondary coil (right)
+    const coilR1 = new Line({ start: [TX_X + 0.22, TX_Y + 0.25, 0], end: [TX_X + 0.22, TX_Y - 0.25, 0], color: CYAN, strokeWidth: 2.5 });
+    // Core lines
+    const core1 = new Line({ start: [TX_X - 0.07, TX_Y + 0.30, 0], end: [TX_X - 0.07, TX_Y - 0.30, 0], color: YELLOW, strokeWidth: 1.2 });
+    const core2 = new Line({ start: [TX_X + 0.07, TX_Y + 0.30, 0], end: [TX_X + 0.07, TX_Y - 0.30, 0], color: YELLOW, strokeWidth: 1.2 });
+
+    // Wire from MOD to transformer
+    const modToTx = new Line({ start: [MOD_CX + MOD_W / 2, A1_CY, 0], end: [TX_X - 0.22, A1_CY, 0], color: FG, strokeWidth: 1.8 });
+
+    // ── Demodulator block ──
+    const DEMOD_CX = -1.6, DEMOD_W = 0.8, DEMOD_H = 0.6;
+    const demodBox = new Rectangle({ width: DEMOD_W, height: DEMOD_H, color: CYAN, strokeWidth: 2, fillOpacity: 0.08 });
+    demodBox.moveTo([DEMOD_CX, A2_CY, 0]);
+    const demodLbl = new Text({ text: 'DEMOD', fontSize: 8, color: CYAN, fontUrl: FONT_URL });
+    await demodLbl.loadGlyphs?.();
+    demodLbl.moveTo([DEMOD_CX, A2_CY, 0]);
+
+    // Wire from transformer to DEMOD
+    const txToDemod = new Line({ start: [TX_X + 0.22, A2_CY, 0], end: [DEMOD_CX - DEMOD_W / 2, A2_CY, 0], color: FG, strokeWidth: 1.8 });
+
+    // Wire from DEMOD to A2 (horizontal to A2 non-inv input)
+    const demodOutX = DEMOD_CX + DEMOD_W / 2;
+    const demodToA2 = new Line({ start: [demodOutX, A2_CY, 0], end: [demodOutX, t2.plusY, 0], color: FG, strokeWidth: 1.8 });
+    const demodToA2h = new Line({ start: [demodOutX, t2.plusY, 0], end: [A2_CX - TRI_HALF_W, t2.plusY, 0], color: FG, strokeWidth: 1.8 });
+
+    // A2 minus input → feedback
+    const NODE2_X = -0.7;
+    const FB2_Y = A2_CY + 1.0;
+    const A2_OUT_X = A2_CX + TRI_HALF_W;
+    const TAP2_X = 1.1;
+
+    const stub2 = new Line({ start: [NODE2_X, t2.minusY, 0], end: [A2_CX - TRI_HALF_W, t2.minusY, 0], color: FG, strokeWidth: 1.8 });
+    const fb2Vert = new Line({ start: [NODE2_X, t2.minusY, 0], end: [NODE2_X, FB2_Y, 0], color: FG, strokeWidth: 1.8 });
+    const R2_CX = (NODE2_X + TAP2_X) / 2;
+    const fb2toR = new Line({ start: [NODE2_X, FB2_Y, 0], end: [R2_CX - R_W / 2, FB2_Y, 0], color: FG, strokeWidth: 1.8 });
+    const Rf2 = new Rectangle({ width: R_W, height: R_H, color: MAG, strokeWidth: 2, fillOpacity: 0.22 });
+    Rf2.moveTo([R2_CX, FB2_Y, 0]);
+    const Rf2L = new MathTex({ latex: 'R_F', color: MAG });
+    await Rf2L.waitForRender?.();
+    Rf2L.scale(0.45).moveTo([R2_CX, FB2_Y + R_H / 2 + 0.16, 0]);
+    const fb2fromR = new Line({ start: [R2_CX + R_W / 2, FB2_Y, 0], end: [TAP2_X, FB2_Y, 0], color: FG, strokeWidth: 1.8 });
+    const fb2down = new Line({ start: [TAP2_X, FB2_Y, 0], end: [TAP2_X, A2_CY, 0], color: FG, strokeWidth: 1.8 });
+    const node2Dot = new Dot({ point: [NODE2_X, t2.minusY, 0], color: FG, radius: 0.05 });
+
+    // A2 output wire + label
+    const OUT_X = 1.7;
+    const outW2 = new Line({ start: [A2_OUT_X, A2_CY, 0], end: [TAP2_X, A2_CY, 0], color: FG, strokeWidth: 1.8 });
+    const tap2Dot = new Dot({ point: [TAP2_X, A2_CY, 0], color: FG, radius: 0.05 });
+    const outWire = new Line({ start: [TAP2_X, A2_CY, 0], end: [OUT_X, A2_CY, 0], color: FG, strokeWidth: 1.8 });
+    const outPort = new Circle({ radius: 0.07, color: FG, strokeWidth: 2, fillColor: '#000000', fillOpacity: 1 }).moveTo([OUT_X, A2_CY, 0]);
+    const voutLbl = new MathTex({ latex: 'V_{OUT}', color: YELLOW });
+    await voutLbl.waitForRender?.();
+    voutLbl.scale(0.55).nextTo([OUT_X, A2_CY, 0], RIGHT, 0.1);
+
+    // ── Ground domains (separate, not connected to op-amp body) ──
+    // Each domain has a horizontal ground bus with a ground symbol beneath it
+    // Input domain ground bus
+    const GND1_BUS_Y = -1.0;
+    const GND1_BUS_L = -6.3, GND1_BUS_R = -2.9;
+    const GND1_X = (GND1_BUS_L + GND1_BUS_R) / 2, GND1_Y = -1.4;
+    const gnd1Bus = new Line({ start: [GND1_BUS_L, GND1_BUS_Y, 0], end: [GND1_BUS_R, GND1_BUS_Y, 0], color: ACCENT, strokeWidth: 1.5 });
+    const gnd1Wire = new Line({ start: [GND1_X, GND1_BUS_Y, 0], end: [GND1_X, GND1_Y, 0], color: ACCENT, strokeWidth: 1.5 });
+    const gnd1a = new Line({ start: [GND1_X - 0.25, GND1_Y, 0], end: [GND1_X + 0.25, GND1_Y, 0], color: ACCENT, strokeWidth: 3 });
+    const gnd1b = new Line({ start: [GND1_X - 0.15, GND1_Y - 0.10, 0], end: [GND1_X + 0.15, GND1_Y - 0.10, 0], color: ACCENT, strokeWidth: 2 });
+    const gnd1c = new Line({ start: [GND1_X - 0.06, GND1_Y - 0.19, 0], end: [GND1_X + 0.06, GND1_Y - 0.19, 0], color: ACCENT, strokeWidth: 1 });
+    const gnd1Lbl = new Text({ text: 'Gnd₁', fontSize: 10, color: ACCENT, fontUrl: FONT_URL });
+    await gnd1Lbl.loadGlyphs?.();
+    gnd1Lbl.moveTo([GND1_X, GND1_Y - 0.34, 0]);
+
+    // Output domain ground bus
+    const GND2_BUS_Y = -1.0;
+    const GND2_BUS_L = -2.1, GND2_BUS_R = 1.5;
+    const GND2_X = (GND2_BUS_L + GND2_BUS_R) / 2, GND2_Y = -1.4;
+    const gnd2Bus = new Line({ start: [GND2_BUS_L, GND2_BUS_Y, 0], end: [GND2_BUS_R, GND2_BUS_Y, 0], color: CYAN, strokeWidth: 1.5 });
+    const gnd2Wire = new Line({ start: [GND2_X, GND2_BUS_Y, 0], end: [GND2_X, GND2_Y, 0], color: CYAN, strokeWidth: 1.5 });
+    const gnd2a = new Line({ start: [GND2_X - 0.25, GND2_Y, 0], end: [GND2_X + 0.25, GND2_Y, 0], color: CYAN, strokeWidth: 3 });
+    const gnd2b = new Line({ start: [GND2_X - 0.15, GND2_Y - 0.10, 0], end: [GND2_X + 0.15, GND2_Y - 0.10, 0], color: CYAN, strokeWidth: 2 });
+    const gnd2c = new Line({ start: [GND2_X - 0.06, GND2_Y - 0.19, 0], end: [GND2_X + 0.06, GND2_Y - 0.19, 0], color: CYAN, strokeWidth: 1 });
+    const gnd2Lbl = new Text({ text: 'Gnd₂', fontSize: 10, color: CYAN, fontUrl: FONT_URL });
+    await gnd2Lbl.loadGlyphs?.();
+    gnd2Lbl.moveTo([GND2_X, GND2_Y - 0.34, 0]);
+
+    // ── Domain highlight boxes — enclose V_IN / V_OUT, symmetric gap from barrier ──
+    const DOM_GAP = 0.15;
+    const DOM_H = 4.0;
+    const DOM_Y = 0.1;
+
+    // Input domain: from V_IN (with margin) to barrier
+    const IN_HL_LEFT = VIN_X - 0.35;
+    const IN_HL_RIGHT = BARRIER_X - DOM_GAP;
+    const IN_HL_W = IN_HL_RIGHT - IN_HL_LEFT;
+    const INPUT_HL_CX = (IN_HL_LEFT + IN_HL_RIGHT) / 2;
+    const inputHL = new Rectangle({
+      width: IN_HL_W, height: DOM_H,
+      color: ACCENT, strokeWidth: 1.4, fillOpacity: 0.04,
+    });
+    inputHL.moveTo([INPUT_HL_CX, DOM_Y, 0]);
+
+    // Output domain: from barrier to V_OUT (with margin for label)
+    const OUT_HL_LEFT = BARRIER_X + DOM_GAP;
+    const OUT_HL_RIGHT = OUT_X + 1.1;
+    const OUT_HL_W = OUT_HL_RIGHT - OUT_HL_LEFT;
+    const OUTPUT_HL_CX = (OUT_HL_LEFT + OUT_HL_RIGHT) / 2;
+    const outputHL = new Rectangle({
+      width: OUT_HL_W, height: DOM_H,
+      color: CYAN, strokeWidth: 1.4, fillOpacity: 0.04,
+    });
+    outputHL.moveTo([OUTPUT_HL_CX, DOM_Y, 0]);
+
+    // Domain labels — large, centered on each box, positioned below
+    const DOM_LBL_Y = DOM_Y - DOM_H / 2 - 0.35;
+    const inputDomLbl = new Text({ text: 'Input Domain', fontSize: 20, color: ACCENT, fontUrl: FONT_URL });
+    const outputDomLbl = new Text({ text: 'Output Domain', fontSize: 20, color: CYAN, fontUrl: FONT_URL });
+    await Promise.all([inputDomLbl.loadGlyphs?.(), outputDomLbl.loadGlyphs?.()]);
+    inputDomLbl.moveTo([INPUT_HL_CX, DOM_LBL_Y, 0]);
+    outputDomLbl.moveTo([OUTPUT_HL_CX, DOM_LBL_Y, 0]);
+
+    // ═══════════════════════════════════════════════
+    //  RHS INFO PANEL — explanation bullets
+    // ═══════════════════════════════════════════════
+
+    const BS = 0.36;
+    const RX = 4.0;
+    const DX = 3.8;
+
+    async function mkMath(latex, color, scale, xL, y) {
+      const o = new MathTex({ latex, color });
+      await o.waitForRender?.();
+      o.scale(scale).moveTo([0, y, 0]);
+      if (typeof o.getLeft === 'function') {
+        o.shift([xL - o.getLeft()[0], 0, 0]);
+      } else {
+        o.moveTo([xL + 1.5, y, 0]);
+      }
+      return o;
+    }
+
+    function mkDot(x, y) {
+      return new Circle({
+        radius: 0.05, color: FG,
+        fillColor: FG, fillOpacity: 1, strokeWidth: 0,
+      }).moveTo([x, y, 0]);
+    }
+
+    const LS = 0.40;
+    const BG_GAP = 0.65;
+    let Y = 2.6;
+
+    // Bullet 1
+    const d1 = mkDot(DX, Y);
+    const b1l1 = await mkMath('\\text{Provides galvanic isolation}', FG, BS, RX, Y);
+    const b1l2 = await mkMath('\\text{between input and output circuits.}', FG, BS, RX, Y - LS);
+
+    Y -= LS + BG_GAP;
+    // Bullet 2
+    const d2 = mkDot(DX, Y);
+    const b2l1 = await mkMath('\\text{Signal crosses barrier without}', FG, BS, RX, Y);
+    const b2l2 = await mkMath('\\text{direct electrical path.}', FG, BS, RX, Y - LS);
+
+    Y -= LS + BG_GAP;
+    // Bullet 3
+    const d3 = mkDot(DX, Y);
+    const b3l1 = await mkMath('\\text{Critical for patient safety in}', FG, BS, RX, Y);
+    const b3l2 = await mkMath('\\text{medical equipment (IEC 60601).}', FG, BS, RX, Y - LS);
+
+    Y -= LS + BG_GAP;
+    // Bullet 4
+    const d4 = mkDot(DX, Y);
+    const b4l1 = await mkMath('\\text{Prevents dangerous leakage}', FG, BS, RX, Y);
+    const b4l2 = await mkMath('\\text{currents reaching the patient.}', FG, BS, RX, Y - LS);
+
+    // ── Equation box ──
+    Y -= LS + 0.5;
+    const EQ_BOX_CX = 5.2;
+    const EQ_BOX_W = 3.2;
+    const EQ_BOX_H = 1.2;
+    const EQ_BOX_CY = Y - EQ_BOX_H / 2;
+
+    const eqBox = new Rectangle({
+      width: EQ_BOX_W, height: EQ_BOX_H,
+      color: ACCENT, strokeWidth: 1.4, fillOpacity: 0.10,
+    });
+    eqBox.moveTo([EQ_BOX_CX, EQ_BOX_CY, 0]);
+
+    const eqn1 = new MathTex({ latex: `I_{leak} < 10\\,\\mu A`, color: FG });
+    await eqn1.waitForRender?.();
+    eqn1.scale(0.5).moveTo([EQ_BOX_CX, EQ_BOX_CY + 0.18, 0]);
+
+    const eqn2 = new MathTex({ latex: `V_{iso} = 5000\\,V_{rms}`, color: MUTED });
+    await eqn2.waitForRender?.();
+    eqn2.scale(0.45).moveTo([EQ_BOX_CX, EQ_BOX_CY - 0.22, 0]);
+
+    // All RHS objects for toggling
+    const rhsInfo = [
+      d1, b1l1, b1l2, d2, b2l1, b2l2, d3, b3l1, b3l2,
+      d4, b4l1, b4l2, eqBox, eqn1, eqn2,
     ];
-    const bulletObjs = [];
-    for (let i = 0; i < bullets.length; i++) {
-      const b = new Text({ text: '•  ' + bullets[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
-      await b.loadGlyphs?.();
-      b.moveTo([0.0, -2.15 - i * 0.24, 0]);
-      bulletObjs.push(b);
+
+    // All circuit objects for toggling
+    const circuitObjs = [
+      triA1, triA2,
+      t1.plus, t1.minus, t2.plus, t2.minus,
+      a1Lbl, a2Lbl,
+      vinLbl, inWireL,
+      stub1, fb1Vert, fb1toR, Rf1, Rf1L, fb1fromR, fb1down, node1Dot,
+      outW1, tap1Dot,
+      modBox, modLbl, modWireIn,
+      coilL1, coilR1, core1, core2, modToTx,
+      demodBox, demodLbl, txToDemod, demodToA2, demodToA2h,
+      stub2, fb2Vert, fb2toR, Rf2, Rf2L, fb2fromR, fb2down, node2Dot,
+      outW2, tap2Dot, outWire, outPort, voutLbl,
+      gnd1Bus, gnd1Wire, gnd1a, gnd1b, gnd1c, gnd1Lbl,
+      gnd2Bus, gnd2Wire, gnd2a, gnd2b, gnd2c, gnd2Lbl,
+      inputHL, outputHL, inputDomLbl, outputDomLbl,
+      ...barrierDashes, barrierLbl,
+    ];
+
+    // ═══════════════════════════════════════════════
+    //  SECTION 2: Patient Safety Demo
+    // ═══════════════════════════════════════════════
+
+    const V_MAINS = 240;
+    const CAP_MIN = 1e-12, CAP_MAX = 100e-12;
+    const FREQ_MIN = 50, FREQ_MAX = 500000;
+    const THRESHOLD_UA = 10;
+
+    function capFromSlider(v) {
+      return CAP_MIN * Math.pow(CAP_MAX / CAP_MIN, v / 1000);
+    }
+    function freqFromSlider(v) {
+      return FREQ_MIN * Math.pow(FREQ_MAX / FREQ_MIN, v / 1000);
+    }
+    function computeLeakage(capF, freqHz) {
+      const Xc = 1 / (2 * Math.PI * freqHz * capF);
+      return { Xc, Ileak: V_MAINS / Xc };
+    }
+    function formatCap(c) {
+      return (c * 1e12).toFixed(1) + ' pF';
+    }
+    function formatFreq(f) {
+      if (f >= 1e6) return (f / 1e6).toFixed(1) + ' MHz';
+      if (f >= 1e3) return (f / 1e3).toFixed(1) + ' kHz';
+      return f.toFixed(0) + ' Hz';
+    }
+    function formatImpedance(z) {
+      if (z >= 1e9) return (z / 1e9).toFixed(1) + ' GΩ';
+      if (z >= 1e6) return (z / 1e6).toFixed(1) + ' MΩ';
+      if (z >= 1e3) return (z / 1e3).toFixed(1) + ' kΩ';
+      return z.toFixed(0) + ' Ω';
+    }
+    function formatCurrent(iA) {
+      const iUA = iA * 1e6;
+      if (iUA >= 1000) return (iUA / 1000).toFixed(2) + ' mA';
+      return iUA.toFixed(2) + ' µA';
     }
 
-    // Two op-amp stages split by a barrier
-    const mkOpamp = (cx, cy) => new Polygon({
-      vertices: [[cx - 0.9, cy - 0.7, 0], [cx - 0.9, cy + 0.7, 0], [cx + 0.9, cy, 0]],
-      color: ACCENT, strokeWidth: 2, fillOpacity: 0
+    // Section 2 title
+    const s2Title = new Text({ text: 'Patient Safety Demo', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    await s2Title.loadGlyphs?.();
+    s2Title.moveTo([-3.5, 3.5, 0]);
+    if (typeof s2Title.getLeft === 'function') {
+      s2Title.shift([-6.2 - s2Title.getLeft()[0], 0, 0]);
+    }
+    scene.add(s2Title);
+    try { s2Title.setOpacity?.(0); } catch(e){}
+
+    // Section 2 manim objects: patient-equipment schematic
+    const s2ManimObjs = [];
+
+    // Equipment box
+    const equipBox = new Rectangle({ width: 2.4, height: 2.0, color: BLUE, strokeWidth: 2, fillOpacity: 0.08 });
+    equipBox.moveTo([-5.0, 0.0, 0]);
+    const equipLbl = new Text({ text: 'Medical Equipment', fontSize: 11, color: BLUE, fontUrl: FONT_URL });
+    await equipLbl.loadGlyphs?.();
+    equipLbl.moveTo([-5.0, 0.7, 0]);
+    const mainsLbl = new Text({ text: '240V AC Mains', fontSize: 9, color: MUTED, fontUrl: FONT_URL });
+    await mainsLbl.loadGlyphs?.();
+    mainsLbl.moveTo([-5.0, -0.7, 0]);
+    s2ManimObjs.push(equipBox, equipLbl, mainsLbl);
+
+    // Isolation barrier (in section 2 context)
+    const s2BarrierBox = new Rectangle({ width: 0.6, height: 2.0, color: YELLOW, strokeWidth: 2, fillOpacity: 0.12 });
+    s2BarrierBox.moveTo([-2.5, 0.0, 0]);
+    const s2BarrierLbl = new Text({ text: 'ISO', fontSize: 11, color: YELLOW, fontUrl: FONT_URL });
+    await s2BarrierLbl.loadGlyphs?.();
+    s2BarrierLbl.moveTo([-2.5, 0.0, 0]);
+    s2ManimObjs.push(s2BarrierBox, s2BarrierLbl);
+
+    // Patient icon (simple body outline)
+    const patientHead = new Circle({ radius: 0.25, color: ACCENT, strokeWidth: 2, fillOpacity: 0.1 });
+    patientHead.moveTo([-0.5, 1.3, 0]);
+    const patientBody = new Line({ start: [-0.5, 1.05, 0], end: [-0.5, 0.0, 0], color: ACCENT, strokeWidth: 2 });
+    const patientArmL = new Line({ start: [-0.5, 0.7, 0], end: [-1.0, 0.3, 0], color: ACCENT, strokeWidth: 2 });
+    const patientArmR = new Line({ start: [-0.5, 0.7, 0], end: [0.0, 0.3, 0], color: ACCENT, strokeWidth: 2 });
+    const patientLegL = new Line({ start: [-0.5, 0.0, 0], end: [-0.9, -0.7, 0], color: ACCENT, strokeWidth: 2 });
+    const patientLegR = new Line({ start: [-0.5, 0.0, 0], end: [-0.1, -0.7, 0], color: ACCENT, strokeWidth: 2 });
+    const patientLbl = new Text({ text: 'Patient', fontSize: 14, color: ACCENT, fontUrl: FONT_URL });
+    await patientLbl.loadGlyphs?.();
+    patientLbl.moveTo([-0.5, 1.75, 0]);
+    s2ManimObjs.push(patientHead, patientBody, patientArmL, patientArmR, patientLegL, patientLegR, patientLbl);
+
+    // Electrode wire: equipment → barrier → patient
+    const elecWire1 = new Line({ start: [-3.8, 0.3, 0], end: [-2.8, 0.3, 0], color: FG, strokeWidth: 1.8 });
+    const elecWire2 = new Line({ start: [-2.2, 0.3, 0], end: [-1.0, 0.3, 0], color: FG, strokeWidth: 1.8 });
+    const elecWire3 = new Line({ start: [-3.8, -0.3, 0], end: [-2.8, -0.3, 0], color: FG, strokeWidth: 1.8 });
+    const elecWire4 = new Line({ start: [-2.2, -0.3, 0], end: [-1.0, -0.3, 0], color: FG, strokeWidth: 1.8 });
+    s2ManimObjs.push(elecWire1, elecWire2, elecWire3, elecWire4);
+
+    // Electrode dots on patient
+    const elecDot1 = new Dot({ point: [-1.0, 0.3, 0], color: RED, radius: 0.08 });
+    const elecDot2 = new Dot({ point: [-1.0, -0.3, 0], color: RED, radius: 0.08 });
+    s2ManimObjs.push(elecDot1, elecDot2);
+
+    // Ground path labels
+    const s2Gnd1Lbl = new Text({ text: 'Equipment Ground', fontSize: 9, color: MUTED, fontUrl: FONT_URL });
+    await s2Gnd1Lbl.loadGlyphs?.();
+    s2Gnd1Lbl.moveTo([-5.0, -1.4, 0]);
+    const s2Gnd2Lbl = new Text({ text: 'Patient Ground', fontSize: 9, color: MUTED, fontUrl: FONT_URL });
+    await s2Gnd2Lbl.loadGlyphs?.();
+    s2Gnd2Lbl.moveTo([-0.5, -1.2, 0]);
+    s2ManimObjs.push(s2Gnd1Lbl, s2Gnd2Lbl);
+
+    // Safe current label
+    const safeLabel = new Text({ text: 'Signal path (isolated)', fontSize: 11, color: ACCENT, fontUrl: FONT_URL });
+    await safeLabel.loadGlyphs?.();
+    safeLabel.moveTo([-1.8, -1.8, 0]);
+    s2ManimObjs.push(safeLabel);
+
+    // Leakage current annotation
+    const leakAnnot = new Text({ text: 'Leakage current through barrier capacitance', fontSize: 10, color: YELLOW, fontUrl: FONT_URL });
+    await leakAnnot.loadGlyphs?.();
+    leakAnnot.moveTo([-2.5, -2.3, 0]);
+    s2ManimObjs.push(leakAnnot);
+
+    // Frequency warning
+    const freqWarn = new Text({ text: 'Higher frequency = more leakage!', fontSize: 10, color: RED, fontUrl: FONT_URL });
+    await freqWarn.loadGlyphs?.();
+    freqWarn.moveTo([-2.5, -2.7, 0]);
+    s2ManimObjs.push(freqWarn);
+
+    // Add all S2 objects hidden
+    s2ManimObjs.forEach(o => {
+      scene.add(o);
+      try { o.setOpacity?.(0); } catch(e){}
     });
 
-    const A1 = mkOpamp(-3.0, 0);
-    const A2 = mkOpamp( 3.0, 0);
+    // ── Canvas-based leakage waveform ──
+    const safetyPanel = document.getElementById('safetyPanel');
+    const safetyCanvas = document.getElementById('safetyCanvas');
+    const capSlider = document.getElementById('capSlider');
+    const freqSlider = document.getElementById('freqSlider');
+    const capValEl = document.getElementById('capVal');
+    const freqValEl = document.getElementById('freqVal');
+    const xcValEl = document.getElementById('xcVal');
+    const ileakValEl = document.getElementById('ileakVal');
+    const safetyStatusEl = document.getElementById('safetyStatus');
 
-    const inL = new Line({ start: [-5.5, 0, 0], end: [-3.9, 0, 0], color: FG });
-    const outR = new Line({ start: [3.9, 0, 0], end: [5.5, 0, 0], color: FG });
-    const inLbl = new MathTex({ latex: 'V_{IN}', color: BLUE });
-    const outLbl = new MathTex({ latex: 'V_{OUT}', color: YELLOW });
-    await inLbl.waitForRender?.();
-    await outLbl.waitForRender?.();
-    inLbl.scale(0.5).nextTo(inL.getStart(), LEFT, 0.1);
-    outLbl.scale(0.5).nextTo(outR.getEnd(), RIGHT, 0.1);
+    const BUF_LEN = 600;
+    const buf = new Float32Array(BUF_LEN);
+    let bufIdx = 0;
+    let sampleRate = 200; // samples per second
+    let rafId = null;
+    let lastTime = 0;
+    let phase = 0;
 
-    // Barrier dashed line
-    const barrier = [];
-    for (let i = 0; i < 12; i++) {
-      const y0 = -2.2 + i * 0.38;
-      barrier.push(new Line({ start: [0, y0, 0], end: [0, y0 + 0.18, 0], color: YELLOW, strokeWidth: 3 }));
+    function updateReadouts() {
+      const cap = capFromSlider(parseFloat(capSlider.value));
+      const freq = freqFromSlider(parseFloat(freqSlider.value));
+      const { Xc, Ileak } = computeLeakage(cap, freq);
+      const ileakUA = Ileak * 1e6;
+
+      capValEl.textContent = formatCap(cap);
+      freqValEl.textContent = formatFreq(freq);
+      xcValEl.textContent = formatImpedance(Xc);
+      ileakValEl.textContent = formatCurrent(Ileak);
+
+      if (ileakUA > THRESHOLD_UA) {
+        safetyStatusEl.textContent = 'DANGER — Leakage current exceeds patient safety threshold!';
+        safetyStatusEl.classList.add('danger');
+      } else {
+        safetyStatusEl.textContent = 'SAFE — Leakage current within IEC 60601 limits';
+        safetyStatusEl.classList.remove('danger');
+      }
     }
-    const barrierLbl = new Text({ text: 'Isolation barrier', fontSize: 14, color: YELLOW, fontUrl: FONT_URL });
-    await barrierLbl.loadGlyphs?.();
-    barrierLbl.moveTo([0, 2.6, 0]);
 
-    // Two ground symbols
-    const gndL = new VGroup(
-      new Line({ start: [-3.0, -1.3, 0], end: [-3.0, -1.9, 0], color: FG }),
-      new Line({ start: [-3.3, -1.9, 0], end: [-2.7, -1.9, 0], color: FG, strokeWidth: 3 })
-    );
-    const gndR = new VGroup(
-      new Line({ start: [3.0, -1.3, 0], end: [3.0, -1.9, 0], color: FG }),
-      new Line({ start: [2.7, -1.9, 0], end: [3.3, -1.9, 0], color: FG, strokeWidth: 3 })
-    );
-    const gnd1L = new Text({ text: 'Gnd 1', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
-    const gnd2L = new Text({ text: 'Gnd 2', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
-    await Promise.all([gnd1L.loadGlyphs?.(), gnd2L.loadGlyphs?.()]);
-    gnd1L.moveTo([-3.0, -2.2, 0]);
-    gnd2L.moveTo([3.0, -2.2, 0]);
+    function drawCanvas(now) {
+      if (!safetyPanel.classList.contains('visible')) return;
+      rafId = requestAnimationFrame(drawCanvas);
 
-    // Sequence: build the two stages
+      const cv = safetyCanvas;
+      const rect = cv.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.round(rect.width * dpr);
+      const h = Math.round(rect.height * dpr);
+      if (cv.width !== w || cv.height !== h) {
+        cv.width = w;
+        cv.height = h;
+      }
+      const ctx = cv.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const cw = rect.width, ch = rect.height;
+
+      // Generate samples
+      const dt = now - lastTime;
+      lastTime = now;
+      const cap = capFromSlider(parseFloat(capSlider.value));
+      const freq = freqFromSlider(parseFloat(freqSlider.value));
+      const { Ileak } = computeLeakage(cap, freq);
+      const ileakUA = Ileak * 1e6;
+      const isDanger = ileakUA > THRESHOLD_UA;
+
+      // Add new samples
+      const samplesPerFrame = Math.max(1, Math.round(sampleRate * (dt / 1000)));
+      const dispFreq = Math.min(freq, 80); // display frequency capped for visibility
+      for (let i = 0; i < samplesPerFrame; i++) {
+        phase += (2 * Math.PI * dispFreq) / sampleRate;
+        if (phase > 2 * Math.PI) phase -= 2 * Math.PI;
+        buf[bufIdx % BUF_LEN] = ileakUA * Math.sin(phase);
+        bufIdx++;
+      }
+
+      // Clear
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, cw, ch);
+
+      // Draw grid
+      const PAD_L = 50, PAD_R = 16, PAD_T = 24, PAD_B = 24;
+      const plotW = cw - PAD_L - PAD_R;
+      const plotH = ch - PAD_T - PAD_B;
+      const plotCY = PAD_T + plotH / 2;
+
+      // Y-axis scale: auto-scale to show threshold or signal, whichever is bigger
+      const yMax = Math.max(THRESHOLD_UA * 1.5, ileakUA * 1.3, 15);
+
+      // Grid lines
+      ctx.strokeStyle = MUTED2;
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([4, 4]);
+      // Zero line
+      ctx.beginPath();
+      ctx.moveTo(PAD_L, plotCY);
+      ctx.lineTo(PAD_L + plotW, plotCY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Threshold lines
+      const threshY_top = plotCY - (THRESHOLD_UA / yMax) * (plotH / 2);
+      const threshY_bot = plotCY + (THRESHOLD_UA / yMax) * (plotH / 2);
+      ctx.strokeStyle = RED;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(PAD_L, threshY_top);
+      ctx.lineTo(PAD_L + plotW, threshY_top);
+      ctx.moveTo(PAD_L, threshY_bot);
+      ctx.lineTo(PAD_L + plotW, threshY_bot);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Threshold label
+      ctx.fillStyle = RED;
+      ctx.font = '9px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('10 µA', PAD_L - 4, threshY_top + 3);
+      ctx.fillText('-10 µA', PAD_L - 4, threshY_bot + 3);
+
+      // Zero label
+      ctx.fillStyle = MUTED;
+      ctx.fillText('0', PAD_L - 4, plotCY + 3);
+
+      // Title
+      ctx.fillStyle = FG;
+      ctx.font = '11px "IBM Plex Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Leakage Current Waveform', PAD_L + plotW / 2, 16);
+
+      // Draw waveform
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = isDanger ? RED : ACCENT;
+      ctx.beginPath();
+      let started = false;
+      const nSamples = Math.min(bufIdx, BUF_LEN);
+      for (let i = 0; i < nSamples; i++) {
+        const idx = (bufIdx - nSamples + i + BUF_LEN) % BUF_LEN;
+        const x = PAD_L + (i / BUF_LEN) * plotW;
+        const val = buf[idx];
+        const y = plotCY - (val / yMax) * (plotH / 2);
+        if (!started) { ctx.moveTo(x, y); started = true; }
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      // Amplitude label
+      ctx.fillStyle = isDanger ? RED : ACCENT;
+      ctx.font = 'bold 12px "IBM Plex Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(ileakUA.toFixed(2) + ' µA', PAD_L + plotW, PAD_T + 16);
+    }
+
+    capSlider.addEventListener('input', updateReadouts);
+    freqSlider.addEventListener('input', updateReadouts);
+
+    // ═══════════════════════════════════════════════
+    //  SECTION SWITCHING
+    // ═══════════════════════════════════════════════
+
+    const secIndicator = document.getElementById('sec-indicator');
+    const prevBtn = document.getElementById('sec-prev');
+    const nextBtn = document.getElementById('sec-next');
+    let currentSection = 'circuit';
+
+    function showSection(sec) {
+      currentSection = sec;
+      if (sec === 'circuit') {
+        secIndicator.textContent = 'Section 1 \u00B7 Circuit';
+        prevBtn.disabled = true;
+        nextBtn.disabled = false;
+        // Show section 1
+        circuitObjs.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        rhsInfo.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        try { title.setOpacity?.(1); } catch(e){}
+        // Hide section 2
+        try { s2Title.setOpacity?.(0); } catch(e){}
+        s2ManimObjs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        safetyPanel.classList.remove('visible');
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+        // Signal dot loop will resume on its own (checks currentSection)
+        sigAnimActive = true;
+      } else {
+        secIndicator.textContent = 'Section 2 \u00B7 Safety Demo';
+        prevBtn.disabled = false;
+        nextBtn.disabled = true;
+        // Stop signal dot animation — loop will pause via sigAnimActive check
+        sigAnimActive = false;
+        // Dots are created fresh each cycle, no persistent refs to clean up
+        // Hide section 1 info + highlights
+        rhsInfo.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        [inputHL, outputHL, inputDomLbl, outputDomLbl, ...barrierDashes, barrierLbl].forEach(o => {
+          try { o.setOpacity?.(0); } catch(e){}
+        });
+        try { title.setOpacity?.(0); } catch(e){}
+        // Hide circuit objects too for cleaner view
+        circuitObjs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        // Show section 2
+        try { s2Title.setOpacity?.(1); } catch(e){}
+        s2ManimObjs.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        safetyPanel.classList.add('visible');
+        updateReadouts();
+        // Reset waveform buffer
+        buf.fill(0);
+        bufIdx = 0;
+        phase = 0;
+        lastTime = performance.now();
+        if (!rafId) rafId = requestAnimationFrame(drawCanvas);
+      }
+    }
+
+    prevBtn.addEventListener('click', () => showSection('circuit'));
+    nextBtn.addEventListener('click', () => showSection('safety'));
+
+    // Keyboard nav
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' && currentSection === 'circuit') {
+        showSection('safety');
+      } else if (e.key === 'ArrowLeft' && currentSection === 'safety') {
+        showSection('circuit');
+      }
+    });
+
+    // ═══════════════════════════════════════════════
+    //  ANIMATION SEQUENCE (Section 1)
+    // ═══════════════════════════════════════════════
+
+    const FAST = 0.5;
+
+    // 1. Title
     await scene.play(new Write(title, { duration: 0.7 }));
-    await scene.play(new Create(A1), new Create(A2));
+
+    // 2. A1 op-amp + terminals
     await scene.play(
-      new Create(inL), new Create(outR),
-      new Write(inLbl), new Write(outLbl),
-      new Create(gndL), new Create(gndR),
-      new FadeIn(gnd1L), new FadeIn(gnd2L)
+      new Create(triA1, { duration: FAST }),
+      new Write(t1.plus, { duration: FAST }), new Write(t1.minus, { duration: FAST }),
+      new FadeIn(a1Lbl, { duration: FAST }),
     );
-    for (const b of barrier) scene.add(b);
-    await scene.play(new FadeIn(barrierLbl));
 
-    // Signal dot
-    const dot = new Dot({ point: [-5.5, 0, 0], color: BLUE, radius: 0.1 });
-    scene.add(dot);
-    const pathIn = new Line({ start: [-5.5, 0, 0], end: [-0.3, 0, 0] });
-    await scene.play(new MoveAlongPath(dot, { path: pathIn, duration: 1.2, rateFunc: linear }));
-    await scene.play(new FadeOut(dot));
-    const dot2 = new Dot({ point: [0.3, 0, 0], color: BLUE, radius: 0.1 });
-    scene.add(dot2);
-    await scene.play(new FadeIn(dot2));
-    await scene.play(new MoveAlongPath(dot2, { path: new Line({ start: [0.3, 0, 0], end: [5.5, 0, 0] }), duration: 1.2, rateFunc: linear }));
-
-    // Three coupling method icons along the bottom
-    const iconY = -3.0;
-    // Transformer (two coils)
-    const trCore = new Rectangle({ width: 0.6, height: 0.4, color: RED, strokeWidth: 2 });
-    trCore.moveTo([-3.5, iconY, 0]);
-    const trLbl = new Text({ text: 'Transformer', fontSize: 11, color: RED, fontUrl: FONT_URL });
-    await trLbl.loadGlyphs?.();
-    trLbl.moveTo([-3.5, iconY - 0.45, 0]);
-
-    // Optical (LED+photodiode)
-    const led = new Circle({ radius: 0.12, color: YELLOW, strokeWidth: 2, fillOpacity: 0.4 });
-    led.moveTo([-0.3, iconY, 0]);
-    const photo = new Circle({ radius: 0.12, color: YELLOW, strokeWidth: 2, fillOpacity: 0 });
-    photo.moveTo([0.3, iconY, 0]);
-    const optBeam = new Line({ start: [-0.15, iconY, 0], end: [0.15, iconY, 0], color: YELLOW });
-    const optLbl = new Text({ text: 'Optical', fontSize: 11, color: YELLOW, fontUrl: FONT_URL });
-    await optLbl.loadGlyphs?.();
-    optLbl.moveTo([0, iconY - 0.45, 0]);
-
-    // Capacitive (two plates)
-    const plate1 = new Line({ start: [3.2, iconY - 0.18, 0], end: [3.2, iconY + 0.18, 0], color: MAG, strokeWidth: 3 });
-    const plate2 = new Line({ start: [3.5, iconY - 0.18, 0], end: [3.5, iconY + 0.18, 0], color: MAG, strokeWidth: 3 });
-    const capLbl = new Text({ text: 'Capacitive', fontSize: 11, color: MAG, fontUrl: FONT_URL });
-    await capLbl.loadGlyphs?.();
-    capLbl.moveTo([3.35, iconY - 0.45, 0]);
-
+    // 3. Input wiring + V_IN
     await scene.play(
-      new Create(trCore), new FadeIn(trLbl),
-      new Create(led), new Create(photo), new Create(optBeam), new FadeIn(optLbl),
-      new Create(plate1), new Create(plate2), new FadeIn(capLbl)
+      new Create(inWireL, { duration: FAST }),
+      new Write(vinLbl, { duration: FAST }),
     );
-    for (const b of bulletObjs) {
-      await scene.play(new FadeIn(b, { duration: 0.18 }));
+
+    // 4. A1 feedback
+    await scene.play(
+      new Create(stub1, { duration: FAST }), new FadeIn(node1Dot, { duration: FAST }),
+      new Create(fb1Vert, { duration: FAST }), new Create(fb1toR, { duration: FAST }),
+      new Create(Rf1, { duration: FAST }), new Write(Rf1L, { duration: FAST }),
+      new Create(fb1fromR, { duration: FAST }), new Create(fb1down, { duration: FAST }),
+      new Create(outW1, { duration: FAST }), new FadeIn(tap1Dot, { duration: FAST }),
+    );
+
+    // 5. Modulator
+    await scene.play(
+      new Create(modWireIn, { duration: FAST }),
+      new Create(modBox, { duration: FAST }), new FadeIn(modLbl, { duration: FAST }),
+      new Create(modToTx, { duration: FAST }),
+    );
+
+    // 6. Isolation barrier + transformer
+    for (const d of barrierDashes) scene.add(d);
+    await scene.play(
+      new FadeIn(barrierLbl, { duration: FAST }),
+      new Create(coilL1, { duration: FAST }), new Create(coilR1, { duration: FAST }),
+      new Create(core1, { duration: FAST }), new Create(core2, { duration: FAST }),
+    );
+
+    // 7. Demodulator
+    await scene.play(
+      new Create(txToDemod, { duration: FAST }),
+      new Create(demodBox, { duration: FAST }), new FadeIn(demodLbl, { duration: FAST }),
+      new Create(demodToA2, { duration: FAST }), new Create(demodToA2h, { duration: FAST }),
+    );
+
+    // 8. A2 op-amp + output
+    await scene.play(
+      new Create(triA2, { duration: FAST }),
+      new Write(t2.plus, { duration: FAST }), new Write(t2.minus, { duration: FAST }),
+      new FadeIn(a2Lbl, { duration: FAST }),
+    );
+
+    // 9. A2 feedback
+    await scene.play(
+      new Create(stub2, { duration: FAST }), new FadeIn(node2Dot, { duration: FAST }),
+      new Create(fb2Vert, { duration: FAST }), new Create(fb2toR, { duration: FAST }),
+      new Create(Rf2, { duration: FAST }), new Write(Rf2L, { duration: FAST }),
+      new Create(fb2fromR, { duration: FAST }), new Create(fb2down, { duration: FAST }),
+      new Create(outW2, { duration: FAST }), new FadeIn(tap2Dot, { duration: FAST }),
+    );
+
+    // 10. Output
+    await scene.play(
+      new Create(outWire, { duration: FAST }),
+      new Create(outPort, { duration: FAST }),
+      new Write(voutLbl, { duration: FAST }),
+    );
+
+    // 11. Ground buses + symbols
+    await scene.play(
+      new Create(gnd1Bus, { duration: FAST }), new Create(gnd1Wire, { duration: FAST }),
+      new Create(gnd1a, { duration: FAST }), new Create(gnd1b, { duration: FAST }), new Create(gnd1c, { duration: FAST }),
+      new FadeIn(gnd1Lbl, { duration: FAST }),
+      new Create(gnd2Bus, { duration: FAST }), new Create(gnd2Wire, { duration: FAST }),
+      new Create(gnd2a, { duration: FAST }), new Create(gnd2b, { duration: FAST }), new Create(gnd2c, { duration: FAST }),
+      new FadeIn(gnd2Lbl, { duration: FAST }),
+    );
+
+    // 12. Domain highlight boxes
+    await scene.play(
+      new FadeIn(inputHL, { duration: 0.6 }), new FadeIn(outputHL, { duration: 0.6 }),
+      new FadeIn(inputDomLbl, { duration: 0.6 }), new FadeIn(outputDomLbl, { duration: 0.6 }),
+    );
+
+    // 13. Info bullets
+    const bulletGroups = [
+      [d1, b1l1, b1l2], [d2, b2l1, b2l2], [d3, b3l1, b3l2], [d4, b4l1, b4l2],
+    ];
+    for (const grp of bulletGroups) {
+      await scene.play(...grp.map(o => new FadeIn(o, { duration: 0.35 })));
     }
-    await scene.wait(2);
+
+    // 14. Equation box
+    await scene.play(
+      new Create(eqBox, { duration: 0.6 }),
+      new Write(eqn1, { duration: 0.6 }),
+      new Write(eqn2, { duration: 0.6 }),
+    );
+
+    // 15. Continuous signal dot — pure manim async loop
+    // Build Line paths for each segment, then loop MoveAlongPath forever.
+
+    let sigAnimActive = true;
+
+    // Input side path segments (blue dot: V_IN → A1 → MOD)
+    const sigSegsIn = [
+      new Line({ start: [VIN_X + 0.3, t1.plusY, 0], end: [A1_CX - TRI_HALF_W, t1.plusY, 0] }),
+      new Line({ start: [A1_CX - TRI_HALF_W, t1.plusY, 0], end: [A1_CX + TRI_HALF_W, A1_CY, 0] }),
+      new Line({ start: [A1_CX + TRI_HALF_W, A1_CY, 0], end: [TAP1_X, A1_CY, 0] }),
+      new Line({ start: [TAP1_X, A1_CY, 0], end: [MOD_CX - MOD_W / 2, A1_CY, 0] }),
+      new Line({ start: [MOD_CX - MOD_W / 2, A1_CY, 0], end: [MOD_CX, A1_CY, 0] }),
+    ];
+    // Photon path: sine-wave wiggle from MOD across barrier to DEMOD
+    const PHOTON_STEPS = 40;
+    const PHOTON_AMP = 0.2;   // vertical wiggle amplitude
+    const PHOTON_WAVES = 4;   // number of full wavelengths
+    const photonX0 = MOD_CX, photonX1 = DEMOD_CX;
+    const photonY0 = A1_CY;
+    const photonSegs = [];
+    for (let i = 0; i < PHOTON_STEPS; i++) {
+      const t0 = i / PHOTON_STEPS, t1p = (i + 1) / PHOTON_STEPS;
+      const x0 = photonX0 + (photonX1 - photonX0) * t0;
+      const x1 = photonX0 + (photonX1 - photonX0) * t1p;
+      const y0 = photonY0 + PHOTON_AMP * Math.sin(2 * Math.PI * PHOTON_WAVES * t0);
+      const y1 = photonY0 + PHOTON_AMP * Math.sin(2 * Math.PI * PHOTON_WAVES * t1p);
+      photonSegs.push(new Line({ start: [x0, y0, 0], end: [x1, y1, 0] }));
+    }
+    // Output side path segments (blue dot: DEMOD → A2 → V_OUT)
+    const sigSegsOut = [
+      new Line({ start: [DEMOD_CX, A2_CY, 0], end: [DEMOD_CX + DEMOD_W / 2, A2_CY, 0] }),
+      new Line({ start: [DEMOD_CX + DEMOD_W / 2, A2_CY, 0], end: [demodOutX, t2.plusY, 0] }),
+      new Line({ start: [demodOutX, t2.plusY, 0], end: [A2_CX - TRI_HALF_W, t2.plusY, 0] }),
+      new Line({ start: [A2_CX - TRI_HALF_W, t2.plusY, 0], end: [A2_CX + TRI_HALF_W, A2_CY, 0] }),
+      new Line({ start: [A2_CX + TRI_HALF_W, A2_CY, 0], end: [OUT_X, A2_CY, 0] }),
+    ];
+
+    // Duration proportional to length
+    function segLen(seg) {
+      const s = seg.getStart(), e = seg.getEnd();
+      const dx = e[0] - s[0], dy = e[1] - s[1];
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    const SPEED = 3.0;
+    function segDur(seg) { return Math.max(0.08, segLen(seg) / SPEED); }
+
+    async function signalLoop() {
+      while (sigAnimActive) {
+        if (currentSection !== 'circuit') {
+          await scene.wait(0.5);
+          continue;
+        }
+
+        // Create fresh dots each cycle (FadeOut leaves opacity at 0, can't reuse)
+        const dot1 = new Dot({ point: [VIN_X + 0.3, t1.plusY, 0], color: BLUE, radius: 0.1 });
+        const dotPh = new Dot({ point: [MOD_CX, A1_CY, 0], color: YELLOW, radius: 0.08 });
+        const dot2 = new Dot({ point: [DEMOD_CX, A2_CY, 0], color: BLUE, radius: 0.1 });
+
+        // ── Phase 1: Blue dot travels V_IN → through A1 → into MOD center ──
+        scene.add(dot1);
+        for (const seg of sigSegsIn) {
+          if (!sigAnimActive || currentSection !== 'circuit') break;
+          await scene.play(new MoveAlongPath(dot1, { path: seg, duration: segDur(seg), rateFunc: linear }));
+        }
+        if (!sigAnimActive || currentSection !== 'circuit') { try { scene.remove(dot1); } catch(e){} continue; }
+
+        // ── Phase 2: Blue dot pauses at MOD, then fades out (absorbed) ──
+        await scene.wait(0.3);
+        await scene.play(new FadeOut(dot1, { duration: 0.25 }));
+        scene.remove(dot1);
+
+        if (!sigAnimActive || currentSection !== 'circuit') continue;
+
+        // ── Phase 3: Yellow photon wiggles from MOD to DEMOD with visible wave trail ──
+        scene.add(dotPh);
+        await scene.play(new FadeIn(dotPh, { duration: 0.12 }));
+        const photonDur = 0.8 / PHOTON_STEPS;
+        const waveTrail = []; // collect visible trail lines
+        for (let si = 0; si < photonSegs.length; si++) {
+          if (!sigAnimActive || currentSection !== 'circuit') break;
+          // Draw trail segment behind the dot
+          const seg = photonSegs[si];
+          const s = seg.getStart(), e = seg.getEnd();
+          const trail = new Line({ start: [s[0], s[1], 0], end: [e[0], e[1], 0], color: YELLOW, strokeWidth: 2 });
+          scene.add(trail);
+          waveTrail.push(trail);
+          await scene.play(new MoveAlongPath(dotPh, { path: seg, duration: photonDur, rateFunc: linear }));
+        }
+
+        if (!sigAnimActive || currentSection !== 'circuit') {
+          try { scene.remove(dotPh); } catch(e){}
+          waveTrail.forEach(l => { try { scene.remove(l); } catch(e){} });
+          continue;
+        }
+
+        // ── Phase 4: Photon + wave absorbed by DEMOD → blue dot emerges ──
+        // Fade out dot and remove wave trail
+        await scene.play(new FadeOut(dotPh, { duration: 0.15 }));
+        scene.remove(dotPh);
+        waveTrail.forEach(l => { try { scene.remove(l); } catch(e){} });
+
+        scene.add(dot2);
+        await scene.play(new FadeIn(dot2, { duration: 0.15 }));
+
+        if (!sigAnimActive || currentSection !== 'circuit') { try { scene.remove(dot2); } catch(e){} continue; }
+
+        // ── Phase 5: Blue dot travels DEMOD → through A2 → V_OUT ──
+        for (const seg of sigSegsOut) {
+          if (!sigAnimActive || currentSection !== 'circuit') break;
+          await scene.play(new MoveAlongPath(dot2, { path: seg, duration: segDur(seg), rateFunc: linear }));
+        }
+        await scene.play(new FadeOut(dot2, { duration: 0.2 }));
+        scene.remove(dot2);
+
+        if (!sigAnimActive || currentSection !== 'circuit') continue;
+
+        // Brief pause before next cycle
+        await scene.wait(0.4);
+      }
+    }
+
+    // Fire and forget — runs forever in background
+    signalLoop();
   </script>
 </body>
 </html>

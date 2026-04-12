@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 1 — Preamble</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { /* ignore */ }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+  <style>
+    /* Pin the slide to exactly the viewport — no overflow */
+    html, body.slide {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Let the stage grow to fill whatever vertical space remains
+       after the header; unset aspect-ratio so height is flex-driven */
+    .manim-stage {
+      flex: 1;
+      min-height: 0;       /* required for flex children to shrink */
+      aspect-ratio: unset;
+      max-height: none;
+      background: #000;    /* letterbox bars are black, not grey */
+    }
+
+    /* Video fills the stage completely */
+    .manim-stage video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Quoted portion of the title in accent colour */
+    .title-quote {
+      color: var(--slide-accent);
+      font-style: italic;
+    }
+  </style>
+</head>
+
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">01 / 19</span>
+    <h1>Op-amps: <span class="title-quote">"but these go to eleven"</span></h1>
+  </header>
+
+  <div class="manim-stage">
+    <video controls>
+      <source src="../Videos/SpinalTap.mp4" type="video/mp4">
+      Your browser does not support the video element.
+    </video>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide 0 — Purusall</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="../../theme.css">
+  <link rel="stylesheet" href="slide.css">
+  <script src="../../theme.js"></script>
+  <script>
+    (function () {
+      var qp = new URLSearchParams(location.search);
+      var qt = qp.get('theme');
+      var ss = null;
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { }
+      var pick = (qt === 'dark' || qt === 'light') ? qt
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
+      if (pick) document.documentElement.setAttribute('data-theme', pick);
+      window.addEventListener('themechange', function (e) {
+        try {
+          var t = e && e.detail && e.detail.theme;
+          if (t) sessionStorage.setItem('slideTheme', t);
+        } catch (err) { }
+      });
+      if (window.parent !== window) {
+        var style = document.createElement('style');
+        style.textContent = '#theme-toggle{display:none !important;}';
+        document.head.appendChild(style);
+      }
+    })();
+  </script>
+  <style>
+    html, body.slide { height: 100vh; overflow: hidden; }
+
+    .perusal-body {
+      flex: 1; display: flex; gap: 24px;
+      max-width: 1400px; width: 100%; margin: 0 auto; min-height: 0;
+    }
+
+    /* Left panel */
+    .perusal-input {
+      display: flex; flex-direction: column; gap: 10px;
+      width: 300px; flex-shrink: 0; overflow-y: auto;
+    }
+
+    .perusal-input label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      color: var(--slide-text-dim); letter-spacing: 0.5px; text-transform: uppercase;
+    }
+
+    .perusal-input textarea {
+      min-height: 80px; max-height: 140px; resize: vertical;
+      background: var(--slide-surface); color: var(--slide-text);
+      border: 1px solid var(--slide-border); border-radius: 8px;
+      padding: 10px 12px; font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px; line-height: 1.5; outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .perusal-input textarea::placeholder { color: var(--slide-text-muted); }
+    .perusal-input textarea:focus { border-color: var(--slide-accent); }
+
+    .perusal-btn {
+      align-self: flex-start; background: var(--slide-surface);
+      color: var(--slide-accent); border: 1px solid var(--slide-accent);
+      border-radius: 6px; padding: 7px 16px;
+      font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .perusal-btn:hover { background: rgba(106, 170, 142, 0.12); }
+
+    /* Controls panel */
+    .easter-eggs {
+      display: flex; flex-direction: column; gap: 4px;
+      margin-top: auto; padding-top: 10px;
+      border-top: 1px solid var(--slide-border);
+    }
+
+    .easter-eggs summary {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      color: var(--slide-text-muted); cursor: pointer;
+      letter-spacing: 0.5px; text-transform: uppercase; user-select: none;
+    }
+    .easter-eggs summary:hover { color: var(--slide-text-dim); }
+
+    .toggle-grid { display: flex; flex-direction: column; gap: 5px; padding-top: 6px; }
+
+    .toggle-row { display: flex; align-items: center; gap: 8px; }
+
+    .toggle-row input[type="checkbox"] { accent-color: var(--slide-accent); }
+
+    .toggle-row label, .slider-row label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+      color: var(--slide-text-dim); letter-spacing: 0; text-transform: none; cursor: pointer;
+    }
+    .toggle-row label:hover, .slider-row label:hover { color: var(--slide-text); }
+
+    .slider-row {
+      display: flex; flex-direction: column; gap: 3px; padding: 2px 0;
+    }
+
+    .slider-row .slider-head {
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .slider-row .slider-val {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      color: var(--slide-text-muted); min-width: 32px; text-align: right;
+    }
+
+    .slider-row input[type="range"] {
+      width: 100%; accent-color: var(--slide-accent); height: 4px;
+    }
+
+    .section-label {
+      font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+      color: var(--slide-text-muted); letter-spacing: 1px; text-transform: uppercase;
+      margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--slide-border);
+    }
+
+    /* Right: bubble arena */
+    .bubble-arena {
+      flex: 1; position: relative; background: var(--slide-surface);
+      border: 1px solid var(--slide-border); border-radius: 10px; overflow: hidden;
+    }
+
+    .bubble {
+      position: absolute; border-radius: 999px; padding: 10px 18px;
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 14px;
+      color: var(--slide-text); white-space: nowrap; max-width: 280px;
+      overflow: hidden; text-overflow: ellipsis; user-select: none;
+      pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: opacity 0.3s;
+    }
+
+    .field-canvas {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    @media (max-width: 900px) {
+      .perusal-body { flex-direction: column; }
+      .perusal-input { width: 100%; }
+      .bubble-arena { min-height: 300px; }
+    }
+  </style>
+</head>
+
+<body class="slide">
+  <header class="slide-header">
+    <span class="slide-num">00 / 20</span>
+    <h1>Purusall</h1>
+    <p class="slide-sub">Thoughts / input from this week's readings</p>
+  </header>
+
+  <div class="perusal-body">
+    <div class="perusal-input">
+      <label for="bubble-text">Add a bubble</label>
+      <textarea id="bubble-text" placeholder="Type something here..."></textarea>
+      <button class="perusal-btn" id="add-btn" type="button">Launch</button>
+
+      <details class="easter-eggs" open>
+        <summary>Physics</summary>
+        <div class="toggle-grid">
+          <div class="toggle-row">
+            <input type="checkbox" id="tog-collision">
+            <label for="tog-collision">Collision</label>
+          </div>
+          <div class="toggle-row">
+            <input type="checkbox" id="tog-gravity">
+            <label for="tog-gravity">Gravity</label>
+          </div>
+          <div class="toggle-row">
+            <input type="checkbox" id="tog-particles">
+            <label for="tog-particles">Particles</label>
+          </div>
+          <div class="toggle-row">
+            <input type="checkbox" id="tog-streamlines">
+            <label for="tog-streamlines">Streamlines</label>
+          </div>
+
+          <div class="section-label">Vector fields</div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="tog-vortex">
+            <label for="tog-vortex">Vortex field</label>
+          </div>
+          <div class="slider-row" id="vortex-controls" style="display:none">
+            <div class="slider-head">
+              <label>Strength</label>
+              <span class="slider-val" id="vortex-str-val">0.04</span>
+            </div>
+            <input type="range" id="vortex-str" min="0.005" max="0.15" step="0.005" value="0.04">
+            <div class="slider-head">
+              <label>Direction</label>
+              <span class="slider-val" id="vortex-dir-val">CW</span>
+            </div>
+            <input type="range" id="vortex-dir" min="-1" max="1" step="2" value="1">
+          </div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="tog-sink">
+            <label for="tog-sink">Sink field</label>
+          </div>
+
+          <div class="section-label">Aero</div>
+
+          <div class="toggle-row">
+            <input type="checkbox" id="tog-aerofoil">
+            <label for="tog-aerofoil">NACA aerofoil</label>
+          </div>
+          <div class="slider-row" id="aero-controls" style="display:none">
+            <div class="slider-head">
+              <label>Angle of attack</label>
+              <span class="slider-val" id="aoa-val">5</span>
+            </div>
+            <input type="range" id="aoa" min="-10" max="20" step="1" value="5">
+            <div class="slider-head">
+              <label>Freestream speed</label>
+              <span class="slider-val" id="freestream-val">1.5</span>
+            </div>
+            <input type="range" id="freestream" min="0.3" max="4" step="0.1" value="1.5">
+          </div>
+        </div>
+      </details>
+    </div>
+    <div class="bubble-arena" id="arena">
+      <canvas class="field-canvas" id="field-canvas"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // --- DOM refs ---
+    const arena = document.getElementById('arena');
+    const fc = document.getElementById('field-canvas');
+    const ctx = fc.getContext('2d');
+    const input = document.getElementById('bubble-text');
+    const addBtn = document.getElementById('add-btn');
+
+    const tog = {
+      collision:   document.getElementById('tog-collision'),
+      gravity:     document.getElementById('tog-gravity'),
+      particles:   document.getElementById('tog-particles'),
+      streamlines: document.getElementById('tog-streamlines'),
+      vortex:      document.getElementById('tog-vortex'),
+      sink:        document.getElementById('tog-sink'),
+      aerofoil:    document.getElementById('tog-aerofoil'),
+    };
+
+    const vortexStr   = document.getElementById('vortex-str');
+    const vortexDir   = document.getElementById('vortex-dir');
+    const vortexCtrl  = document.getElementById('vortex-controls');
+    const aoaSlider   = document.getElementById('aoa');
+    const freeSlider  = document.getElementById('freestream');
+    const aeroCtrl    = document.getElementById('aero-controls');
+
+    // Show/hide sub-controls
+    tog.vortex.addEventListener('change', () => {
+      vortexCtrl.style.display = tog.vortex.checked ? '' : 'none';
+    });
+    tog.aerofoil.addEventListener('change', () => {
+      aeroCtrl.style.display = tog.aerofoil.checked ? '' : 'none';
+    });
+
+    // Readouts
+    vortexStr.addEventListener('input', () => {
+      document.getElementById('vortex-str-val').textContent = vortexStr.value;
+    });
+    vortexDir.addEventListener('input', () => {
+      document.getElementById('vortex-dir-val').textContent = +vortexDir.value > 0 ? 'CW' : 'CCW';
+    });
+    aoaSlider.addEventListener('input', () => {
+      document.getElementById('aoa-val').textContent = aoaSlider.value;
+    });
+    freeSlider.addEventListener('input', () => {
+      document.getElementById('freestream-val').textContent = freeSlider.value;
+    });
+
+    // --- Bubbles ---
+    const bubbles = [];
+
+    const PALETTE = [
+      { bg: 'rgba(106,170,142,0.18)', border: 'rgba(106,170,142,0.45)' },
+      { bg: 'rgba(90,141,238,0.18)',  border: 'rgba(90,141,238,0.45)' },
+      { bg: 'rgba(255,204,68,0.18)',  border: 'rgba(255,204,68,0.45)' },
+      { bg: 'rgba(224,96,80,0.18)',   border: 'rgba(224,96,80,0.45)' },
+      { bg: 'rgba(208,112,208,0.18)', border: 'rgba(208,112,208,0.45)' },
+      { bg: 'rgba(88,192,216,0.18)',  border: 'rgba(88,192,216,0.45)' },
+      { bg: 'rgba(255,160,80,0.18)',  border: 'rgba(255,160,80,0.45)' },
+      { bg: 'rgba(160,200,100,0.18)', border: 'rgba(160,200,100,0.45)' },
+    ];
+    let colourIdx = 0;
+    function nextColour() { return PALETTE[colourIdx++ % PALETTE.length]; }
+
+    function createBubble(text) {
+      const el = document.createElement('div');
+      el.className = 'bubble';
+      el.textContent = text;
+      const c = nextColour();
+      el.style.background = c.bg;
+      el.style.border = '1px solid ' + c.border;
+      arena.appendChild(el);
+
+      const elR = el.getBoundingClientRect();
+      const bw = elR.width, bh = elR.height;
+      const rect = arena.getBoundingClientRect();
+      const speed = 0.6 + Math.random() * 0.8;
+      const angle = Math.random() * Math.PI * 2;
+      const b = {
+        el, x: Math.random() * Math.max(1, rect.width - bw),
+        y: Math.random() * Math.max(1, rect.height - bh),
+        vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        w: bw, h: bh, mass: bw * bh
+      };
+      bubbles.push(b);
+      el.style.left = b.x + 'px';
+      el.style.top = b.y + 'px';
+    }
+
+    // --- Particles ---
+    const particles = [];
+    const MAX_PARTICLES = 15000;
+
+    function spawnParticles(W, H) {
+      const target = tog.aerofoil.checked ? MAX_PARTICLES : 10000;
+      while (particles.length < target) {
+        particles.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          px: -1, py: -1,  // previous position for trails
+        });
+      }
+      // Trim excess if field switched
+      if (particles.length > target) particles.length = target;
+    }
+
+    // --- Vector fields ---
+    function getVortexStrength() { return parseFloat(vortexStr.value) || 0.04; }
+    function getVortexDirection() { return parseInt(vortexDir.value) || 1; }
+
+    function vortexField(x, y, cx, cy) {
+      const dx = x - cx, dy = y - cy;
+      const r = Math.sqrt(dx * dx + dy * dy) + 1;
+      const s = getVortexStrength();
+      const d = getVortexDirection();
+      return { fx: -dy / r * s * d, fy: dx / r * s * d };
+    }
+
+    function sinkField(x, y, cx, cy) {
+      const dx = cx - x, dy = cy - y;
+      const r = Math.sqrt(dx * dx + dy * dy) + 1;
+      return { fx: dx / r * 0.03, fy: dy / r * 0.03 };
+    }
+
+    // ============================================================
+    //  Joukowski aerofoil — conformal-mapped potential flow
+    //  Shape and flow field are the SAME mathematical object,
+    //  so streamlines follow the surface exactly.
+    // ============================================================
+
+    // Joukowski parameters
+    const JC   = 1.0;            // conformal-map parameter c
+    const JEPS = 0.10;           // circle offset → ~12 % thickness
+    const JR   = JC + JEPS;      // circle radius in ζ-plane
+    const JCX  = -JEPS;          // circle centre (on real axis)
+
+    // Precompute airfoil outline in the z-plane (normalised coords)
+    const FOIL_N = 120;
+    const foilPts = [];          // { x, y } in z-plane
+    for (let i = 0; i <= FOIL_N; i++) {
+      const theta = 2 * Math.PI * i / FOIL_N;
+      const zr = JCX + JR * Math.cos(theta);
+      const zi = JR * Math.sin(theta);
+      const m2 = zr * zr + zi * zi;
+      foilPts.push({
+        x: zr + JC * JC * zr / m2,
+        y: zi - JC * JC * zi / m2,
+      });
+    }
+    // Measure chord for scaling
+    const foilXTE = foilPts[0].x;                          // trailing edge (θ = 0)
+    const foilXLE = foilPts[Math.round(FOIL_N / 2)].x;    // leading edge  (θ = π)
+    const foilChord = foilXTE - foilXLE;
+    const foilMidX = (foilXTE + foilXLE) / 2;
+
+    // Complex square-root helper
+    function csqrt(ar, ai) {
+      const mag = Math.sqrt(ar * ar + ai * ai);
+      const ang = Math.atan2(ai, ar);
+      return {
+        r: Math.sqrt(mag) * Math.cos(ang / 2),
+        i: Math.sqrt(mag) * Math.sin(ang / 2),
+      };
+    }
+
+    // Inverse Joukowski: z → ζ  (pick the root OUTSIDE the circle)
+    function invJoukowski(zr, zi) {
+      // ζ = (z ± √(z² − 4c²)) / 2
+      const disc_r = zr * zr - zi * zi - 4 * JC * JC;
+      const disc_i = 2 * zr * zi;
+      const sq = csqrt(disc_r, disc_i);
+
+      const a_r = (zr + sq.r) / 2, a_i = (zi + sq.i) / 2;
+      const b_r = (zr - sq.r) / 2, b_i = (zi - sq.i) / 2;
+
+      const da = (a_r - JCX) * (a_r - JCX) + a_i * a_i;
+      const db = (b_r - JCX) * (b_r - JCX) + b_i * b_i;
+      return da >= db ? { r: a_r, i: a_i } : { r: b_r, i: b_i };
+    }
+
+    // Helper: get AoA in radians from slider (positive = nose-up on screen)
+    function getAoaRad() {
+      return (parseFloat(aoaSlider.value) || 5) * Math.PI / 180;
+    }
+
+    // Velocity at screen point (px, py) from Joukowski potential flow.
+    // The airfoil is visually rotated by +aoaRad on screen (nose-up).
+    // Freestream is always horizontal.  We un-rotate screen coords into
+    // the math frame (horizontal airfoil, tilted freestream), compute the
+    // Joukowski flow, then rotate the velocity back to screen space.
+    function aerofoilFlow(px, py, W, H) {
+      const U      = parseFloat(freeSlider.value) || 1.5;
+      const aoaRad = getAoaRad();
+      // In the math frame the airfoil is horizontal; the freestream is at
+      // angle −aoaRad so that positive AoA gives positive lift.
+      const alpha  = -aoaRad;
+
+      const acx   = W * 0.48, acy = H * 0.5;
+      const scale = Math.min(W, H) * 0.52 / foilChord;
+
+      // Screen → centre-relative, normalised
+      const dx = (px - acx) / scale;
+      const dy = (py - acy) / scale;
+
+      // Un-rotate by −aoaRad to reach the math frame (horizontal airfoil)
+      const rc = Math.cos(aoaRad), rs = Math.sin(aoaRad);
+      const mx =  dx * rc + dy * rs;
+      const my = -dx * rs + dy * rc;
+
+      // Now in the math z-plane
+      const zr = mx + foilMidX;
+      const zi = my;
+
+      // z → ζ  (inverse conformal map)
+      const zeta = invJoukowski(zr, zi);
+
+      // ζ' = ζ − circle centre
+      const zpr = zeta.r - JCX, zpi = zeta.i;
+      const zp2 = zpr * zpr + zpi * zpi;
+
+      // Inside the circle → inside the aerofoil body
+      if (zp2 < JR * JR * 0.97) return { fx: 0, fy: 0, inside: true };
+
+      // Kutta condition: Γ = 4πU·R·sin(α)
+      const ca = Math.cos(alpha), sa = Math.sin(alpha);
+      const Gamma = 4 * Math.PI * U * JR * sa;
+      const R2 = JR * JR;
+
+      // --- dw/dζ  (cylinder-plane velocity) ---
+      const zp4 = zp2 * zp2;
+      const inv2r = (zpr * zpr - zpi * zpi) / zp4;
+      const inv2i = (-2 * zpr * zpi) / zp4;
+
+      const t2r = R2 * (ca * inv2r - sa * inv2i);
+      const t2i = R2 * (sa * inv2r + ca * inv2i);
+
+      const vs = Gamma / (2 * Math.PI * zp2);
+      const t3r = vs * zpi;
+      const t3i = vs * zpr;
+
+      const dw_r = U * (ca - t2r) + t3r;
+      const dw_i = U * (-sa - t2i) + t3i;
+
+      // --- dz/dζ = 1 − c²/ζ² ---
+      const ze2 = zeta.r * zeta.r + zeta.i * zeta.i;
+      const ze4 = ze2 * ze2;
+      const izr = (zeta.r * zeta.r - zeta.i * zeta.i) / ze4;
+      const izi = (-2 * zeta.r * zeta.i) / ze4;
+      const dz_r = 1 - JC * JC * izr;
+      const dz_i = -(JC * JC * izi);
+
+      // --- dw/dz = (dw/dζ) / (dz/dζ) ---
+      const den = dz_r * dz_r + dz_i * dz_i;
+      if (den < 1e-12) return { fx: 0, fy: 0, inside: false };
+
+      const vel_r = (dw_r * dz_r + dw_i * dz_i) / den;
+      const vel_i = (dw_i * dz_r - dw_r * dz_i) / den;
+
+      // Math-frame velocity: u = Re(dw/dz), v = −Im(dw/dz)
+      const u_m = vel_r;
+      const v_m = -vel_i;
+
+      // Rotate velocity back to screen frame by +aoaRad
+      return {
+        fx: u_m * rc - v_m * rs,
+        fy: u_m * rs + v_m * rc,
+        inside: false,
+      };
+    }
+
+    // Convert a foil outline point to screen coords, rotated by AoA
+    function foilToScreen(pt, acx, acy, scale) {
+      const dx = (pt.x - foilMidX) * scale;
+      const dy = pt.y * scale;
+      const aoaRad = getAoaRad();
+      const rc = Math.cos(aoaRad), rs = Math.sin(aoaRad);
+      return {
+        sx: acx + dx * rc - dy * rs,
+        sy: acy + dx * rs + dy * rc,
+      };
+    }
+
+    // Is a screen point inside the drawn (rotated) aerofoil polygon?
+    function insideFoilScreen(px, py, W, H) {
+      const acx = W * 0.48, acy = H * 0.5;
+      const scale = Math.min(W, H) * 0.52 / foilChord;
+      let inside = false;
+      for (let i = 0, j = foilPts.length - 1; i < foilPts.length; j = i++) {
+        const a = foilToScreen(foilPts[i], acx, acy, scale);
+        const b = foilToScreen(foilPts[j], acx, acy, scale);
+        if ((a.sy > py) !== (b.sy > py) &&
+            px < (b.sx - a.sx) * (py - a.sy) / (b.sy - a.sy) + a.sx) {
+          inside = !inside;
+        }
+      }
+      return inside;
+    }
+
+    // --- Get combined field at a point ---
+    function fieldAt(px, py, W, H) {
+      const cx = W / 2, cy = H / 2;
+      let fx = 0, fy = 0;
+      if (tog.vortex.checked)   { const v = vortexField(px, py, cx, cy); fx += v.fx; fy += v.fy; }
+      if (tog.sink.checked)     { const s = sinkField(px, py, cx, cy);   fx += s.fx; fy += s.fy; }
+      if (tog.aerofoil.checked) { const a = aerofoilFlow(px, py, W, H);  fx += a.fx; fy += a.fy; }
+      return { fx, fy };
+    }
+
+    // --- Canvas drawing ---
+    function resizeCanvas() {
+      const r = arena.getBoundingClientRect();
+      if (fc.width !== Math.round(r.width) || fc.height !== Math.round(r.height)) {
+        fc.width = Math.round(r.width);
+        fc.height = Math.round(r.height);
+      }
+    }
+
+    function foilPath(target, acx, acy, scale) {
+      target.beginPath();
+      for (let i = 0; i < foilPts.length; i++) {
+        const s = foilToScreen(foilPts[i], acx, acy, scale);
+        if (i === 0) target.moveTo(s.sx, s.sy); else target.lineTo(s.sx, s.sy);
+      }
+      target.closePath();
+    }
+
+    function drawAerofoilShape(W, H) {
+      const acx   = W * 0.48, acy = H * 0.5;
+      const scale = Math.min(W, H) * 0.52 / foilChord;
+
+      // Also punch out the body on the trail canvas so trails don't bleed through
+      if (trailCanvas.width) {
+        foilPath(tctx, acx, acy, scale);
+        const bg = getComputedStyle(document.documentElement)
+          .getPropertyValue('--slide-surface').trim() || 'rgba(16,20,28,0.92)';
+        tctx.fillStyle = bg;
+        tctx.fill();
+      }
+
+      // --- Draw on main canvas ---
+      foilPath(ctx, acx, acy, scale);
+
+      // Dark fill
+      ctx.fillStyle = '#0a0e14';
+      ctx.fill();
+
+      // Thick bright white outline — always visible
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    function drawFieldArrows(W, H) {
+      const step = 44;
+      const accent = getComputedStyle(document.documentElement)
+        .getPropertyValue('--slide-accent').trim() || '#6aaa8e';
+      ctx.strokeStyle = accent;
+      ctx.globalAlpha = 0.2;
+      ctx.lineWidth = 1;
+
+      const checkFoil = tog.aerofoil.checked;
+
+      for (let x = step / 2; x < W; x += step) {
+        for (let y = step / 2; y < H; y += step) {
+          // Skip arrows inside the aerofoil body
+          if (checkFoil && insideFoilScreen(x, y, W, H)) continue;
+
+          const { fx, fy } = fieldAt(x, y, W, H);
+          const mag = Math.sqrt(fx * fx + fy * fy);
+          if (mag < 0.0001) continue;
+          const nx = fx / mag, ny = fy / mag;
+          const len = Math.min(mag * 250, step * 0.55);
+          const ex = x + nx * len, ey = y + ny * len;
+          ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, ey); ctx.stroke();
+          const ax = nx * 4, ay = ny * 4;
+          ctx.beginPath();
+          ctx.moveTo(ex, ey); ctx.lineTo(ex - ax - ay * 0.5, ey - ay + ax * 0.5);
+          ctx.moveTo(ex, ey); ctx.lineTo(ex - ax + ay * 0.5, ey - ay - ax * 0.5);
+          ctx.stroke();
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    // --- Streamlines: integrate the vector field from seed points ---
+    function drawStreamlines(W, H) {
+      const accent = getComputedStyle(document.documentElement)
+        .getPropertyValue('--slide-accent').trim() || '#6aaa8e';
+      const checkFoil = tog.aerofoil.checked;
+
+      // Seed points: rows of evenly-spaced starts
+      const seeds = [];
+      const rows = 28;
+      const cols = checkFoil ? 1 : 6;  // aerofoil: left edge only; other: grid
+      for (let r = 0; r < rows; r++) {
+        const y = (r + 0.5) / rows * H;
+        for (let c = 0; c < cols; c++) {
+          const x = checkFoil ? 2 : (c + 0.5) / cols * W;
+          seeds.push({ x, y });
+        }
+      }
+
+      const stepLen = 3;       // pixels per integration step
+      const maxSteps = 400;    // max steps per streamline
+
+      ctx.lineWidth = 1;
+      ctx.globalAlpha = 0.45;
+
+      for (const seed of seeds) {
+        let x = seed.x, y = seed.y;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        let drawn = false;
+
+        for (let s = 0; s < maxSteps; s++) {
+          const { fx, fy } = fieldAt(x, y, W, H);
+          const mag = Math.sqrt(fx * fx + fy * fy);
+          if (mag < 1e-6) break;
+
+          const dx = fx / mag * stepLen;
+          const dy = fy / mag * stepLen;
+
+          x += dx;
+          y += dy;
+
+          // Stop if out of bounds
+          if (x < -5 || x > W + 5 || y < -5 || y > H + 5) break;
+          // Stop if inside aerofoil body
+          if (checkFoil && insideFoilScreen(x, y, W, H)) break;
+
+          ctx.lineTo(x, y);
+          drawn = true;
+        }
+
+        if (drawn) {
+          ctx.strokeStyle = accent;
+          ctx.stroke();
+        }
+      }
+
+      ctx.globalAlpha = 1;
+    }
+
+    // Speed → colour: cool blue → cyan → white → warm orange → hot red
+    // 256-entry LUT for fast lookup.
+    const CMAP = [];
+    (function buildColourMap() {
+      const stops = [
+        { t: 0.00, r:  15, g:  50, b: 180 },  // deep blue   (stagnation)
+        { t: 0.15, r:  40, g: 120, b: 240 },  // blue
+        { t: 0.30, r:  60, g: 200, b: 255 },  // cyan
+        { t: 0.45, r: 180, g: 240, b: 255 },  // light cyan
+        { t: 0.55, r: 255, g: 255, b: 220 },  // warm white
+        { t: 0.70, r: 255, g: 200, b:  80 },  // orange
+        { t: 0.85, r: 255, g: 100, b:  40 },  // hot orange
+        { t: 1.00, r: 200, g:  30, b:  15 },  // deep red
+      ];
+      for (let i = 0; i < 256; i++) {
+        const t = i / 255;
+        let lo = stops[0], hi = stops[1];
+        for (let s = 1; s < stops.length; s++) {
+          if (stops[s].t >= t) { hi = stops[s]; lo = stops[s - 1]; break; }
+        }
+        const f = (t - lo.t) / (hi.t - lo.t + 1e-9);
+        CMAP.push({
+          r: Math.round(lo.r + (hi.r - lo.r) * f),
+          g: Math.round(lo.g + (hi.g - lo.g) * f),
+          b: Math.round(lo.b + (hi.b - lo.b) * f),
+        });
+      }
+    })();
+
+    // Fixed colour scale: normalise by freestream speed so colours
+    // don't shift when AoA changes.  The peak speed around a Joukowski
+    // airfoil is roughly 2–3× freestream, so we anchor to that.
+    function getSpeedMax() {
+      const U = parseFloat(freeSlider.value) || 1.5;
+      return U * 2.8;
+    }
+
+    // Trail canvas: we draw a fading background each frame so old trails dim out
+    const trailCanvas = document.createElement('canvas');
+    const tctx = trailCanvas.getContext('2d');
+
+    function drawParticles(W, H, dt) {
+      // Keep trail canvas in sync
+      if (trailCanvas.width !== fc.width || trailCanvas.height !== fc.height) {
+        trailCanvas.width = fc.width;
+        trailCanvas.height = fc.height;
+      }
+
+      // Fade the trail canvas — creates the motion trail effect
+      const bg = getComputedStyle(document.documentElement)
+        .getPropertyValue('--slide-surface').trim() || 'rgba(16,20,28,0.92)';
+      tctx.fillStyle = bg;
+      tctx.globalAlpha = 0.06;
+      tctx.fillRect(0, 0, trailCanvas.width, trailCanvas.height);
+      tctx.globalAlpha = 1;
+
+      const checkFoil = tog.aerofoil.checked;
+      const sMax = getSpeedMax();
+
+      // Draw new trail segments
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        const { fx, fy } = fieldAt(p.x, p.y, W, H);
+        const speed = Math.sqrt(fx * fx + fy * fy);
+
+        // Store previous position
+        const oldx = p.x, oldy = p.y;
+
+        p.x += fx * dt * 60;
+        p.y += fy * dt * 60;
+
+        // Respawn only when leaving the canvas
+        if (p.x < -10 || p.x > W + 10 || p.y < -10 || p.y > H + 10) {
+          if (checkFoil) {
+            p.x = -2;
+            p.y = Math.random() * H;
+          } else {
+            p.x = Math.random() * W;
+            p.y = Math.random() * H;
+          }
+          p.px = -1; p.py = -1;
+          continue;
+        }
+
+        // Colour from local speed — fixed scale based on freestream
+        const t = Math.min(speed / sMax, 1);
+        const ci = Math.min(Math.round(t * 255), 255);
+        const c = CMAP[ci];
+
+        // Draw trail line segment on the trail canvas
+        if (p.px >= 0) {
+          tctx.beginPath();
+          tctx.moveTo(p.px, p.py);
+          tctx.lineTo(p.x, p.y);
+          tctx.strokeStyle = 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + (0.5 + 0.5 * t).toFixed(2) + ')';
+          tctx.lineWidth = 0.8 + t * 1.5;
+          tctx.stroke();
+        }
+
+        // Draw bright head dot
+        tctx.beginPath();
+        tctx.arc(p.x, p.y, 0.6 + t * 1.2, 0, Math.PI * 2);
+        tctx.fillStyle = 'rgba(' + Math.min(c.r + 60, 255) + ',' + Math.min(c.g + 60, 255) + ',' + Math.min(c.b + 60, 255) + ',' + (0.7 + 0.3 * t).toFixed(2) + ')';
+        tctx.fill();
+
+        p.px = oldx;
+        p.py = oldy;
+      }
+
+      // Composite the trail canvas onto the main canvas
+      ctx.drawImage(trailCanvas, 0, 0);
+    }
+
+    // --- AABB Collision ---
+    function resolveCollisions() {
+      for (let i = 0; i < bubbles.length; i++) {
+        for (let j = i + 1; j < bubbles.length; j++) {
+          const a = bubbles[i], b = bubbles[j];
+          const ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+          const oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+          if (ox <= 0 || oy <= 0) continue;
+
+          const acx = a.x + a.w / 2, bcx = b.x + b.w / 2;
+          const acy = a.y + a.h / 2, bcy = b.y + b.h / 2;
+          const tm = a.mass + b.mass;
+
+          if (ox < oy) {
+            const s = acx < bcx ? -1 : 1;
+            a.x += s * ox * 0.5; b.x -= s * ox * 0.5;
+            const nav = (a.vx * (a.mass - b.mass) + 2 * b.mass * b.vx) / tm;
+            const nbv = (b.vx * (b.mass - a.mass) + 2 * a.mass * a.vx) / tm;
+            a.vx = nav * 0.9; b.vx = nbv * 0.9;
+          } else {
+            const s = acy < bcy ? -1 : 1;
+            a.y += s * oy * 0.5; b.y -= s * oy * 0.5;
+            const nav = (a.vy * (a.mass - b.mass) + 2 * b.mass * b.vy) / tm;
+            const nbv = (b.vy * (b.mass - a.mass) + 2 * a.mass * a.vy) / tm;
+            a.vy = nav * 0.9; b.vy = nbv * 0.9;
+          }
+        }
+      }
+    }
+
+    // --- Main loop ---
+    const GRAVITY_ACC = 0.05;
+    const DAMPING = 0.999;
+    const MAX_SPEED = 4;
+    let lastTime = 0;
+
+    function tick(now) {
+      const dt = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 0.016;
+      lastTime = now;
+
+      const rect = arena.getBoundingClientRect();
+      const W = rect.width, H = rect.height;
+
+      const anyField = tog.vortex.checked || tog.sink.checked || tog.aerofoil.checked;
+      const showParticles = tog.particles.checked && anyField;
+      const showStreamlines = tog.streamlines.checked && anyField;
+
+      // --- Update bubbles ---
+      const cx = W / 2, cy = H / 2;
+      for (const b of bubbles) {
+        if (tog.gravity.checked) b.vy += GRAVITY_ACC;
+        if (tog.vortex.checked) {
+          const v = vortexField(b.x + b.w / 2, b.y + b.h / 2, cx, cy);
+          b.vx += v.fx; b.vy += v.fy;
+        }
+        if (tog.sink.checked) {
+          const s = sinkField(b.x + b.w / 2, b.y + b.h / 2, cx, cy);
+          b.vx += s.fx; b.vy += s.fy;
+        }
+        if (tog.aerofoil.checked) {
+          const a = aerofoilFlow(b.x + b.w / 2, b.y + b.h / 2, W, H);
+          if (!a.inside) { b.vx += a.fx * 0.01; b.vy += a.fy * 0.01; }
+        }
+
+        b.vx *= DAMPING; b.vy *= DAMPING;
+        const spd = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        if (spd > MAX_SPEED) { b.vx = b.vx / spd * MAX_SPEED; b.vy = b.vy / spd * MAX_SPEED; }
+
+        b.x += b.vx; b.y += b.vy;
+
+        if (b.x <= 0)         { b.x = 0;       b.vx =  Math.abs(b.vx) * 0.8; }
+        if (b.y <= 0)         { b.y = 0;       b.vy =  Math.abs(b.vy) * 0.8; }
+        if (b.x + b.w >= W)   { b.x = W - b.w; b.vx = -Math.abs(b.vx) * 0.8; }
+        if (b.y + b.h >= H)   { b.y = H - b.h; b.vy = -Math.abs(b.vy) * 0.8; }
+
+        b.el.style.left = b.x + 'px';
+        b.el.style.top = b.y + 'px';
+      }
+
+      if (tog.collision.checked) resolveCollisions();
+
+      // --- Canvas ---
+      resizeCanvas();
+      ctx.clearRect(0, 0, fc.width, fc.height);
+
+      // Draw vector arrows when no other viz is active
+      if (anyField && !showParticles && !showStreamlines) drawFieldArrows(W, H);
+
+      // Streamlines (static curves that trace the field)
+      if (showStreamlines) drawStreamlines(W, H);
+
+      // Particles (animated dots with motion trails, coloured by speed)
+      if (showParticles) {
+        spawnParticles(W, H);
+        drawParticles(W, H, dt);
+      } else {
+        particles.length = 0;
+        // Clear the trail canvas so stale trails don't linger
+        if (trailCanvas.width) tctx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+      }
+
+      // Draw aerofoil LAST so it's always visible on top of particles
+      if (tog.aerofoil.checked) drawAerofoilShape(W, H);
+
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+
+    // --- Input ---
+    function addBubble() {
+      const text = input.value.trim();
+      if (!text) return;
+      createBubble(text);
+      input.value = '';
+      input.focus();
+    }
+
+    addBtn.addEventListener('click', addBubble);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addBubble(); }
+    });
+  </script>
+</body>
+
+</html>

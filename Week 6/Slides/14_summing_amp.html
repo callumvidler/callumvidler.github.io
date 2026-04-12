@@ -32,14 +32,397 @@
       }
     })();
   </script>
+  <style>
+    /* Rotary potentiometer overlay */
+    #live-labels {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    #live-labels .pot-group {
+      opacity: 0;
+      transition: opacity 0.45s ease-out;
+    }
+    #live-labels .pot-group.visible {
+      opacity: 1;
+    }
+    #live-labels text {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+    }
+    #live-labels .lbl-A { fill: #5a8dee; text-anchor: end; }
+    #live-labels .lbl-B { fill: #d070d0; text-anchor: end; }
+    #live-labels .lbl-C { fill: #58c0d8; text-anchor: end; }
+    #live-labels .lbl-F { fill: #ffcc44; }
+    [data-theme="light"] #live-labels .lbl-A { fill: #3a68c8; }
+    [data-theme="light"] #live-labels .lbl-B { fill: #a050a0; }
+    [data-theme="light"] #live-labels .lbl-C { fill: #3d8ea0; }
+    [data-theme="light"] #live-labels .lbl-F { fill: #b8860b; }
+
+    #live-labels .pot-range {
+      fill: none;
+      stroke: rgba(136, 146, 164, 0.3);
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+    [data-theme="light"] #live-labels .pot-range {
+      stroke: rgba(80, 88, 104, 0.22);
+    }
+    #live-labels .pot-active {
+      fill: none;
+      stroke-width: 4.5;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+    #live-labels .pot-active.ch-A { stroke: #5a8dee; }
+    #live-labels .pot-active.ch-B { stroke: #d070d0; }
+    #live-labels .pot-active.ch-C { stroke: #58c0d8; }
+    #live-labels .pot-active.ch-F { stroke: #ffcc44; }
+    [data-theme="light"] #live-labels .pot-active.ch-A { stroke: #3a68c8; }
+    [data-theme="light"] #live-labels .pot-active.ch-B { stroke: #a050a0; }
+    [data-theme="light"] #live-labels .pot-active.ch-C { stroke: #3d8ea0; }
+    [data-theme="light"] #live-labels .pot-active.ch-F { stroke: #b8860b; }
+
+    #live-labels .pot-outer {
+      fill: #1a2030;
+      stroke: rgba(136, 146, 164, 0.45);
+      stroke-width: 1;
+      pointer-events: none;
+    }
+    [data-theme="light"] #live-labels .pot-outer {
+      fill: #ececf0;
+      stroke: rgba(80, 88, 104, 0.35);
+    }
+    #live-labels .pot-face {
+      fill: #0f1420;
+      stroke: rgba(136, 146, 164, 0.25);
+      stroke-width: 0.75;
+      pointer-events: none;
+    }
+    [data-theme="light"] #live-labels .pot-face {
+      fill: #f6f6fa;
+      stroke: rgba(80, 88, 104, 0.2);
+    }
+    #live-labels .pot-highlight {
+      fill: rgba(255, 255, 255, 0.06);
+      pointer-events: none;
+    }
+    [data-theme="light"] #live-labels .pot-highlight {
+      fill: rgba(255, 255, 255, 0.85);
+    }
+    #live-labels .pot-indicator {
+      stroke-width: 3;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+    #live-labels .pot-indicator.ch-A { stroke: #5a8dee; }
+    #live-labels .pot-indicator.ch-B { stroke: #d070d0; }
+    #live-labels .pot-indicator.ch-C { stroke: #58c0d8; }
+    #live-labels .pot-indicator.ch-F { stroke: #ffcc44; }
+    [data-theme="light"] #live-labels .pot-indicator.ch-A { stroke: #3a68c8; }
+    [data-theme="light"] #live-labels .pot-indicator.ch-B { stroke: #a050a0; }
+    [data-theme="light"] #live-labels .pot-indicator.ch-C { stroke: #3d8ea0; }
+    [data-theme="light"] #live-labels .pot-indicator.ch-F { stroke: #b8860b; }
+
+    #live-labels .pot-hit {
+      fill: transparent;
+      pointer-events: all;
+      cursor: ns-resize;
+      touch-action: none;
+    }
+    #live-labels .pot-tick {
+      stroke: rgba(136, 146, 164, 0.5);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+    [data-theme="light"] #live-labels .pot-tick {
+      stroke: rgba(80, 88, 104, 0.4);
+    }
+    #live-labels .pot-tick-label {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 9px;
+      fill: rgba(136, 146, 164, 0.7);
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+    }
+    [data-theme="light"] #live-labels .pot-tick-label {
+      fill: rgba(80, 88, 104, 0.6);
+    }
+
+    /* Mixer panel — play/mute buttons, scope, and hint. Gain lives on the pots. */
+    #mixer-panel {
+      position: absolute;
+      right: 2.5%;
+      top: 10%;
+      bottom: 10%;
+      width: 38%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 16px 18px 18px;
+      background: var(--slide-surface);
+      border: 1px solid var(--slide-border);
+      border-radius: 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--slide-text-dim);
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+      box-sizing: border-box;
+      backdrop-filter: blur(4px);
+    }
+    #mixer-panel .mixer-title {
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--slide-accent);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--slide-border);
+    }
+    #mixer-panel .mix-play-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    #mixer-panel .mix-play {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 6px;
+      background: none;
+      border: 1px solid var(--slide-border);
+      border-radius: 6px;
+      color: var(--slide-text-dim);
+      font-family: inherit;
+      font-size: 11px;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    #mixer-panel .mix-play .mix-ico { font-size: 14px; line-height: 1; }
+    #mixer-panel .mix-play .mix-sub { font-size: 9px; color: var(--slide-text-muted); }
+    #mixer-panel .mix-play:hover {
+      color: var(--slide-text);
+      border-color: var(--slide-border-hover);
+    }
+    #mixer-panel .mix-play.on {
+      color: var(--slide-bg);
+      background: var(--ch-color, var(--slide-accent));
+      border-color: var(--ch-color, var(--slide-accent));
+    }
+    #mixer-panel .mix-play.on .mix-sub { color: rgba(0, 0, 0, 0.55); }
+    #mixer-panel .mix-play[data-ch="A"] { --ch-color: #5a8dee; }
+    #mixer-panel .mix-play[data-ch="B"] { --ch-color: #d070d0; }
+    #mixer-panel .mix-play[data-ch="C"] { --ch-color: #58c0d8; }
+    [data-theme="light"] #mixer-panel .mix-play[data-ch="A"] { --ch-color: #3a68c8; }
+    [data-theme="light"] #mixer-panel .mix-play[data-ch="B"] { --ch-color: #a050a0; }
+    [data-theme="light"] #mixer-panel .mix-play[data-ch="C"] { --ch-color: #3d8ea0; }
+    #mix-scope {
+      width: 100%;
+      flex: 1;
+      min-height: 120px;
+      background: rgba(125, 125, 135, 0.09);
+      border: 1px solid var(--slide-border);
+      border-radius: 6px;
+      display: block;
+    }
+    /* Transport row: play/pause + seek slider */
+    #mixer-panel .mix-transport {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    #mixer-panel .mix-transport-btn {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--slide-border);
+      background: none;
+      color: var(--slide-accent);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    #mixer-panel .mix-transport-btn:hover {
+      border-color: var(--slide-accent);
+      color: var(--slide-text);
+    }
+    #mixer-panel .mix-transport-btn.playing {
+      background: var(--slide-accent);
+      border-color: var(--slide-accent);
+      color: var(--slide-bg);
+    }
+    #mixer-panel .mix-seek-wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    #mixer-panel .mix-seek {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--slide-border);
+      outline: none;
+      cursor: pointer;
+    }
+    #mixer-panel .mix-seek::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--slide-accent);
+      cursor: pointer;
+    }
+    #mixer-panel .mix-seek::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--slide-accent);
+      border: none;
+      cursor: pointer;
+    }
+    #mixer-panel .mix-time {
+      font-size: 9px;
+      color: var(--slide-text-muted);
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    #mixer-panel .mix-hint {
+      font-size: 10px;
+      color: var(--slide-text-muted);
+      text-align: center;
+      letter-spacing: 0.4px;
+      line-height: 1.5;
+    }
+  </style>
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">16 / 22</span>
+    <span class="slide-num">14 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">
     <div class="stage-fallback">Loading manim-web scene…</div>
+
+    <!-- Rotary potentiometer overlay: drag knobs to set R_A, R_B, R_C, R_F -->
+    <svg id="live-labels" viewBox="0 0 1280 720" preserveAspectRatio="none">
+      <!-- Channel A (kick) knob; transform set from world coords at runtime -->
+      <g class="pot-group" data-pot="A">
+        <path class="pot-range"  d="M -19.8 19.8 A 28 28 0 1 1 19.8 19.8"/>
+        <path class="pot-active ch-A" data-pot="A" d=""/>
+        <circle class="pot-outer" cx="0" cy="0" r="22"/>
+        <circle class="pot-face"  cx="0" cy="0" r="20"/>
+        <ellipse class="pot-highlight" cx="-4" cy="-6" rx="10" ry="5"/>
+        <g class="pot-ind-wrap" data-pot="A">
+          <line class="pot-indicator ch-A" x1="0" y1="-6" x2="0" y2="-17"/>
+        </g>
+        <line class="pot-tick" x1="-22.6" y1="22.6" x2="-25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="-31" y="31">0</text>
+        <line class="pot-tick" x1="22.6" y1="22.6" x2="25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="31" y="31">11</text>
+        <text class="lbl-A" data-pot="A" x="-34" y="10">R_A · 7.7</text>
+        <circle class="pot-hit" data-pot="A" cx="0" cy="0" r="30"/>
+      </g>
+      <!-- Channel B (bass) knob -->
+      <g class="pot-group" data-pot="B">
+        <path class="pot-range"  d="M -19.8 19.8 A 28 28 0 1 1 19.8 19.8"/>
+        <path class="pot-active ch-B" data-pot="B" d=""/>
+        <circle class="pot-outer" cx="0" cy="0" r="22"/>
+        <circle class="pot-face"  cx="0" cy="0" r="20"/>
+        <ellipse class="pot-highlight" cx="-4" cy="-6" rx="10" ry="5"/>
+        <g class="pot-ind-wrap" data-pot="B">
+          <line class="pot-indicator ch-B" x1="0" y1="-6" x2="0" y2="-17"/>
+        </g>
+        <line class="pot-tick" x1="-22.6" y1="22.6" x2="-25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="-31" y="31">0</text>
+        <line class="pot-tick" x1="22.6" y1="22.6" x2="25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="31" y="31">11</text>
+        <text class="lbl-B" data-pot="B" x="-34" y="10">R_B · 4.4</text>
+        <circle class="pot-hit" data-pot="B" cx="0" cy="0" r="30"/>
+      </g>
+      <!-- Channel C (lead) knob -->
+      <g class="pot-group" data-pot="C">
+        <path class="pot-range"  d="M -19.8 19.8 A 28 28 0 1 1 19.8 19.8"/>
+        <path class="pot-active ch-C" data-pot="C" d=""/>
+        <circle class="pot-outer" cx="0" cy="0" r="22"/>
+        <circle class="pot-face"  cx="0" cy="0" r="20"/>
+        <ellipse class="pot-highlight" cx="-4" cy="-6" rx="10" ry="5"/>
+        <g class="pot-ind-wrap" data-pot="C">
+          <line class="pot-indicator ch-C" x1="0" y1="-6" x2="0" y2="-17"/>
+        </g>
+        <line class="pot-tick" x1="-22.6" y1="22.6" x2="-25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="-31" y="31">0</text>
+        <line class="pot-tick" x1="22.6" y1="22.6" x2="25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="31" y="31">11</text>
+        <text class="lbl-C" data-pot="C" x="-34" y="10">R_C · 6.6</text>
+        <circle class="pot-hit" data-pot="C" cx="0" cy="0" r="30"/>
+      </g>
+      <!-- Feedback (R_F master) knob -->
+      <g class="pot-group" data-pot="F">
+        <path class="pot-range"  d="M -19.8 19.8 A 28 28 0 1 1 19.8 19.8"/>
+        <path class="pot-active ch-F" data-pot="F" d=""/>
+        <circle class="pot-outer" cx="0" cy="0" r="22"/>
+        <circle class="pot-face"  cx="0" cy="0" r="20"/>
+        <ellipse class="pot-highlight" cx="-4" cy="-6" rx="10" ry="5"/>
+        <g class="pot-ind-wrap" data-pot="F">
+          <line class="pot-indicator ch-F" x1="0" y1="-6" x2="0" y2="-17"/>
+        </g>
+        <line class="pot-tick" x1="-22.6" y1="22.6" x2="-25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="-31" y="31">0</text>
+        <line class="pot-tick" x1="22.6" y1="22.6" x2="25.5" y2="25.5"/>
+        <text class="pot-tick-label" x="31" y="31">11</text>
+        <text class="lbl-F" data-pot="F" x="0" y="-44">R_F · 6.6</text>
+        <circle class="pot-hit" data-pot="F" cx="0" cy="0" r="30"/>
+      </g>
+    </svg>
+
+    <!-- Mixer panel: transport + mute toggles + live oscilloscope of V_out -->
+    <div id="mixer-panel" aria-hidden="true">
+      <div class="mixer-title">V<sub>o</sub> · output monitor — Nirvana – Smells Like Teen Spirit</div>
+      <div class="mix-transport">
+        <button class="mix-transport-btn" id="mix-play-all" aria-label="Play / Pause">▶</button>
+        <div class="mix-seek-wrap">
+          <input type="range" class="mix-seek" id="mix-seek" min="0" max="1000" value="0">
+          <span class="mix-time" id="mix-time">0:00 / 0:00</span>
+        </div>
+      </div>
+      <div class="mix-play-row">
+        <button class="mix-play on" data-ch="A" aria-label="Mute channel A">
+          <span class="mix-ico">🔊</span>
+          <span>CH1 bass</span>
+          <span class="mix-sub">bass guitar</span>
+        </button>
+        <button class="mix-play on" data-ch="B" aria-label="Mute channel B">
+          <span class="mix-ico">🔊</span>
+          <span>CH2 guitar</span>
+          <span class="mix-sub">guitars</span>
+        </button>
+        <button class="mix-play on" data-ch="C" aria-label="Mute channel C">
+          <span class="mix-ico">🔊</span>
+          <span>CH3 vocals</span>
+          <span class="mix-sub">vocals</span>
+        </button>
+      </div>
+      <canvas id="mix-scope" width="520" height="160"></canvas>
+      <div class="mix-hint">press play, then mute/unmute channels<br>drag R<sub>A</sub>, R<sub>B</sub>, R<sub>C</sub>, R<sub>F</sub> wipers on the circuit to mix</div>
+    </div>
   </div>
 
   <script type="module">
@@ -67,132 +450,558 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
+    // Circuit geometry — everything lives in the left ~55% of the stage so the
+    // mixer overlay on the right half never collides with a wire or label.
+    const X_IN_LEFT     = -6.0;   // left end of each input rail
+    const X_SPINE       = -2.8;   // summing-junction spine
+    const X_TRI_LEFT    = -2.4;   // op-amp inverting/non-inverting input x
+    const X_OUT         = -0.6;   // op-amp apex / output node
+    const X_OUT_END     =  0.2;   // output wire terminates before mixer overlay
+    const X_FB_TAKEOFF  =  0.0;   // feedback branches off the V_out wire here
+    const X_FB_MEET     = -2.55;  // feedback joins the wire running to the − input
+    // Knob centres = midpoint of their wire, so the wire passes symmetrically
+    // through the knob body.
+    const X_POT_CX      = (X_IN_LEFT    + X_SPINE)  / 2;   // -4.4, input channels
+    const X_POT_F_CX    = (X_FB_TAKEOFF + X_FB_MEET) / 2;  // -1.275, feedback
+
+    const Y_A =  1.6;             // channel A rail
+    const Y_B =  0.6;             // channel B rail
+    const Y_C = -0.4;             // channel C rail
+    const Y_SUM = Y_B;            // summing junction sits on the inverting input
+    const Y_FB_TOP = 2.1;         // feedback rail, raised to clear the R_F knob from channel A
+    const Y_TRI_GND = -1.1;       // ground rail under the + input
+    const Y_P = -0.6;             // non-inverting input rail
+
+    // World → SVG pixel conversion. Manim-web's default camera is 14 units
+    // wide × 8 units tall, so the X and Y scales are NOT equal for a 1280×720
+    // canvas (91.43 vs 90 px/unit). Read them from the live camera so the
+    // knobs always land exactly where manim draws world coordinates.
+    const SCENE_W = 1280, SCENE_H = 720;
+    const camFW = (scene.camera && scene.camera.frameWidth)  || 14;
+    const camFH = (scene.camera && scene.camera.frameHeight) || 8;
+    const SCALE_X = SCENE_W / camFW;
+    const SCALE_Y = SCENE_H / camFH;
+    const toPx = (wx, wy) => [SCENE_W / 2 + wx * SCALE_X, SCENE_H / 2 - wy * SCALE_Y];
+
+    // ── Knob placement & fine-tuning ─────────────────────────────────
+    // If the knobs don't land exactly on the wires, adjust the offsets below.
+    //
+    //   KNOB_SHIFT_X / KNOB_SHIFT_Y  — global pixel nudge applied to ALL
+    //     knobs.  Positive Y = DOWN on screen, positive X = RIGHT.  Use
+    //     negative Y to move every knob UP.
+    //
+    //   KNOB_PIXEL_OVERRIDES         — per-knob pixel nudges on top of the
+    //     global shift.  Leave [0, 0] if that knob is already aligned.
+    //
+    // Example: if every knob sits ~6 px below the line, set
+    // KNOB_SHIFT_Y = -6 and reload.
+    const KNOB_SHIFT_X = 0;
+    const KNOB_SHIFT_Y = 0;
+    const KNOB_PIXEL_OVERRIDES = {
+      A: [-15, -15],   // [dx, dy] in SVG pixels
+      B: [-15, -27],
+      C: [-15, -30],
+      F: [-35, -15]
+    };
+
+    // Drive each knob group's transform from the same world coords that the
+    // manim wires use — this way the knob can't drift off its rail even if
+    // the coordinates above get tweaked later.
+    const POT_WORLD = {
+      A: [X_POT_CX,   Y_A],
+      B: [X_POT_CX,   Y_B],
+      C: [X_POT_CX,   Y_C],
+      F: [X_POT_F_CX, Y_FB_TOP]
+    };
+    function placeKnobs() {
+      for (const ch of Object.keys(POT_WORLD)) {
+        const group = document.querySelector(`#live-labels .pot-group[data-pot="${ch}"]`);
+        if (!group) continue;
+        const [px, py] = toPx(POT_WORLD[ch][0], POT_WORLD[ch][1]);
+        const [dx, dy] = KNOB_PIXEL_OVERRIDES[ch] || [0, 0];
+        const finalX = px + KNOB_SHIFT_X + dx;
+        const finalY = py + KNOB_SHIFT_Y + dy;
+        group.setAttribute('transform', `translate(${finalX.toFixed(2)} ${finalY.toFixed(2)})`);
+      }
+    }
+    placeKnobs();
+
+    function revealKnob(ch) {
+      const g = document.querySelector(`#live-labels .pot-group[data-pot="${ch}"]`);
+      if (g) g.classList.add('visible');
+    }
+
     // ── Title ──
-    const title = new Text({ text: 'Summing Amplifier', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    const title = new Text({ text: 'Summing Amplifier', fontSize: 36, color: FG, fontUrl: FONT_URL });
     await title.loadGlyphs?.();
-    title.moveTo([-3.5, 3.5, 0]);
     const TITLE_LEFT_X = -6.2;
+    title.moveTo([-4, 3.45, 0]);
     if (typeof title.getLeft === 'function') {
       title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
     }
 
-    // ── Bullet list (bottom) ──
+    // ── Op-amp triangle ──
+    const tri = new Polygon({
+      vertices: [[X_TRI_LEFT, -1.2, 0], [X_TRI_LEFT, 1.2, 0], [X_OUT, 0, 0]],
+      color: ACCENT, strokeWidth: 2, fillOpacity: 0
+    });
+    const mSym = new Text({ text: '−', fontSize: 18, color: RED,    fontUrl: FONT_URL }).moveTo([X_TRI_LEFT + 0.42, 0.45, 0]);
+    const pSym = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL }).moveTo([X_TRI_LEFT + 0.42, -0.45, 0]);
+
+    // ── Input rails (single wire per channel; the rotary knob in the SVG
+    // overlay sits on the middle of the rail and visually "contains" R_n) ──
+    function makeChannel(y) {
+      const wire = new Line({ start: [X_IN_LEFT, y, 0], end: [X_SPINE, y, 0], color: FG, strokeWidth: 1.8 });
+      return { wire };
+    }
+    const chA = makeChannel(Y_A);
+    const chB = makeChannel(Y_B);
+    const chC = makeChannel(Y_C);
+
+    // V_A / V_B / V_C input labels (resistor labels come from the live SVG overlay)
+    const vAlbl = new MathTex({ latex: 'V_{A}', color: BLUE });
+    const vBlbl = new MathTex({ latex: 'V_{B}', color: MAG });
+    const vClbl = new MathTex({ latex: 'V_{C}', color: CYAN });
+    await Promise.all([
+      vAlbl.waitForRender?.(), vBlbl.waitForRender?.(), vClbl.waitForRender?.()
+    ]);
+    vAlbl.scale(0.55).moveTo([X_IN_LEFT - 0.3, Y_A, 0]);
+    vBlbl.scale(0.55).moveTo([X_IN_LEFT - 0.3, Y_B, 0]);
+    vClbl.scale(0.55).moveTo([X_IN_LEFT - 0.3, Y_C, 0]);
+
+    // ── Summing-junction spine & op-amp input wires ──
+    // Spine spans the three input rails only; feedback joins the wire going
+    // to the inverting input downstream of the summing node.
+    const spine = new Line({ start: [X_SPINE, Y_C, 0], end: [X_SPINE, Y_A, 0], color: FG, strokeWidth: 1.8 });
+    const toInvIn = new Line({ start: [X_SPINE, Y_SUM, 0], end: [X_TRI_LEFT, Y_SUM, 0], color: FG, strokeWidth: 1.8 });
+    const sumDot = new Dot({ point: [X_SPINE, Y_SUM, 0], color: FG, radius: 0.065 });
+
+    // ── Non-inverting input wired to ground ──
+    // Stub goes left of the triangle, clear of the spine column, then down.
+    const X_GND = -3.15;
+    const pInWire = new Line({ start: [X_TRI_LEFT, Y_P, 0], end: [X_GND, Y_P, 0], color: FG, strokeWidth: 1.8 });
+    const pDown   = new Line({ start: [X_GND, Y_P, 0], end: [X_GND, Y_TRI_GND, 0], color: FG, strokeWidth: 1.8 });
+    const gndA    = new Line({ start: [X_GND - 0.32, Y_TRI_GND, 0],         end: [X_GND + 0.32, Y_TRI_GND, 0],         color: FG, strokeWidth: 2.4 });
+    const gndB    = new Line({ start: [X_GND - 0.19, Y_TRI_GND - 0.12, 0],  end: [X_GND + 0.19, Y_TRI_GND - 0.12, 0],  color: FG, strokeWidth: 2.4 });
+    const gndC    = new Line({ start: [X_GND - 0.07, Y_TRI_GND - 0.24, 0],  end: [X_GND + 0.07, Y_TRI_GND - 0.24, 0],  color: FG, strokeWidth: 2.4 });
+
+    // ── Feedback loop (R_F knob lives on the horizontal segment) ──
+    // Branches up from the V_out wire at X_FB_TAKEOFF, runs left across the
+    // top, then drops down to meet the wire going into the − input between
+    // the summing node and the op-amp.
+    const fbUp    = new Line({ start: [X_FB_TAKEOFF, 0, 0],        end: [X_FB_TAKEOFF, Y_FB_TOP, 0], color: FG, strokeWidth: 1.8 });
+    const fbHoriz = new Line({ start: [X_FB_TAKEOFF, Y_FB_TOP, 0], end: [X_FB_MEET,    Y_FB_TOP, 0], color: FG, strokeWidth: 1.8 });
+    const fbDown  = new Line({ start: [X_FB_MEET,    Y_FB_TOP, 0], end: [X_FB_MEET,    Y_SUM,    0], color: FG, strokeWidth: 1.8 });
+    const fbTap   = new Dot({ point: [X_FB_TAKEOFF, 0, 0],    color: FG, radius: 0.055 });
+    const fbJoin  = new Dot({ point: [X_FB_MEET,    Y_SUM, 0], color: FG, radius: 0.055 });
+    // R_F label is rendered in the SVG overlay above the feedback knob.
+
+    // ── Output wire & V_o label ──
+    const outWire = new Line({ start: [X_OUT, 0, 0], end: [X_OUT_END, 0, 0], color: FG, strokeWidth: 1.8 });
+    const outDot  = new Dot({ point: [X_OUT_END, 0, 0], color: FG, radius: 0.05 });
+    const voLbl = new MathTex({ latex: 'V_{o}', color: YELLOW });
+    await voLbl.waitForRender?.();
+    voLbl.scale(0.55).moveTo([X_OUT_END + 0.25, 0.3, 0]);
+
+    // ── v_n = v_p = 0 annotation (empty area below the op-amp, above the equation) ──
+    const vnvp = new MathTex({ latex: 'v_n = v_p = 0', color: MUTED });
+    await vnvp.waitForRender?.();
+    vnvp.scale(0.48).moveTo([-1.0, -1.2, 0]);
+
+    // ── Equation ──
+    const eqn = new MathTex({ latex: 'V_o = -R_F \\sum_{n}\\dfrac{V_n}{R_n}', color: YELLOW });
+    await eqn.waitForRender?.();
+    eqn.scale(0.7).moveTo([-4.3, -2.15, 0]);
+    if (typeof eqn.getLeft === 'function') {
+      eqn.shift([-6.0 - eqn.getLeft()[0], 0, 0]);
+    }
+
+    // ── Bullets ──
     const bullets = [
-      'Output = inverted, weighted sum of the inputs',
-      'Each summing coefficient is set by its feed-in resistor (R_A, R_B)',
-      'R_F provides negative feedback and sets the master gain',
-      'Inputs V_A, V_B feed the inverting input (summing junction)'
+      '•  Output = inverted, weighted sum of the channel voltages',
+      '•  R_F sets master gain; each channel weight is R_F / R_n'
     ];
     const bulletObjs = [];
     for (let i = 0; i < bullets.length; i++) {
-      const b = new Text({ text: '•  ' + bullets[i], fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+      const b = new Text({ text: bullets[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
       await b.loadGlyphs?.();
-      b.moveTo([0, -2.65 - i * 0.32, 0]);
+      b.moveTo([-4, -2.85 - i * 0.42, 0]);
+      if (typeof b.getLeft === 'function') {
+        b.shift([-6.0 - b.getLeft()[0], 0, 0]);
+      }
       bulletObjs.push(b);
     }
 
-    // ── Circuit (upper area) ──
-    const cy = 1.6;
-    const tri = new Polygon({
-      vertices: [[0, cy - 1.2, 0], [0, cy + 1.2, 0], [1.6, cy, 0]],
-      color: ACCENT, strokeWidth: 2, fillOpacity: 0
-    });
-    const pSym = new Text({ text: '+', fontSize: 16, color: ACCENT, fontUrl: FONT_URL }).moveTo([0.35, cy - 0.4, 0]);
-    const mSym = new Text({ text: '−', fontSize: 16, color: RED,    fontUrl: FONT_URL }).moveTo([0.35, cy + 0.4, 0]);
-    const gndP = new Line({ start: [0, cy - 0.5, 0], end: [-0.9, cy - 0.5, 0], color: FG });
-    const gndA = new Line({ start: [-0.9, cy - 0.5, 0], end: [-0.9, cy - 1.3, 0], color: FG });
-    const gndM = new Line({ start: [-1.1, cy - 1.3, 0], end: [-0.7, cy - 1.3, 0], color: FG, strokeWidth: 3 });
-
-    // Two inputs feeding summing node at (0, cy+0.5)
-    const vAIn = new Line({ start: [-5, cy + 1.3, 0], end: [0, cy + 0.5, 0], color: FG });
-    const vBIn = new Line({ start: [-5, cy - 0.1, 0], end: [0, cy + 0.5, 0], color: FG });
-    const RA = new Rectangle({ width: 0.6, height: 0.25, color: ACCENT, strokeWidth: 2 });
-    RA.rotate(Math.atan2((cy + 0.5) - (cy + 1.3), 0 + 5));
-    RA.moveTo([-2.5, cy + 0.95, 0]);
-    const RB = new Rectangle({ width: 0.6, height: 0.25, color: ACCENT, strokeWidth: 2 });
-    RB.rotate(Math.atan2((cy + 0.5) - (cy - 0.1), 0 + 5));
-    RB.moveTo([-2.5, cy + 0.2, 0]);
-
-    const RAlbl = new MathTex({ latex: 'R_{A}', color: ACCENT });
-    const RBlbl = new MathTex({ latex: 'R_{B}', color: ACCENT });
-    const vAlbl = new MathTex({ latex: 'V_{A}', color: BLUE });
-    const vBlbl = new MathTex({ latex: 'V_{B}', color: MAG });
-    const iAlbl = new MathTex({ latex: 'i_{A}', color: BLUE });
-    const iBlbl = new MathTex({ latex: 'i_{B}', color: MAG });
-    const ilbl  = new MathTex({ latex: 'i', color: YELLOW });
-    const vnvp  = new MathTex({ latex: 'v_n = v_p = 0', color: MUTED });
-    await Promise.all([RAlbl.waitForRender?.(), RBlbl.waitForRender?.(), vAlbl.waitForRender?.(), vBlbl.waitForRender?.(),
-                        iAlbl.waitForRender?.(), iBlbl.waitForRender?.(), ilbl.waitForRender?.(), vnvp.waitForRender?.()]);
-    RAlbl.scale(0.45).nextTo(RA, UP, 0.08);
-    RBlbl.scale(0.45).nextTo(RB, DOWN, 0.08);
-    vAlbl.scale(0.5).nextTo([-5, cy + 1.3, 0], LEFT, 0.08);
-    vBlbl.scale(0.5).nextTo([-5, cy - 0.1, 0], LEFT, 0.08);
-    iAlbl.scale(0.4).moveTo([-1.2, cy + 1.2, 0]);
-    iBlbl.scale(0.4).moveTo([-1.2, cy - 0.05, 0]);
-    ilbl.scale(0.4).moveTo([0.9, cy + 1.25, 0]);
-    vnvp.scale(0.4).moveTo([-0.5, cy + 0.7, 0]);
-
-    // R_F feedback
-    const fbA = new Line({ start: [0, cy + 0.5, 0], end: [0, cy + 1.6, 0], color: FG });
-    const fbB = new Line({ start: [0, cy + 1.6, 0], end: [2.3, cy + 1.6, 0], color: FG });
-    const fbC = new Line({ start: [2.3, cy + 1.6, 0], end: [2.3, cy, 0], color: FG });
-    const RF = new Rectangle({ width: 0.75, height: 0.25, color: YELLOW, strokeWidth: 2 });
-    RF.moveTo([1.15, cy + 1.6, 0]);
-    const RFlbl = new MathTex({ latex: 'R_{F}', color: YELLOW });
-    await RFlbl.waitForRender?.();
-    RFlbl.scale(0.5).nextTo(RF, UP, 0.08);
-
-    const outWire = new Line({ start: [1.6, cy, 0], end: [3.6, cy, 0], color: FG });
-    const voLbl = new MathTex({ latex: 'V_{o}', color: YELLOW });
-    await voLbl.waitForRender?.();
-    voLbl.scale(0.55).nextTo([3.6, cy, 0], RIGHT, 0.08);
-
-    const eqn = new MathTex({ latex: 'V_o = -R_F\\sum\\dfrac{V_n}{R_n}', color: YELLOW });
-    await eqn.waitForRender?.();
-    eqn.scale(0.7).moveTo([5.0, cy - 1.2, 0]);
-
-    const appNote = new Text({ text: 'Application: audio mixer', fontSize: 11, color: ACCENT, fontUrl: FONT_URL });
-    await appNote.loadGlyphs?.();
-    appNote.moveTo([5.0, cy - 1.7, 0]);
-
-    // Sequence
-    await scene.play(new Write(title, { duration: 0.6 }));
+    // ── Animation sequence ──
+    const D = 0.5;  // global animation speed
+    await scene.play(new Write(title, { duration: 0.25 }));
     await scene.play(
-      new Create(tri), new Write(pSym), new Write(mSym),
-      new Create(gndP), new Create(gndA), new Create(gndM)
+      new Create(tri, { duration: D }), new Write(mSym, { duration: D }), new Write(pSym, { duration: D }),
+      new Create(pInWire, { duration: D }), new Create(pDown, { duration: D }),
+      new Create(gndA, { duration: D }), new Create(gndB, { duration: D }), new Create(gndC, { duration: D })
     );
     await scene.play(
-      new Create(vAIn), new Create(vBIn),
-      new Create(RA), new Create(RB),
-      new Write(RAlbl), new Write(RBlbl),
-      new Write(vAlbl), new Write(vBlbl),
-      new Write(iAlbl), new Write(iBlbl)
+      new Create(chA.wire, { duration: D }), new Create(chB.wire, { duration: D }), new Create(chC.wire, { duration: D }),
+      new Write(vAlbl, { duration: D }), new Write(vBlbl, { duration: D }), new Write(vClbl, { duration: D })
     );
     await scene.play(
-      new Create(fbA), new Create(fbB), new Create(fbC),
-      new Create(RF), new Write(RFlbl),
-      new Create(outWire), new Write(voLbl),
-      new Write(ilbl)
+      new Create(spine, { duration: D }), new Create(toInvIn, { duration: D }), new FadeIn(sumDot, { duration: D })
     );
-    await scene.play(new FadeIn(vnvp));
-
-    const dotA = new Dot({ point: [-5, cy + 1.3, 0], color: BLUE, radius: 0.09 });
-    const dotB = new Dot({ point: [-5, cy - 0.1, 0], color: MAG, radius: 0.09 });
-    scene.add(dotA, dotB);
-    const pathA = new Line({ start: [-5, cy + 1.3, 0], end: [0, cy + 0.5, 0] });
-    const pathB = new Line({ start: [-5, cy - 0.1, 0], end: [0, cy + 0.5, 0] });
     await scene.play(
-      new MoveAlongPath(dotA, { path: pathA, duration: 1.2, rateFunc: linear }),
-      new MoveAlongPath(dotB, { path: pathB, duration: 1.2, rateFunc: linear })
+      new Create(outWire, { duration: D }), new FadeIn(outDot, { duration: D }), new Write(voLbl, { duration: D }),
+      new Create(fbUp, { duration: D }), new Create(fbHoriz, { duration: D }), new Create(fbDown, { duration: D }),
+      new FadeIn(fbTap, { duration: D }), new FadeIn(fbJoin, { duration: D })
     );
+    await scene.play(new FadeIn(vnvp, { duration: D }));
 
-    await scene.play(new Write(eqn));
-    await scene.play(new FadeIn(appNote));
+    // Source dots — just appear next to each V_x label, no sliding.
+    const dotA = new Dot({ point: [X_IN_LEFT, Y_A, 0], color: BLUE, radius: 0.09 });
+    const dotB = new Dot({ point: [X_IN_LEFT, Y_B, 0], color: MAG,  radius: 0.09 });
+    const dotC = new Dot({ point: [X_IN_LEFT, Y_C, 0], color: CYAN, radius: 0.09 });
+    await scene.play(new FadeIn(dotA, { duration: D }), new FadeIn(dotB, { duration: D }), new FadeIn(dotC, { duration: D }));
 
+    await scene.play(new Write(eqn, { duration: D }));
     for (const b of bulletObjs) {
-      await scene.play(new FadeIn(b, { duration: 0.2 }));
+      await scene.play(new FadeIn(b, { duration: 0.15 }));
     }
-    await scene.wait(1.5);
+
+    // Now that the circuit diagram has finished plotting, reveal the knobs
+    // followed by the mixer panel.
+    revealKnob('A'); revealKnob('B'); revealKnob('C'); revealKnob('F');
+    document.getElementById('mixer-panel').style.opacity = '1';
+    document.getElementById('mixer-panel').setAttribute('aria-hidden', 'false');
+
+    // ── Web Audio mixer (MP3 stems via AudioBuffer) ────────────────
+    const mixer = (() => {
+      const defs = {
+        A: { src: '../Audio/Nirvana - Smells Like Teen Spirit (Bass Only).mp3',    gain: 0.70 },
+        B: { src: '../Audio/Nirvana - Smells Like Teen Spirit (Guitars Only).mp3', gain: 0.40 },
+        C: { src: '../Audio/Nirvana - Smells Like Teen Spirit (Vocals Only).mp3',  gain: 0.60 }
+      };
+      let ctx = null;
+      const nodes = {};        // { source, g } per channel
+      const buffers = {};      // decoded AudioBuffer per channel
+      let master = null;
+      let analyser = null;
+      let buf = null;
+      let scopeStarted = false;
+      let loaded = false;
+      let playing = false;
+      let playStartCtxTime = 0;   // ctx.currentTime when playback started
+      let playStartOffset = 0;    // offset into the track when playback started
+      let duration = 0;           // track duration (from longest buffer)
+      // All channels start unmuted
+      const muted = { A: false, B: false, C: false };
+      let masterGain = 0.6;
+
+      function loadAudio(url) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', url, true);
+          xhr.responseType = 'arraybuffer';
+          xhr.onload = () => resolve(xhr.response);
+          xhr.onerror = () => reject(new Error('Failed to load ' + url));
+          xhr.send();
+        });
+      }
+
+      async function ensureCtx() {
+        if (ctx && loaded) return ctx;
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { console.warn('Web Audio API not supported'); return null; }
+        if (!ctx) {
+          ctx = new AC();
+          master = ctx.createGain();
+          master.gain.value = masterGain;
+          analyser = ctx.createAnalyser();
+          analyser.fftSize = 1024;
+          buf = new Uint8Array(analyser.fftSize);
+          master.connect(analyser).connect(ctx.destination);
+          for (const ch of ['A', 'B', 'C']) {
+            const g = ctx.createGain();
+            g.gain.value = defs[ch].gain;
+            g.connect(master);
+            nodes[ch] = { source: null, g };
+          }
+          if (!scopeStarted) { startScope(); scopeStarted = true; }
+        }
+        if (!loaded) {
+          await Promise.all(['A', 'B', 'C'].map(async (ch) => {
+            const arr = await loadAudio(defs[ch].src);
+            buffers[ch] = await ctx.decodeAudioData(arr);
+          }));
+          duration = Math.max(...['A', 'B', 'C'].map(ch => buffers[ch].duration));
+          loaded = true;
+        }
+        return ctx;
+      }
+
+      function getCurrentTime() {
+        if (!ctx || !playing) return playStartOffset;
+        const elapsed = ctx.currentTime - playStartCtxTime;
+        return (playStartOffset + elapsed) % duration;
+      }
+
+      function startAllSources(offset) {
+        for (const ch of ['A', 'B', 'C']) {
+          if (nodes[ch].source) {
+            try { nodes[ch].source.stop(); } catch (_) {}
+          }
+          const src = ctx.createBufferSource();
+          src.buffer = buffers[ch];
+          src.loop = true;
+          src.connect(nodes[ch].g);
+          src.start(0, offset % buffers[ch].duration);
+          nodes[ch].source = src;
+        }
+        playStartCtxTime = ctx.currentTime;
+        playStartOffset = offset;
+      }
+
+      function stopAllSources() {
+        for (const ch of ['A', 'B', 'C']) {
+          if (nodes[ch].source) {
+            try { nodes[ch].source.stop(); } catch (_) {}
+            nodes[ch].source = null;
+          }
+        }
+      }
+
+      async function playPause() {
+        if (!(await ensureCtx())) return false;
+        if (ctx.state === 'suspended') ctx.resume();
+        if (playing) {
+          playStartOffset = getCurrentTime();
+          stopAllSources();
+          playing = false;
+        } else {
+          startAllSources(playStartOffset);
+          playing = true;
+        }
+        return playing;
+      }
+
+      function seek(fraction) {
+        const t = fraction * duration;
+        if (playing) {
+          stopAllSources();
+          startAllSources(t);
+        } else {
+          playStartOffset = t;
+        }
+      }
+
+      function toggleMute(ch) {
+        muted[ch] = !muted[ch];
+        if (!ctx) return;
+        const g = nodes[ch].g.gain;
+        g.cancelScheduledValues(ctx.currentTime);
+        g.linearRampToValueAtTime(muted[ch] ? 0 : defs[ch].gain, ctx.currentTime + 0.02);
+        return !muted[ch];
+      }
+
+      function setChannelGain(ch, value, ramp = 0.02) {
+        defs[ch].gain = value;
+        if (!ctx || muted[ch]) return;
+        const g = nodes[ch].g.gain;
+        g.cancelScheduledValues(ctx.currentTime);
+        g.linearRampToValueAtTime(value, ctx.currentTime + ramp);
+      }
+
+      function setMaster(value, ramp = 0.02) {
+        masterGain = value;
+        if (!ctx) return;
+        const m = master.gain;
+        m.cancelScheduledValues(ctx.currentTime);
+        m.linearRampToValueAtTime(value, ctx.currentTime + ramp);
+      }
+
+      function startScope() {
+        const canvas = document.getElementById('mix-scope');
+        const cctx = canvas.getContext('2d');
+        const draw = () => {
+          requestAnimationFrame(draw);
+          if (!analyser) return;
+          const w = canvas.width = canvas.clientWidth * (window.devicePixelRatio || 1);
+          const h = canvas.height = canvas.clientHeight * (window.devicePixelRatio || 1);
+          cctx.fillStyle = IS_LIGHT ? 'rgba(245, 245, 247, 0.6)' : 'rgba(10, 14, 20, 0.6)';
+          cctx.fillRect(0, 0, w, h);
+          cctx.strokeStyle = IS_LIGHT ? 'rgba(80, 88, 104, 0.35)' : 'rgba(136, 146, 164, 0.35)';
+          cctx.lineWidth = 1;
+          cctx.beginPath();
+          cctx.moveTo(0, h / 2);
+          cctx.lineTo(w, h / 2);
+          cctx.stroke();
+          analyser.getByteTimeDomainData(buf);
+          cctx.strokeStyle = YELLOW;
+          cctx.lineWidth = 2.2 * (window.devicePixelRatio || 1);
+          cctx.beginPath();
+          const step = w / buf.length;
+          for (let i = 0; i < buf.length; i++) {
+            const v = (buf[i] - 128) / 128;
+            const x = i * step;
+            const y = h / 2 + v * (h / 2 - 4);
+            if (i === 0) cctx.moveTo(x, y); else cctx.lineTo(x, y);
+          }
+          cctx.stroke();
+        };
+        draw();
+      }
+
+      return { playPause, seek, toggleMute, setChannelGain, setMaster, getCurrentTime, get duration() { return duration; }, get playing() { return playing; } };
+    })();
+
+    // ── Play / pause button ──
+    const playBtn = document.getElementById('mix-play-all');
+    playBtn.addEventListener('click', async () => {
+      const on = await mixer.playPause();
+      playBtn.textContent = on ? '⏸' : '▶';
+      playBtn.classList.toggle('playing', on);
+    });
+
+    // ── Seek slider + time display ──
+    const seekSlider = document.getElementById('mix-seek');
+    const timeLabel = document.getElementById('mix-time');
+    let seeking = false;
+
+    function fmtTime(s) {
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60);
+      return m + ':' + String(sec).padStart(2, '0');
+    }
+
+    seekSlider.addEventListener('input', () => {
+      seeking = true;
+      mixer.seek(seekSlider.value / 1000);
+    });
+    seekSlider.addEventListener('change', () => { seeking = false; });
+
+    // Update seek slider & time label continuously
+    (function updateTransport() {
+      requestAnimationFrame(updateTransport);
+      if (mixer.duration > 0) {
+        const t = mixer.getCurrentTime();
+        if (!seeking) seekSlider.value = (t / mixer.duration) * 1000;
+        timeLabel.textContent = fmtTime(t) + ' / ' + fmtTime(mixer.duration);
+      }
+    })();
+
+    // ── Mute toggle buttons ──
+    document.querySelectorAll('.mix-play').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ch = btn.dataset.ch;
+        const audible = mixer.toggleMute(ch);
+        btn.classList.toggle('on', audible);
+        const ico = btn.querySelector('.mix-ico');
+        if (ico) ico.textContent = audible ? '🔊' : '🔇';
+      });
+    });
+
+    // ── Interactive rotary potentiometers ──
+    // Each knob is drawn as an SVG group in #live-labels: a static 270° range
+    // arc, an active arc that grows with the value, a face circle, and an
+    // indicator line rotated to the current angle. Interaction is DAW-style
+    // vertical drag (drag up → turn clockwise → increase). Hold Shift for
+    // finer control.
+    const svg = document.getElementById('live-labels');
+    const POT_ARC_RADIUS = 28;           // matches the SVG d="A 28 28 …"
+    const POT_START_DEG  = 135;          // value = 0   (7 o'clock)
+    const POT_SWEEP_DEG  = 270;          // 270° travel (to 5 o'clock)
+    const POT_DRAG_PIXELS = 180;         // full-range drag distance
+    const POT_FINE_PIXELS = 720;         // while Shift held
+
+    const pots = {
+      A: { ch: 'A', value: 0.70, labelPrefix: 'R_A' },
+      B: { ch: 'B', value: 0.40, labelPrefix: 'R_B' },
+      C: { ch: 'C', value: 0.60, labelPrefix: 'R_C' },
+      F: { ch: 'F', value: 0.60, labelPrefix: 'R_F' }
+    };
+
+    function deg2rad(d) { return d * Math.PI / 180; }
+
+    // Build an SVG arc path in local (knob-centred) coords.
+    function arcPathLocal(r, startDeg, endDeg) {
+      const sr = deg2rad(startDeg);
+      const er = deg2rad(endDeg);
+      const sx = r * Math.cos(sr), sy = r * Math.sin(sr);
+      const ex = r * Math.cos(er), ey = r * Math.sin(er);
+      const largeArc = Math.abs(endDeg - startDeg) > 180 ? 1 : 0;
+      return `M ${sx.toFixed(2)} ${sy.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${ex.toFixed(2)} ${ey.toFixed(2)}`;
+    }
+
+    function renderPot(p) {
+      const v = p.value;
+      const endDeg = POT_START_DEG + v * POT_SWEEP_DEG;
+      // Active arc (falls back to a zero-length path near value 0 so the arc
+      // starts invisible rather than flashing a full ring).
+      const active = svg.querySelector(`.pot-active[data-pot="${p.ch}"]`);
+      if (active) {
+        if (v < 0.005) {
+          active.setAttribute('d', '');
+        } else {
+          active.setAttribute('d', arcPathLocal(POT_ARC_RADIUS, POT_START_DEG, endDeg));
+        }
+      }
+      // Indicator line: the line is drawn pointing straight up (-90° SVG),
+      // so rotate by (endDeg - (-90°)) to aim it at the target angle.
+      const ind = svg.querySelector(`.pot-ind-wrap[data-pot="${p.ch}"]`);
+      if (ind) ind.setAttribute('transform', `rotate(${(endDeg + 90).toFixed(2)})`);
+      // Label
+      const lbl = svg.querySelector(`text[data-pot="${p.ch}"]`);
+      if (lbl) lbl.textContent = `${p.labelPrefix} · ${(v * 11).toFixed(1)}`;
+      // Audio
+      if (p.ch === 'F') {
+        mixer.setMaster(v);
+      } else {
+        mixer.setChannelGain(p.ch, v);
+      }
+    }
+
+    svg.querySelectorAll('.pot-hit').forEach(hit => {
+      const p = pots[hit.dataset.pot];
+      if (!p) return;
+      let dragging = false;
+      let startY = 0;
+      let startValue = 0;
+      let fine = false;
+
+      hit.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        dragging = true;
+        startY = e.clientY;
+        startValue = p.value;
+        fine = e.shiftKey;
+        hit.setPointerCapture(e.pointerId);
+      });
+      hit.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        fine = e.shiftKey;
+        const pxPerRange = fine ? POT_FINE_PIXELS : POT_DRAG_PIXELS;
+        const delta = (startY - e.clientY) / pxPerRange;
+        const v = Math.max(0, Math.min(1, startValue + delta));
+        p.value = v;
+        renderPot(p);
+      });
+      const end = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        try { hit.releasePointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+      };
+      hit.addEventListener('pointerup', end);
+      hit.addEventListener('pointercancel', end);
+
+      // Mouse wheel: nudge the pot (same pixel budget as drag).
+      hit.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const pxPerRange = e.shiftKey ? POT_FINE_PIXELS : POT_DRAG_PIXELS;
+        const step = -e.deltaY / pxPerRange;
+        p.value = Math.max(0, Math.min(1, p.value + step));
+        renderPot(p);
+      }, { passive: false });
+    });
+
+    // Paint initial knob state from the default values.
+    for (const key of ['A', 'B', 'C', 'F']) renderPot(pots[key]);
   </script>
 </body>
 </html>

@@ -92,7 +92,7 @@ body.slide {
     aspect-ratio: 16 / 9;
 }
 
-.manim-stage canvas {
+.manim-stage > canvas {
     display: block;
     width: 100%;
     height: 100%;

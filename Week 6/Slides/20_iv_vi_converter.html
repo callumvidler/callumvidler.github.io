@@ -10,17 +10,11 @@
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
   <script>
-    // Theme bridge:
-    //   1. Priority: ?theme= URL param (presenter sets this when loading).
-    //   2. Fallback: sessionStorage, preserved across the reload triggered
-    //      by the module's themechange listener (theme.js always forces
-    //      'light' at parse time, so we need our own persistence).
-    // Also hides the per-slide toggle button when embedded in the presenter.
     (function () {
       var qp = new URLSearchParams(location.search);
       var qt = qp.get('theme');
       var ss = null;
-      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { }
       var pick = (qt === 'dark' || qt === 'light') ? qt
                : (ss === 'dark' || ss === 'light') ? ss
                : null;
@@ -29,7 +23,7 @@
         try {
           var t = e && e.detail && e.detail.theme;
           if (t) sessionStorage.setItem('slideTheme', t);
-        } catch (err) { /* ignore */ }
+        } catch (err) { }
       });
       if (window.parent !== window) {
         var style = document.createElement('style');
@@ -41,7 +35,7 @@
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">22 / 22</span>
+    <span class="slide-num">19 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">
@@ -50,9 +44,9 @@
 
   <script type="module">
     import {
-      Scene, Polygon, Rectangle, Circle, Line, Text, MathTex, VGroup, Dot,
-      Create, Write, FadeIn, MoveAlongPath,
-      UP, DOWN, LEFT, RIGHT, WHITE, linear
+      Scene, Polygon, Rectangle, Circle, Line, Text, MathTex, Dot,
+      Create, Write, FadeIn,
+      UP, DOWN, LEFT, RIGHT
     } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
@@ -73,133 +67,412 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
-    const title = new Text({ text: 'Converting Between Current and Voltage', fontSize: 40, color: FG, fontUrl: FONT_URL });
+    // ── Constants ──
+    const TRI_HALF_H = 0.65;
+    const TRI_HALF_W = 0.6;
+    const R_W = 0.7, R_H = 0.25;
+    const FAST = 0.5;
+
+    // ── Helpers ──
+    function mkOpamp(cx, cy) {
+      return new Polygon({
+        vertices: [
+          [cx - TRI_HALF_W, cy - TRI_HALF_H, 0],
+          [cx - TRI_HALF_W, cy + TRI_HALF_H, 0],
+          [cx + TRI_HALF_W, cy, 0]
+        ],
+        color: MUTED2, strokeWidth: 1.7, fillOpacity: 0.13
+      });
+    }
+
+    async function mkTerminals(cx, cy) {
+      const pY = cy - 0.25, mY = cy + 0.25;
+      const p = new Text({ text: '+', fontSize: 14, color: ACCENT, fontUrl: FONT_URL });
+      const m = new Text({ text: '−', fontSize: 14, color: RED, fontUrl: FONT_URL });
+      await Promise.all([p.loadGlyphs?.(), m.loadGlyphs?.()]);
+      p.moveTo([cx - TRI_HALF_W + 0.22, pY, 0]);
+      m.moveTo([cx - TRI_HALF_W + 0.22, mY, 0]);
+      return { plus: p, minus: m, plusY: pY, minusY: mY };
+    }
+
+    function mkGnd(x, topY) {
+      const g1 = new Line({ start: [x - 0.22, topY, 0],        end: [x + 0.22, topY, 0],        color: FG, strokeWidth: 3 });
+      const g2 = new Line({ start: [x - 0.14, topY - 0.12, 0], end: [x + 0.14, topY - 0.12, 0], color: FG, strokeWidth: 2 });
+      const g3 = new Line({ start: [x - 0.06, topY - 0.24, 0], end: [x + 0.06, topY - 0.24, 0], color: FG, strokeWidth: 1 });
+      return [g1, g2, g3];
+    }
+
+    // ── Title ──
+    const title = new Text({ text: 'I/V and V/I Converters', fontSize: 40, color: FG, fontUrl: FONT_URL });
     await title.loadGlyphs?.();
     title.moveTo([-3.5, 3.5, 0]);
-    const TITLE_LEFT_X = -6.2;
     if (typeof title.getLeft === 'function') {
-      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+      title.shift([-6.2 - title.getLeft()[0], 0, 0]);
     }
 
-    const bullets = [
-      'I-V converter (transresistance): ideal for photodiodes',
-      'V-I converter (transconductance): used for neural stimulation',
-      'A_TR = V_out / I = -R_f,   A_TC = I_out / V = 1 / R'
+    // ── Column subtitles ──
+    const subL = new Text({ text: 'Transresistance  (I → V)', fontSize: 16, color: CYAN, fontUrl: FONT_URL });
+    const subR = new Text({ text: 'Transconductance  (V → I)', fontSize: 16, color: CYAN, fontUrl: FONT_URL });
+    await Promise.all([subL.loadGlyphs?.(), subR.loadGlyphs?.()]);
+    subL.moveTo([-3.2, 2.7, 0]);
+    subR.moveTo([4.0, 2.7, 0]);
+
+    // ═══════════════════════════════════════════════
+    //  LEFT CIRCUIT — Transresistance Amplifier (I → V)
+    // ═══════════════════════════════════════════════
+    const LX = -3.2, CY = 0.8;
+    const triL = mkOpamp(LX, CY);
+    const tL = await mkTerminals(LX, CY);
+
+    // Current source input (circle + arrow)
+    const iSrcX = LX - 2.4;
+    const iSrc = new Circle({ radius: 0.28, color: BLUE, strokeWidth: 1.8, fillOpacity: 0.08 });
+    iSrc.moveTo([iSrcX, tL.minusY, 0]);
+    const iArrow = new Line({ start: [iSrcX, tL.minusY - 0.12, 0], end: [iSrcX, tL.minusY + 0.14, 0], color: BLUE, strokeWidth: 2 });
+    // Arrow tip
+    const iArrTip1 = new Line({ start: [iSrcX, tL.minusY + 0.14, 0], end: [iSrcX - 0.06, tL.minusY + 0.06, 0], color: BLUE, strokeWidth: 1.5 });
+    const iArrTip2 = new Line({ start: [iSrcX, tL.minusY + 0.14, 0], end: [iSrcX + 0.06, tL.minusY + 0.06, 0], color: BLUE, strokeWidth: 1.5 });
+
+    const iLbl = new MathTex({ latex: 'I_{in}', color: BLUE });
+    await iLbl.waitForRender?.();
+    iLbl.scale(0.55).moveTo([iSrcX - 0.6, tL.minusY, 0]);
+
+    // Input wire: current source → inverting input
+    const JUNC_L_X = LX - TRI_HALF_W - 0.15;
+    const iWire = new Line({ start: [iSrcX + 0.28, tL.minusY, 0], end: [LX - TRI_HALF_W, tL.minusY, 0], color: FG, strokeWidth: 1.8 });
+    const juncL = new Dot({ point: [JUNC_L_X, tL.minusY, 0], color: FG, radius: 0.05 });
+
+    // Non-inverting input → ground
+    const gndLX = LX - 1.5;
+    const gndLWire1 = new Line({ start: [LX - TRI_HALF_W, tL.plusY, 0], end: [gndLX, tL.plusY, 0], color: FG, strokeWidth: 1.8 });
+    const gndLWire2 = new Line({ start: [gndLX, tL.plusY, 0], end: [gndLX, tL.plusY - 0.5, 0], color: FG, strokeWidth: 1.8 });
+    const gndL = mkGnd(gndLX, tL.plusY - 0.5);
+
+    // Current source ground
+    const gndSrcWire = new Line({ start: [iSrcX, tL.minusY - 0.28, 0], end: [iSrcX, tL.minusY - 0.75, 0], color: FG, strokeWidth: 1.8 });
+    const gndSrc = mkGnd(iSrcX, tL.minusY - 0.75);
+
+    // Feedback resistor Rf
+    const FB_L_Y = CY + 1.2;
+    const fbLUp = new Line({ start: [JUNC_L_X, tL.minusY, 0], end: [JUNC_L_X, FB_L_Y, 0], color: FG, strokeWidth: 1.8 });
+    const RfCX = (JUNC_L_X + LX + 1.3) / 2;
+    const fbLtoR = new Line({ start: [JUNC_L_X, FB_L_Y, 0], end: [RfCX - R_W / 2, FB_L_Y, 0], color: FG, strokeWidth: 1.8 });
+    const Rf = new Rectangle({ width: R_W, height: R_H, color: YELLOW, strokeWidth: 2, fillOpacity: 0.22 });
+    Rf.moveTo([RfCX, FB_L_Y, 0]);
+    const RfLbl = new MathTex({ latex: 'R_f', color: YELLOW });
+    await RfLbl.waitForRender?.();
+    RfLbl.scale(0.5).moveTo([RfCX, FB_L_Y + R_H / 2 + 0.18, 0]);
+    const TAP_L_X = LX + 1.3;
+    const fbLfromR = new Line({ start: [RfCX + R_W / 2, FB_L_Y, 0], end: [TAP_L_X, FB_L_Y, 0], color: FG, strokeWidth: 1.8 });
+    const fbLDown = new Line({ start: [TAP_L_X, FB_L_Y, 0], end: [TAP_L_X, CY, 0], color: FG, strokeWidth: 1.8 });
+
+    // Output wire
+    const outLWire = new Line({ start: [LX + TRI_HALF_W, CY, 0], end: [TAP_L_X, CY, 0], color: FG, strokeWidth: 1.8 });
+    const tapLDot = new Dot({ point: [TAP_L_X, CY, 0], color: FG, radius: 0.05 });
+    const outLExt = new Line({ start: [TAP_L_X, CY, 0], end: [TAP_L_X + 0.5, CY, 0], color: FG, strokeWidth: 1.8 });
+    const vOutLbl = new MathTex({ latex: 'V_{out}', color: YELLOW });
+    await vOutLbl.waitForRender?.();
+    vOutLbl.scale(0.55).moveTo([TAP_L_X + 1.0, CY, 0]);
+
+    // ═══════════════════════════════════════════════
+    //  RIGHT CIRCUIT — Transconductance Amplifier (V → I)
+    // ═══════════════════════════════════════════════
+    const RX = 4.0;
+    const triR = mkOpamp(RX, CY);
+    const tR = await mkTerminals(RX, CY);
+
+    // Vin label
+    const vinX = RX - 3.0;
+    const vInLbl = new MathTex({ latex: 'V_{in}', color: BLUE });
+    await vInLbl.waitForRender?.();
+    vInLbl.scale(0.55).moveTo([vinX - 0.4, tR.minusY, 0]);
+
+    // Input resistor R
+    const RIN_CX = RX - 1.8;
+    const vinWire1 = new Line({ start: [vinX, tR.minusY, 0], end: [RIN_CX - R_W / 2, tR.minusY, 0], color: FG, strokeWidth: 1.8 });
+    const Rin = new Rectangle({ width: R_W, height: R_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+    Rin.moveTo([RIN_CX, tR.minusY, 0]);
+    const RinLbl = new MathTex({ latex: 'R', color: ACCENT });
+    await RinLbl.waitForRender?.();
+    RinLbl.scale(0.5).moveTo([RIN_CX, tR.minusY + R_H / 2 + 0.18, 0]);
+    const vinWire2 = new Line({ start: [RIN_CX + R_W / 2, tR.minusY, 0], end: [RX - TRI_HALF_W, tR.minusY, 0], color: FG, strokeWidth: 1.8 });
+
+    // Junction on inverting input wire
+    const JUNC_R_X = RX - TRI_HALF_W - 0.15;
+    const juncR = new Dot({ point: [JUNC_R_X, tR.minusY, 0], color: FG, radius: 0.05 });
+
+    // Non-inverting input → ground
+    const gndRX = RX - 1.5;
+    const gndRWire1 = new Line({ start: [RX - TRI_HALF_W, tR.plusY, 0], end: [gndRX, tR.plusY, 0], color: FG, strokeWidth: 1.8 });
+    const gndRWire2 = new Line({ start: [gndRX, tR.plusY, 0], end: [gndRX, tR.plusY - 0.5, 0], color: FG, strokeWidth: 1.8 });
+    const gndR = mkGnd(gndRX, tR.plusY - 0.5);
+
+    // Feedback load Z_L
+    const FB_R_Y = CY + 1.2;
+    const fbRUp = new Line({ start: [JUNC_R_X, tR.minusY, 0], end: [JUNC_R_X, FB_R_Y, 0], color: FG, strokeWidth: 1.8 });
+    const ZLCX = (JUNC_R_X + RX + 1.3) / 2;
+    const fbRtoZ = new Line({ start: [JUNC_R_X, FB_R_Y, 0], end: [ZLCX - R_W / 2, FB_R_Y, 0], color: FG, strokeWidth: 1.8 });
+    const ZL = new Rectangle({ width: R_W, height: 0.3, color: RED, strokeWidth: 2, fillOpacity: 0.22 });
+    ZL.moveTo([ZLCX, FB_R_Y, 0]);
+    const ZLLbl = new MathTex({ latex: 'Z_L', color: RED });
+    await ZLLbl.waitForRender?.();
+    ZLLbl.scale(0.5).moveTo([ZLCX, FB_R_Y + 0.15 + 0.18, 0]);
+    const TAP_R_X = RX + 1.3;
+    const fbRfromZ = new Line({ start: [ZLCX + R_W / 2, FB_R_Y, 0], end: [TAP_R_X, FB_R_Y, 0], color: FG, strokeWidth: 1.8 });
+    const fbRDown = new Line({ start: [TAP_R_X, FB_R_Y, 0], end: [TAP_R_X, CY, 0], color: FG, strokeWidth: 1.8 });
+
+    // Output wire
+    const outRWire = new Line({ start: [RX + TRI_HALF_W, CY, 0], end: [TAP_R_X, CY, 0], color: FG, strokeWidth: 1.8 });
+    const tapRDot = new Dot({ point: [TAP_R_X, CY, 0], color: FG, radius: 0.05 });
+    const outRExt = new Line({ start: [TAP_R_X, CY, 0], end: [TAP_R_X + 0.5, CY, 0], color: FG, strokeWidth: 1.8 });
+    const iOutLbl = new MathTex({ latex: 'I_{out}', color: YELLOW });
+    await iOutLbl.waitForRender?.();
+    iOutLbl.scale(0.55).moveTo([TAP_R_X + 1.0, CY, 0]);
+
+    // Current arrow on Z_L (showing current direction through load)
+    const iArrowY = FB_R_Y - 0.45;
+    const iFlowArr = new Line({ start: [ZLCX - 0.25, iArrowY, 0], end: [ZLCX + 0.25, iArrowY, 0], color: YELLOW, strokeWidth: 1.5 });
+    const iFlowTip1 = new Line({ start: [ZLCX + 0.25, iArrowY, 0], end: [ZLCX + 0.17, iArrowY + 0.06, 0], color: YELLOW, strokeWidth: 1.5 });
+    const iFlowTip2 = new Line({ start: [ZLCX + 0.25, iArrowY, 0], end: [ZLCX + 0.17, iArrowY - 0.06, 0], color: YELLOW, strokeWidth: 1.5 });
+    const iFlowLbl = new MathTex({ latex: 'i', color: YELLOW });
+    await iFlowLbl.waitForRender?.();
+    iFlowLbl.scale(0.4).moveTo([ZLCX - 0.4, iArrowY, 0]);
+
+    // ═══════════════════════════════════════════════
+    //  EXPLANATIONS — per-column MathTex bullets
+    // ═══════════════════════════════════════════════
+
+    const BS = 0.43;   // bullet text scale
+    const LS = 0.42;   // line spacing
+    const BG_GAP = 0.6; // gap between bullet groups
+
+    // mkMath: left-aligned MathTex at (xL, y)
+    async function mkMath(latex, color, scale, xL, y) {
+      const o = new MathTex({ latex, color });
+      await o.waitForRender?.();
+      o.scale(scale).moveTo([0, y, 0]);
+      if (typeof o.getLeft === 'function') {
+        o.shift([xL - o.getLeft()[0], 0, 0]);
+      } else {
+        o.moveTo([xL + 1.5, y, 0]);
+      }
+      return o;
+    }
+
+    function mkDot(x, y) {
+      return new Circle({
+        radius: 0.05, color: FG,
+        fillColor: FG, fillOpacity: 1, strokeWidth: 0,
+      }).moveTo([x, y, 0]);
+    }
+
+    // ── LEFT column: Transresistance explanation ──
+    const L_DX = -6.2;           // dot x
+    const L_TX = -6.0;           // text left edge
+    let LY = -1.1;
+
+    // Equation
+    const eqnL = await mkMath('V_{out} = -\\,I_{in} \\cdot R_f', ACCENT, 0.6, L_TX, LY);
+
+    LY -= BG_GAP;
+    // Bullet 1: What it does
+    const Ld1 = mkDot(L_DX, LY);
+    const Lb1a = await mkMath('\\text{Converts input current to a}', FG, BS, L_TX, LY);
+    const Lb1b = await mkMath('\\text{proportional output voltage.}', FG, BS, L_TX, LY - LS);
+
+    LY -= LS + BG_GAP;
+    // Bullet 2: How — virtual ground
+    const Ld2 = mkDot(L_DX, LY);
+    const Lb2a = await mkMath('\\text{Virtual ground forces all } I_{in}', FG, BS, L_TX, LY);
+    const Lb2b = await mkMath('\\text{through } R_f \\text{, so } V_{out} = -I_{in}R_f\\text{.}', FG, BS, L_TX, LY - LS);
+
+    LY -= LS + BG_GAP;
+    // Bullet 3: Gain — highlight -R_f and explain naming
+    const Ld3 = mkDot(L_DX, LY);
+    const Lb3a = await mkMath(`\\text{Gain } A_{TR} = V_{out}/I_{in} = \\textcolor{${YELLOW}}{-R_f}`, FG, BS, L_TX, LY);
+    // Highlight box around -R_f on the gain line
+    const hlL = new Rectangle({ width: 0.95, height: 0.38, color: YELLOW, strokeWidth: 1.4, fillOpacity: 0.10 });
+    const hlLx = (typeof Lb3a.getRight === 'function') ? Lb3a.getRight()[0] - 0.4 : L_TX + 3.6;
+    hlL.moveTo([hlLx, LY, 0]);
+
+    // Callout panel — up and to the right of highlight
+    const PANEL_DY = 0.85;   // shared vertical offset from gain line
+    const PANEL_H = 0.55;    // tight to text
+    const hlL_panelCX = hlLx + 1.6;
+    const hlL_panelCY = LY + PANEL_DY;
+    const hlL_panel = new Rectangle({ width: 2.3, height: PANEL_H, color: YELLOW, strokeWidth: 1.4, fillOpacity: 0.08 });
+    hlL_panel.moveTo([hlL_panelCX, hlL_panelCY, 0]);
+    const hlL_conn = new Line({ start: [hlLx, LY + 0.19, 0], end: [hlL_panelCX - 0.9, hlL_panelCY - PANEL_H / 2, 0], color: YELLOW, strokeWidth: 1.2 });
+
+    const Lb3callTop = new Text({ text: 'Resistance', fontSize: 16, color: YELLOW, fontUrl: FONT_URL });
+    const Lb3callBot = new Text({ text: '∴ "Trans-resistance"', fontSize: 16, color: YELLOW, fontUrl: FONT_URL });
+    await Promise.all([Lb3callTop.loadGlyphs?.(), Lb3callBot.loadGlyphs?.()]);
+    Lb3callTop.moveTo([hlL_panelCX, hlL_panelCY + 0.13, 0]);
+    Lb3callBot.moveTo([hlL_panelCX, hlL_panelCY - 0.13, 0]);
+
+    LY -= LS + BG_GAP;
+    // Bullet 4: Applications
+    const Ld4 = mkDot(L_DX, LY);
+    const Lb4a = await mkMath('\\text{Used for: photodiode readout,}', MUTED, 0.40, L_TX, LY);
+    const Lb4b = await mkMath('\\text{sensor conditioning, DAC output.}', MUTED, 0.40, L_TX, LY - LS);
+
+    // ── RIGHT column: Transconductance explanation ──
+    const R_DX = 1.2;            // dot x
+    const R_TX = 1.4;            // text left edge
+    let RY = -1.1;
+
+    // Equation
+    const eqnR = await mkMath('I_{out} = \\dfrac{V_{in}}{R}', ACCENT, 0.6, R_TX, RY);
+
+    RY -= BG_GAP;
+    // Bullet 1: What it does
+    const Rd1 = mkDot(R_DX, RY);
+    const Rb1a = await mkMath('\\text{Converts input voltage to a}', FG, BS, R_TX, RY);
+    const Rb1b = await mkMath('\\text{proportional output current.}', FG, BS, R_TX, RY - LS);
+
+    RY -= LS + BG_GAP;
+    // Bullet 2: How — virtual ground
+    const Rd2 = mkDot(R_DX, RY);
+    const Rb2a = await mkMath('\\text{Virtual ground sets } I = V_{in}/R\\text{;}', FG, BS, R_TX, RY);
+    const Rb2b = await mkMath('\\text{same current flows through } Z_L\\text{.}', FG, BS, R_TX, RY - LS);
+
+    RY -= LS + BG_GAP;
+    // Bullet 3: Gain — highlight 1/R and explain naming
+    const Rd3 = mkDot(R_DX, RY);
+    const Rb3a = await mkMath(`\\text{Gain } A_{TC} = I_{out}/V_{in} = \\textcolor{${YELLOW}}{1/R}`, FG, BS, R_TX, RY);
+    // Highlight box around 1/R on the gain line
+    const hlR = new Rectangle({ width: 0.85, height: 0.38, color: YELLOW, strokeWidth: 1.4, fillOpacity: 0.10 });
+    const hlRx = (typeof Rb3a.getRight === 'function') ? Rb3a.getRight()[0] - 0.35 : R_TX + 3.4;
+    hlR.moveTo([hlRx, RY, 0]);
+
+    // Callout panel — same height offset as left, to the right of highlight
+    const hlR_panelCX = hlRx + 1.7;
+    const hlR_panelCY = RY + PANEL_DY;
+    const hlR_panel = new Rectangle({ width: 2.5, height: PANEL_H, color: YELLOW, strokeWidth: 1.4, fillOpacity: 0.08 });
+    hlR_panel.moveTo([hlR_panelCX, hlR_panelCY, 0]);
+    const hlR_conn = new Line({ start: [hlRx, RY + 0.19, 0], end: [hlR_panelCX - 1.0, hlR_panelCY - PANEL_H / 2, 0], color: YELLOW, strokeWidth: 1.2 });
+
+    const Rb3callTop = new Text({ text: 'Conductance', fontSize: 16, color: YELLOW, fontUrl: FONT_URL });
+    const Rb3callBot = new Text({ text: '∴ "Trans-conductance"', fontSize: 16, color: YELLOW, fontUrl: FONT_URL });
+    await Promise.all([Rb3callTop.loadGlyphs?.(), Rb3callBot.loadGlyphs?.()]);
+    Rb3callTop.moveTo([hlR_panelCX, hlR_panelCY + 0.13, 0]);
+    Rb3callBot.moveTo([hlR_panelCX, hlR_panelCY - 0.13, 0]);
+
+    RY -= LS + BG_GAP;
+    // Bullet 4: Applications
+    const Rd4 = mkDot(R_DX, RY);
+    const Rb4a = await mkMath('\\text{Used for: LED driving, neural}', MUTED, 0.40, R_TX, RY);
+    const Rb4b = await mkMath('\\text{stimulation, 4–20 mA loops.}', MUTED, 0.40, R_TX, RY - LS);
+
+    // (animation arrays defined inline below)
+
+    // ═══════════════════════════════════════════════
+    //  ANIMATION SEQUENCE
+    // ═══════════════════════════════════════════════
+    const F = 0.3; // fast duration for circuit build
+
+    // 1. Title
+    await scene.play(new Write(title, { duration: 0.5 }));
+
+    // ── TRANSRESISTANCE (left) — circuit, bullets, highlight ──
+
+    // 2. Left subtitle + op-amp
+    await scene.play(
+      new FadeIn(subL, { duration: F }),
+      new Create(triL, { duration: F }),
+      new Write(tL.plus, { duration: F }), new Write(tL.minus, { duration: F })
+    );
+
+    // 3. Left circuit — all in one fast batch
+    await scene.play(
+      new Create(iSrc, { duration: F }), new Create(iArrow, { duration: F }),
+      new Create(iArrTip1, { duration: F }), new Create(iArrTip2, { duration: F }),
+      new Write(iLbl, { duration: F }),
+      new Create(iWire, { duration: F }), new FadeIn(juncL, { duration: F }),
+      new Create(gndLWire1, { duration: F }), new Create(gndLWire2, { duration: F }),
+      new Create(gndL[0], { duration: F }), new Create(gndL[1], { duration: F }), new Create(gndL[2], { duration: F }),
+      new Create(gndSrcWire, { duration: F }),
+      new Create(gndSrc[0], { duration: F }), new Create(gndSrc[1], { duration: F }), new Create(gndSrc[2], { duration: F }),
+      new Create(fbLUp, { duration: F }), new Create(fbLtoR, { duration: F }),
+      new Create(Rf, { duration: F }), new Write(RfLbl, { duration: F }),
+      new Create(fbLfromR, { duration: F }), new Create(fbLDown, { duration: F }),
+      new Create(outLWire, { duration: F }), new FadeIn(tapLDot, { duration: F }),
+      new Create(outLExt, { duration: F }), new Write(vOutLbl, { duration: F })
+    );
+
+    // 4. Left equation
+    await scene.play(new Write(eqnL, { duration: 0.5 }));
+
+    // 5. Left bullets
+    const lGroups = [
+      [Ld1, Lb1a, Lb1b],
+      [Ld2, Lb2a, Lb2b],
+      [Ld3, Lb3a],
+      [Ld4, Lb4a, Lb4b],
     ];
-    const bulletObjs = [];
-    for (let i = 0; i < bullets.length; i++) {
-      const b = new Text({ text: '•  ' + bullets[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
-      await b.loadGlyphs?.();
-      b.moveTo([0, -2.55 - i * 0.24, 0]);
-      bulletObjs.push(b);
+    for (const g of lGroups) {
+      await scene.play(...g.map(o => new FadeIn(o, { duration: 0.5 })));
     }
 
-    const opamp = (cx, cy) => new Polygon({
-      vertices: [[cx - 0.9, cy - 0.7, 0], [cx - 0.9, cy + 0.7, 0], [cx + 0.9, cy, 0]],
-      color: ACCENT, strokeWidth: 2, fillOpacity: 0
-    });
-
-    // ── LEFT: I → V ──
-    const LX = -3.0;
-    const triL = opamp(LX, 0);
-    const iSrcL = new Circle({ radius: 0.35, color: BLUE, strokeWidth: 2, fillOpacity: 0.1 });
-    iSrcL.moveTo([LX - 2.2, 0.3, 0]);
-    const iSrcArrow = new Line({ start: [LX - 2.2, -0.05, 0], end: [LX - 2.2, 0.3, 0], color: BLUE, strokeWidth: 2 });
-    const iLbl = new MathTex({ latex: 'I', color: BLUE });
-    const iLeadL = new Line({ start: [LX - 1.85, 0.3, 0], end: [LX - 0.9, 0.3, 0], color: FG });
-    const gndInL = new Line({ start: [LX - 0.9, -0.3, 0], end: [LX - 1.8, -0.3, 0], color: FG });
-    const gndL1 = new Line({ start: [LX - 1.8, -0.3, 0], end: [LX - 1.8, -0.9, 0], color: FG });
-    const gndLm = new Line({ start: [LX - 2.0, -0.9, 0], end: [LX - 1.6, -0.9, 0], color: FG, strokeWidth: 3 });
-    const gndSrc = new Line({ start: [LX - 2.2, -0.35, 0], end: [LX - 2.2, -0.9, 0], color: FG });
-    const gndSrcM = new Line({ start: [LX - 2.4, -0.9, 0], end: [LX - 2.0, -0.9, 0], color: FG, strokeWidth: 3 });
-
-    // R_f feedback
-    const fbL1 = new Line({ start: [LX - 0.9, 0.3, 0], end: [LX - 0.9, 1.2, 0], color: FG });
-    const fbL2 = new Line({ start: [LX - 0.9, 1.2, 0], end: [LX + 1.6, 1.2, 0], color: FG });
-    const fbL3 = new Line({ start: [LX + 1.6, 1.2, 0], end: [LX + 1.6, 0, 0], color: FG });
-    const Rf  = new Rectangle({ width: 0.7, height: 0.25, color: YELLOW, strokeWidth: 2 });
-    Rf.moveTo([LX + 0.3, 1.2, 0]);
-    const RfLbl = new MathTex({ latex: 'R_{f}', color: YELLOW });
-
-    const outL = new Line({ start: [LX + 0.9, 0, 0], end: [LX + 1.8, 0, 0], color: FG });
-    const voutL = new MathTex({ latex: 'V_{out}', color: YELLOW });
-    const eqnL = new MathTex({ latex: 'A_{TR}=\\dfrac{V_{out}}{I}=-R_f', color: ACCENT });
-
-    // ── RIGHT: V → I ──
-    const RX = 3.0;
-    const triR = opamp(RX, 0);
-    const vSrcR = new MathTex({ latex: 'V_{in}', color: BLUE });
-    const inR = new Line({ start: [RX - 2.8, 0.3, 0], end: [RX - 0.9, 0.3, 0], color: FG });
-    const Rx = new Rectangle({ width: 0.7, height: 0.25, color: ACCENT, strokeWidth: 2 });
-    Rx.moveTo([RX - 1.8, 0.3, 0]);
-    const RxLbl = new MathTex({ latex: 'R', color: ACCENT });
-    const gndInR = new Line({ start: [RX - 0.9, -0.3, 0], end: [RX - 1.6, -0.3, 0], color: FG });
-    const gndLR = new Line({ start: [RX - 1.6, -0.3, 0], end: [RX - 1.6, -0.9, 0], color: FG });
-    const gndLRm = new Line({ start: [RX - 1.8, -0.9, 0], end: [RX - 1.4, -0.9, 0], color: FG, strokeWidth: 3 });
-
-    // Load in feedback path
-    const fbR1 = new Line({ start: [RX - 0.9, 0.3, 0], end: [RX - 0.9, 1.2, 0], color: FG });
-    const fbR2 = new Line({ start: [RX - 0.9, 1.2, 0], end: [RX + 1.6, 1.2, 0], color: FG });
-    const fbR3 = new Line({ start: [RX + 1.6, 1.2, 0], end: [RX + 1.6, 0, 0], color: FG });
-    const load = new Rectangle({ width: 0.7, height: 0.3, color: RED, strokeWidth: 2 });
-    load.moveTo([RX + 0.3, 1.2, 0]);
-    const loadLbl = new MathTex({ latex: 'Z_{load}', color: RED });
-
-    const outR2 = new Line({ start: [RX + 0.9, 0, 0], end: [RX + 1.8, 0, 0], color: FG });
-    const iLbl2 = new MathTex({ latex: 'I_{load}', color: YELLOW });
-    const eqnR  = new MathTex({ latex: 'A_{TC}=\\dfrac{I_{out}}{V}=\\dfrac{1}{R}', color: ACCENT });
-
-    await Promise.all([
-      iLbl.waitForRender?.(), RfLbl.waitForRender?.(), voutL.waitForRender?.(), eqnL.waitForRender?.(),
-      vSrcR.waitForRender?.(), RxLbl.waitForRender?.(), loadLbl.waitForRender?.(), iLbl2.waitForRender?.(), eqnR.waitForRender?.()
-    ]);
-    iLbl.scale(0.55).nextTo(iSrcL, LEFT, 0.15);
-    RfLbl.scale(0.5).nextTo(Rf, UP, 0.1);
-    voutL.scale(0.55).nextTo([LX + 1.8, 0, 0], RIGHT, 0.1);
-    eqnL.scale(0.7).moveTo([LX, -2.5, 0]);
-
-    vSrcR.scale(0.55).nextTo([RX - 2.8, 0.3, 0], LEFT, 0.1);
-    RxLbl.scale(0.5).nextTo(Rx, UP, 0.1);
-    loadLbl.scale(0.5).nextTo(load, UP, 0.1);
-    iLbl2.scale(0.55).nextTo([RX + 1.8, 0, 0], RIGHT, 0.1);
-    eqnR.scale(0.7).moveTo([RX, -2.5, 0]);
-
-    // ── Sequence ──
-    await scene.play(new Write(title, { duration: 0.7 }));
-    await scene.play(new Create(triL), new Create(triR));
-    // LEFT build
+    // 6. Highlight -R_f → callout panel → "trans-resistance"
+    await scene.play(new Create(hlL, { duration: 0.5 }));
     await scene.play(
-      new Create(iSrcL), new Create(iSrcArrow), new Write(iLbl),
-      new Create(iLeadL),
-      new Create(gndInL), new Create(gndL1), new Create(gndLm),
-      new Create(gndSrc), new Create(gndSrcM),
-      new Create(fbL1), new Create(fbL2), new Create(fbL3),
-      new Create(Rf), new Write(RfLbl),
-      new Create(outL), new Write(voutL)
+      new Create(hlL_conn, { duration: 0.3 }),
+      new Create(hlL_panel, { duration: 0.4 })
     );
-    // RIGHT build
+    await scene.play(new FadeIn(Lb3callTop, { duration: 0.3 }));
+    await scene.play(new FadeIn(Lb3callBot, { duration: 0.3 }));
+    await scene.wait(1.5);
+
+    // ── TRANSCONDUCTANCE (right) — circuit, bullets, highlight ──
+
+    // 7. Right subtitle + op-amp
     await scene.play(
-      new Write(vSrcR), new Create(inR),
-      new Create(Rx), new Write(RxLbl),
-      new Create(gndInR), new Create(gndLR), new Create(gndLRm),
-      new Create(fbR1), new Create(fbR2), new Create(fbR3),
-      new Create(load), new Write(loadLbl),
-      new Create(outR2), new Write(iLbl2)
+      new FadeIn(subR, { duration: F }),
+      new Create(triR, { duration: F }),
+      new Write(tR.plus, { duration: F }), new Write(tR.minus, { duration: F })
     );
 
-    // Current flow dots
-    const d1 = new Dot({ point: [LX - 2.2, 0.3, 0], color: BLUE, radius: 0.1 });
-    const d2 = new Dot({ point: [RX - 2.8, 0.3, 0], color: BLUE, radius: 0.1 });
-    scene.add(d1, d2);
+    // 8. Right circuit — all in one fast batch
     await scene.play(
-      new MoveAlongPath(d1, { path: new Line({ start: [LX - 2.2, 0.3, 0], end: [LX + 1.6, 1.2, 0] }), duration: 1.4, rateFunc: linear }),
-      new MoveAlongPath(d2, { path: new Line({ start: [RX - 2.8, 0.3, 0], end: [RX + 1.6, 1.2, 0] }), duration: 1.4, rateFunc: linear })
+      new Write(vInLbl, { duration: F }),
+      new Create(vinWire1, { duration: F }), new Create(Rin, { duration: F }),
+      new Write(RinLbl, { duration: F }),
+      new Create(vinWire2, { duration: F }), new FadeIn(juncR, { duration: F }),
+      new Create(gndRWire1, { duration: F }), new Create(gndRWire2, { duration: F }),
+      new Create(gndR[0], { duration: F }), new Create(gndR[1], { duration: F }), new Create(gndR[2], { duration: F }),
+      new Create(fbRUp, { duration: F }), new Create(fbRtoZ, { duration: F }),
+      new Create(ZL, { duration: F }), new Write(ZLLbl, { duration: F }),
+      new Create(fbRfromZ, { duration: F }), new Create(fbRDown, { duration: F }),
+      new Create(outRWire, { duration: F }), new FadeIn(tapRDot, { duration: F }),
+      new Create(outRExt, { duration: F }), new Write(iOutLbl, { duration: F }),
+      new Create(iFlowArr, { duration: F }), new Create(iFlowTip1, { duration: F }),
+      new Create(iFlowTip2, { duration: F }), new Write(iFlowLbl, { duration: F })
     );
 
-    await scene.play(new Write(eqnL), new Write(eqnR));
-    for (const b of bulletObjs) {
-      await scene.play(new FadeIn(b, { duration: 0.2 }));
+    // 9. Right equation
+    await scene.play(new Write(eqnR, { duration: 0.5 }));
+
+    // 10. Right bullets
+    const rGroups = [
+      [Rd1, Rb1a, Rb1b],
+      [Rd2, Rb2a, Rb2b],
+      [Rd3, Rb3a],
+      [Rd4, Rb4a, Rb4b],
+    ];
+    for (const g of rGroups) {
+      await scene.play(...g.map(o => new FadeIn(o, { duration: 0.5 })));
     }
+
+    // 11. Highlight 1/R → callout panel → "trans-conductance"
+    await scene.play(new Create(hlR, { duration: 0.5 }));
+    await scene.play(
+      new Create(hlR_conn, { duration: 0.3 }),
+      new Create(hlR_panel, { duration: 0.4 })
+    );
+    await scene.play(new FadeIn(Rb3callTop, { duration: 0.3 }));
+    await scene.play(new FadeIn(Rb3callBot, { duration: 0.3 }));
+
     await scene.wait(2);
   </script>
 </body>

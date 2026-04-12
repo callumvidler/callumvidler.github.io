@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BMEN90033 — Week 6: Operational Amplifiers</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
@@ -29,6 +32,7 @@
     })();
   </script>
 </head>
+
 <body class="presenter">
   <a class="back-btn" href="../../index.html">← Back</a>
 
@@ -41,34 +45,36 @@
     <iframe class="slide-frame" id="stage" src="about:blank" title="current slide"></iframe>
     <div class="deck-controls">
       <button id="prev">← Prev</button>
-      <span class="deck-counter" id="counter">1 / 21</span>
+      <span class="deck-counter" id="counter">1 / 19</span>
       <button id="next">Next →</button>
     </div>
   </main>
 
   <script>
     const slides = [
-      { file: '01_intro.html',                   title: 'Op-Amp Introduction' },
+      { file: '00_perusal.html', title: 'Purusall' },
+      { file: '00_preamble.html', title: 'Preamble' },
+      { file: '01_intro.html', title: 'Op-Amp Introduction' },
       { file: '02_transfer_characteristic.html', title: 'Transfer Characteristic' },
-      { file: '03_equivalent_circuit.html',      title: 'Equivalent Circuit Model' },
-      { file: '04_lm741_pinout.html',            title: 'LM741 Pinout' },
-      { file: '05_lm741_internal.html',          title: 'LM741 Internal Circuitry' },
-      { file: '06_noninv.html',                  title: 'Non-Inverting Amplifier' },
-      { file: '06b_inv.html',                    title: 'Inverting Amplifier' },
-      { file: '07_thermostat.html',              title: 'Thermostat Analogy' },
-      { file: '08_feedback_formal.html',         title: 'Negative Feedback (Formal)' },
-      { file: '09_feedback_effects.html',        title: 'Gain-Bandwidth Tradeoff with Feedback' },
-      { file: '10_gain_setting.html',            title: 'How Negative Feedback Controls Gain' },
-      { file: '11_virtual_short.html',           title: 'Virtual Short' },
-      { file: '12_resistor_choice.html',         title: 'Resistor Choice' },
-      { file: '13_offset_voltage.html',          title: 'DC Offset Voltage' },
-      { file: '14_summing_amp.html',             title: 'Summing Amplifier' },
-      { file: '15_common_mode_noise.html',       title: 'Common-Mode Noise' },
-      { file: '17_difference_amp.html',          title: 'Difference Amplifier' },
-      { file: '16_cmrr.html',                    title: 'CMRR' },
-      { file: '18_instrumentation_amp.html',     title: 'Instrumentation Amplifier' },
-      { file: '19_isolation_amp.html',           title: 'Isolation Amplifier' },
-      { file: '20_iv_vi_converter.html',         title: 'I/V & V/I Converters' }
+      { file: '03_equivalent_circuit.html', title: 'Equivalent Circuit Model' },
+      { file: '04_lm741_pinout.html', title: 'LM741 Pinout' },
+      { file: '05_lm741_internal.html', title: 'LM741 Internal Circuitry' },
+      { file: '06_noninv.html', title: 'Non-Inverting Amplifier' },
+      { file: '06b_inv.html', title: 'Inverting Amplifier' },
+      { file: '07_thermostat.html', title: 'Thermostat Analogy' },
+      { file: '08_feedback_formal.html', title: 'Negative Feedback (Formal)' },
+      { file: '09_feedback_effects.html', title: 'Gain-Bandwidth Tradeoff with Feedback' },
+      { file: '10_gain_setting.html', title: 'How Negative Feedback Controls Gain' },
+      //{ file: '11_virtual_short.html',           title: 'Virtual Short' },
+      //{ file: '12_resistor_choice.html',         title: 'Resistor Choice' },
+      { file: '13_offset_voltage.html', title: 'DC Offset Voltage' },
+      { file: '14_summing_amp.html', title: 'Summing Amplifier' },
+      { file: '15_common_mode_noise.html', title: 'Common-Mode Noise' },
+      { file: '17_difference_amp.html', title: 'Difference Amplifier' },
+      //{ file: '16_cmrr.html',                    title: 'CMRR' },
+      { file: '18_instrumentation_amp.html', title: 'Instrumentation Amplifier' },
+      { file: '19_isolation_amp.html', title: 'Isolation Amplifier' },
+      { file: '20_iv_vi_converter.html', title: 'I/V & V/I Converters' }
     ];
 
     const stage = document.getElementById('stage');
@@ -143,10 +149,10 @@
 
     document.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   { e.preventDefault(); goTo(current - 1); }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goTo(current - 1); }
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); goTo(current + 1); }
-      if (e.key === 'Home')  { e.preventDefault(); goTo(0); }
-      if (e.key === 'End')   { e.preventDefault(); goTo(slides.length - 1); }
+      if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+      if (e.key === 'End') { e.preventDefault(); goTo(slides.length - 1); }
     });
 
     // React to hash changes (e.g., browser back/forward)
@@ -163,4 +169,5 @@
     });
   </script>
 </body>
+
 </html>

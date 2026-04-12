@@ -1,0 +1,49 @@
+--- Week 6/Slides/15_common_mode_noise.html
++++ Week 6/Slides/15_common_mode_noise.html
+@@ -632,23 +632,1 @@
+-    const s1CmTitle = new Text({ text: 'Common-mode', fontSize: 28, color: FG, fontUrl: FONT_URL });
+-    const s1DmTitle = new Text({ text: 'Differential-mode', fontSize: 28, color: FG, fontUrl: FONT_URL });
+-    const s1Cm_v1_v2 = new MathTex({ latex: 'v_1 - v_2', color: MUTED });
+-    const s1Dm_v1_v2 = new MathTex({ latex: 'v_1 - v_2', color: MUTED });
+-    const s1Cm_delta = new MathTex({ latex: '\\Delta = 0 \\quad \\text{\\small (rejected)}', color: ACCENT });
+-    const s1Dm_delta = new MathTex({ latex: '\\Delta \\text{ oscillates}  \\quad \\text{\\small (amplified)}', color: ACCENT });
+-    const s1Cm_desc = new Text({ text: 'Both rise and fall together', fontSize: 19, color: MUTED, fontUrl: FONT_URL });
+-    const s1Dm_desc = new Text({ text: 'One rises while the other falls', fontSize: 19, color: MUTED, fontUrl: FONT_URL });
+-
+-    await Promise.all([
+-      s1CmTitle.loadGlyphs?.(), s1Cm_v1_v2.waitForRender?.(), s1Cm_delta.waitForRender?.(), s1Cm_desc.loadGlyphs?.(),
+-      s1DmTitle.loadGlyphs?.(), s1Dm_v1_v2.waitForRender?.(), s1Dm_delta.waitForRender?.(), s1Dm_desc.loadGlyphs?.()
+-    ]);
+-
+-    s1CmTitle.moveTo(pxToManim(50 + 275, S1_WAVE_TOP - 15));
+-    s1DmTitle.moveTo(pxToManim(680 + 275, S1_WAVE_TOP - 15));
+-    s1Cm_v1_v2.scale(0.5).moveTo(pxToManim(50 + 90, S1_DIFF_TOP - 4));
+-    s1Dm_v1_v2.scale(0.5).moveTo(pxToManim(680 + 90, S1_DIFF_TOP - 4));
+-    s1Cm_delta.scale(0.45).moveTo(pxToManim(50 + 275 - 120, S1_DIFF_TOP + S1_DIFF_H / 2 + 5));
+-    s1Dm_delta.scale(0.45).moveTo(pxToManim(680 + 275 - 120, S1_DIFF_TOP + S1_DIFF_H / 2 + 5));
+-    s1Cm_desc.moveTo(pxToManim(50 + 275, S1_DIFF_TOP + S1_DIFF_H + 40));
+-    s1Dm_desc.moveTo(pxToManim(680 + 275, S1_DIFF_TOP + S1_DIFF_H + 40));
+-
+-    const s1TextGroup = new VGroup(
+-      s1CmTitle, s1DmTitle, s1Cm_v1_v2, s1Dm_v1_v2, s1Cm_delta, s1Dm_delta, s1Cm_desc, s1Dm_desc
+-    );
+-    stage1Group.add(s1TextGroup);
++    // s1TextGroup rendering bypassed entirely in favor of native canvas rendering
+@@ -742,0 +721,18 @@
++
++        // Native layout for perfect font width computation
++        c.font = '24px "KaTeX_Main", "IBM Plex Sans", serif';
++        c.fillStyle = FG; c.textAlign = 'center';
++        c.fillText(p.label, cx, S1_WAVE_TOP - 15);
++
++        c.font = 'italic 20px "KaTeX_Main", serif';
++        c.fillStyle = MUTED;
++        c.fillText('v\u2081 \u2212 v\u2082', p.x + 80, S1_DIFF_TOP - 4);
++
++        c.font = '20px "KaTeX_Main", serif';
++        c.fillStyle = ACCENT; c.textAlign = 'right';
++        c.fillText(p.mode === 'common' ? '\u0394 = 0  (rejected)' : '\u0394 oscillates  (amplified)', cx - 60, diffY0 + 5);
++
++        c.font = '16px "KaTeX_Main", "IBM Plex Sans", serif';
++        c.fillStyle = MUTED; c.textAlign = 'center';
++        c.fillText(p.mode === 'common' ? 'Both rise and fall together' : 'One rises while the other falls', cx, diffY0 + 40);

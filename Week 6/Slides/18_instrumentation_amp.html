@@ -10,26 +10,20 @@
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
   <script>
-    // Theme bridge:
-    //   1. Priority: ?theme= URL param (presenter sets this when loading).
-    //   2. Fallback: sessionStorage, preserved across the reload triggered
-    //      by the module's themechange listener (theme.js always forces
-    //      'light' at parse time, so we need our own persistence).
-    // Also hides the per-slide toggle button when embedded in the presenter.
     (function () {
       var qp = new URLSearchParams(location.search);
       var qt = qp.get('theme');
       var ss = null;
-      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
+      try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { }
       var pick = (qt === 'dark' || qt === 'light') ? qt
-               : (ss === 'dark' || ss === 'light') ? ss
-               : null;
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
       if (pick) document.documentElement.setAttribute('data-theme', pick);
       window.addEventListener('themechange', function (e) {
         try {
           var t = e && e.detail && e.detail.theme;
           if (t) sessionStorage.setItem('slideTheme', t);
-        } catch (err) { /* ignore */ }
+        } catch (err) { }
       });
       if (window.parent !== window) {
         var style = document.createElement('style');
@@ -38,21 +32,138 @@
       }
     })();
   </script>
+  <style>
+    .ol-panel {
+      position: absolute;
+      bottom: 52px;
+      left: 14px;
+      width: 42%;
+      z-index: 9;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--slide-border);
+      background: var(--slide-surface);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      display: none;
+      gap: 5px 12px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    [data-theme="light"] .ol-panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+
+    .ol-panel.visible {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .ol-title {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--slide-accent);
+      font-size: 11px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+    }
+
+    .ol-row {
+      display: grid;
+      gap: 3px;
+    }
+
+    .ol-row label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--slide-text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+    }
+
+    .ol-row .v {
+      color: var(--slide-text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ol-panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 18px;
+    }
+
+    .ol-readout {
+      border-top: 1px solid var(--slide-border);
+      padding-top: 5px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 2px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+
+    .ol-readout .k {
+      color: var(--slide-text-dim);
+    }
+
+    .ol-readout .v {
+      text-align: right;
+      color: var(--slide-text);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .ol-strip {
+      margin-top: 2px;
+      border-left: 3px solid var(--slide-yellow);
+      border-radius: 4px;
+      padding: 4px 8px;
+      background: rgba(255, 204, 68, 0.12);
+      color: var(--slide-yellow);
+      line-height: 1.35;
+      font-size: 10px;
+    }
+  </style>
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">20 / 22</span>
+    <span class="slide-num">17 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">
     <div class="stage-fallback">Loading manim-web scene…</div>
+
+    <div class="ol-panel" id="olPanel" aria-hidden="true">
+      <div class="ol-title">Gain Explorer</div>
+      <div class="ol-row">
+        <label>R<sub>G</sub> <span class="v" id="rgVal">10.0 k&Omega;</span></label>
+        <input type="range" id="rgSlider" min="0" max="1000" step="1" value="500">
+      </div>
+      <div class="ol-row">
+        <label>Source Z<sub>s</sub> <span class="v" id="zsVal">1.0 k&Omega;</span></label>
+        <input type="range" id="zsSlider" min="0" max="1000" step="1" value="200">
+      </div>
+      <div class="ol-readout">
+        <span class="k">Gain A<sub>v</sub></span><span class="v" id="gainVal">6.0</span>
+        <span class="k">V<sub>out</sub> (buf)</span><span class="v" id="voutVal" style="color:var(--slide-yellow)">60 mV</span>
+        <span class="k">V<sub>out</sub> (no buf)</span><span class="v" id="voutNoBufVal" style="color:var(--slide-red)">48 mV</span>
+        <span class="k">Signal lost</span><span class="v" id="lossVal" style="color:var(--slide-red)">20%</span>
+      </div>
+      <div class="ol-strip" id="gainExplain">Drag Source Z to see why the buffer stage matters.</div>
+    </div>
+
+    <div class="stepper-row" id="stepper">
+      <button type="button" class="stepper-btn" id="sec-prev" disabled>← Prev Section</button>
+      <span class="step-indicator" id="sec-indicator">Section 1 · Circuit</span>
+      <button type="button" class="stepper-btn" id="sec-next">Next Section →</button>
+    </div>
   </div>
 
   <script type="module">
     import {
-      Scene, Polygon, Rectangle, Line, Text, MathTex, VGroup, Dot,
-      Create, Write, FadeIn, Indicate, MoveAlongPath,
-      UP, DOWN, LEFT, RIGHT, WHITE, linear
+      Scene, Polygon, Rectangle, Line, Circle, Dot, Text, MathTex,
+      Create, Write, FadeIn, Indicate,
+      UP, DOWN, LEFT, RIGHT
     } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
@@ -73,120 +184,1069 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
+    // ── Title ──
     const title = new Text({ text: 'Instrumentation Amplifier', fontSize: 40, color: FG, fontUrl: FONT_URL });
     await title.loadGlyphs?.();
     title.moveTo([-3.5, 3.5, 0]);
-    const TITLE_LEFT_X = -6.2;
     if (typeof title.getLeft === 'function') {
-      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
+      title.shift([-6.2 - title.getLeft()[0], 0, 0]);
     }
 
-    const props = [
-      'Very high input impedance and low output impedance',
-      'High CMRR, low noise, low offset drift',
-      'Gain set by one resistor R_gain',
-      'A_v = 1 + 2R / R_gain'
-    ];
-    const propObjs = [];
-    for (let i = 0; i < props.length; i++) {
-      const p = new Text({ text: '•  ' + props[i], fontSize: 13, color: MUTED, fontUrl: FONT_URL });
-      await p.loadGlyphs?.();
-      p.moveTo([2.3, 1.85 - i * 0.34, 0]);
-      propObjs.push(p);
+    // ═══════════════════════════════════════════════
+    //  CIRCUIT DIAGRAM — left half
+    //  Three op-amps: A1 (top buffer), A2 (bottom buffer), A3 (diff amp)
+    // ═══════════════════════════════════════════════
+
+    const TRI_HALF_H = 0.65;
+    const TRI_HALF_W = 0.6;
+    const R_W = 0.7, R_H = 0.25;
+
+    // Op-amp positions (shifted down 0.5 to centre circuit vertically)
+    const A1_CX = -4.0, A1_CY = 1.5;
+    const A2_CX = -4.0, A2_CY = -1.9;
+    const A3_CX = -0.2, A3_CY = -0.2;
+
+    // Helper: create op-amp triangle (06/17 style)
+    function mkOpamp(cx, cy) {
+      return new Polygon({
+        vertices: [
+          [cx - TRI_HALF_W, cy - TRI_HALF_H, 0],
+          [cx - TRI_HALF_W, cy + TRI_HALF_H, 0],
+          [cx + TRI_HALF_W, cy, 0]
+        ],
+        color: MUTED2, strokeWidth: 1.7, fillOpacity: 0.13
+      });
     }
 
-    const opamp = (cx, cy) => new Polygon({
-      vertices: [[cx - 0.8, cy - 0.7, 0], [cx - 0.8, cy + 0.7, 0], [cx + 0.8, cy, 0]],
-      color: ACCENT, strokeWidth: 2, fillOpacity: 0
-    });
+    const triA1 = mkOpamp(A1_CX, A1_CY);
+    const triA2 = mkOpamp(A2_CX, A2_CY);
+    const triA3 = mkOpamp(A3_CX, A3_CY);
 
-    const A1 = opamp(-1.8, 1.5);
-    const A2 = opamp(-1.8, -1.5);
-    const A3 = opamp( 2.6, 0);
+    // +/- symbols for each op-amp
+    async function mkTerminals(cx, cy) {
+      const pY = cy - 0.25, mY = cy + 0.25;
+      const p = new Text({ text: '+', fontSize: 14, color: ACCENT, fontUrl: FONT_URL });
+      const m = new Text({ text: '−', fontSize: 14, color: RED, fontUrl: FONT_URL });
+      await Promise.all([p.loadGlyphs?.(), m.loadGlyphs?.()]);
+      p.moveTo([cx - TRI_HALF_W + 0.22, pY, 0]);
+      m.moveTo([cx - TRI_HALF_W + 0.22, mY, 0]);
+      return { plus: p, minus: m, plusY: pY, minusY: mY };
+    }
 
-    // Input leads
-    const inTop = new Line({ start: [-5, 1.8, 0], end: [-2.6, 1.8, 0], color: FG });
-    const inBot = new Line({ start: [-5, -1.8, 0], end: [-2.6, -1.8, 0], color: FG });
-    const vaLbl = new MathTex({ latex: 'V_{a}', color: BLUE });
-    const vbLbl = new MathTex({ latex: 'V_{b}', color: MAG });
+    const t1 = await mkTerminals(A1_CX, A1_CY);
+    const t2 = await mkTerminals(A2_CX, A2_CY);
+    const t3 = await mkTerminals(A3_CX, A3_CY);
+
+    // ── Input labels ──
+    const VIN_X = -6.2;
+    const vaLbl = new MathTex({ latex: 'V_{1}', color: BLUE });
+    const vbLbl = new MathTex({ latex: 'V_{2}', color: MAG });
     await Promise.all([vaLbl.waitForRender?.(), vbLbl.waitForRender?.()]);
-    vaLbl.scale(0.55).moveTo([-5.2, 1.8, 0]);
-    vbLbl.scale(0.55).moveTo([-5.2, -1.8, 0]);
+    vaLbl.scale(0.6).moveTo([VIN_X, t1.plusY, 0]);
+    vbLbl.scale(0.6).moveTo([VIN_X, t2.plusY, 0]);
 
-    // Buffer feedback + R_gain
-    const fb1a = new Line({ start: [-1.0, 1.5, 0], end: [-1.0, 2.4, 0], color: FG });
-    const fb1b = new Line({ start: [-1.0, 2.4, 0], end: [-2.6, 2.4, 0], color: FG });
-    const fb1c = new Line({ start: [-2.6, 2.4, 0], end: [-2.6, 1.2, 0], color: FG });
-    const R1  = new Rectangle({ width: 0.5, height: 0.2, color: ACCENT, strokeWidth: 2 });
-    R1.moveTo([-1.8, 2.4, 0]);
+    // ── Input wires with Z_s resistors ──
+    const ZS_CX = (VIN_X + 0.25 + A1_CX - TRI_HALF_W) / 2; // midpoint of input wire
+    // Top input: V1 → Zs → A1+
+    const inW1a = new Line({ start: [VIN_X + 0.25, t1.plusY, 0], end: [ZS_CX - R_W / 2, t1.plusY, 0], color: FG, strokeWidth: 1.8 });
+    const Zs1 = new Rectangle({ width: R_W, height: R_H, color: RED, strokeWidth: 2, fillOpacity: 0.22 });
+    Zs1.moveTo([ZS_CX, t1.plusY, 0]);
+    const Zs1L = new MathTex({ latex: 'Z_s', color: RED });
+    await Zs1L.waitForRender?.();
+    Zs1L.scale(0.45).moveTo([ZS_CX, t1.plusY + R_H / 2 + 0.18, 0]);
+    const inW1b = new Line({ start: [ZS_CX + R_W / 2, t1.plusY, 0], end: [A1_CX - TRI_HALF_W, t1.plusY, 0], color: FG, strokeWidth: 1.8 });
+    // Bottom input: V2 → Zs → A2+
+    const inW2a = new Line({ start: [VIN_X + 0.25, t2.plusY, 0], end: [ZS_CX - R_W / 2, t2.plusY, 0], color: FG, strokeWidth: 1.8 });
+    const Zs2 = new Rectangle({ width: R_W, height: R_H, color: RED, strokeWidth: 2, fillOpacity: 0.22 });
+    Zs2.moveTo([ZS_CX, t2.plusY, 0]);
+    const Zs2L = new MathTex({ latex: 'Z_s', color: RED });
+    await Zs2L.waitForRender?.();
+    Zs2L.scale(0.45).moveTo([ZS_CX, t2.plusY - R_H / 2 - 0.18, 0]);
+    const inW2b = new Line({ start: [ZS_CX + R_W / 2, t2.plusY, 0], end: [A2_CX - TRI_HALF_W, t2.plusY, 0], color: FG, strokeWidth: 1.8 });
+
+    // ── Buffer outputs ──
+    const BUF_OUT_X = A1_CX + TRI_HALF_W;
+    const TAP1_X = -2.8;
+
+    // A1 output wire
+    const outW1 = new Line({ start: [BUF_OUT_X, A1_CY, 0], end: [TAP1_X, A1_CY, 0], color: FG, strokeWidth: 1.8 });
+    const tap1Dot = new Dot({ point: [TAP1_X, A1_CY, 0], color: FG, radius: 0.05 });
+
+    // A2 output wire
+    const outW2 = new Line({ start: [BUF_OUT_X, A2_CY, 0], end: [TAP1_X, A2_CY, 0], color: FG, strokeWidth: 1.8 });
+    const tap2Dot = new Dot({ point: [TAP1_X, A2_CY, 0], color: FG, radius: 0.05 });
+
+    // ── Feedback R for A1 (from output tap up and back to minus input) ──
+    const FB1_Y = A1_CY + 1.1;
+    const NODE1_X = -5.0; // where minus input wire meets vertical
+    const fb1Vert = new Line({ start: [NODE1_X, t1.minusY, 0], end: [NODE1_X, FB1_Y, 0], color: FG, strokeWidth: 1.8 });
+
+    const R1_CX = (NODE1_X + TAP1_X) / 2;
+    const fb1toR = new Line({ start: [NODE1_X, FB1_Y, 0], end: [R1_CX - R_W / 2, FB1_Y, 0], color: FG, strokeWidth: 1.8 });
+    const R1 = new Rectangle({ width: R_W, height: R_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+    R1.moveTo([R1_CX, FB1_Y, 0]);
     const R1L = new MathTex({ latex: 'R', color: ACCENT });
+    await R1L.waitForRender?.();
+    R1L.scale(0.5).moveTo([R1_CX, FB1_Y + R_H / 2 + 0.18, 0]);
+    const fb1fromR = new Line({ start: [R1_CX + R_W / 2, FB1_Y, 0], end: [TAP1_X, FB1_Y, 0], color: FG, strokeWidth: 1.8 });
+    const fb1down = new Line({ start: [TAP1_X, FB1_Y, 0], end: [TAP1_X, A1_CY, 0], color: FG, strokeWidth: 1.8 });
 
-    const fb2a = new Line({ start: [-1.0, -1.5, 0], end: [-1.0, -2.4, 0], color: FG });
-    const fb2b = new Line({ start: [-1.0, -2.4, 0], end: [-2.6, -2.4, 0], color: FG });
-    const fb2c = new Line({ start: [-2.6, -2.4, 0], end: [-2.6, -1.2, 0], color: FG });
-    const R2  = new Rectangle({ width: 0.5, height: 0.2, color: ACCENT, strokeWidth: 2 });
-    R2.moveTo([-1.8, -2.4, 0]);
+    // Stub from minus input to node
+    const stub1 = new Line({ start: [NODE1_X, t1.minusY, 0], end: [A1_CX - TRI_HALF_W, t1.minusY, 0], color: FG, strokeWidth: 1.8 });
+    const node1Dot = new Dot({ point: [NODE1_X, t1.minusY, 0], color: FG, radius: 0.05 });
+
+    // ── Feedback R for A2 (from output tap down and back to minus input) ──
+    const FB2_Y = A2_CY - 1.1;
+    const NODE2_X = -5.0;
+    const fb2Vert = new Line({ start: [NODE2_X, t2.minusY, 0], end: [NODE2_X, FB2_Y, 0], color: FG, strokeWidth: 1.8 });
+
+    const R2_CX = (NODE2_X + TAP1_X) / 2;
+    const fb2toR = new Line({ start: [NODE2_X, FB2_Y, 0], end: [R2_CX - R_W / 2, FB2_Y, 0], color: FG, strokeWidth: 1.8 });
+    const R2 = new Rectangle({ width: R_W, height: R_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
+    R2.moveTo([R2_CX, FB2_Y, 0]);
     const R2L = new MathTex({ latex: 'R', color: ACCENT });
+    await R2L.waitForRender?.();
+    R2L.scale(0.5).moveTo([R2_CX, FB2_Y - R_H / 2 - 0.18, 0]);
+    const fb2fromR = new Line({ start: [R2_CX + R_W / 2, FB2_Y, 0], end: [TAP1_X, FB2_Y, 0], color: FG, strokeWidth: 1.8 });
+    const fb2down = new Line({ start: [TAP1_X, FB2_Y, 0], end: [TAP1_X, A2_CY, 0], color: FG, strokeWidth: 1.8 });
 
-    // R_gain connecting the two inverting inputs (−) nodes at (-2.6, 1.2) to (-2.6, -1.2)
-    const Rg = new Rectangle({ width: 0.2, height: 1.0, color: YELLOW, strokeWidth: 2 });
-    Rg.moveTo([-2.6, 0.0, 0]);
-    const RgL = new MathTex({ latex: 'R_{gain}', color: YELLOW });
+    const stub2 = new Line({ start: [NODE2_X, t2.minusY, 0], end: [A2_CX - TRI_HALF_W, t2.minusY, 0], color: FG, strokeWidth: 1.8 });
+    const node2Dot = new Dot({ point: [NODE2_X, t2.minusY, 0], color: FG, radius: 0.05 });
 
-    // Buffer outputs → difference amp
-    const out1 = new Line({ start: [-1.0, 1.5, 0], end: [1.0, 1.5, 0], color: FG });
-    const diffIn1 = new Line({ start: [1.0, 1.5, 0], end: [1.8, 0.3, 0], color: FG });
-    const out2 = new Line({ start: [-1.0, -1.5, 0], end: [1.0, -1.5, 0], color: FG });
-    const diffIn2 = new Line({ start: [1.0, -1.5, 0], end: [1.8, -0.3, 0], color: FG });
+    // ── R_gain connecting the two inverting-input nodes vertically ──
+    const RG_CY = (t1.minusY + t2.minusY) / 2;
+    const rgWireTop = new Line({ start: [NODE1_X, t1.minusY, 0], end: [NODE1_X, RG_CY + 0.4, 0], color: FG, strokeWidth: 1.8 });
+    const Rg = new Rectangle({ width: 0.28, height: 0.8, color: YELLOW, strokeWidth: 2, fillOpacity: 0.22 });
+    Rg.moveTo([NODE1_X, RG_CY, 0]);
+    const RgL = new MathTex({ latex: 'R_{G}', color: YELLOW });
+    await RgL.waitForRender?.();
+    RgL.scale(0.55).nextTo(Rg, LEFT, 0.14);
+    const rgWireBot = new Line({ start: [NODE1_X, RG_CY - 0.4, 0], end: [NODE1_X, t2.minusY, 0], color: FG, strokeWidth: 1.8 });
 
-    // Diff amp output
-    const finalOut = new Line({ start: [3.4, 0, 0], end: [5.0, 0, 0], color: FG });
+    // ── Difference amp stage (A3) input resistors ──
+    // R from A1 output → A3 minus
+    const R3_CX = (TAP1_X + A3_CX - TRI_HALF_W) / 2 - 0.1;
+    const R3_Y = t3.minusY;
+    const diffIn1a = new Line({ start: [TAP1_X, A1_CY, 0], end: [TAP1_X, R3_Y, 0], color: FG, strokeWidth: 1.8 });
+    const diffIn1b = new Line({ start: [TAP1_X, R3_Y, 0], end: [R3_CX - R_W / 2, R3_Y, 0], color: FG, strokeWidth: 1.8 });
+    const R3 = new Rectangle({ width: R_W, height: R_H, color: BLUE, strokeWidth: 2, fillOpacity: 0.22 });
+    R3.moveTo([R3_CX, R3_Y, 0]);
+    const R3L = new MathTex({ latex: 'R\'', color: BLUE });
+    await R3L.waitForRender?.();
+    R3L.scale(0.5).moveTo([R3_CX, R3_Y + R_H / 2 + 0.20, 0]);
+    const diffIn1c = new Line({ start: [R3_CX + R_W / 2, R3_Y, 0], end: [A3_CX - TRI_HALF_W, R3_Y, 0], color: FG, strokeWidth: 1.8 });
+    const diffNode1 = new Dot({ point: [R3_CX + R_W / 2 + 0.15, R3_Y, 0], color: FG, radius: 0.05 });
+
+    // R from A2 output → A3 plus
+    const R4_CX = R3_CX;
+    const R4_Y = t3.plusY;
+    const diffIn2a = new Line({ start: [TAP1_X, A2_CY, 0], end: [TAP1_X, R4_Y, 0], color: FG, strokeWidth: 1.8 });
+    const diffIn2b = new Line({ start: [TAP1_X, R4_Y, 0], end: [R4_CX - R_W / 2, R4_Y, 0], color: FG, strokeWidth: 1.8 });
+    const R4 = new Rectangle({ width: R_W, height: R_H, color: BLUE, strokeWidth: 2, fillOpacity: 0.22 });
+    R4.moveTo([R4_CX, R4_Y, 0]);
+    const R4L = new MathTex({ latex: 'R\'', color: BLUE });
+    await R4L.waitForRender?.();
+    R4L.scale(0.5).moveTo([R4_CX, R4_Y - R_H / 2 - 0.20, 0]);
+    const diffIn2c = new Line({ start: [R4_CX + R_W / 2, R4_Y, 0], end: [A3_CX - TRI_HALF_W, R4_Y, 0], color: FG, strokeWidth: 1.8 });
+    const diffNode2 = new Dot({ point: [R4_CX + R_W / 2 + 0.15, R4_Y, 0], color: FG, radius: 0.05 });
+
+    // ── A3 feedback resistor R' (from minus node up to output tap) ──
+    const A3_OUT_X = A3_CX + TRI_HALF_W;
+    const FINAL_TAP_X = 1.0;
+    const FB3_Y = t3.minusY + 1.1;
+    const fbNode3 = new Dot({ point: [R3_CX + R_W / 2 + 0.15, R3_Y, 0], color: FG, radius: 0.05 });
+    const fb3up = new Line({ start: [R3_CX + R_W / 2 + 0.15, R3_Y, 0], end: [R3_CX + R_W / 2 + 0.15, FB3_Y, 0], color: FG, strokeWidth: 1.8 });
+    const RF_CX = (R3_CX + R_W / 2 + 0.15 + FINAL_TAP_X) / 2;
+    const fb3toR = new Line({ start: [R3_CX + R_W / 2 + 0.15, FB3_Y, 0], end: [RF_CX - R_W / 2, FB3_Y, 0], color: FG, strokeWidth: 1.8 });
+    const Rf = new Rectangle({ width: R_W, height: R_H, color: MAG, strokeWidth: 2, fillOpacity: 0.22 });
+    Rf.moveTo([RF_CX, FB3_Y, 0]);
+    const RfL = new MathTex({ latex: 'R\'\'', color: MAG });
+    await RfL.waitForRender?.();
+    RfL.scale(0.5).moveTo([RF_CX, FB3_Y + R_H / 2 + 0.20, 0]);
+    const fb3fromR = new Line({ start: [RF_CX + R_W / 2, FB3_Y, 0], end: [FINAL_TAP_X, FB3_Y, 0], color: FG, strokeWidth: 1.8 });
+    const fb3down = new Line({ start: [FINAL_TAP_X, FB3_Y, 0], end: [FINAL_TAP_X, A3_CY, 0], color: FG, strokeWidth: 1.8 });
+    const finalTapDot = new Dot({ point: [FINAL_TAP_X, A3_CY, 0], color: FG, radius: 0.05 });
+
+    // ── R' to ground from A3 plus node ──
+    const GND_X = R4_CX + R_W / 2 + 0.15;
+    const GND_Y = t3.plusY - 1.2;
+    const RG2_CY = (R4_Y + GND_Y) / 2;
+    const plusNode3 = new Dot({ point: [GND_X, R4_Y, 0], color: FG, radius: 0.05 });
+    const gndWireTop = new Line({ start: [GND_X, R4_Y, 0], end: [GND_X, RG2_CY + 0.35, 0], color: FG, strokeWidth: 1.8 });
+    const Rg2 = new Rectangle({ width: 0.28, height: 0.7, color: MAG, strokeWidth: 2, fillOpacity: 0.22 });
+    Rg2.moveTo([GND_X, RG2_CY, 0]);
+    const Rg2L = new MathTex({ latex: 'R\'\'', color: MAG });
+    await Rg2L.waitForRender?.();
+    Rg2L.scale(0.5).nextTo(Rg2, RIGHT, 0.12);
+    const gndWireBot = new Line({ start: [GND_X, RG2_CY - 0.35, 0], end: [GND_X, GND_Y, 0], color: FG, strokeWidth: 1.8 });
+
+    // Ground symbol
+    const gnd1 = new Line({ start: [GND_X - 0.3, GND_Y, 0], end: [GND_X + 0.3, GND_Y, 0], color: FG, strokeWidth: 3 });
+    const gnd2 = new Line({ start: [GND_X - 0.18, GND_Y - 0.12, 0], end: [GND_X + 0.18, GND_Y - 0.12, 0], color: FG, strokeWidth: 2 });
+    const gnd3 = new Line({ start: [GND_X - 0.08, GND_Y - 0.22, 0], end: [GND_X + 0.08, GND_Y - 0.22, 0], color: FG, strokeWidth: 1 });
+
+    // ── Output wire + label ──
+    const OUT_X = 1.6;
+    const outWire = new Line({ start: [A3_OUT_X, A3_CY, 0], end: [OUT_X, A3_CY, 0], color: FG, strokeWidth: 1.8 });
+    const outPort = new Circle({ radius: 0.07, color: FG, strokeWidth: 2, fillColor: '#000000', fillOpacity: 1 }).moveTo([OUT_X, A3_CY, 0]);
     const outLbl = new MathTex({ latex: 'V_{out}', color: YELLOW });
     await outLbl.waitForRender?.();
-    outLbl.scale(0.55).nextTo([5.0, 0, 0], RIGHT, 0.1);
+    outLbl.scale(0.6).nextTo([OUT_X, A3_CY, 0], RIGHT, 0.1);
 
-    const eqn = new MathTex({ latex: 'A_v = 1 + \\dfrac{2R}{R_{gain}}', color: ACCENT });
-    await eqn.waitForRender?.();
-    eqn.scale(0.75).moveTo([2.3, -3.0, 0]);
+    // ── Op-amp labels (A1, A2, A3) ──
+    const a1Lbl = new Text({ text: 'A₁', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    const a2Lbl = new Text({ text: 'A₂', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    const a3Lbl = new Text({ text: 'A₃', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    await Promise.all([a1Lbl.loadGlyphs?.(), a2Lbl.loadGlyphs?.(), a3Lbl.loadGlyphs?.()]);
+    a1Lbl.moveTo([A1_CX - 0.05, A1_CY - 0.0, 0]);
+    a2Lbl.moveTo([A2_CX - 0.05, A2_CY - 0.0, 0]);
+    a3Lbl.moveTo([A3_CX - 0.05, A3_CY - 0.0, 0]);
 
-    await Promise.all([R1L.waitForRender?.(), R2L.waitForRender?.(), RgL.waitForRender?.()]);
-    R1L.scale(0.45).nextTo(R1, UP, 0.05);
-    R2L.scale(0.45).nextTo(R2, DOWN, 0.05);
-    RgL.scale(0.5).nextTo(Rg, LEFT, 0.1);
+    // ── Stage highlight boxes (animated in after circuit is drawn) ──
+    // Buffer box: left = -6.45, right = -2.35 (extends past TAP1_X)
+    // bottom = -4.0 (room for label below R2 + R2L which end at ~-3.45)
+    const BUF_HL_CX = -4.4, BUF_HL_CY = -0.45;
+    const BUF_HL_W = 4.1, BUF_HL_H = 7.1;
+    const bufHighlight = new Rectangle({
+      width: BUF_HL_W, height: BUF_HL_H,
+      color: ACCENT, strokeWidth: 1.4, fillOpacity: 0.04,
+    });
+    bufHighlight.moveTo([BUF_HL_CX, BUF_HL_CY, 0]);
 
-    // Sequence
-    await scene.play(new Write(title, { duration: 0.7 }));
-    await scene.play(new Create(A1), new Create(A2), new Create(A3));
-    await scene.play(
-      new Create(inTop), new Create(inBot),
-      new Write(vaLbl), new Write(vbLbl),
-      new Create(fb1a), new Create(fb1b), new Create(fb1c),
-      new Create(fb2a), new Create(fb2b), new Create(fb2c),
-      new Create(R1), new Create(R2), new Write(R1L), new Write(R2L),
-      new Create(Rg), new Write(RgL)
-    );
-    await scene.play(
-      new Create(out1), new Create(diffIn1),
-      new Create(out2), new Create(diffIn2),
-      new Create(finalOut), new Write(outLbl)
-    );
-    await scene.play(new Write(eqn));
+    // Diff box: left = -2.15, right = 2.35  (gap of 0.2 from buffer box)
+    const DIFF_HL_CX = 0.1, DIFF_HL_CY = -0.2;
+    const DIFF_HL_W = 4.5, DIFF_HL_H = 3.8;
+    const diffHighlight = new Rectangle({
+      width: DIFF_HL_W, height: DIFF_HL_H,
+      color: CYAN, strokeWidth: 1.4, fillOpacity: 0.04,
+    });
+    diffHighlight.moveTo([DIFF_HL_CX, DIFF_HL_CY, 0]);
 
-    // Symmetric signal dots
-    const da = new Dot({ point: [-5, 1.8, 0], color: BLUE, radius: 0.1 });
-    const db = new Dot({ point: [-5, -1.8, 0], color: MAG, radius: 0.1 });
-    scene.add(da, db);
-    const pa = new Line({ start: [-5, 1.8, 0], end: [1.8, 0.3, 0] });
-    const pb = new Line({ start: [-5, -1.8, 0], end: [1.8, -0.3, 0] });
-    await scene.play(
-      new MoveAlongPath(da, { path: pa, duration: 1.6, rateFunc: linear }),
-      new MoveAlongPath(db, { path: pb, duration: 1.6, rateFunc: linear })
-    );
-    await scene.play(new Indicate(Rg));
-    for (const p of propObjs) {
-      await scene.play(new FadeIn(p, { duration: 0.2 }));
+    // ── Stage labels — large, horizontally centred on highlight boxes ──
+    const stg1Lbl = new Text({ text: 'Buffer Stage', fontSize: 20, color: ACCENT, fontUrl: FONT_URL });
+    const stg2Lbl = new Text({ text: 'Difference Stage', fontSize: 20, color: CYAN, fontUrl: FONT_URL });
+    await Promise.all([stg1Lbl.loadGlyphs?.(), stg2Lbl.loadGlyphs?.()]);
+    // Buffer label: centred on box, below bottom resistor label (~y -3.45)
+    stg1Lbl.moveTo([BUF_HL_CX, -3.72, 0]);
+    // Diff label: centred on box, near bottom
+    stg2Lbl.moveTo([DIFF_HL_CX, DIFF_HL_CY - DIFF_HL_H / 2 + 0.28, 0]);
+
+    // ═══════════════════════════════════════════════
+    //  RHS INFO PANEL — explanation bullets
+    // ═══════════════════════════════════════════════
+
+    const BS = 0.38;  // bullet scale
+    const RX = 3.1;   // left edge of bullet text
+    const DX = 2.9;   // dot x
+
+    async function mkMath(latex, color, scale, xL, y) {
+      const o = new MathTex({ latex, color });
+      await o.waitForRender?.();
+      o.scale(scale).moveTo([0, y, 0]);
+      if (typeof o.getLeft === 'function') {
+        o.shift([xL - o.getLeft()[0], 0, 0]);
+      } else {
+        o.moveTo([xL + 1.5, y, 0]);
+      }
+      return o;
     }
-    await scene.wait(2);
+
+    function mkDot(x, y) {
+      return new Circle({
+        radius: 0.05, color: FG,
+        fillColor: FG, fillOpacity: 1, strokeWidth: 0,
+      }).moveTo([x, y, 0]);
+    }
+
+    // Row positions
+    const LS = 0.40;  // line spacing
+    const BG_GAP = 0.65;
+    let Y = 2.6;
+
+    // Bullet 1: What it is
+    const d1 = mkDot(DX, Y);
+    const b1l1 = await mkMath('\\text{Combines two buffer amplifiers}', FG, BS, RX, Y);
+    const b1l2 = await mkMath('\\text{with a difference amplifier.}', FG, BS, RX, Y - LS);
+
+    Y -= LS + BG_GAP;
+    // Bullet 2: Key benefit
+    const d2 = mkDot(DX, Y);
+    const b2l1 = await mkMath('\\text{Very high input impedance —}', FG, BS, RX, Y);
+    const b2l2 = await mkMath('\\text{does not load the signal source.}', FG, BS, RX, Y - LS);
+
+    Y -= LS + BG_GAP;
+    // Bullet 3: CMRR
+    const d3 = mkDot(DX, Y);
+    const b3l1 = await mkMath('\\text{Excellent common-mode rejection}', FG, BS, RX, Y);
+    const b3l2 = await mkMath('\\text{(CMRR), rejects shared noise.}', FG, BS, RX, Y - LS);
+
+    Y -= LS + BG_GAP;
+    // Bullet 4: Single resistor gain
+    const d4 = mkDot(DX, Y);
+    const b4l1 = await mkMath('\\text{Gain set by a single resistor } R_G\\text{.}', FG, BS, RX, Y);
+
+    // ── Equation box ──
+    Y -= 0.65;
+    const EQ_BOX_CX = 4.8;
+    const EQ_BOX_W = 3.8;
+    const EQ_BOX_H = 1.2;
+    const EQ_BOX_CY = Y - EQ_BOX_H / 2;
+
+    const eqBox = new Rectangle({
+      width: EQ_BOX_W, height: EQ_BOX_H,
+      color: ACCENT, strokeWidth: 1.4, fillOpacity: 0.10,
+    });
+    eqBox.moveTo([EQ_BOX_CX, EQ_BOX_CY, 0]);
+
+    const eqn = new MathTex({
+      latex: `A_v = \\left(1 + \\frac{2R}{\\textcolor{${YELLOW}}{R_G}}\\right) \\frac{\\textcolor{${MAG}}{R''}}{\\textcolor{${BLUE}}{R'}}`,
+      color: FG
+    });
+    await eqn.waitForRender?.();
+    eqn.scale(0.55).moveTo([EQ_BOX_CX, EQ_BOX_CY, 0]);
+
+    // ── Use-case subtitle ──
+    Y = EQ_BOX_CY - EQ_BOX_H / 2 - 0.55;
+    const d5 = mkDot(DX, Y);
+    const b5l1 = await mkMath('\\text{Used in: medical sensors, strain}', MUTED, 0.36, RX, Y);
+    const b5l2 = await mkMath('\\text{gauges, thermocouples, bridges.}', MUTED, 0.36, RX, Y - LS * 0.85);
+
+    // ── All RHS objects for toggling ──
+    const rhsInfo = [
+      d1, b1l1, b1l2, d2, b2l1, b2l2, d3, b3l1, b3l2,
+      d4, b4l1, eqBox, eqn, d5, b5l1, b5l2,
+    ];
+
+    // ── All circuit objects for toggling ──
+    const circuitObjs = [
+      triA1, triA2, triA3,
+      t1.plus, t1.minus, t2.plus, t2.minus, t3.plus, t3.minus,
+      vaLbl, vbLbl, inW1a, Zs1, Zs1L, inW1b, inW2a, Zs2, Zs2L, inW2b,
+      outW1, outW2, tap1Dot, tap2Dot,
+      fb1Vert, fb1toR, R1, R1L, fb1fromR, fb1down, stub1, node1Dot,
+      fb2Vert, fb2toR, R2, R2L, fb2fromR, fb2down, stub2, node2Dot,
+      rgWireTop, Rg, RgL, rgWireBot,
+      diffIn1a, diffIn1b, R3, R3L, diffIn1c, diffNode1,
+      diffIn2a, diffIn2b, R4, R4L, diffIn2c, diffNode2,
+      fb3up, fb3toR, Rf, RfL, fb3fromR, fb3down, finalTapDot, fbNode3,
+      plusNode3, gndWireTop, Rg2, Rg2L, gndWireBot, gnd1, gnd2, gnd3,
+      outWire, outPort, outLbl,
+      a1Lbl, a2Lbl, a3Lbl, stg1Lbl, stg2Lbl,
+      bufHighlight, diffHighlight,
+    ];
+
+    // ═══════════════════════════════════════════════
+    //  MINI CIRCUIT COPY for Section 2
+    //  A pre-built half-scale duplicate shown in the left half
+    // ═══════════════════════════════════════════════
+
+    const MINI_S = 0.55;
+    const _MCX = -2.2, _MCY = -0.3;                    // original circuit centre
+    const _MOX = -2.8, _MOY = 1.2;                     // target centre for mini
+    const mp = (x, y) => [_MOX + MINI_S*(x - _MCX), _MOY + MINI_S*(y - _MCY), 0];
+
+    const miniCircuitObjs = [];
+
+    // ── Op-amp triangles ──
+    for (const [cx, cy] of [[A1_CX,A1_CY],[A2_CX,A2_CY],[A3_CX,A3_CY]]) {
+      miniCircuitObjs.push(new Polygon({
+        vertices: [mp(cx-TRI_HALF_W,cy-TRI_HALF_H), mp(cx-TRI_HALF_W,cy+TRI_HALF_H), mp(cx+TRI_HALF_W,cy)],
+        color: MUTED2, strokeWidth: 1.2, fillOpacity: 0.13
+      }));
+    }
+
+    // ── Terminal labels (+/−) ──
+    for (const [cx, cy] of [[A1_CX,A1_CY],[A2_CX,A2_CY],[A3_CX,A3_CY]]) {
+      const px = cx - TRI_HALF_W + 0.22;
+      const p = new Text({ text: '+', fontSize: 8, color: ACCENT, fontUrl: FONT_URL });
+      const m = new Text({ text: '\u2212', fontSize: 8, color: RED, fontUrl: FONT_URL });
+      await Promise.all([p.loadGlyphs?.(), m.loadGlyphs?.()]);
+      p.moveTo(mp(px, cy - 0.25));
+      m.moveTo(mp(px, cy + 0.25));
+      miniCircuitObjs.push(p, m);
+    }
+
+    // ── Op-amp name labels ──
+    for (const [text, cx, cy] of [['A\u2081',A1_CX-0.05,A1_CY],['A\u2082',A2_CX-0.05,A2_CY],['A\u2083',A3_CX-0.05,A3_CY]]) {
+      const t = new Text({ text, fontSize: 8, color: MUTED, fontUrl: FONT_URL });
+      await t.loadGlyphs?.();
+      t.moveTo(mp(cx, cy));
+      miniCircuitObjs.push(t);
+    }
+
+    // ── Wires (Line objects) ──
+    {
+      const sw = 1.0;
+      const wires = [
+        // Input wires (split around Z_s)
+        [VIN_X+0.25, t1.plusY, ZS_CX-R_W/2, t1.plusY],
+        [ZS_CX+R_W/2, t1.plusY, A1_CX-TRI_HALF_W, t1.plusY],
+        [VIN_X+0.25, t2.plusY, ZS_CX-R_W/2, t2.plusY],
+        [ZS_CX+R_W/2, t2.plusY, A2_CX-TRI_HALF_W, t2.plusY],
+        // Buffer outputs
+        [BUF_OUT_X, A1_CY, TAP1_X, A1_CY],
+        [BUF_OUT_X, A2_CY, TAP1_X, A2_CY],
+        // A1 feedback path
+        [NODE1_X, t1.minusY, A1_CX-TRI_HALF_W, t1.minusY],
+        [NODE1_X, t1.minusY, NODE1_X, FB1_Y],
+        [NODE1_X, FB1_Y, R1_CX-R_W/2, FB1_Y],
+        [R1_CX+R_W/2, FB1_Y, TAP1_X, FB1_Y],
+        [TAP1_X, FB1_Y, TAP1_X, A1_CY],
+        // A2 feedback path
+        [NODE2_X, t2.minusY, A2_CX-TRI_HALF_W, t2.minusY],
+        [NODE2_X, t2.minusY, NODE2_X, FB2_Y],
+        [NODE2_X, FB2_Y, R2_CX-R_W/2, FB2_Y],
+        [R2_CX+R_W/2, FB2_Y, TAP1_X, FB2_Y],
+        [TAP1_X, FB2_Y, TAP1_X, A2_CY],
+        // R_G vertical wires
+        [NODE1_X, t1.minusY, NODE1_X, RG_CY+0.4],
+        [NODE1_X, RG_CY-0.4, NODE1_X, t2.minusY],
+        // Diff-amp inputs from buffers
+        [TAP1_X, A1_CY, TAP1_X, R3_Y],
+        [TAP1_X, R3_Y, R3_CX-R_W/2, R3_Y],
+        [R3_CX+R_W/2, R3_Y, A3_CX-TRI_HALF_W, R3_Y],
+        [TAP1_X, A2_CY, TAP1_X, R4_Y],
+        [TAP1_X, R4_Y, R4_CX-R_W/2, R4_Y],
+        [R4_CX+R_W/2, R4_Y, A3_CX-TRI_HALF_W, R4_Y],
+        // A3 feedback
+        [R3_CX+R_W/2+0.15, R3_Y, R3_CX+R_W/2+0.15, FB3_Y],
+        [R3_CX+R_W/2+0.15, FB3_Y, RF_CX-R_W/2, FB3_Y],
+        [RF_CX+R_W/2, FB3_Y, FINAL_TAP_X, FB3_Y],
+        [FINAL_TAP_X, FB3_Y, FINAL_TAP_X, A3_CY],
+        // Ground path
+        [GND_X, R4_Y, GND_X, RG2_CY+0.35],
+        [GND_X, RG2_CY-0.35, GND_X, GND_Y],
+        // Output wire
+        [A3_OUT_X, A3_CY, OUT_X, A3_CY],
+      ];
+      for (const [x1,y1,x2,y2] of wires) {
+        miniCircuitObjs.push(new Line({ start: mp(x1,y1), end: mp(x2,y2), color: FG, strokeWidth: sw }));
+      }
+      // Ground symbol (thicker)
+      miniCircuitObjs.push(
+        new Line({ start: mp(GND_X-0.3,GND_Y), end: mp(GND_X+0.3,GND_Y), color: FG, strokeWidth: 2.0 }),
+        new Line({ start: mp(GND_X-0.18,GND_Y-0.12), end: mp(GND_X+0.18,GND_Y-0.12), color: FG, strokeWidth: 1.4 }),
+        new Line({ start: mp(GND_X-0.08,GND_Y-0.22), end: mp(GND_X+0.08,GND_Y-0.22), color: FG, strokeWidth: 0.8 }),
+      );
+    }
+
+    // ── Junction dots ──
+    for (const [x,y] of [
+      [TAP1_X, A1_CY], [TAP1_X, A2_CY],
+      [NODE1_X, t1.minusY], [NODE2_X, t2.minusY],
+      [R3_CX+R_W/2+0.15, R3_Y], [R4_CX+R_W/2+0.15, R4_Y],
+      [FINAL_TAP_X, A3_CY],
+    ]) {
+      miniCircuitObjs.push(new Dot({ point: mp(x,y), color: FG, radius: 0.03 }));
+    }
+
+    // Output port circle
+    miniCircuitObjs.push(
+      new Circle({ radius: 0.04, color: FG, strokeWidth: 1.2, fillColor: '#000000', fillOpacity: 1 }).moveTo(mp(OUT_X, A3_CY))
+    );
+
+    // ── Resistor boxes ──
+    for (const [cx,cy,w,h,c] of [
+      [ZS_CX, t1.plusY, R_W, R_H, RED],    // Zs top
+      [ZS_CX, t2.plusY, R_W, R_H, RED],    // Zs bottom
+      [R1_CX, FB1_Y, R_W, R_H, ACCENT],
+      [R2_CX, FB2_Y, R_W, R_H, ACCENT],
+      [NODE1_X, RG_CY, 0.28, 0.8, YELLOW],
+      [R3_CX, R3_Y, R_W, R_H, BLUE],
+      [R4_CX, R4_Y, R_W, R_H, BLUE],
+      [RF_CX, FB3_Y, R_W, R_H, MAG],
+      [GND_X, RG2_CY, 0.28, 0.7, MAG],
+    ]) {
+      const r = new Rectangle({ width: w*MINI_S, height: h*MINI_S, color: c, strokeWidth: 1.2, fillOpacity: 0.22 });
+      r.moveTo(mp(cx, cy));
+      miniCircuitObjs.push(r);
+    }
+
+    // ── MathTex labels ──
+    for (const [latex, x, y, sc, c] of [
+      ['V_{1}', VIN_X, t1.plusY, 0.6, BLUE],
+      ['V_{2}', VIN_X, t2.plusY, 0.6, MAG],
+      ['Z_s', ZS_CX, t1.plusY + R_H/2 + 0.18, 0.45, RED],
+      ['Z_s', ZS_CX, t2.plusY - R_H/2 - 0.18, 0.45, RED],
+      ['R', R1_CX, FB1_Y + R_H/2 + 0.18, 0.5, ACCENT],
+      ['R', R2_CX, FB2_Y - R_H/2 - 0.18, 0.5, ACCENT],
+      ['R_{G}', NODE1_X - 0.42, RG_CY, 0.55, YELLOW],
+      ["R'", R3_CX, R3_Y + R_H/2 + 0.20, 0.5, BLUE],
+      ["R'", R4_CX, R4_Y - R_H/2 - 0.20, 0.5, BLUE],
+      ["R''", RF_CX, FB3_Y + R_H/2 + 0.20, 0.5, MAG],
+      ["R''", GND_X + 0.32, RG2_CY, 0.5, MAG],
+      ['V_{out}', OUT_X + 0.35, A3_CY, 0.6, YELLOW],
+    ]) {
+      const t = new MathTex({ latex, color: c });
+      await t.waitForRender?.();
+      t.scale(sc * MINI_S).moveTo(mp(x, y));
+      miniCircuitObjs.push(t);
+    }
+
+    // Add to scene hidden
+    miniCircuitObjs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+    scene.add(...miniCircuitObjs);
+
+    // ═══════════════════════════════════════════════
+    //  SECTION 2: Interactive Gain Explorer
+    // ═══════════════════════════════════════════════
+
+    // ── Constants ──
+    const RG_MIN = 100, RG_MAX = 100000, R_FIXED = 25000;
+    const R_PRIME = 10000; // R' = 10 kΩ (diff amp input resistor)
+    const VDM_INPUT = 0.010; // 10 mV differential input
+    const ZS_MIN = 10, ZS_MAX = 100000; // source impedance range
+
+    function rgFromSlider(v) {
+      return RG_MIN * Math.pow(RG_MAX / RG_MIN, v / 1000);
+    }
+    function zsFromSlider(v) {
+      return ZS_MIN * Math.pow(ZS_MAX / ZS_MIN, v / 1000);
+    }
+    function computeGain(rg) { return 1 + (2 * R_FIXED) / rg; }
+    // Without buffers: source impedance forms voltage divider with R'
+    // Signal actually reaching diff amp = Vdm * R' / (R' + Zs)
+    function loadingFactor(zs) { return R_PRIME / (R_PRIME + zs); }
+    function formatRg(rg) {
+      if (rg >= 1000) return (rg / 1000).toFixed(1) + ' k\u03A9';
+      return rg.toFixed(0) + ' \u03A9';
+    }
+    function formatVoltage(v) {
+      if (Math.abs(v) >= 1) return v.toFixed(2) + ' V';
+      return (v * 1000).toFixed(1) + ' mV';
+    }
+
+    // ── Section 2 Title ──
+    const s2Title = new Text({ text: 'Gain Explorer', fontSize: 32, color: FG, fontUrl: FONT_URL });
+    await s2Title.loadGlyphs?.();
+    s2Title.moveTo([-3.5, 3.5, 0]);
+    if (typeof s2Title.getLeft === 'function') {
+      s2Title.shift([-6.2 - s2Title.getLeft()[0], 0, 0]);
+    }
+
+    // ── Graph frame definitions ──
+    const gainFrame = { x0: 0.8, x1: 6.3, y0: 0.6, y1: 3.0 };
+    const gainXRange = [Math.log10(RG_MIN), Math.log10(RG_MAX)]; // [2, 5]
+    const gainYRange = [0, 120]; // gain capped visually at 120
+
+    const sigFrame = { x0: 0.8, x1: 6.3, y0: -3.4, y1: -0.4 };
+    const sigXRange = [0, 2 * Math.PI];
+    const sigYRange = [-1.3, 1.3];
+
+    function mapPoint(frame, x, y, xr, yr) {
+      return [
+        frame.x0 + ((x - xr[0]) / (xr[1] - xr[0])) * (frame.x1 - frame.x0),
+        frame.y0 + ((y - yr[0]) / (yr[1] - yr[0])) * (frame.y1 - frame.y0)
+      ];
+    }
+
+    // ── Build static axis objects (rendered once) ──
+    const s2StaticObjs = [];
+
+    // -- Gain graph axes --
+    s2StaticObjs.push(new Line({ start: [gainFrame.x0, gainFrame.y0, 0], end: [gainFrame.x1, gainFrame.y0, 0], color: MUTED, strokeWidth: 1.5 }));
+    s2StaticObjs.push(new Line({ start: [gainFrame.x0, gainFrame.y0, 0], end: [gainFrame.x0, gainFrame.y1, 0], color: MUTED, strokeWidth: 1.5 }));
+
+    // X-axis tick labels: 100, 1k, 10k, 100k
+    for (const [logVal, label] of [[2, '100\u03A9'], [3, '1k\u03A9'], [4, '10k\u03A9'], [5, '100k\u03A9']]) {
+      const px = mapPoint(gainFrame, logVal, 0, gainXRange, gainYRange);
+      s2StaticObjs.push(new Line({ start: [px[0], gainFrame.y0, 0], end: [px[0], gainFrame.y0 - 0.12, 0], color: MUTED, strokeWidth: 1 }));
+      const lbl = new Text({ text: label, fontSize: 13, color: MUTED, fontUrl: FONT_URL });
+      await lbl.loadGlyphs?.();
+      lbl.moveTo([px[0], gainFrame.y0 - 0.32, 0]);
+      s2StaticObjs.push(lbl);
+    }
+
+    // Y-axis tick labels for gain (left side)
+    for (const gVal of [1, 10, 50, 100]) {
+      const py = mapPoint(gainFrame, 0, gVal, gainXRange, gainYRange);
+      s2StaticObjs.push(new Line({ start: [gainFrame.x0, py[1], 0], end: [gainFrame.x0 - 0.1, py[1], 0], color: MUTED, strokeWidth: 1 }));
+      const lbl = new Text({ text: String(gVal), fontSize: 13, color: MUTED, fontUrl: FONT_URL });
+      await lbl.loadGlyphs?.();
+      lbl.moveTo([gainFrame.x0 - 0.4, py[1], 0]);
+      s2StaticObjs.push(lbl);
+    }
+
+    // Gain graph title
+    const gainTitle = new Text({ text: 'Effective Gain vs R_G', fontSize: 18, color: FG, fontUrl: FONT_URL });
+    await gainTitle.loadGlyphs?.();
+    gainTitle.moveTo([(gainFrame.x0 + gainFrame.x1) / 2, gainFrame.y1 + 0.35, 0]);
+    s2StaticObjs.push(gainTitle);
+
+    // Gain Y-axis label (left side, rotated 90°)
+    const gainYLbl = new Text({ text: 'Gain (Av)', fontSize: 18, color: MUTED, fontUrl: FONT_URL });
+    await gainYLbl.loadGlyphs?.();
+    gainYLbl.rotate(Math.PI / 2).moveTo([gainFrame.x0 - 0.7, (gainFrame.y0 + gainFrame.y1) / 2, 0]);
+    s2StaticObjs.push(gainYLbl);
+
+    // Gain graph legend — top-right inside plot
+    {
+      const rx = gainFrame.x1 - 0.15; // right-align inside plot
+      const topY = gainFrame.y1 - 0.2;
+      const sp = 0.28;
+      const items = [
+        ['Buffered', ACCENT, topY],
+        ['No buffers', RED, topY - sp],
+      ];
+      for (const [label, color, y] of items) {
+        s2StaticObjs.push(new Circle({ radius: 0.06, color, fillColor: color, fillOpacity: 1, strokeWidth: 0 }).moveTo([rx - 0.9, y, 0]));
+        const t = new Text({ text: label, fontSize: 11, color, fontUrl: FONT_URL });
+        await t.loadGlyphs?.();
+        t.moveTo([rx - 0.4, y, 0]);
+        s2StaticObjs.push(t);
+      }
+    }
+
+    // X-axis label (right end)
+    const gainXLbl = new MathTex({ latex: 'R_G', color: YELLOW });
+    await gainXLbl.waitForRender?.();
+    gainXLbl.scale(0.55).moveTo([gainFrame.x1 + 0.3, gainFrame.y0, 0]);
+    s2StaticObjs.push(gainXLbl);
+
+    // -- Signal graph axes --
+    s2StaticObjs.push(new Line({ start: [sigFrame.x0, sigFrame.y0, 0], end: [sigFrame.x1, sigFrame.y0, 0], color: MUTED, strokeWidth: 1.5 }));
+    s2StaticObjs.push(new Line({ start: [sigFrame.x0, sigFrame.y0, 0], end: [sigFrame.x0, sigFrame.y1, 0], color: MUTED, strokeWidth: 1.5 }));
+    s2StaticObjs.push(new Line({ start: [sigFrame.x0, sigFrame.y1, 0], end: [sigFrame.x1, sigFrame.y1, 0], color: MUTED2, strokeWidth: 0.5 }));
+    s2StaticObjs.push(new Line({ start: [sigFrame.x1, sigFrame.y0, 0], end: [sigFrame.x1, sigFrame.y1, 0], color: MUTED2, strokeWidth: 0.5 }));
+
+    // Zero line
+    const zeroY = mapPoint(sigFrame, 0, 0, sigXRange, sigYRange)[1];
+    s2StaticObjs.push(new Line({ start: [sigFrame.x0, zeroY, 0], end: [sigFrame.x1, zeroY, 0], color: MUTED2, strokeWidth: 0.8 }));
+
+    // Signal graph title
+    const sigTitle = new Text({ text: 'Input / Output Signals', fontSize: 18, color: FG, fontUrl: FONT_URL });
+    await sigTitle.loadGlyphs?.();
+    sigTitle.moveTo([(sigFrame.x0 + sigFrame.x1) / 2, sigFrame.y1 + 0.35, 0]);
+    s2StaticObjs.push(sigTitle);
+
+    // Signal Y-axis label (left side, rotated 90°)
+    const sigYLbl = new Text({ text: 'Voltage', fontSize: 18, color: MUTED, fontUrl: FONT_URL });
+    await sigYLbl.loadGlyphs?.();
+    sigYLbl.rotate(Math.PI / 2).moveTo([sigFrame.x0 - 0.35, (sigFrame.y0 + sigFrame.y1) / 2, 0]);
+    s2StaticObjs.push(sigYLbl);
+
+    // Signal legend — top-right inside plot
+    {
+      const rx = sigFrame.x1 - 0.15;
+      const topY = sigFrame.y1 - 0.2;
+      const sp = 0.28;
+      const items = [
+        ['V1', BLUE, topY],
+        ['V2', MAG, topY - sp],
+        ['Buffered', YELLOW, topY - 2 * sp],
+        ['No buffers', RED, topY - 3 * sp],
+      ];
+      for (const [label, color, y] of items) {
+        s2StaticObjs.push(new Circle({ radius: 0.06, color, fillColor: color, fillOpacity: 1, strokeWidth: 0 }).moveTo([rx - 0.9, y, 0]));
+        const t = new Text({ text: label, fontSize: 11, color, fontUrl: FONT_URL });
+        await t.loadGlyphs?.();
+        t.moveTo([rx - 0.4, y, 0]);
+        s2StaticObjs.push(t);
+      }
+    }
+
+    // ── Educational annotations removed — info is in the overlay panel ──
+
+    // All static objects start hidden
+    s2StaticObjs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+    scene.add(s2Title, ...s2StaticObjs);
+    try { s2Title.setOpacity?.(0); } catch(e){}
+
+    // ── DOM refs ──
+    const olPanel = document.getElementById('olPanel');
+    const rgSlider = document.getElementById('rgSlider');
+    const zsSlider = document.getElementById('zsSlider');
+    const rgValEl = document.getElementById('rgVal');
+    const zsValEl = document.getElementById('zsVal');
+    const gainValEl = document.getElementById('gainVal');
+    const voutValEl = document.getElementById('voutVal');
+    const voutNoBufEl = document.getElementById('voutNoBufVal');
+    const lossValEl = document.getElementById('lossVal');
+    const gainExplainEl = document.getElementById('gainExplain');
+
+    function updateExplainText(rg, gain, zs, lf) {
+      const lossPct = ((1 - lf) * 100);
+      if (zs > 5000 && lossPct > 30) {
+        gainExplainEl.innerHTML = '<b>High source Z!</b> Without buffers, the amplifier\'s input resistors (R\u2032) ' +
+          'draw current from the sensor. This forms a voltage divider with the source impedance Z<sub>s</sub>, ' +
+          'dropping ' + Math.round(lossPct) + '% of the signal before it even reaches the amp. ' +
+          'The buffers fix this \u2014 their near-infinite input impedance draws virtually zero current.';
+      } else if (lossPct > 10) {
+        gainExplainEl.innerHTML = 'Without buffers, R\u2032 and Z<sub>s</sub> form a voltage divider \u2014 ' +
+          'the amp\'s input resistors "load" the source by drawing current, losing ' +
+          Math.round(lossPct) + '% of the signal. Buffers isolate the source so no current is drawn.';
+      } else if (gain > 50) {
+        gainExplainEl.innerHTML = 'High gain from small R<sub>G</sub>. ' +
+          'Buffers amplify only the <em>differential</em> signal \u2014 common-mode noise passes through unchanged.';
+      } else {
+        gainExplainEl.innerHTML = 'Low source Z \u2014 loading is minimal because Z<sub>s</sub> \u226A R\u2032, ' +
+          'so little voltage is dropped across the source. Try increasing Z<sub>s</sub> to see how ' +
+          'a weak sensor (e.g. thermocouple) loses signal without buffers.';
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    //  INTERACTIVE CURVES — create/remove per update
+    //  Uses small segment counts for speed
+    // ═══════════════════════════════════════════════
+
+    const GAIN_SEG = 30;  // segments per gain curve
+    const SIG_SEG  = 40;  // segments per signal trace
+
+    // Persistent circuit highlight objects (at mini circuit positions)
+    const rgHL = new Rectangle({ width: 0.42*MINI_S, height: 0.95*MINI_S, color: YELLOW, strokeWidth: 2, fillOpacity: 0.20 });
+    rgHL.moveTo(mp(NODE1_X, RG_CY));
+    const bufHL1 = new Rectangle({ width: 1.5*MINI_S, height: 1.6*MINI_S, color: ACCENT, strokeWidth: 1.5, fillOpacity: 0.08 });
+    bufHL1.moveTo(mp(A1_CX, A1_CY));
+    const bufHL2 = new Rectangle({ width: 1.5*MINI_S, height: 1.6*MINI_S, color: ACCENT, strokeWidth: 1.5, fillOpacity: 0.08 });
+    bufHL2.moveTo(mp(A2_CX, A2_CY));
+    // Z_s highlights on the input resistors
+    const zsHL1 = new Rectangle({ width: (R_W+0.15)*MINI_S, height: (R_H+0.15)*MINI_S, color: RED, strokeWidth: 2, fillOpacity: 0.18 });
+    zsHL1.moveTo(mp(ZS_CX, t1.plusY));
+    const zsHL2 = new Rectangle({ width: (R_W+0.15)*MINI_S, height: (R_H+0.15)*MINI_S, color: RED, strokeWidth: 2, fillOpacity: 0.18 });
+    zsHL2.moveTo(mp(ZS_CX, t2.plusY));
+
+    // Persistent marker dots (use moveTo — always works in manim-web)
+    const mkrDotBuf = new Dot({ point: [0, 0, 0], color: YELLOW, radius: 0.08 });
+    const mkrDotNB  = new Dot({ point: [0, 0, 0], color: RED, radius: 0.07 });
+
+    const s2Persistent = [rgHL, bufHL1, bufHL2, zsHL1, zsHL2, mkrDotBuf, mkrDotNB];
+    s2Persistent.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+    scene.add(...s2Persistent);
+
+    // Curve line segments (created/destroyed per update)
+    let s2CurveObjs = [];
+
+    // Build all curve line objects for the current slider state
+    function buildCurves() {
+      const rg = rgFromSlider(parseFloat(rgSlider.value));
+      const zs = zsFromSlider(parseFloat(zsSlider.value));
+      const gain = computeGain(rg);
+      const lf = loadingFactor(zs);
+      const vout = gain * VDM_INPUT;
+      const voutNoBuf = gain * VDM_INPUT * lf;
+      const lossPct = (1 - lf) * 100;
+
+      // Update readouts
+      rgValEl.textContent = formatRg(rg);
+      zsValEl.textContent = formatRg(zs);
+      gainValEl.textContent = gain.toFixed(1);
+      voutValEl.textContent = formatVoltage(vout);
+      voutNoBufEl.textContent = formatVoltage(voutNoBuf);
+      lossValEl.textContent = lossPct.toFixed(1) + '%';
+      updateExplainText(rg, gain, zs, lf);
+
+      // Move marker dots
+      const mG = Math.min(gain, gainYRange[1]);
+      const mGNB = Math.min(gain * lf, gainYRange[1]);
+      const mp = mapPoint(gainFrame, Math.log10(rg), mG, gainXRange, gainYRange);
+      const mpNB = mapPoint(gainFrame, Math.log10(rg), mGNB, gainXRange, gainYRange);
+      mkrDotBuf.moveTo([mp[0], mp[1], 0]);
+      mkrDotNB.moveTo([mpNB[0], mpNB[1], 0]);
+
+      const lines = [];
+
+      // Helper: push line segments for a curve
+      function traceCurve(n, color, sw, fn) {
+        let prev = null;
+        for (let i = 0; i <= n; i++) {
+          const p = fn(i / n);
+          if (prev) {
+            lines.push(new Line({
+              start: [prev[0], prev[1], 0],
+              end: [p[0], p[1], 0],
+              color, strokeWidth: sw
+            }));
+          }
+          prev = p;
+        }
+      }
+
+      // Gain curve (buffered)
+      traceCurve(GAIN_SEG, ACCENT, 2.5, (t) => {
+        const lr = gainXRange[0] + (gainXRange[1] - gainXRange[0]) * t;
+        const g = Math.min(computeGain(Math.pow(10, lr)), gainYRange[1]);
+        return mapPoint(gainFrame, lr, g, gainXRange, gainYRange);
+      });
+
+      // Gain curve (no buffers)
+      traceCurve(GAIN_SEG, RED, 1.8, (t) => {
+        const lr = gainXRange[0] + (gainXRange[1] - gainXRange[0]) * t;
+        const g = Math.min(computeGain(Math.pow(10, lr)) * lf, gainYRange[1]);
+        return mapPoint(gainFrame, lr, g, gainXRange, gainYRange);
+      });
+
+      // Vertical + horizontal marker reference lines
+      const axY = mapPoint(gainFrame, 0, 0, gainXRange, gainYRange)[1];
+      lines.push(new Line({ start: [mp[0], axY, 0], end: [mp[0], mp[1], 0], color: MUTED2, strokeWidth: 1.2 }));
+      lines.push(new Line({ start: [gainFrame.x0, mp[1], 0], end: [mp[0], mp[1], 0], color: MUTED2, strokeWidth: 0.8 }));
+      // Gap bar between markers
+      if (mp[1] - mpNB[1] > 0.06) {
+        lines.push(new Line({ start: [mp[0] + 0.12, mpNB[1], 0], end: [mp[0] + 0.12, mp[1], 0], color: RED, strokeWidth: 1.8 }));
+      }
+
+      // Signal traces — use real voltages, auto-scale Y axis to fit
+      const peakBuf = vout;          // gain × VDM_INPUT (buffered output)
+      const peakNoBuf = voutNoBuf;   // gain × VDM_INPUT × loading factor
+      const yMax = Math.max(peakBuf, peakNoBuf, VDM_INPUT) * 1.25; // 25% headroom
+      const dynYRange = [-yMax, yMax];
+      const clamp = v => Math.max(-yMax, Math.min(yMax, v));
+
+      traceCurve(SIG_SEG, BLUE, 1.8, (t) => {
+        const th = t * 2 * Math.PI;
+        return mapPoint(sigFrame, th, VDM_INPUT * Math.sin(th), sigXRange, dynYRange);
+      });
+      traceCurve(SIG_SEG, MAG, 1.8, (t) => {
+        const th = t * 2 * Math.PI;
+        return mapPoint(sigFrame, th, -VDM_INPUT * Math.sin(th), sigXRange, dynYRange);
+      });
+      traceCurve(SIG_SEG, RED, 2.0, (t) => {
+        const th = t * 2 * Math.PI;
+        return mapPoint(sigFrame, th, clamp(peakNoBuf * Math.sin(th)), sigXRange, dynYRange);
+      });
+      traceCurve(SIG_SEG, YELLOW, 2.5, (t) => {
+        const th = t * 2 * Math.PI;
+        return mapPoint(sigFrame, th, clamp(peakBuf * Math.sin(th)), sigXRange, dynYRange);
+      });
+
+      return lines;
+    }
+
+    // ── Instant redraw on slider change (no animation, just swap) ──
+    function redrawCurves() {
+      // Remove old curve lines
+      if (s2CurveObjs.length) {
+        scene.remove(...s2CurveObjs);
+        s2CurveObjs = [];
+      }
+      // Build and add new ones
+      const lines = buildCurves();
+      scene.add(...lines);
+      s2CurveObjs = lines;
+    }
+
+    // ── Slider events with RAF throttle ──
+    let s2DrawRaf = null;
+    function queueRedraw() {
+      if (currentSection !== 'animation') return;
+      if (s2DrawRaf) return;
+      s2DrawRaf = requestAnimationFrame(() => {
+        s2DrawRaf = null;
+        redrawCurves();
+      });
+    }
+    rgSlider.addEventListener('input', queueRedraw);
+    zsSlider.addEventListener('input', queueRedraw);
+
+    // ── Highlight corresponding circuit components while dragging sliders ──
+    let hlTimeout = null;
+    function flashHighlight(objs) {
+      if (currentSection !== 'animation') return;
+      // Show the highlights
+      objs.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+      // Clear any pending fade-out
+      if (hlTimeout) clearTimeout(hlTimeout);
+      // Fade out after user stops dragging
+      hlTimeout = setTimeout(() => {
+        objs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        hlTimeout = null;
+      }, 800);
+    }
+
+    rgSlider.addEventListener('input', () => flashHighlight([rgHL]));
+    zsSlider.addEventListener('input', () => flashHighlight([zsHL1, zsHL2, bufHL1, bufHL2]));
+
+    // ═══════════════════════════════════════════════
+    //  SECTION SWITCHING
+    // ═══════════════════════════════════════════════
+
+    const secIndicator = document.getElementById('sec-indicator');
+    const prevBtn = document.getElementById('sec-prev');
+    const nextBtn = document.getElementById('sec-next');
+    let currentSection = 'circuit';
+
+
+    function showSection(sec) {
+      currentSection = sec;
+      if (sec === 'circuit') {
+        secIndicator.textContent = 'Section 1 \u00B7 Circuit';
+        prevBtn.disabled = true;
+        nextBtn.disabled = false;
+        // Show section 1 full-size circuit + info
+        circuitObjs.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        rhsInfo.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        try { title.setOpacity?.(1); } catch(e){}
+        // Hide section 2: mini circuit, plots, panel
+        miniCircuitObjs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        try { s2Title.setOpacity?.(0); } catch(e){}
+        s2StaticObjs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        s2Persistent.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        if (s2CurveObjs.length) { scene.remove(...s2CurveObjs); s2CurveObjs = []; }
+        if (s2DrawRaf) { cancelAnimationFrame(s2DrawRaf); s2DrawRaf = null; }
+        olPanel.classList.remove('visible');
+        olPanel.setAttribute('aria-hidden', 'true');
+      } else {
+        secIndicator.textContent = 'Section 2 \u00B7 Gain Explorer';
+        prevBtn.disabled = false;
+        nextBtn.disabled = true;
+        // Skip section 1 animation if still running, then hide full circuit
+        skipS1Anim();
+        circuitObjs.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        rhsInfo.forEach(o => { try { o.setOpacity?.(0); } catch(e){} });
+        try { title.setOpacity?.(0); } catch(e){}
+        // Show mini circuit copy
+        miniCircuitObjs.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        // Show section 2 plots, title, panel
+        try { s2Title.setOpacity?.(1); } catch(e){}
+        s2StaticObjs.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        olPanel.classList.add('visible');
+        olPanel.setAttribute('aria-hidden', 'false');
+        // Show curves instantly
+        [mkrDotBuf, mkrDotNB].forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+        redrawCurves();
+      }
+    }
+
+    prevBtn.addEventListener('click', () => showSection('circuit'));
+    nextBtn.addEventListener('click', () => showSection('animation'));
+
+    // ═══════════════════════════════════════════════
+    //  ANIMATION SEQUENCE (Section 1)
+    //  Order: buffer stage → highlight → diff stage → highlight → bullets
+    // ═══════════════════════════════════════════════
+
+    const FAST = 0.5;   // circuit drawing speed
+    let s1AnimDone = false;
+    let s1AnimSkipped = false;
+
+    // Helper: skip remaining animation — make everything visible instantly
+    function skipS1Anim() {
+      if (s1AnimDone) return;
+      s1AnimSkipped = true;
+      s1AnimDone = true;
+      circuitObjs.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+      rhsInfo.forEach(o => { try { o.setOpacity?.(1); } catch(e){} });
+      try { title.setOpacity?.(1); } catch(e){}
+    }
+
+    // Helper: bail out early if user switched sections
+    function s1Bail() { return s1AnimSkipped; }
+
+    // 1. Title
+    await scene.play(new Write(title, { duration: 0.7 }));
+    if (s1Bail()) { /* skip rest */ } else {
+
+    // ── Buffer stage ──
+
+    // 2. Buffer op-amps + labels
+    await scene.play(
+      new Create(triA1, { duration: FAST }), new Create(triA2, { duration: FAST }),
+      new Write(t1.plus, { duration: FAST }), new Write(t1.minus, { duration: FAST }),
+      new Write(t2.plus, { duration: FAST }), new Write(t2.minus, { duration: FAST }),
+      new FadeIn(a1Lbl, { duration: FAST }), new FadeIn(a2Lbl, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 3. Buffer inputs with Z_s
+    await scene.play(
+      new Create(inW1a, { duration: FAST }), new Create(Zs1, { duration: FAST }),
+      new Write(Zs1L, { duration: FAST }), new Create(inW1b, { duration: FAST }),
+      new Create(inW2a, { duration: FAST }), new Create(Zs2, { duration: FAST }),
+      new Write(Zs2L, { duration: FAST }), new Create(inW2b, { duration: FAST }),
+      new Write(vaLbl, { duration: FAST }), new Write(vbLbl, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 4. Buffer feedback + R_gain
+    await scene.play(
+      new Create(stub1, { duration: FAST }), new Create(stub2, { duration: FAST }),
+      new FadeIn(node1Dot, { duration: FAST }), new FadeIn(node2Dot, { duration: FAST }),
+      new Create(fb1Vert, { duration: FAST }), new Create(fb1toR, { duration: FAST }),
+      new Create(R1, { duration: FAST }), new Write(R1L, { duration: FAST }),
+      new Create(fb1fromR, { duration: FAST }), new Create(fb1down, { duration: FAST }),
+      new Create(fb2Vert, { duration: FAST }), new Create(fb2toR, { duration: FAST }),
+      new Create(R2, { duration: FAST }), new Write(R2L, { duration: FAST }),
+      new Create(fb2fromR, { duration: FAST }), new Create(fb2down, { duration: FAST }),
+      new Create(rgWireTop, { duration: FAST }), new Create(Rg, { duration: FAST }),
+      new Write(RgL, { duration: FAST }), new Create(rgWireBot, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 5. Buffer outputs
+    await scene.play(
+      new Create(outW1, { duration: FAST }), new Create(outW2, { duration: FAST }),
+      new FadeIn(tap1Dot, { duration: FAST }), new FadeIn(tap2Dot, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 6. Buffer stage highlight + label (slow)
+    await scene.play(new Create(bufHighlight, { duration: 1.2 }));
+    } if (!s1Bail()) {
+    await scene.play(new FadeIn(stg1Lbl, { duration: 0.6 }));
+    await scene.wait(0.8);
+    } if (!s1Bail()) {
+
+    // ── Difference stage ──
+
+    // 7. Diff op-amp + label
+    await scene.play(
+      new Create(triA3, { duration: FAST }),
+      new Write(t3.plus, { duration: FAST }), new Write(t3.minus, { duration: FAST }),
+      new FadeIn(a3Lbl, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 8. Diff input resistors
+    await scene.play(
+      new Create(diffIn1a, { duration: FAST }), new Create(diffIn1b, { duration: FAST }),
+      new Create(R3, { duration: FAST }), new Write(R3L, { duration: FAST }),
+      new Create(diffIn1c, { duration: FAST }), new FadeIn(diffNode1, { duration: FAST }),
+      new Create(diffIn2a, { duration: FAST }), new Create(diffIn2b, { duration: FAST }),
+      new Create(R4, { duration: FAST }), new Write(R4L, { duration: FAST }),
+      new Create(diffIn2c, { duration: FAST }), new FadeIn(diffNode2, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 9. Diff feedback + ground resistors
+    await scene.play(
+      new Create(fb3up, { duration: FAST }), new Create(fb3toR, { duration: FAST }),
+      new Create(Rf, { duration: FAST }), new Write(RfL, { duration: FAST }),
+      new Create(fb3fromR, { duration: FAST }), new Create(fb3down, { duration: FAST }),
+      new FadeIn(finalTapDot, { duration: FAST }), new FadeIn(fbNode3, { duration: FAST }),
+      new FadeIn(plusNode3, { duration: FAST }),
+      new Create(gndWireTop, { duration: FAST }), new Create(Rg2, { duration: FAST }),
+      new Write(Rg2L, { duration: FAST }), new Create(gndWireBot, { duration: FAST }),
+      new Create(gnd1, { duration: FAST }), new Create(gnd2, { duration: FAST }),
+      new Create(gnd3, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 10. Output
+    await scene.play(
+      new Create(outWire, { duration: FAST }),
+      new FadeIn(outPort, { duration: FAST }),
+      new Write(outLbl, { duration: FAST }),
+    );
+    } if (!s1Bail()) {
+
+    // 11. Difference stage highlight + label (slow)
+    await scene.play(new Create(diffHighlight, { duration: 1.2 }));
+    } if (!s1Bail()) {
+    await scene.play(new FadeIn(stg2Lbl, { duration: 0.6 }));
+    await scene.wait(0.8);
+    } if (!s1Bail()) {
+
+    // 12. RHS info bullets
+    for (const obj of rhsInfo) {
+      if (s1Bail()) break;
+      await scene.play(new FadeIn(obj, { duration: 0.15 }));
+    }
+
+    await scene.wait(1);
+    }
+
+    s1AnimDone = true;
+
   </script>
 </body>
 </html>

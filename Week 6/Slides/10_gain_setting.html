@@ -394,7 +394,11 @@
       <button class="quiz-reset" id="s3Reset">Try Again</button>
     </div>
 
-    <canvas id="s4Heatmap" width="400" height="400" style="display:none;position:absolute;z-index:2;image-rendering:pixelated;border-radius:4px;"></canvas>
+    <div id="s4HeatmapWrap" style="display:none;position:absolute;z-index:2;border-radius:4px;overflow:hidden;">
+      <svg id="s4HeatmapSVG" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:100%;"></svg>
+      <canvas id="s4HeatmapCanvas" style="position:absolute;pointer-events:none;image-rendering:pixelated;"></canvas>
+      <svg id="s4CrosshairSVG" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;"></svg>
+    </div>
 
     <div id="s4Panel">
       <div class="ol-title">Resistor Controls</div>
@@ -582,11 +586,8 @@
         cancelAnimationFrame(state.section4DrawRaf);
         state.section4DrawRaf = null;
       }
-      if (state.section4Ctx && state.section4Ctx._crossCanvas) {
-        state.section4Ctx._crossCanvas.style.display = 'none';
-      }
       state.section4Ctx = null;
-      document.getElementById('s4Heatmap').style.display = 'none';
+      document.getElementById('s4HeatmapWrap').style.display = 'none';
     };
 
     const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain', 'Resistor value quiz', 'Beta & resistor explorer'][idx - 1];
@@ -603,7 +604,7 @@
       s3Quiz.classList.toggle('visible', state.currentSection === 3);
       const showS4 = state.currentSection === 4 && state.section4ControlsReady;
       s4Panel.classList.toggle('visible', showS4);
-      document.getElementById('s4Heatmap').style.display = showS4 ? 'block' : 'none';
+      document.getElementById('s4HeatmapWrap').style.display = showS4 ? 'block' : 'none';
     };
 
     const buildPersistentChrome = async () => {
@@ -780,12 +781,12 @@
 
       const s2Tag = await makeText('SECTION 2 - CLOSED-LOOP GAIN', 14, ACCENT, [-6.1, 2.86, 0], -6.1);
 
-      const eq = await makeMath('V_{out}\\;=\\;V_{in}\\left(1+\\dfrac{R_{2}}{R_{1}}\\right)', 0.56, CYAN, [-4.3, 2.02, 0]);
+      const eq = await makeMath('V_{out}\\;=\\;V_{in}\\left(1+\\dfrac{R_{2}}{R_{1}}\\right)', 0.46, CYAN, [-4.3, 2.20, 0]);
 
-      const b1 = await makeMath('\\bullet\\;\\text{Feedback returns }\\beta=\\tfrac{R_{1}}{R_{1}+R_{2}}\\text{ of }V_{out}\\text{ to }V_{-}', 0.36, FG, [-4.95, 1.50, 0]);
-      const b2 = await makeMath('\\bullet\\;\\text{Op-amp forces }V_{+}\\approx V_{-}\\text{, so }V_{d}\\approx 0', 0.36, FG, [-4.95, 1.12, 0]);
-      const b3 = await makeMath('\\bullet\\;\\text{Gain is set by }R_{2}/R_{1}\\text{, not by }A_{OL}', 0.36, CYAN, [-4.95, 0.74, 0]);
-      const b4 = await makeMath('\\bullet\\;\\text{Result: a stable, predictable amplifier}', 0.36, FG, [-4.95, 0.36, 0]);
+      const b1 = await makeMath('\\bullet\\;\\text{Feedback returns }\\beta=\\tfrac{R_{1}}{R_{1}+R_{2}}\\text{ of }V_{out}\\text{ to }V_{-}', 0.40, FG, [-4.95, 1.50, 0]);
+      const b2 = await makeMath('\\bullet\\;\\text{Op-amp forces }V_{+}\\approx V_{-}\\text{, so }V_{d}\\approx 0', 0.40, FG, [-4.95, 1.04, 0]);
+      const b3 = await makeMath('\\bullet\\;\\text{Gain is set by }R_{2}/R_{1}\\text{, not by }A_{OL}', 0.40, CYAN, [-4.95, 0.58, 0]);
+      const b4 = await makeMath('\\bullet\\;\\text{Result: a stable, predictable amplifier}', 0.40, FG, [-4.95, 0.12, 0]);
       for (const b of [b1, b2, b3, b4]) {
         if (typeof b.getLeft === 'function') b.shift([-6.1 - b.getLeft()[0], 0, 0]);
       }
@@ -2054,7 +2055,7 @@
       const stepStatics = [stepSurface, stepBorder, stepXLabel, stepYLabel];
 
       // ── 2D Penalty Heatmap (bottom-right) — rendered on HTML Canvas ──
-      const penFrame = { x0: -0.60, x1: 6.10, y0: -3.40, y1: -0.40 };
+      const penFrame = { x0: 0.20, x1: 6.10, y0: -3.60, y1: 0.00 };
       const penLogMin = 2, penLogMax = 7; // 100Ω to 10MΩ
 
       // Manim coords to screen %: scene is 14.22 wide (-7.11..+7.11), 8 tall (-4..+4)
@@ -2076,23 +2077,139 @@
         return [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f), Math.round(a[2] + (b[2] - a[2]) * f)];
       };
 
-      // Canvas layout: margins for labels outside the heatmap
-      const hmCanvas = document.getElementById('s4Heatmap');
-      const MARGIN = { top: 30, right: 56, bottom: 44, left: 56 };
-      const PLOT_SIZE = 400; // square plot area
+      // ── SVG + Canvas hybrid: SVG for axes/labels, Canvas for heatmap pixels ──
+      const MARGIN = { top: 32, right: 62, bottom: 52, left: 62 };
+      const PLOT_SIZE = 440;
       const PLOT_W = PLOT_SIZE, PLOT_H = PLOT_SIZE;
-      const C_W = PLOT_SIZE + MARGIN.left + MARGIN.right;
-      const C_H = PLOT_SIZE + MARGIN.top + MARGIN.bottom;
-      hmCanvas.width = C_W;
-      hmCanvas.height = C_H;
-      const hmCtx = hmCanvas.getContext('2d');
+      const SVG_W = PLOT_SIZE + MARGIN.left + MARGIN.right;
+      const SVG_H = PLOT_SIZE + MARGIN.top + MARGIN.bottom;
+
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svgEl = (tag, attrs, textContent) => {
+        const el = document.createElementNS(svgNS, tag);
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+        if (textContent !== undefined) el.textContent = textContent;
+        return el;
+      };
+
+      const toPlotX = (logR) => MARGIN.left + (logR - penLogMin) / (penLogMax - penLogMin) * PLOT_W;
+      const toPlotY = (logR) => MARGIN.top + (1 - (logR - penLogMin) / (penLogMax - penLogMin)) * PLOT_H;
+      const AXIS_COLOR = IS_LIGHT ? '#475569' : '#a9b4c6';
+      const TITLE_COLOR = IS_LIGHT ? '#0f172a' : '#e8ecf3';
+
+      // ── Build main SVG (axes, labels, title, color bar, sweet-spot) ──
+      const mainSvg = document.getElementById('s4HeatmapSVG');
+      mainSvg.setAttribute('viewBox', '0 0 ' + SVG_W + ' ' + SVG_H);
+      mainSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      mainSvg.innerHTML = '';
+
+      // Defs: viridis gradient for color bar (32 stops)
+      const defs = svgEl('defs', {});
+      const grad = svgEl('linearGradient', { id: 'viridisGrad', x1: '0', y1: '0', x2: '0', y2: '1' });
+      const GRAD_STOPS = 32;
+      for (let i = 0; i <= GRAD_STOPS; i++) {
+        const t = 1 - i / GRAD_STOPS; // top=bright(safe), bottom=dark(danger)
+        const rgb = viridisColor(t);
+        grad.appendChild(svgEl('stop', { offset: (i / GRAD_STOPS * 100) + '%', 'stop-color': 'rgb(' + rgb.join(',') + ')' }));
+      }
+      defs.appendChild(grad);
+      mainSvg.appendChild(defs);
 
       // Background
-      hmCtx.fillStyle = BG;
-      hmCtx.fillRect(0, 0, C_W, C_H);
+      mainSvg.appendChild(svgEl('rect', { x: 0, y: 0, width: SVG_W, height: SVG_H, fill: BG }));
 
-      // Paint heatmap into the plot area using ImageData
+      // Plot title
+      mainSvg.appendChild(svgEl('text', {
+        x: MARGIN.left + PLOT_W / 2, y: 18,
+        'text-anchor': 'middle', fill: TITLE_COLOR,
+        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '17', 'font-weight': 'bold'
+      }, 'Resistor Design Space'));
+
+      // Axes border
+      mainSvg.appendChild(svgEl('rect', {
+        x: MARGIN.left, y: MARGIN.top, width: PLOT_W, height: PLOT_H,
+        fill: 'none', stroke: AXIS_COLOR, 'stroke-width': '1.5'
+      }));
+
+      // Tick marks & labels
+      const tickVals = [2, 3, 4, 5, 6, 7];
+      const tickNames = ['100\u03A9', '1k\u03A9', '10k\u03A9', '100k\u03A9', '1M\u03A9', '10M\u03A9'];
+      for (let i = 0; i < tickVals.length; i++) {
+        const px = toPlotX(tickVals[i]);
+        const py = toPlotY(tickVals[i]);
+        // X-axis tick + label
+        mainSvg.appendChild(svgEl('line', { x1: px, y1: MARGIN.top + PLOT_H, x2: px, y2: MARGIN.top + PLOT_H + 4, stroke: AXIS_COLOR, 'stroke-width': '1' }));
+        mainSvg.appendChild(svgEl('text', {
+          x: px, y: MARGIN.top + PLOT_H + 18,
+          'text-anchor': 'middle', fill: AXIS_COLOR,
+          'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '14'
+        }, tickNames[i]));
+        // Y-axis tick + label
+        mainSvg.appendChild(svgEl('line', { x1: MARGIN.left, y1: py, x2: MARGIN.left - 4, y2: py, stroke: AXIS_COLOR, 'stroke-width': '1' }));
+        mainSvg.appendChild(svgEl('text', {
+          x: MARGIN.left - 6, y: py + 5,
+          'text-anchor': 'end', fill: AXIS_COLOR,
+          'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '14'
+        }, tickNames[i]));
+      }
+
+      // Axis titles
+      mainSvg.appendChild(svgEl('text', {
+        x: MARGIN.left + PLOT_W / 2, y: SVG_H - 2,
+        'text-anchor': 'middle', fill: TITLE_COLOR,
+        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '16', 'font-weight': '600'
+      }, 'R\u2081'));
+      const yTitle = svgEl('text', {
+        x: 0, y: 0,
+        'text-anchor': 'middle', fill: TITLE_COLOR,
+        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '16', 'font-weight': '600',
+        transform: 'translate(14,' + (MARGIN.top + PLOT_H / 2) + ') rotate(-90)'
+      }, 'R\u2082');
+      mainSvg.appendChild(yTitle);
+
+      // Sweet-spot outline (10kΩ–100kΩ)
+      const sxL = toPlotX(4), sxR = toPlotX(5), syT = toPlotY(5), syB = toPlotY(4);
+      mainSvg.appendChild(svgEl('rect', {
+        x: sxL, y: syT, width: sxR - sxL, height: syB - syT,
+        fill: 'none', stroke: '#ffffff', 'stroke-width': '2', 'stroke-dasharray': '6,3'
+      }));
+      mainSvg.appendChild(svgEl('text', {
+        x: (sxL + sxR) / 2, y: syT - 5,
+        'text-anchor': 'middle', fill: '#ffffff',
+        'font-family': '"IBM Plex Mono", monospace', 'font-size': '14', 'font-weight': 'bold'
+      }, 'Sweet Spot'));
+
+      // Color bar (right of plot) — SVG gradient rect
+      const cbX = MARGIN.left + PLOT_W + 8, cbW = 12, cbH = PLOT_H;
+      mainSvg.appendChild(svgEl('rect', {
+        x: cbX, y: MARGIN.top, width: cbW, height: cbH,
+        fill: 'url(#viridisGrad)', stroke: AXIS_COLOR, 'stroke-width': '1'
+      }));
+      mainSvg.appendChild(svgEl('text', {
+        x: cbX + cbW + 3, y: MARGIN.top + 10,
+        'text-anchor': 'start', fill: AXIS_COLOR,
+        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '13'
+      }, 'Safe'));
+      mainSvg.appendChild(svgEl('text', {
+        x: cbX + cbW + 3, y: MARGIN.top + cbH - 2,
+        'text-anchor': 'start', fill: AXIS_COLOR,
+        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '13'
+      }, 'Danger'));
+
+      // ── High-resolution heatmap canvas (pixels only, no labels) ──
+      const hmCanvas = document.getElementById('s4HeatmapCanvas');
+      const DPR = window.devicePixelRatio || 1;
       const GRID_N = 400;
+      const CANVAS_PX = Math.round(PLOT_SIZE * DPR);
+      hmCanvas.width = CANVAS_PX;
+      hmCanvas.height = CANVAS_PX;
+      // Position canvas over the plot area within the wrapper
+      hmCanvas.style.left = (MARGIN.left / SVG_W * 100) + '%';
+      hmCanvas.style.top = (MARGIN.top / SVG_H * 100) + '%';
+      hmCanvas.style.width = (PLOT_SIZE / SVG_W * 100) + '%';
+      hmCanvas.style.height = (PLOT_SIZE / SVG_H * 100) + '%';
+
+      const hmCtx = hmCanvas.getContext('2d');
       const imgData = hmCtx.createImageData(GRID_N, GRID_N);
       const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
@@ -2104,10 +2221,9 @@
           const logR2 = penLogMin + (iy + 0.5) / GRID_N * (penLogMax - penLogMin);
           const r1v = Math.pow(10, logR1);
           const r2v = Math.pow(10, logR2);
-          // Invert: 0 = bad (high penalty), 1 = good (low penalty) for viridis (bright=good)
           const worstP = clamp(Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v)), 0, 1);
-          const rgb = viridisColor(1 - worstP); // low penalty → bright yellow, high → dark purple
-          const row = GRID_N - 1 - iy; // flip Y
+          const rgb = viridisColor(1 - worstP);
+          const row = GRID_N - 1 - iy;
           const idx = (row * GRID_N + ix) * 4;
           imgData.data[idx] = rgb[0];
           imgData.data[idx + 1] = rgb[1];
@@ -2115,92 +2231,17 @@
           imgData.data[idx + 3] = 255;
         }
       }
-      // Draw the image data scaled to the plot area
       const tmpCanvas = document.createElement('canvas');
       tmpCanvas.width = GRID_N; tmpCanvas.height = GRID_N;
       tmpCanvas.getContext('2d').putImageData(imgData, 0, 0);
       hmCtx.imageSmoothingEnabled = false;
-      hmCtx.drawImage(tmpCanvas, MARGIN.left, MARGIN.top, PLOT_W, PLOT_H);
+      hmCtx.drawImage(tmpCanvas, 0, 0, CANVAS_PX, CANVAS_PX);
 
-      // Sweet-spot outline (10kΩ–100kΩ)
-      const toPlotX = (logR) => MARGIN.left + (logR - penLogMin) / (penLogMax - penLogMin) * PLOT_W;
-      const toPlotY = (logR) => MARGIN.top + (1 - (logR - penLogMin) / (penLogMax - penLogMin)) * PLOT_H;
-      hmCtx.strokeStyle = '#ffffff';
-      hmCtx.lineWidth = 2;
-      hmCtx.setLineDash([6, 3]);
-      const sxL = toPlotX(4), sxR = toPlotX(5), syT = toPlotY(5), syB = toPlotY(4);
-      hmCtx.strokeRect(sxL, syT, sxR - sxL, syB - syT);
-      hmCtx.setLineDash([]);
-      hmCtx.fillStyle = '#ffffff';
-      hmCtx.font = 'bold 11px "IBM Plex Mono", monospace';
-      hmCtx.textAlign = 'center';
-      hmCtx.fillText('Sweet Spot', (sxL + sxR) / 2, syT - 5);
-
-      // Axes border
-      hmCtx.strokeStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
-      hmCtx.lineWidth = 1.5;
-      hmCtx.setLineDash([]);
-      hmCtx.strokeRect(MARGIN.left, MARGIN.top, PLOT_W, PLOT_H);
-
-      // Tick labels — outside the plot area
-      const tickVals = [2, 3, 4, 5, 6, 7];
-      const tickNames = ['100\u03A9', '1k\u03A9', '10k\u03A9', '100k\u03A9', '1M\u03A9', '10M\u03A9'];
-      hmCtx.fillStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
-      hmCtx.font = '11px "IBM Plex Sans", sans-serif';
-      for (let i = 0; i < tickVals.length; i++) {
-        const px = toPlotX(tickVals[i]);
-        const py = toPlotY(tickVals[i]);
-        // X-axis (below plot)
-        hmCtx.textAlign = 'center';
-        hmCtx.fillText(tickNames[i], px, MARGIN.top + PLOT_H + 16);
-        // Tick mark
-        hmCtx.strokeStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
-        hmCtx.lineWidth = 1;
-        hmCtx.beginPath();
-        hmCtx.moveTo(px, MARGIN.top + PLOT_H); hmCtx.lineTo(px, MARGIN.top + PLOT_H + 4);
-        hmCtx.stroke();
-        // Y-axis (left of plot)
-        hmCtx.textAlign = 'right';
-        hmCtx.fillText(tickNames[i], MARGIN.left - 6, py + 4);
-        hmCtx.beginPath();
-        hmCtx.moveTo(MARGIN.left, py); hmCtx.lineTo(MARGIN.left - 4, py);
-        hmCtx.stroke();
-      }
-
-      // Axis titles
-      hmCtx.fillStyle = IS_LIGHT ? '#0f172a' : '#e8ecf3';
-      hmCtx.font = '13px "IBM Plex Sans", sans-serif';
-      hmCtx.textAlign = 'center';
-      hmCtx.fillText('R\u2081', MARGIN.left + PLOT_W / 2, C_H - 2);
-      // Y-axis title (rotated)
-      hmCtx.save();
-      hmCtx.translate(12, MARGIN.top + PLOT_H / 2);
-      hmCtx.rotate(-Math.PI / 2);
-      hmCtx.fillText('R\u2082', 0, 0);
-      hmCtx.restore();
-
-      // Title
-      hmCtx.font = 'bold 14px "IBM Plex Sans", sans-serif';
-      hmCtx.fillText('Resistor Design Space', MARGIN.left + PLOT_W / 2, 18);
-
-      // Color bar (right of plot)
-      const cbX = MARGIN.left + PLOT_W + 8, cbW = 12, cbH = PLOT_H;
-      for (let i = 0; i < cbH; i++) {
-        const t = 1 - i / cbH; // top=good(bright), bottom=bad(dark)
-        const rgb = viridisColor(t);
-        hmCtx.fillStyle = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
-        hmCtx.fillRect(cbX, MARGIN.top + i, cbW, 1);
-      }
-      hmCtx.strokeStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
-      hmCtx.lineWidth = 1;
-      hmCtx.strokeRect(cbX, MARGIN.top, cbW, cbH);
-      hmCtx.fillStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
-      hmCtx.font = '10px "IBM Plex Sans", sans-serif';
-      hmCtx.textAlign = 'left';
-      hmCtx.fillText('Safe', cbX + cbW + 3, MARGIN.top + 10);
-      hmCtx.fillText('Danger', cbX + cbW + 3, MARGIN.top + cbH - 2);
-
-      // No manim overlays for the penalty plot — everything is on canvas
+      // ── Crosshair SVG setup ──
+      const crossSvg = document.getElementById('s4CrosshairSVG');
+      crossSvg.setAttribute('viewBox', '0 0 ' + SVG_W + ' ' + SVG_H);
+      crossSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      crossSvg.innerHTML = '';
 
       objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle);
       animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle);
@@ -2219,7 +2260,11 @@
         penLogMin,
         penLogMax,
         toScreenPctX,
-        toScreenPctY
+        toScreenPctY,
+        SVG_W,
+        SVG_H,
+        MARGIN,
+        PLOT_SIZE
       };
     };
 
@@ -2363,83 +2408,75 @@
         }
       }
 
-      // ── PLOT 2: Position canvas + draw crosshair on canvas ──
-      const { penLogMin, penLogMax, toScreenPctX, toScreenPctY } = ctx;
-      const hmCanvas = document.getElementById('s4Heatmap');
+      // ── PLOT 2: Position wrapper + draw crosshair as SVG ──
+      const { penLogMin, penLogMax, toScreenPctX, toScreenPctY, SVG_W: svgW, SVG_H: svgH, MARGIN: hmMargin, PLOT_SIZE: plotSize } = ctx;
+      const wrap = document.getElementById('s4HeatmapWrap');
       const stageEl = document.getElementById('stage');
       const stageRect = stageEl.getBoundingClientRect();
-      // Position canvas over penFrame area
-      const hmLeft = toScreenPctX(penFrame.x0) / 100 * stageRect.width;
-      const hmTop = toScreenPctY(penFrame.y1) / 100 * stageRect.height;
-      const hmWidth = (toScreenPctX(penFrame.x1) - toScreenPctX(penFrame.x0)) / 100 * stageRect.width;
-      const hmHeight = (toScreenPctY(penFrame.y0) - toScreenPctY(penFrame.y1)) / 100 * stageRect.height;
-      hmCanvas.style.left = hmLeft + 'px';
-      hmCanvas.style.top = hmTop + 'px';
-      hmCanvas.style.width = hmWidth + 'px';
-      hmCanvas.style.height = hmHeight + 'px';
-
-      // Draw crosshair directly on the canvas overlay div
-      // We need a second canvas for the crosshair so we don't repaint the heatmap
-      if (!ctx._crossCanvas) {
-        ctx._crossCanvas = document.createElement('canvas');
-        ctx._crossCanvas.width = hmCanvas.width;
-        ctx._crossCanvas.height = hmCanvas.height;
-        ctx._crossCanvas.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;';
-        hmCanvas.parentElement.appendChild(ctx._crossCanvas);
+      // Available region from penFrame
+      const availLeft = toScreenPctX(penFrame.x0) / 100 * stageRect.width;
+      const availTop = toScreenPctY(penFrame.y1) / 100 * stageRect.height;
+      const availW = (toScreenPctX(penFrame.x1) - toScreenPctX(penFrame.x0)) / 100 * stageRect.width;
+      const availH = (toScreenPctY(penFrame.y0) - toScreenPctY(penFrame.y1)) / 100 * stageRect.height;
+      // Fit SVG aspect ratio within available region, centered
+      const svgAspect = svgW / svgH;
+      let hmWidth, hmHeight;
+      if (availW / availH > svgAspect) {
+        hmHeight = availH;
+        hmWidth = availH * svgAspect;
+      } else {
+        hmWidth = availW;
+        hmHeight = availW / svgAspect;
       }
-      const cc = ctx._crossCanvas;
-      cc.style.left = hmCanvas.style.left;
-      cc.style.top = hmCanvas.style.top;
-      cc.style.width = hmCanvas.style.width;
-      cc.style.height = hmCanvas.style.height;
-      cc.style.display = 'block';
-      const ccCtx = cc.getContext('2d');
-      ccCtx.clearRect(0, 0, cc.width, cc.height);
+      const hmLeft = availLeft + (availW - hmWidth) / 2;
+      const hmTop = availTop + (availH - hmHeight) / 2;
+      wrap.style.left = hmLeft + 'px';
+      wrap.style.top = hmTop + 'px';
+      wrap.style.width = hmWidth + 'px';
+      wrap.style.height = hmHeight + 'px';
 
-      // Map R values to canvas plot coordinates (using same margins as build)
-      const HM_MARGIN = { top: 30, right: 56, bottom: 44, left: 56 };
-      const HM_PLOT_W = cc.width - HM_MARGIN.left - HM_MARGIN.right;
-      const HM_PLOT_H = cc.height - HM_MARGIN.top - HM_MARGIN.bottom;
+      // Create crosshair SVG elements once, then update attributes
+      const svgNS = 'http://www.w3.org/2000/svg';
+      if (!ctx._crossEls) {
+        const crossSvg = document.getElementById('s4CrosshairSVG');
+        const mkEl = (tag, attrs) => { const el = document.createElementNS(svgNS, tag); for (const [k,v] of Object.entries(attrs)) el.setAttribute(k,v); return el; };
+        ctx._crossEls = {
+          vLine: mkEl('line', { stroke: 'rgba(255,255,255,0.8)', 'stroke-width': '1.5', 'stroke-dasharray': '4,3' }),
+          hLine: mkEl('line', { stroke: 'rgba(255,255,255,0.8)', 'stroke-width': '1.5', 'stroke-dasharray': '4,3' }),
+          dot: mkEl('circle', { r: '5', fill: '#ffffff', stroke: '#000000', 'stroke-width': '1.5' }),
+          iText: mkEl('text', { fill: '#f87171', 'font-size': '13', 'font-family': '"IBM Plex Mono", monospace', 'text-anchor': 'end' }),
+          vText: mkEl('text', { fill: '#fbbf24', 'font-size': '13', 'font-family': '"IBM Plex Mono", monospace', 'text-anchor': 'end' }),
+          fText: mkEl('text', { fill: '#5b9cf8', 'font-size': '13', 'font-family': '"IBM Plex Mono", monospace', 'text-anchor': 'end' }),
+        };
+        for (const el of Object.values(ctx._crossEls)) crossSvg.appendChild(el);
+      }
+
+      // Map R values to SVG viewBox coordinates
       const logR1 = Math.log10(r1);
       const logR2 = Math.log10(r2);
       const cxFrac = clamp((logR1 - penLogMin) / (penLogMax - penLogMin), 0, 1);
       const cyFrac = clamp((logR2 - penLogMin) / (penLogMax - penLogMin), 0, 1);
-      const cpx = HM_MARGIN.left + cxFrac * HM_PLOT_W;
-      const cpy = HM_MARGIN.top + (1 - cyFrac) * HM_PLOT_H;
+      const cpx = hmMargin.left + cxFrac * plotSize;
+      const cpy = hmMargin.top + (1 - cyFrac) * plotSize;
 
-      // Crosshair lines
-      ccCtx.strokeStyle = 'rgba(255,255,255,0.8)';
-      ccCtx.lineWidth = 1.5;
-      ccCtx.setLineDash([4, 3]);
-      ccCtx.beginPath();
-      ccCtx.moveTo(cpx, HM_MARGIN.top); ccCtx.lineTo(cpx, HM_MARGIN.top + HM_PLOT_H);
-      ccCtx.moveTo(HM_MARGIN.left, cpy); ccCtx.lineTo(HM_MARGIN.left + HM_PLOT_W, cpy);
-      ccCtx.stroke();
-      ccCtx.setLineDash([]);
+      const els = ctx._crossEls;
+      els.vLine.setAttribute('x1', cpx); els.vLine.setAttribute('y1', hmMargin.top);
+      els.vLine.setAttribute('x2', cpx); els.vLine.setAttribute('y2', hmMargin.top + plotSize);
+      els.hLine.setAttribute('x1', hmMargin.left); els.hLine.setAttribute('y1', cpy);
+      els.hLine.setAttribute('x2', hmMargin.left + plotSize); els.hLine.setAttribute('y2', cpy);
+      els.dot.setAttribute('cx', cpx); els.dot.setAttribute('cy', cpy);
 
-      // Cursor dot
-      ccCtx.fillStyle = '#ffffff';
-      ccCtx.beginPath();
-      ccCtx.arc(cpx, cpy, 5, 0, 2 * Math.PI);
-      ccCtx.fill();
-      ccCtx.strokeStyle = '#000000';
-      ccCtx.lineWidth = 1.5;
-      ccCtx.stroke();
-
-      // Readout box on canvas
+      // Readout values
       const iOut = S4_VOUT_REF / (r1 + r2);
       const vOff = S4_IB * (r1 * r2) / (r1 + r2);
       const fPar = 1 / (2 * Math.PI * r2 * S4_CPAR);
       const iStr = iOut >= 1e-3 ? (iOut * 1e3).toFixed(1) + 'mA' : (iOut * 1e6).toFixed(0) + '\u00B5A';
       const vStr = vOff >= 1e-3 ? (vOff * 1e3).toFixed(1) + 'mV' : (vOff * 1e6).toFixed(0) + '\u00B5V';
       const fStr = fPar >= 1e6 ? (fPar / 1e6).toFixed(1) + 'MHz' : fPar >= 1e3 ? (fPar / 1e3).toFixed(0) + 'kHz' : fPar.toFixed(0) + 'Hz';
-      // Draw readout in top-right corner of plot
-      const rbX = HM_MARGIN.left + HM_PLOT_W - 4, rbY = HM_MARGIN.top + 6;
-      ccCtx.font = '11px "IBM Plex Mono", monospace';
-      ccCtx.textAlign = 'right';
-      ccCtx.fillStyle = '#f87171'; ccCtx.fillText('Iout = ' + iStr, rbX, rbY + 12);
-      ccCtx.fillStyle = '#fbbf24'; ccCtx.fillText('Voff = ' + vStr, rbX, rbY + 26);
-      ccCtx.fillStyle = '#5b9cf8'; ccCtx.fillText('fpar = ' + fStr, rbX, rbY + 40);
+      const rbX = hmMargin.left + plotSize - 4, rbY = hmMargin.top + 6;
+      els.iText.setAttribute('x', rbX); els.iText.setAttribute('y', rbY + 12); els.iText.textContent = 'Iout = ' + iStr;
+      els.vText.setAttribute('x', rbX); els.vText.setAttribute('y', rbY + 26); els.vText.textContent = 'Voff = ' + vStr;
+      els.fText.setAttribute('x', rbX); els.fText.setAttribute('y', rbY + 40); els.fText.textContent = 'fpar = ' + fStr;
 
       scene.add(...g);
       state.interactiveObjects = g;

@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slide 14 — Input Offset Voltage</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
@@ -16,8 +19,8 @@
       var ss = null;
       try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
       var pick = (qt === 'dark' || qt === 'light') ? qt
-               : (ss === 'dark' || ss === 'light') ? ss
-               : null;
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
       if (pick) document.documentElement.setAttribute('data-theme', pick);
       window.addEventListener('themechange', function (e) {
         try {
@@ -43,52 +46,93 @@
       opacity: 0;
       transition: opacity 0.5s ease-out;
     }
+
     #trace-overlay .bar-rail {
       fill: none;
       stroke: #6a6a72;
       stroke-width: 1.5;
     }
-    [data-theme="dark"] #trace-overlay .bar-rail { stroke: #8892a4; }
+
+    [data-theme="dark"] #trace-overlay .bar-rail {
+      stroke: #8892a4;
+    }
+
     #trace-overlay .tick {
       stroke: #6a6a72;
       stroke-width: 1.4;
     }
-    [data-theme="dark"] #trace-overlay .tick { stroke: #8892a4; }
+
+    [data-theme="dark"] #trace-overlay .tick {
+      stroke: #8892a4;
+    }
+
     #trace-overlay .axis-label {
       font-family: 'IBM Plex Sans', sans-serif;
       font-style: italic;
       fill: #6a6a72;
       font-size: 18px;
     }
-    [data-theme="dark"] #trace-overlay .axis-label { fill: #8892a4; }
+
+    [data-theme="dark"] #trace-overlay .axis-label {
+      fill: #8892a4;
+    }
+
     #trace-overlay .tick-label {
       font-family: 'IBM Plex Mono', monospace;
       fill: #6a6a72;
       font-size: 13px;
       font-variant-numeric: tabular-nums;
     }
-    [data-theme="dark"] #trace-overlay .tick-label { fill: #8892a4; }
+
+    [data-theme="dark"] #trace-overlay .tick-label {
+      fill: #8892a4;
+    }
+
     #trace-overlay .vout-bar {
       fill: #3d8b6e;
       transition: fill 0.15s;
     }
-    [data-theme="dark"] #trace-overlay .vout-bar { fill: #6aaa8e; }
-    #trace-overlay .vout-bar.sat { fill: #c74034; }
-    [data-theme="dark"] #trace-overlay .vout-bar.sat { fill: #e06050; }
+
+    [data-theme="dark"] #trace-overlay .vout-bar {
+      fill: #6aaa8e;
+    }
+
+    #trace-overlay .vout-bar.sat {
+      fill: #c74034;
+    }
+
+    [data-theme="dark"] #trace-overlay .vout-bar.sat {
+      fill: #e06050;
+    }
+
     #trace-overlay .readout {
       font-family: 'IBM Plex Mono', monospace;
       font-variant-numeric: tabular-nums;
       font-size: 18px;
       fill: #1a1a1e;
     }
-    [data-theme="dark"] #trace-overlay .readout { fill: #e2e8f0; }
-    #trace-overlay .sat-tag { fill: #c74034; }
-    [data-theme="dark"] #trace-overlay .sat-tag { fill: #e06050; }
+
+    [data-theme="dark"] #trace-overlay .readout {
+      fill: #e2e8f0;
+    }
+
+    #trace-overlay .sat-tag {
+      fill: #c74034;
+    }
+
+    [data-theme="dark"] #trace-overlay .sat-tag {
+      fill: #e06050;
+    }
 
     /* Phase gating of overlay */
-    #stage[data-stage="1"] #trace-overlay { opacity: 0; }
+    #stage[data-stage="1"] #trace-overlay {
+      opacity: 0;
+    }
+
     #stage[data-stage="2"] #trace-overlay,
-    #stage[data-stage="3"] #trace-overlay { opacity: 1; }
+    #stage[data-stage="3"] #trace-overlay {
+      opacity: 1;
+    }
 
     /* ───────── Control panel (sliders) ───────── */
     #ctrl-panel {
@@ -108,6 +152,7 @@
       box-sizing: border-box;
       z-index: 6;
     }
+
     #ctrl-panel .slider-row {
       display: grid;
       grid-template-columns: 38px 1fr 64px;
@@ -115,16 +160,19 @@
       gap: 10px;
       margin: 3px 0;
     }
+
     #ctrl-panel .lbl {
       font-weight: 600;
       font-size: 12px;
       font-style: italic;
       color: #3d8b6e;
     }
+
     [data-theme="dark"] #ctrl-panel .lbl,
     [data-theme="dark"] #ctrl-panel .formula-line {
       color: #6aaa8e;
     }
+
     #ctrl-panel .val {
       text-align: right;
       font-variant-numeric: tabular-nums;
@@ -132,12 +180,17 @@
       font-family: 'IBM Plex Mono', monospace;
       font-size: 11px;
     }
+
     #ctrl-panel input[type=range] {
       width: 100%;
       accent-color: #3d8b6e;
       margin: 0;
     }
-    [data-theme="dark"] #ctrl-panel input[type=range] { accent-color: #6aaa8e; }
+
+    [data-theme="dark"] #ctrl-panel input[type=range] {
+      accent-color: #6aaa8e;
+    }
+
     #ctrl-panel .formula-line {
       margin-top: 6px;
       padding-top: 5px;
@@ -150,8 +203,15 @@
       font-style: italic;
     }
 
-    #stage[data-stage="2"] #ctrl-panel { opacity: 1; pointer-events: auto; }
-    #stage[data-stage="3"] #ctrl-panel { opacity: 0.35; pointer-events: none; }
+    #stage[data-stage="2"] #ctrl-panel {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #stage[data-stage="3"] #ctrl-panel {
+      opacity: 0.35;
+      pointer-events: none;
+    }
 
     /* ───────── Phase headline (top-right of stage) ───────── */
     .phase-headline {
@@ -166,6 +226,7 @@
       color: var(--slide-text-dim);
       pointer-events: none;
     }
+
     .phase-headline .ph-num {
       color: var(--slide-accent);
       font-weight: 600;
@@ -178,11 +239,41 @@
       border-color: var(--slide-accent);
       background: rgba(106, 170, 142, 0.12);
     }
+
+    /* ───────── Phase-3 overlay (hit area over the manim-drawn pot) ───────── */
+    #phase3-overlay {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s ease-out;
+    }
+
+    #stage[data-stage="3"] #phase3-overlay {
+      opacity: 1;
+    }
+
+    #stage[data-stage="3"] #phase3-overlay .pot-hit {
+      pointer-events: auto;
+    }
+
+    #phase3-overlay .pot-hit {
+      fill: transparent;
+      stroke: none;
+      cursor: grab;
+    }
+
+    #phase3-overlay .pot-hit:active {
+      cursor: grabbing;
+    }
   </style>
 </head>
+
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">15 / 22</span>
+    <span class="slide-num">13 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage" data-stage="1">
@@ -194,15 +285,24 @@
 
     <svg id="trace-overlay" viewBox="0 0 1280 720" preserveAspectRatio="none">
       <text class="axis-label" x="900" y="416" text-anchor="middle">V<tspan dy="4" font-size="13">out</tspan></text>
-      <rect class="bar-rail" x="720" y="438" width="360" height="22" rx="3"/>
-      <line class="tick" x1="720"  y1="436" x2="720"  y2="468"/>
-      <line class="tick" x1="900"  y1="436" x2="900"  y2="468"/>
-      <line class="tick" x1="1080" y1="436" x2="1080" y2="468"/>
-      <text class="tick-label" x="720"  y="488" text-anchor="middle">−12 V</text>
-      <text class="tick-label" x="900"  y="488" text-anchor="middle">0</text>
+      <rect class="bar-rail" x="720" y="438" width="360" height="22" rx="3" />
+      <line class="tick" x1="720" y1="436" x2="720" y2="468" />
+      <line class="tick" x1="900" y1="436" x2="900" y2="468" />
+      <line class="tick" x1="1080" y1="436" x2="1080" y2="468" />
+      <text class="tick-label" x="720" y="488" text-anchor="middle">−12 V</text>
+      <text class="tick-label" x="900" y="488" text-anchor="middle">0</text>
       <text class="tick-label" x="1080" y="488" text-anchor="middle">+12 V</text>
-      <rect id="vout-bar" class="vout-bar" x="900" y="440" width="0" height="18" rx="2"/>
-      <text class="readout" id="vout-readout" x="900" y="526" text-anchor="middle">V<tspan dy="3" font-size="13">out</tspan><tspan dy="-3"> = +0.0 mV</tspan></text>
+      <rect id="vout-bar" class="vout-bar" x="900" y="440" width="0" height="18" rx="2" />
+      <text class="readout" id="vout-readout" x="900" y="526" text-anchor="middle">V<tspan dy="3" font-size="13">out
+        </tspan>
+        <tspan dy="-3"> = +0.0 mV</tspan>
+      </text>
+    </svg>
+
+    <svg id="phase3-overlay" viewBox="0 0 1280 720" preserveAspectRatio="none">
+      <!-- Transparent hit area over the manim-drawn pot; sized generously so
+           slight coordinate-mapping drift still lets the user grab the wiper. -->
+      <circle class="pot-hit" id="pot-hit" cx="505" cy="522" r="56" />
     </svg>
 
     <div id="ctrl-panel">
@@ -228,22 +328,22 @@
 
   <script type="module">
     import {
-      Scene, Polygon, Rectangle, Line, Circle, Dot, Text, MathTex,
-      Create, Write, FadeIn, FadeOut, Rotate
+      Scene, Arc, Polygon, Rectangle, Line, Circle, Dot, Text, MathTex,
+      Create, Write, FadeIn, FadeOut, Transform,
     } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
     const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
-    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
-    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
-    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const BG = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED = IS_LIGHT ? '#6a6a72' : '#8892a4';
     const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
     const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
     const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
-    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
-    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
-    const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
-    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
+    const RED = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    const MAG = IS_LIGHT ? '#a050a0' : '#d070d0';
+    const CYAN = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
     window.addEventListener('themechange', () => location.reload());
 
     const stage = document.getElementById('stage');
@@ -262,125 +362,242 @@
     }
 
     // =================================================================
-    // PHASE 1 — Cause: BJT diff pair zoom-in + faded op-amp outline
+    // PHASE 1 — Cause: op-amp package (LHS) with a circular callout (RHS)
+    // zooming into an accurately drawn NPN input differential pair.
     // =================================================================
-    const p1Frame = new Rectangle({ width: 3.8, height: 3.3, color: MUTED2, strokeWidth: 1, fillOpacity: 0 });
-    p1Frame.moveTo([-3.85, 0.25, 0]);
 
-    const p1FrameLbl = new Text({ text: 'input differential pair', fontSize: 10, color: MUTED, fontUrl: FONT_URL });
-    await p1FrameLbl.loadGlyphs?.();
-    p1FrameLbl.moveTo([-3.85, 1.75, 0]);
+    // Helper: build a filled-triangle arrowhead tangent to a direction vector.
+    function arrowTriangle(tipX, tipY, dirX, dirY, color) {
+      const mag = Math.hypot(dirX, dirY) || 1;
+      const ux = dirX / mag, uy = dirY / mag;          // forward (outward) unit
+      const bx = -ux, by = -uy;                 // back unit
+      const px = -uy, py = ux;                 // perpendicular (CCW 90°)
+      const len = 0.14;                                // arrow length
+      const hw = 0.065;                               // arrow half-width at the base
+      const bcX = tipX + bx * len;
+      const bcY = tipY + by * len;
+      return new Polygon({
+        vertices: [
+          [tipX, tipY, 0],
+          [bcX + px * hw, bcY + py * hw, 0],
+          [bcX - px * hw, bcY - py * hw, 0]
+        ],
+        color, strokeWidth: 1.4, fillOpacity: 0.9
+      });
+    }
 
-    // Shared V_CC rail at the top of the zoom frame
-    const p1Rail = new Line({ start: [-5.3, 1.35, 0], end: [-2.4, 1.35, 0], color: MUTED, strokeWidth: 1.4 });
-    const p1RailLbl = new MathTex({ latex: 'V_{CC}', color: MUTED });
-    await p1RailLbl.waitForRender?.();
-    p1RailLbl.scale(0.42).moveTo([-2.15, 1.35, 0]);
+    // ── LHS: the op-amp package ────────────────────────────────────
+    const OP_CX = -4.2, OP_CY = 0.0;
+    const OP_HH = 0.85;
+    const opBackX = OP_CX - 0.65;  // -4.85
+    const opApexX = OP_CX + 0.78;  // -3.42
+    const opTri = new Polygon({
+      vertices: [
+        [opBackX, OP_CY - OP_HH, 0],
+        [opBackX, OP_CY + OP_HH, 0],
+        [opApexX, OP_CY, 0]
+      ],
+      color: ACCENT, strokeWidth: 2, fillOpacity: 0.06
+    });
+    const opPlus = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL });
+    const opMinus = new Text({ text: '−', fontSize: 18, color: RED, fontUrl: FONT_URL });
+    await Promise.all([opPlus.loadGlyphs?.(), opMinus.loadGlyphs?.()]);
+    opPlus.moveTo([opBackX + 0.22, OP_CY + 0.36, 0]);
+    opMinus.moveTo([opBackX + 0.22, OP_CY - 0.36, 0]);
 
-    // ─── Q1 (left, non-inverting side) ───
-    const Q1X = -4.9, Q1Y = 0.55;
-    const q1Base  = new Line({ start: [Q1X - 0.55, Q1Y, 0],        end: [Q1X - 0.1, Q1Y, 0],            color: ACCENT, strokeWidth: 1.8 });
-    const q1Strap = new Line({ start: [Q1X - 0.1,  Q1Y - 0.28, 0], end: [Q1X - 0.1,  Q1Y + 0.28, 0],    color: ACCENT, strokeWidth: 2.2 });
-    const q1Coll  = new Line({ start: [Q1X - 0.1,  Q1Y + 0.18, 0], end: [Q1X + 0.22, Q1Y + 0.7, 0],     color: ACCENT, strokeWidth: 1.8 });
-    const q1Emit  = new Line({ start: [Q1X - 0.1,  Q1Y - 0.18, 0], end: [Q1X + 0.22, Q1Y - 0.7, 0],     color: ACCENT, strokeWidth: 1.8 });
-    const q1CollUp = new Line({ start: [Q1X + 0.22, Q1Y + 0.7, 0], end: [Q1X + 0.22, 1.35, 0],          color: ACCENT, strokeWidth: 1.6 });
+    // Op-amp input and output stubs + labels
+    const opInPlusStub = new Line({ start: [opBackX - 0.65, OP_CY + 0.42, 0], end: [opBackX, OP_CY + 0.42, 0], color: ACCENT, strokeWidth: 1.8 });
+    const opInMinusStub = new Line({ start: [opBackX - 0.65, OP_CY - 0.42, 0], end: [opBackX, OP_CY - 0.42, 0], color: RED, strokeWidth: 1.8 });
+    const opInPlusLbl = new MathTex({ latex: 'v_{+}', color: ACCENT });
+    const opInMinusLbl = new MathTex({ latex: 'v_{-}', color: RED });
+    await Promise.all([opInPlusLbl.waitForRender?.(), opInMinusLbl.waitForRender?.()]);
+    opInPlusLbl.scale(0.55).moveTo([opBackX - 0.85, OP_CY + 0.42, 0]);
+    opInMinusLbl.scale(0.55).moveTo([opBackX - 0.85, OP_CY - 0.42, 0]);
+
+    const opOutStub = new Line({ start: [opApexX, OP_CY, 0], end: [opApexX + 0.50, OP_CY, 0], color: BLUE, strokeWidth: 1.8 });
+    const opOutLbl = new MathTex({ latex: 'v_{out}', color: BLUE });
+    await opOutLbl.waitForRender?.();
+    opOutLbl.scale(0.55).moveTo([opApexX + 0.80, OP_CY, 0]);
+
+    const opPartLbl = new Text({ text: 'LM741', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+    await opPartLbl.loadGlyphs?.();
+    opPartLbl.moveTo([OP_CX + 0.05, OP_CY + OP_HH + 0.25, 0]);
+
+    // ── Highlight circle hugging the op-amp input region ──────────
+    const HL_CX = -4.4, HL_CY = 0.0, HL_R = 0.2;
+    const highlightCircle = new Circle({ radius: HL_R, color: MUTED, strokeWidth: 1.2, fillOpacity: 0 });
+    highlightCircle.moveTo([HL_CX, HL_CY, 0]);
+
+    // ── Circular callout (centre-left) ───────────────────────────
+    // Positioned and sized so the diff pair fits snugly inside while
+    // leaving room to the right for the larger LaTeX caption column.
+    const CO_CX = 0.0, CO_CY = 0.0, CO_R = 1.85;
+    const callout = new Circle({ radius: CO_R, color: MUTED, strokeWidth: 2, fillOpacity: 0.025 });
+    callout.moveTo([CO_CX, CO_CY, 0]);
+    const calloutLbl = new Text({ text: 'input differential pair', fontSize: 16, color: MUTED, fontUrl: FONT_URL });
+    await calloutLbl.loadGlyphs?.();
+    calloutLbl.moveTo([CO_CX, CO_CY + CO_R + 0.35, 0]);
+
+    // External tangent lines (zoom cone) — geometry for two unequal circles
+    // whose centres lie on the x-axis.
+    const d_cc = Math.hypot(CO_CX - HL_CX, CO_CY - HL_CY);
+    const sinTh = (CO_R - HL_R) / d_cc;
+    const cosTh = Math.sqrt(Math.max(0, 1 - sinTh * sinTh));
+    const zoomLineU = new Line({
+      start: [HL_CX - HL_R * sinTh, HL_CY + HL_R * cosTh, 0],
+      end: [CO_CX - CO_R * sinTh, CO_CY + CO_R * cosTh, 0],
+      color: MUTED2, strokeWidth: 1.2
+    });
+    const zoomLineL = new Line({
+      start: [HL_CX - HL_R * sinTh, HL_CY - HL_R * cosTh, 0],
+      end: [CO_CX - CO_R * sinTh, CO_CY - CO_R * cosTh, 0],
+      color: MUTED2, strokeWidth: 1.2
+    });
+
+    // ── Inside the callout: accurate NPN differential pair ───────
+    const V_CC_Y = 1.50;
+    const BASE_Y = 0.30;
+    const STRAP_H = 0.40;
+    const Q1X = -0.45;           // left transistor strap x
+    const Q2X = 0.45;            // right transistor strap x (mirrored)
+    const PAIR_CX = (Q1X + Q2X) / 2; // 1.50 — common emitter / tail / ground axis
+    const WING_DX = 0.23;
+    const WING_DY = 0.23;
+    const Q1_WING_X = Q1X + WING_DX;   // 1.28
+    const Q2_WING_X = Q2X - WING_DX;   // 1.72
+    const EMIT_JY = -0.65;           // joined-emitter rail y
+    const TAIL_Y = -1.05;
+    const TAIL_R = 0.16;
+    const P1_GND_Y = -1.45;
+
+    // V_CC rail + label (label sits directly above the centre of the rail)
+    const vccRail = new Line({ start: [-1.05, V_CC_Y, 0], end: [1.05, V_CC_Y, 0], color: MUTED, strokeWidth: 1.8 });
+    const vccLbl = new MathTex({ latex: 'V_{CC}', color: MUTED });
+    await vccLbl.waitForRender?.();
+    vccLbl.scale(0.55).moveTo([PAIR_CX, V_CC_Y + 0.22, 0]);
+
+    // Collector load resistors (box style)
+    const R_W = 0.18, R_H = 0.30;
+    const rC1Rect = new Rectangle({ width: R_W, height: R_H, color: ACCENT, strokeWidth: 1.8, fillOpacity: 0.22 });
+    rC1Rect.moveTo([Q1_WING_X, 1.17, 0]);
+    const rC2Rect = new Rectangle({ width: R_W, height: R_H, color: RED, strokeWidth: 1.8, fillOpacity: 0.22 });
+    rC2Rect.moveTo([Q2_WING_X, 1.17, 0]);
+    const rC1TopWire = new Line({ start: [Q1_WING_X, V_CC_Y, 0], end: [Q1_WING_X, 1.32, 0], color: MUTED, strokeWidth: 1.6 });
+    const rC2TopWire = new Line({ start: [Q2_WING_X, V_CC_Y, 0], end: [Q2_WING_X, 1.32, 0], color: MUTED, strokeWidth: 1.6 });
+    const rC1Lbl = new MathTex({ latex: 'R_{C}', color: ACCENT });
+    const rC2Lbl = new MathTex({ latex: 'R_{C}', color: RED });
+    await Promise.all([rC1Lbl.waitForRender?.(), rC2Lbl.waitForRender?.()]);
+    rC1Lbl.scale(0.48).moveTo([Q1_WING_X - 0.40, 1.17, 0]);
+    rC2Lbl.scale(0.48).moveTo([Q2_WING_X + 0.40, 1.17, 0]);
+
+    // Q1 (NPN, left; base enters strap from the left, emitter arrow points outward-down-right)
+    const strapTopY = BASE_Y + STRAP_H / 2;   //  0.50
+    const strapBotY = BASE_Y - STRAP_H / 2;   //  0.10
+    const q1Strap = new Line({ start: [Q1X, strapBotY, 0], end: [Q1X, strapTopY, 0], color: ACCENT, strokeWidth: 2.6 });
+    const q1Base = new Line({ start: [-1.00, BASE_Y, 0], end: [Q1X, BASE_Y, 0], color: ACCENT, strokeWidth: 1.6 });
+    const q1Coll = new Line({ start: [Q1X, strapTopY, 0], end: [Q1_WING_X, strapTopY + WING_DY, 0], color: ACCENT, strokeWidth: 1.6 });
+    const q1CollUp = new Line({ start: [Q1_WING_X, strapTopY + WING_DY, 0], end: [Q1_WING_X, 1.02, 0], color: ACCENT, strokeWidth: 1.6 });
+    const q1Emit = new Line({ start: [Q1X, strapBotY, 0], end: [Q1_WING_X, strapBotY - WING_DY, 0], color: ACCENT, strokeWidth: 1.6 });
+    const q1EmitDown = new Line({ start: [Q1_WING_X, strapBotY - WING_DY, 0], end: [Q1_WING_X, EMIT_JY, 0], color: ACCENT, strokeWidth: 1.6 });
+    const q1EmitArrow = arrowTriangle(Q1_WING_X, strapBotY - WING_DY, WING_DX, -WING_DY, ACCENT);
     const q1Lbl = new MathTex({ latex: 'Q_{1}', color: MUTED });
     await q1Lbl.waitForRender?.();
-    q1Lbl.scale(0.45).moveTo([Q1X + 0.5, Q1Y + 0.22, 0]);
-    const q1InLead = new Line({ start: [Q1X - 0.9, Q1Y, 0], end: [Q1X - 0.55, Q1Y, 0], color: ACCENT, strokeWidth: 1.8 });
+    q1Lbl.scale(0.48).moveTo([Q1X - 0.25, strapTopY + 0.18, 0]);
     const q1InLbl = new MathTex({ latex: 'v_{+}', color: ACCENT });
     await q1InLbl.waitForRender?.();
-    q1InLbl.scale(0.5).moveTo([Q1X - 1.12, Q1Y, 0]);
+    q1InLbl.scale(0.58).moveTo([-1.20, BASE_Y, 0]);
 
-    // ─── Q2 (right, inverting side — mirrored) ───
-    const Q2X = -2.8, Q2Y = 0.55;
-    const q2Base  = new Line({ start: [Q2X + 0.55, Q2Y, 0],        end: [Q2X + 0.1, Q2Y, 0],            color: RED, strokeWidth: 1.8 });
-    const q2Strap = new Line({ start: [Q2X + 0.1,  Q2Y - 0.28, 0], end: [Q2X + 0.1,  Q2Y + 0.28, 0],    color: RED, strokeWidth: 2.2 });
-    const q2Coll  = new Line({ start: [Q2X + 0.1,  Q2Y + 0.18, 0], end: [Q2X - 0.22, Q2Y + 0.7, 0],     color: RED, strokeWidth: 1.8 });
-    const q2Emit  = new Line({ start: [Q2X + 0.1,  Q2Y - 0.18, 0], end: [Q2X - 0.22, Q2Y - 0.7, 0],     color: RED, strokeWidth: 1.8 });
-    const q2CollUp = new Line({ start: [Q2X - 0.22, Q2Y + 0.7, 0], end: [Q2X - 0.22, 1.35, 0],          color: RED, strokeWidth: 1.6 });
+    // Q2 (NPN, right; mirrored — base from the right, emitter arrow down-left)
+    const q2Strap = new Line({ start: [Q2X, strapBotY, 0], end: [Q2X, strapTopY, 0], color: RED, strokeWidth: 2.6 });
+    const q2Base = new Line({ start: [1.00, BASE_Y, 0], end: [Q2X, BASE_Y, 0], color: RED, strokeWidth: 1.6 });
+    const q2Coll = new Line({ start: [Q2X, strapTopY, 0], end: [Q2_WING_X, strapTopY + WING_DY, 0], color: RED, strokeWidth: 1.6 });
+    const q2CollUp = new Line({ start: [Q2_WING_X, strapTopY + WING_DY, 0], end: [Q2_WING_X, 1.02, 0], color: RED, strokeWidth: 1.6 });
+    const q2Emit = new Line({ start: [Q2X, strapBotY, 0], end: [Q2_WING_X, strapBotY - WING_DY, 0], color: RED, strokeWidth: 1.6 });
+    const q2EmitDown = new Line({ start: [Q2_WING_X, strapBotY - WING_DY, 0], end: [Q2_WING_X, EMIT_JY, 0], color: RED, strokeWidth: 1.6 });
+    const q2EmitArrow = arrowTriangle(Q2_WING_X, strapBotY - WING_DY, -WING_DX, -WING_DY, RED);
     const q2Lbl = new MathTex({ latex: 'Q_{2}', color: MUTED });
     await q2Lbl.waitForRender?.();
-    q2Lbl.scale(0.45).moveTo([Q2X - 0.5, Q2Y + 0.22, 0]);
-    const q2InLead = new Line({ start: [Q2X + 0.9, Q2Y, 0], end: [Q2X + 0.55, Q2Y, 0], color: RED, strokeWidth: 1.8 });
+    q2Lbl.scale(0.48).moveTo([Q2X + 0.25, strapTopY + 0.18, 0]);
     const q2InLbl = new MathTex({ latex: 'v_{-}', color: RED });
     await q2InLbl.waitForRender?.();
-    q2InLbl.scale(0.5).moveTo([Q2X + 1.12, Q2Y, 0]);
+    q2InLbl.scale(0.58).moveTo([1.20, BASE_Y, 0]);
 
-    // ─── Joined emitters + tail current source ───
-    const emitJoin = new Line({ start: [Q1X + 0.22, Q1Y - 0.7, 0], end: [Q2X - 0.22, Q2Y - 0.7, 0], color: MUTED, strokeWidth: 1.8 });
-    const tailWire = new Line({ start: [-3.85, Q1Y - 0.7, 0], end: [-3.85, -0.45, 0], color: MUTED, strokeWidth: 1.8 });
-    const tailSrc = new Circle({ radius: 0.18, color: YELLOW, strokeWidth: 1.8, fillOpacity: 0.08 });
-    tailSrc.moveTo([-3.85, -0.63, 0]);
-    const tailArrowMain = new Line({ start: [-3.85, -0.78, 0], end: [-3.85, -0.48, 0], color: YELLOW, strokeWidth: 1.8 });
-    const tailArrowL    = new Line({ start: [-3.85, -0.48, 0], end: [-3.93, -0.57, 0], color: YELLOW, strokeWidth: 1.8 });
-    const tailArrowR    = new Line({ start: [-3.85, -0.48, 0], end: [-3.77, -0.57, 0], color: YELLOW, strokeWidth: 1.8 });
+    // Joined emitters → T-junction dot → tail current source → ground
+    const emitJoin = new Line({ start: [Q1_WING_X, EMIT_JY, 0], end: [Q2_WING_X, EMIT_JY, 0], color: MUTED, strokeWidth: 1.8 });
+    const emitNodeDot = new Dot({ point: [PAIR_CX, EMIT_JY, 0], color: MUTED, radius: 0.06 });
+    const tailJoinWire = new Line({ start: [PAIR_CX, EMIT_JY, 0], end: [PAIR_CX, TAIL_Y + TAIL_R, 0], color: MUTED, strokeWidth: 1.8 });
+
+    const tailSrc = new Circle({ radius: TAIL_R, color: YELLOW, strokeWidth: 1.8, fillOpacity: 0.10 });
+    tailSrc.moveTo([PAIR_CX, TAIL_Y, 0]);
+    const tailArrMain = new Line({ start: [PAIR_CX, TAIL_Y - TAIL_R + 0.03, 0], end: [PAIR_CX, TAIL_Y + TAIL_R - 0.03, 0], color: YELLOW, strokeWidth: 1.8 });
+    const tailArrL = new Line({ start: [PAIR_CX, TAIL_Y + TAIL_R - 0.03, 0], end: [PAIR_CX - 0.06, TAIL_Y + TAIL_R - 0.11, 0], color: YELLOW, strokeWidth: 1.8 });
+    const tailArrR = new Line({ start: [PAIR_CX, TAIL_Y + TAIL_R - 0.03, 0], end: [PAIR_CX + 0.06, TAIL_Y + TAIL_R - 0.11, 0], color: YELLOW, strokeWidth: 1.8 });
     const tailLbl = new MathTex({ latex: 'I_{EE}', color: YELLOW });
     await tailLbl.waitForRender?.();
-    tailLbl.scale(0.42).moveTo([-3.38, -0.63, 0]);
-    const tailGndWire = new Line({ start: [-3.85, -0.81, 0], end: [-3.85, -1.05, 0], color: MUTED, strokeWidth: 1.8 });
-    const p1GndA = new Line({ start: [-4.05, -1.05, 0], end: [-3.65, -1.05, 0], color: MUTED, strokeWidth: 2.6 });
-    const p1GndB = new Line({ start: [-3.99, -1.17, 0], end: [-3.71, -1.17, 0], color: MUTED, strokeWidth: 1.8 });
-    const p1GndC = new Line({ start: [-3.93, -1.27, 0], end: [-3.77, -1.27, 0], color: MUTED, strokeWidth: 1.2 });
+    tailLbl.scale(0.5).moveTo([PAIR_CX + 0.42, TAIL_Y, 0]);
 
-    // Mismatch indicator (red halo on Q2)
-    const mismatch = new Circle({ radius: 0.24, color: RED, strokeWidth: 2, fillOpacity: 0.22 });
-    mismatch.moveTo([Q2X, Q2Y, 0]);
+    const tailGndWire = new Line({ start: [PAIR_CX, TAIL_Y - TAIL_R, 0], end: [PAIR_CX, P1_GND_Y, 0], color: MUTED, strokeWidth: 1.8 });
+    const gnd1 = new Line({ start: [PAIR_CX - 0.17, P1_GND_Y, 0], end: [PAIR_CX + 0.17, P1_GND_Y, 0], color: MUTED, strokeWidth: 2.6 });
+    const gnd2 = new Line({ start: [PAIR_CX - 0.11, P1_GND_Y - 0.10, 0], end: [PAIR_CX + 0.11, P1_GND_Y - 0.10, 0], color: MUTED, strokeWidth: 1.8 });
+    const gnd3 = new Line({ start: [PAIR_CX - 0.05, P1_GND_Y - 0.18, 0], end: [PAIR_CX + 0.05, P1_GND_Y - 0.18, 0], color: MUTED, strokeWidth: 1.2 });
 
-    // Caption + typical values
-    const p1Caption = new Text({
-      text: 'Manufacturing tolerances → V_BE(Q1) ≠ V_BE(Q2) by a few mV.',
-      fontSize: 13, color: MUTED, fontUrl: FONT_URL
+    // Mismatch halos on both Q1 and Q2 (pulse during the phase-1 reveal)
+    const mismatch1 = new Circle({ radius: 0.38, color: ACCENT, strokeWidth: 2, fillOpacity: 0.18 });
+    mismatch1.moveTo([Q1X, BASE_Y, 0]);
+    const mismatch = new Circle({ radius: 0.38, color: RED, strokeWidth: 2, fillOpacity: 0.18 });
+    mismatch.moveTo([Q2X, BASE_Y, 0]);
+
+    // ── Bullet points on the RHS of the callout ──────────────────
+    // All three bullets live inside a single MathTex array so they're
+    // left-aligned and share consistent row spacing. Each bullet wraps
+    // to a second, indented line (via \phantom) that ties the inequality
+    // back to a named element in the diagram.
+    const CAP_LEFT_X = 2.20;
+    const p1Bullets = new MathTex({
+      latex:
+        '\\begin{array}{l}' +
+        '\\bullet\\;\\; Q_{1},\\,Q_{2}\\text{ never perfectly matched} \\\\[6pt]' +
+        '\\phantom{\\bullet\\;\\;}\\Rightarrow V_{BE1}\\ne V_{BE2}\\text{ by a few mV} \\\\[10pt]' +
+        '\\bullet\\;\\; \\text{With }v_{+}=v_{-}\\text{, tail }I_{EE} \\\\[6pt]' +
+        '\\phantom{\\bullet\\;\\;}\\text{splits unevenly: }I_{C1}\\ne I_{C2} \\\\[10pt]' +
+        '\\bullet\\;\\; \\text{Unequal drops across }R_{C} \\\\[6pt]' +
+        '\\phantom{\\bullet\\;\\;}\\Rightarrow \\text{ DC error at }v_{out}' +
+        '\\end{array}',
+      color: MUTED
     });
-    await p1Caption.loadGlyphs?.();
-    p1Caption.moveTo([-2.3, -2.15, 0]);
+    await p1Bullets.waitForRender?.();
+    p1Bullets.scale(0.48).moveTo([CAP_LEFT_X, 0.25, 0]);
+    if (typeof p1Bullets.getLeft === 'function') {
+      p1Bullets.shift([CAP_LEFT_X - p1Bullets.getLeft()[0], 0, 0]);
+    }
 
-    const p1Caption2 = new Text({
-      text: 'Equal input voltages no longer produce equal collector currents.',
-      fontSize: 13, color: MUTED, fontUrl: FONT_URL
-    });
-    await p1Caption2.loadGlyphs?.();
-    p1Caption2.moveTo([-2.3, -2.5, 0]);
-
+    // Highlighted (boxed) LM741 typical-values note, smaller, beneath the bullets,
+    // left-aligned to the same column as the bullets.
     const p1TypVals = new MathTex({
-      latex: '\\text{LM741: } V_{os} \\approx 1\\,\\text{mV (typ)},\\; 6\\,\\text{mV (max)}',
+      latex: '\\boxed{\\;\\text{LM741: }V_{os} \\approx 1\\text{–}6\\;\\text{mV}\\;}',
       color: YELLOW
     });
     await p1TypVals.waitForRender?.();
-    p1TypVals.scale(0.55).moveTo([-2.3, -3.0, 0]);
-
-    // Faded op-amp outline (right side) — scale anchor
-    const FADED_CX = 3.4, FADED_CY = 0.25;
-    const fadedTri = new Polygon({
-      vertices: [[FADED_CX - 1.0, FADED_CY - 1.55, 0], [FADED_CX - 1.0, FADED_CY + 1.55, 0], [FADED_CX + 1.1, FADED_CY, 0]],
-      color: MUTED2, strokeWidth: 1.4, fillOpacity: 0.04
-    });
-    const fadedPlus  = new Text({ text: '+', fontSize: 18, color: MUTED, fontUrl: FONT_URL });
-    const fadedMinus = new Text({ text: '−', fontSize: 18, color: MUTED, fontUrl: FONT_URL });
-    await Promise.all([fadedPlus.loadGlyphs?.(), fadedMinus.loadGlyphs?.()]);
-    fadedPlus.moveTo([FADED_CX - 0.7, FADED_CY + 0.6, 0]);
-    fadedMinus.moveTo([FADED_CX - 0.7, FADED_CY - 0.6, 0]);
-    const fadedLbl = new Text({ text: 'the op-amp', fontSize: 11, color: MUTED2, fontUrl: FONT_URL });
-    await fadedLbl.loadGlyphs?.();
-    fadedLbl.moveTo([FADED_CX, FADED_CY + 1.9, 0]);
-
-    // Connector: zoom frame → faded op-amp
-    const p1Conn1 = new Line({ start: [-1.95, 0.25, 0], end: [0.6, 0.25, 0], color: MUTED2, strokeWidth: 1 });
-    const p1Conn2 = new Line({ start: [0.6, 0.25, 0], end: [FADED_CX - 1.0, FADED_CY, 0], color: MUTED2, strokeWidth: 1 });
-    const livesInsideLbl = new Text({ text: 'lives inside →', fontSize: 11, color: MUTED2, fontUrl: FONT_URL });
-    await livesInsideLbl.loadGlyphs?.();
-    livesInsideLbl.moveTo([-0.55, 0.6, 0]);
+    p1TypVals.scale(0.58).moveTo([CAP_LEFT_X, -1.80, 0]);
+    if (typeof p1TypVals.getLeft === 'function') {
+      p1TypVals.shift([CAP_LEFT_X - p1TypVals.getLeft()[0], 0, 0]);
+    }
 
     const phase1Objs = [
-      p1Frame, p1FrameLbl, p1Rail, p1RailLbl,
-      q1InLead, q1InLbl, q1Base, q1Strap, q1Coll, q1Emit, q1CollUp, q1Lbl,
-      q2InLead, q2InLbl, q2Base, q2Strap, q2Coll, q2Emit, q2CollUp, q2Lbl,
-      emitJoin, tailWire, tailSrc, tailArrowMain, tailArrowL, tailArrowR, tailLbl,
-      tailGndWire, p1GndA, p1GndB, p1GndC,
-      mismatch,
-      p1Caption, p1Caption2, p1TypVals,
-      fadedTri, fadedPlus, fadedMinus, fadedLbl,
-      p1Conn1, p1Conn2, livesInsideLbl
+      opTri, opPlus, opMinus,
+      opInPlusStub, opInMinusStub, opInPlusLbl, opInMinusLbl,
+      opOutStub, opOutLbl, opPartLbl,
+      highlightCircle, zoomLineU, zoomLineL,
+      callout, calloutLbl,
+      vccRail, vccLbl,
+      rC1Rect, rC2Rect, rC1TopWire, rC2TopWire, rC1Lbl, rC2Lbl,
+      q1Strap, q1Base, q1Coll, q1CollUp, q1Emit, q1EmitDown, q1EmitArrow, q1Lbl, q1InLbl,
+      q2Strap, q2Base, q2Coll, q2CollUp, q2Emit, q2EmitDown, q2EmitArrow, q2Lbl, q2InLbl,
+      emitJoin, emitNodeDot,
+      tailJoinWire, tailSrc, tailArrMain, tailArrL, tailArrR, tailLbl, tailGndWire,
+      gnd1, gnd2, gnd3,
+      mismatch1, mismatch,
+      p1Bullets, p1TypVals
     ];
 
     // =================================================================
@@ -389,29 +606,29 @@
     // Layout constants cloned from slide 06 (06_noninv.html lines 206–218)
     const CX = -3.3, CY = 1.5;
     const TRI_HALF_H = 0.9;
-    const TRI_IN_X   = CX - 0.9;     // -4.2
+    const TRI_IN_X = CX - 0.9;     // -4.2
     const TRI_APEX_X = CX + 0.8;     // -2.5
     const LEFT_COL_X = -4.6;
-    const TAP_X      = -1.4;
-    const OUT_X      = -0.2;
-    const plusY      = 1.85;
-    const minusY     = 1.15;
-    const JUNC_Y     = 0.0;
-    const GND_Y      = -1.4;
+    const TAP_X = -1.4;
+    const OUT_X = -0.2;
+    const plusY = 1.85;
+    const minusY = 1.15;
+    const JUNC_Y = 0.0;
+    const GND_Y = -1.4;
 
     // Op-amp triangle (matches slide 06)
     const p2Tri = new Polygon({
       vertices: [
-        [TRI_IN_X,   CY - TRI_HALF_H, 0],
-        [TRI_IN_X,   CY + TRI_HALF_H, 0],
-        [TRI_APEX_X, CY,              0]
+        [TRI_IN_X, CY - TRI_HALF_H, 0],
+        [TRI_IN_X, CY + TRI_HALF_H, 0],
+        [TRI_APEX_X, CY, 0]
       ],
       color: ACCENT, strokeWidth: 1.8, fillOpacity: 0.1
     });
-    const p2Plus  = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL });
-    const p2Minus = new Text({ text: '−', fontSize: 18, color: RED,    fontUrl: FONT_URL });
+    const p2Plus = new Text({ text: '+', fontSize: 18, color: ACCENT, fontUrl: FONT_URL });
+    const p2Minus = new Text({ text: '−', fontSize: 18, color: RED, fontUrl: FONT_URL });
     await Promise.all([p2Plus.loadGlyphs?.(), p2Minus.loadGlyphs?.()]);
-    p2Plus.moveTo([TRI_IN_X + 0.3, plusY,  0]);
+    p2Plus.moveTo([TRI_IN_X + 0.3, plusY, 0]);
     p2Minus.moveTo([TRI_IN_X + 0.3, minusY, 0]);
 
     // Ground (at +input, left of V_os battery)
@@ -422,10 +639,10 @@
 
     // V_os battery — two parallel vertical bars (− left, + right, so output at + input is +V_os)
     const p2WireGndToBat = new Line({ start: [-5.75, plusY, 0], end: [-5.22, plusY, 0], color: FG, strokeWidth: 1.8 });
-    const p2VosShort     = new Line({ start: [-5.22, plusY - 0.14, 0], end: [-5.22, plusY + 0.14, 0], color: RED, strokeWidth: 2.2 });
-    const p2VosLong      = new Line({ start: [-5.02, plusY - 0.28, 0], end: [-5.02, plusY + 0.28, 0], color: RED, strokeWidth: 2.6 });
+    const p2VosShort = new Line({ start: [-5.22, plusY - 0.14, 0], end: [-5.22, plusY + 0.14, 0], color: RED, strokeWidth: 2.2 });
+    const p2VosLong = new Line({ start: [-5.02, plusY - 0.28, 0], end: [-5.02, plusY + 0.28, 0], color: RED, strokeWidth: 2.6 });
     const p2VosMinusSign = new MathTex({ latex: '-', color: RED });
-    const p2VosPlusSign  = new MathTex({ latex: '+', color: RED });
+    const p2VosPlusSign = new MathTex({ latex: '+', color: RED });
     await p2VosMinusSign.waitForRender?.();
     await p2VosPlusSign.waitForRender?.();
     p2VosMinusSign.scale(0.5).moveTo([-5.32, plusY + 0.42, 0]);
@@ -451,17 +668,17 @@
     p2R2Lbl.scale(0.58).moveTo([R2_CX, JUNC_Y + R2_H / 2 + 0.2, 0]);
 
     // Feedback wiring
-    const p2fb1    = new Line({ start: [TAP_X, CY, 0],                  end: [TAP_X, JUNC_Y, 0],                color: FG, strokeWidth: 1.8 });
-    const p2fb2R   = new Line({ start: [TAP_X, JUNC_Y, 0],              end: [R2_CX + R2_W / 2, JUNC_Y, 0],     color: FG, strokeWidth: 1.8 });
-    const p2fb2L   = new Line({ start: [R2_CX - R2_W / 2, JUNC_Y, 0],   end: [LEFT_COL_X, JUNC_Y, 0],           color: FG, strokeWidth: 1.8 });
-    const p2fb3    = new Line({ start: [LEFT_COL_X, JUNC_Y, 0],         end: [LEFT_COL_X, minusY, 0],           color: FG, strokeWidth: 1.8 });
-    const p2fbStub = new Line({ start: [LEFT_COL_X, minusY, 0],         end: [TRI_IN_X, minusY, 0],             color: FG, strokeWidth: 1.8 });
+    const p2fb1 = new Line({ start: [TAP_X, CY, 0], end: [TAP_X, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+    const p2fb2R = new Line({ start: [TAP_X, JUNC_Y, 0], end: [R2_CX + R2_W / 2, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+    const p2fb2L = new Line({ start: [R2_CX - R2_W / 2, JUNC_Y, 0], end: [LEFT_COL_X, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+    const p2fb3 = new Line({ start: [LEFT_COL_X, JUNC_Y, 0], end: [LEFT_COL_X, minusY, 0], color: FG, strokeWidth: 1.8 });
+    const p2fbStub = new Line({ start: [LEFT_COL_X, minusY, 0], end: [TRI_IN_X, minusY, 0], color: FG, strokeWidth: 1.8 });
     const p2TapDot = new Dot({ point: [TAP_X, CY, 0], color: FG, radius: 0.06 });
 
     // R1 column
     const R1_CY = (JUNC_Y + GND_Y) / 2;
-    const p2r1Top = new Line({ start: [LEFT_COL_X, JUNC_Y,       0], end: [LEFT_COL_X, R1_CY + 0.45, 0], color: FG, strokeWidth: 1.8 });
-    const p2r1Bot = new Line({ start: [LEFT_COL_X, R1_CY - 0.45, 0], end: [LEFT_COL_X, GND_Y,        0], color: FG, strokeWidth: 1.8 });
+    const p2r1Top = new Line({ start: [LEFT_COL_X, JUNC_Y, 0], end: [LEFT_COL_X, R1_CY + 0.45, 0], color: FG, strokeWidth: 1.8 });
+    const p2r1Bot = new Line({ start: [LEFT_COL_X, R1_CY - 0.45, 0], end: [LEFT_COL_X, GND_Y, 0], color: FG, strokeWidth: 1.8 });
     const p2R1 = new Rectangle({ width: 0.34, height: 0.9, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
     p2R1.moveTo([LEFT_COL_X, R1_CY, 0]);
     const p2R1Lbl = new MathTex({ latex: 'R_{1}', color: ACCENT });
@@ -470,7 +687,7 @@
     const p2JuncDot = new Dot({ point: [LEFT_COL_X, JUNC_Y, 0], color: FG, radius: 0.06 });
 
     // R1 ground (cloned from slide 06 lines 284–286)
-    const p2R1Gnd1 = new Line({ start: [LEFT_COL_X - 0.35, GND_Y,        0], end: [LEFT_COL_X + 0.35, GND_Y,        0], color: FG, strokeWidth: 2.8 });
+    const p2R1Gnd1 = new Line({ start: [LEFT_COL_X - 0.35, GND_Y, 0], end: [LEFT_COL_X + 0.35, GND_Y, 0], color: FG, strokeWidth: 2.8 });
     const p2R1Gnd2 = new Line({ start: [LEFT_COL_X - 0.22, GND_Y - 0.15, 0], end: [LEFT_COL_X + 0.22, GND_Y - 0.15, 0], color: FG, strokeWidth: 2 });
     const p2R1Gnd3 = new Line({ start: [LEFT_COL_X - 0.10, GND_Y - 0.28, 0], end: [LEFT_COL_X + 0.10, GND_Y - 0.28, 0], color: FG, strokeWidth: 1.2 });
 
@@ -500,37 +717,38 @@
     ];
 
     // =================================================================
-    // PHASE 3 — Trim: LM741 DIP + 10 k potentiometer on pins 1 & 5
+    // PHASE 3 — Trim: full LM741 DIP on LHS (matches slide 4 styling),
+    // interactive 10 k pot in centre (SVG overlay), V_out response on RHS.
     // =================================================================
-    // Compact DIP (cloned from slide 04 lines 166–212), positioned right-of-center
-    const SMALL_CX = 3.6, SMALL_CY = 0.6;
-    const SMALL_W = 1.6, SMALL_H = 2.6;
+    const SMALL_CX = -4.3, SMALL_CY = 0.4;
+    const SMALL_W = 2.0, SMALL_H = 3.2;
 
-    const dipBody = new Rectangle({ width: SMALL_W, height: SMALL_H, color: MUTED, strokeWidth: 1.5, fillOpacity: 0.06 });
+    const dipBody = new Rectangle({ width: SMALL_W, height: SMALL_H, color: MUTED, strokeWidth: 1.6, fillOpacity: 0.05 });
     dipBody.moveTo([SMALL_CX, SMALL_CY, 0]);
 
-    const smallL = SMALL_CX - SMALL_W / 2;  // 2.8
-    const smallR = SMALL_CX + SMALL_W / 2;  // 4.4
-    const pinOffsets = [0.95, 0.32, -0.28, -0.92];  // top → bottom
+    const dipNotch = new Arc({ radius: 0.2, angle: -Math.PI, color: MUTED, strokeWidth: 1.6 });
+    dipNotch.moveTo([SMALL_CX, SMALL_CY + SMALL_H / 2, 0]);
+
+    const smallL = SMALL_CX - SMALL_W / 2;
+    const smallR = SMALL_CX + SMALL_W / 2;
+    const smallYs = [1.0, 0.35, -0.3, -0.95];
     const dipPinSpec = [
-      { n: 1, xy: [smallL, SMALL_CY + pinOffsets[0], 0], color: CYAN   },
-      { n: 2, xy: [smallL, SMALL_CY + pinOffsets[1], 0], color: RED    },
-      { n: 3, xy: [smallL, SMALL_CY + pinOffsets[2], 0], color: ACCENT },
-      { n: 4, xy: [smallL, SMALL_CY + pinOffsets[3], 0], color: MAG    },
-      { n: 5, xy: [smallR, SMALL_CY + pinOffsets[3], 0], color: CYAN   },
-      { n: 6, xy: [smallR, SMALL_CY + pinOffsets[2], 0], color: BLUE   },
-      { n: 7, xy: [smallR, SMALL_CY + pinOffsets[1], 0], color: YELLOW },
-      { n: 8, xy: [smallR, SMALL_CY + pinOffsets[0], 0], color: MUTED  }
+      { n: 1, xy: [smallL, SMALL_CY + smallYs[0], 0], fn: 'Offset Null', color: MUTED },
+      { n: 2, xy: [smallL, SMALL_CY + smallYs[1], 0], fn: 'Inv. In (−)', color: RED },
+      { n: 3, xy: [smallL, SMALL_CY + smallYs[2], 0], fn: 'Non-Inv. In (+)', color: ACCENT },
+      { n: 4, xy: [smallL, SMALL_CY + smallYs[3], 0], fn: 'V−  Supply', color: MAG },
+      { n: 5, xy: [smallR, SMALL_CY + smallYs[3], 0], fn: 'Offset Null', color: MUTED },
+      { n: 6, xy: [smallR, SMALL_CY + smallYs[2], 0], fn: 'Output', color: BLUE },
+      { n: 7, xy: [smallR, SMALL_CY + smallYs[1], 0], fn: 'V+  Supply', color: YELLOW },
+      { n: 8, xy: [smallR, SMALL_CY + smallYs[0], 0], fn: 'NC', color: MUTED }
     ];
 
-    const dipLeads = [];
-    const dipDots = [];
-    const dipNums = [];
+    const dipLeads = [], dipDots = [], dipNums = [], dipFnLabels = [];
     for (const p of dipPinSpec) {
       const side = p.xy[0] < SMALL_CX ? -1 : 1;
       dipLeads.push(new Line({
         start: [p.xy[0], p.xy[1], 0],
-        end:   [p.xy[0] + 0.22 * side, p.xy[1], 0],
+        end: [p.xy[0] + 0.22 * side, p.xy[1], 0],
         color: MUTED, strokeWidth: 1.4
       }));
       const dot = new Circle({ radius: 0.085, color: p.color, strokeWidth: 1.6, fillOpacity: 1 });
@@ -538,72 +756,160 @@
       dipDots.push(dot);
       const num = new MathTex({ latex: String(p.n), color: FG });
       await num.waitForRender?.();
-      num.scale(0.44).moveTo([p.xy[0] + (side < 0 ? 0.22 : -0.22), p.xy[1], 0]);
+      num.scale(0.45).moveTo([p.xy[0] + (side < 0 ? 0.23 : -0.23), p.xy[1], 0]);
       dipNums.push(num);
+      const fn = new Text({ text: p.fn, fontSize: 13, color: p.color, fontUrl: FONT_URL });
+      await fn.loadGlyphs?.();
+      const anchorX = p.xy[0] + 0.38 * side;
+      fn.moveTo([anchorX, p.xy[1], 0]);
+      if (side < 0 && typeof fn.getRight === 'function') {
+        fn.shift([anchorX - fn.getRight()[0], 0, 0]);
+      } else if (side > 0 && typeof fn.getLeft === 'function') {
+        fn.shift([anchorX - fn.getLeft()[0], 0, 0]);
+      }
+      dipFnLabels.push(fn);
     }
 
-    // Dot notch indicator — small circle inside the DIP top area (replaces the
-    // arc-based notch from slide 4 to keep the import surface small)
-    const dipDotMark = new Circle({ radius: 0.06, color: MUTED, strokeWidth: 1.4, fillOpacity: 1 });
-    dipDotMark.moveTo([SMALL_CX - 0.55, SMALL_CY + SMALL_H / 2 - 0.2, 0]);
-
-    // Cyan halos on pins 1 and 5 (matches slide 04 lines 342–345)
+    // Cyan halos highlighting the offset-null pins (1 and 5)
     const halo1 = new Circle({ radius: 0.17, color: CYAN, strokeWidth: 2, fillOpacity: 0 });
     halo1.moveTo(dipPinSpec[0].xy);
     const halo5 = new Circle({ radius: 0.17, color: CYAN, strokeWidth: 2, fillOpacity: 0 });
     halo5.moveTo(dipPinSpec[4].xy);
 
-    // 10 kΩ potentiometer — circle + rotating wiper arrow, below the DIP
-    const POT_CX = 3.6, POT_CY = -1.75;
-    const potBody = new Circle({ radius: 0.38, color: YELLOW, strokeWidth: 2, fillOpacity: 0.08 });
+    // ── Potentiometer (drawn in manim so it aligns with the pin leads) ──
+    const POT_CX = -1.5, POT_CY = -1.8;
+    const POT_R = 0.42;
+    const PIN1_LEAD_X = smallL - 0.22;
+    const PIN5_LEAD_X = smallR + 0.22;
+    const PIN1_Y = SMALL_CY + smallYs[0];
+    const PIN5_Y = SMALL_CY + smallYs[3];
+    const P1_GUTTER_X = smallL - 0.30; // vertical trunk sits in the gap between left-pin leads and their text labels
+    const P5_TURN_Y = -1.20;         // horizontal trunk for pin 5 — below the zero label, above the top tick mark
+
+    // Pin 1 → pot left terminal (route through the left-label gutter and along the bottom of the DIP)
+    const pot1w1 = new Line({ start: [PIN1_LEAD_X, PIN1_Y, 0], end: [P1_GUTTER_X, PIN1_Y, 0], color: YELLOW, strokeWidth: 1.6 });
+    const pot1w2 = new Line({ start: [P1_GUTTER_X, PIN1_Y, 0], end: [P1_GUTTER_X, POT_CY, 0], color: YELLOW, strokeWidth: 1.6 });
+    const pot1w3 = new Line({ start: [P1_GUTTER_X, POT_CY, 0], end: [POT_CX - POT_R, POT_CY, 0], color: YELLOW, strokeWidth: 1.6 });
+
+    // Pin 5 → pot right terminal (drop below pin 5's label, then over the top of the pot)
+    const pot5w1 = new Line({ start: [PIN5_LEAD_X, PIN5_Y, 0], end: [PIN5_LEAD_X, P5_TURN_Y, 0], color: YELLOW, strokeWidth: 1.6 });
+    const pot5w2 = new Line({ start: [PIN5_LEAD_X, P5_TURN_Y, 0], end: [POT_CX + POT_R, P5_TURN_Y, 0], color: YELLOW, strokeWidth: 1.6 });
+    const pot5w3 = new Line({ start: [POT_CX + POT_R, P5_TURN_Y, 0], end: [POT_CX + POT_R, POT_CY, 0], color: YELLOW, strokeWidth: 1.6 });
+
+    // Pot body (outer rim + filled face + hub disc for depth)
+    const potRim = new Circle({ radius: POT_R + 0.06, color: YELLOW, strokeWidth: 1.2, fillOpacity: 0 });
+    potRim.moveTo([POT_CX, POT_CY, 0]);
+    const potBody = new Circle({ radius: POT_R, color: YELLOW, strokeWidth: 2, fillOpacity: 0.16 });
     potBody.moveTo([POT_CX, POT_CY, 0]);
-    const potArrow = new Line({
-      start: [POT_CX, POT_CY, 0],
-      end:   [POT_CX - 0.3, POT_CY + 0.22, 0],
-      color: YELLOW, strokeWidth: 2.4
-    });
+    const potHub = new Circle({ radius: 0.09, color: YELLOW, strokeWidth: 1.4, fillOpacity: 0.35 });
+    potHub.moveTo([POT_CX, POT_CY, 0]);
+
+    // Terminal dots (drawn on top of the rim so they sit on the body edge)
+    const potTermL = new Dot({ point: [POT_CX - POT_R, POT_CY, 0], color: YELLOW, radius: 0.055 });
+    const potTermR = new Dot({ point: [POT_CX + POT_R, POT_CY, 0], color: YELLOW, radius: 0.055 });
+
+    // Dial scale — tick marks + trim-direction labels. Angle convention:
+    // 0° = straight up (zero trim), CW positive, sweep ±150°.
+    const potTicks = [];
+    const TICK_IN = POT_R + 0.02;
+    const TICK_OUT = POT_R + 0.14;
+    const LBL_R = POT_R + 0.30;
+    function tickAtDeg(deg) {
+      const rad = deg * Math.PI / 180;
+      const sin = Math.sin(rad), cos = Math.cos(rad);
+      return new Line({
+        start: [POT_CX + TICK_IN * sin, POT_CY + TICK_IN * cos, 0],
+        end: [POT_CX + TICK_OUT * sin, POT_CY + TICK_OUT * cos, 0],
+        color: MUTED, strokeWidth: 1.4
+      });
+    }
+    potTicks.push(tickAtDeg(-150));  // min
+    potTicks.push(tickAtDeg(0));   // zero rest (12 o'clock)
+    potTicks.push(tickAtDeg(150));  // max
+
+    const potLblMin = new MathTex({ latex: '-', color: MUTED });
+    const potLblZero = new MathTex({ latex: '0', color: MUTED });
+    const potLblMax = new MathTex({ latex: '+', color: MUTED });
+    await Promise.all([
+      potLblMin.waitForRender?.(),
+      potLblZero.waitForRender?.(),
+      potLblMax.waitForRender?.()
+    ]);
+    {
+      const rMin = -150 * Math.PI / 180;
+      const rZer = 0 * Math.PI / 180;
+      const rMax = 150 * Math.PI / 180;
+      potLblMin.scale(0.48).moveTo([POT_CX + LBL_R * Math.sin(rMin), POT_CY + LBL_R * Math.cos(rMin), 0]);
+      potLblZero.scale(0.42).moveTo([POT_CX + LBL_R * Math.sin(rZer), POT_CY + LBL_R * Math.cos(rZer), 0]);
+      potLblMax.scale(0.48).moveTo([POT_CX + LBL_R * Math.sin(rMax), POT_CY + LBL_R * Math.cos(rMax), 0]);
+    }
+
+    // Pot label (10 kΩ) off to the right of the knob
     const potLbl = new MathTex({ latex: '10\\,\\text{k}\\Omega', color: YELLOW });
     await potLbl.waitForRender?.();
-    potLbl.scale(0.48).moveTo([POT_CX - 1.0, POT_CY, 0]);
+    potLbl.scale(0.5).moveTo([POT_CX + 1.00, POT_CY + 0.02, 0]);
 
-    // Wires from pin 1 (top-left) and pin 5 (bottom-right) external leads to the pot
-    const pin1x = smallL - 0.22, pin1y = SMALL_CY + pinOffsets[0];
-    const pin5x = smallR + 0.22, pin5y = SMALL_CY + pinOffsets[3];
-    const pot1w1 = new Line({ start: [pin1x, pin1y, 0], end: [pin1x, POT_CY + 0.38, 0], color: YELLOW, strokeWidth: 1.5 });
-    const pot1w2 = new Line({ start: [pin1x, POT_CY + 0.38, 0], end: [POT_CX - 0.38, POT_CY + 0.38, 0], color: YELLOW, strokeWidth: 1.5 });
-    const pot1w3 = new Line({ start: [POT_CX - 0.38, POT_CY + 0.38, 0], end: [POT_CX - 0.38, POT_CY, 0], color: YELLOW, strokeWidth: 1.5 });
-    const pot5w1 = new Line({ start: [pin5x, pin5y, 0], end: [pin5x, POT_CY + 0.38, 0], color: YELLOW, strokeWidth: 1.5 });
-    const pot5w2 = new Line({ start: [pin5x, POT_CY + 0.38, 0], end: [POT_CX + 0.38, POT_CY + 0.38, 0], color: YELLOW, strokeWidth: 1.5 });
-    const pot5w3 = new Line({ start: [POT_CX + 0.38, POT_CY + 0.38, 0], end: [POT_CX + 0.38, POT_CY, 0], color: YELLOW, strokeWidth: 1.5 });
-
-    // Wiper tail → V− rail
-    const potWiperWire = new Line({ start: [POT_CX, POT_CY - 0.38, 0], end: [POT_CX, POT_CY - 0.72, 0], color: MAG, strokeWidth: 1.8 });
-    const vMinusRail = new Line({ start: [POT_CX - 0.3, POT_CY - 0.72, 0], end: [POT_CX + 0.3, POT_CY - 0.72, 0], color: MAG, strokeWidth: 2.4 });
+    // Wiper → V− rail
+    const potWiperWire = new Line({ start: [POT_CX, POT_CY - POT_R, 0], end: [POT_CX, POT_CY - POT_R - 0.32, 0], color: MAG, strokeWidth: 1.8 });
+    const vMinusRail1 = new Line({ start: [POT_CX - 0.30, POT_CY - POT_R - 0.32, 0], end: [POT_CX + 0.30, POT_CY - POT_R - 0.32, 0], color: MAG, strokeWidth: 2.6 });
+    const vMinusRail2 = new Line({ start: [POT_CX - 0.20, POT_CY - POT_R - 0.44, 0], end: [POT_CX + 0.20, POT_CY - POT_R - 0.44, 0], color: MAG, strokeWidth: 1.8 });
+    const vMinusRail3 = new Line({ start: [POT_CX - 0.10, POT_CY - POT_R - 0.54, 0], end: [POT_CX + 0.10, POT_CY - POT_R - 0.54, 0], color: MAG, strokeWidth: 1.2 });
     const vMinusLbl = new MathTex({ latex: 'V^{-}', color: MAG });
     await vMinusLbl.waitForRender?.();
-    vMinusLbl.scale(0.5).moveTo([POT_CX + 0.58, POT_CY - 0.72, 0]);
+    vMinusLbl.scale(0.5).moveTo([POT_CX + 0.52, POT_CY - POT_R - 0.32, 0]);
 
-    // Trim caption (cross-reference to slide 4)
-    const trimCap1 = new Text({ text: 'Offset-null pins 1 & 5 trim V_os → 0', fontSize: 13, color: MUTED, fontUrl: FONT_URL });
-    await trimCap1.loadGlyphs?.();
-    trimCap1.moveTo([POT_CX, -2.78, 0]);
-    const trimCap2 = new Text({ text: '(see slide 4 for the transfer-curve view)', fontSize: 11, color: CYAN, fontUrl: FONT_URL });
-    await trimCap2.loadGlyphs?.();
-    trimCap2.moveTo([POT_CX, -3.12, 0]);
+    // Trim caption below the V− rail
+    const trimCap = new Text({ text: 'drag the wiper to null V_os', fontSize: 13, color: MUTED, fontUrl: FONT_URL });
+    await trimCap.loadGlyphs?.();
+    trimCap.moveTo([POT_CX, POT_CY - POT_R - 0.92, 0]);
 
-    // Left-side: dimmed note telling students phase 2 schematic still applies
-    const p3NoteLbl = new Text({ text: 'The Vos source is trimmed externally:', fontSize: 12, color: MUTED2, fontUrl: FONT_URL });
-    await p3NoteLbl.loadGlyphs?.();
-    p3NoteLbl.moveTo([-3.3, -2.78, 0]);
+    // Cross-reference note under the V_out bar (RHS)
+    const p3XRef = new Text({
+      text: '(see slide 4 for the transfer-curve view)',
+      fontSize: 11, color: CYAN, fontUrl: FONT_URL
+    });
+    await p3XRef.loadGlyphs?.();
+    p3XRef.moveTo([2.9, -2.1, 0]);
+
+    // ── Pot wiper pointer (triangular indicator; re-created on every drag so
+    //    the phase-3 fade animations always operate on the latest object) ──
+    const POT_SWEEP_DEG = 150;
+    const VOS_MAX_MV = 5;
+    function makePotArrow(vosMv) {
+      const clamped = Math.max(-VOS_MAX_MV, Math.min(VOS_MAX_MV, vosMv));
+      const deg = (clamped / VOS_MAX_MV) * POT_SWEEP_DEG;
+      const rad = deg * Math.PI / 180;
+      const sin = Math.sin(rad), cos = Math.cos(rad);
+      // Tip sits just inside the rim; base straddles the hub perpendicular to the wiper axis.
+      const tipLen = POT_R - 0.02;
+      const baseLen = 0.08;           // offset of the base from the centre, along the wiper axis
+      const halfW = 0.09;           // half-width of the base perpendicular to the wiper
+      const tipX = POT_CX + tipLen * sin;
+      const tipY = POT_CY + tipLen * cos;
+      const bcX = POT_CX + baseLen * sin;   // centre of the base, slightly along the wiper
+      const bcY = POT_CY + baseLen * cos;
+      const bL_x = bcX - halfW * cos;
+      const bL_y = bcY + halfW * sin;
+      const bR_x = bcX + halfW * cos;
+      const bR_y = bcY - halfW * sin;
+      return new Polygon({
+        vertices: [[tipX, tipY, 0], [bR_x, bR_y, 0], [bL_x, bL_y, 0]],
+        color: YELLOW, strokeWidth: 2, fillOpacity: 0.55
+      });
+    }
+    let potArrow = makePotArrow(parseFloat(document.getElementById('vos-slider').value));
 
     const phase3Objs = [
-      dipBody, dipDotMark,
-      ...dipLeads, ...dipDots, ...dipNums,
+      dipBody, dipNotch,
+      ...dipLeads, ...dipDots, ...dipNums, ...dipFnLabels,
       halo1, halo5,
       pot1w1, pot1w2, pot1w3, pot5w1, pot5w2, pot5w3,
-      potBody, potArrow, potLbl,
-      potWiperWire, vMinusRail, vMinusLbl,
-      trimCap1, trimCap2, p3NoteLbl
+      potRim, potBody,
+      ...potTicks, potLblMin, potLblZero, potLblMax,
+      potTermL, potTermR,
+      potWiperWire, vMinusRail1, vMinusRail2, vMinusRail3, vMinusLbl,
+      potArrow, potHub, potLbl,
+      trimCap, p3XRef
     ];
 
     // =================================================================
@@ -626,6 +932,17 @@
     const voutBar = document.getElementById('vout-bar');
     const phNum = document.querySelector('#phase-headline .ph-num');
     const phTitle = document.getElementById('phase-title');
+
+    // Phase-3 interactive pot — the visual is a manim Line that we rebuild on
+    // every change so it always stays aligned with the manim-drawn pin wires.
+    const phase3Svg = document.getElementById('phase3-overlay');
+    const potHitEl = document.getElementById('pot-hit');
+    // The hit-area position is a best-effort screen-space estimate of the
+    // manim pot centre (manim origin ≈ (640, 360), ≈90 px per unit). If the
+    // canvas resizes the manim scale the hit area is generously oversized
+    // so the user can still grab the wiper.
+    const POT_CX_S = 505;
+    const POT_CY_S = 522;
 
     const BAR_CENTER = 900;
     const BAR_HALF = 180;
@@ -660,10 +977,63 @@
         'V<tspan dy="3" font-size="13">out</tspan>' +
         '<tspan dy="-3"> = ' + voutSign + disp + '</tspan>' +
         satMarkup;
+
+      // Rebuild the manim pot arrow so it reflects the latest V_os value.
+      // The phase3Objs reference is always updated (so the next FadeIn/FadeOut
+      // animates the right object) but we only mutate the live scene once
+      // phase 3 is actually on-stage.
+      if (typeof potArrow !== 'undefined') {
+        const oldArrow = potArrow;
+        const newArrow = makePotArrow(vos);
+        const idx = phase3Objs.indexOf(oldArrow);
+        if (idx >= 0) phase3Objs[idx] = newArrow;
+        if (typeof currentPhase !== 'undefined' && currentPhase === 3) {
+          scene.remove(oldArrow);
+          scene.add(newArrow);
+        }
+        potArrow = newArrow;
+      }
     }
     vosSlider.addEventListener('input', updateBar);
     gainSlider.addEventListener('input', updateBar);
     updateBar();
+
+    // ─── Pot drag interaction ────────────────────────────────────────
+    let potDragging = false;
+
+    function pointerToVos(clientX, clientY) {
+      const rect = phase3Svg.getBoundingClientRect();
+      const vx = (clientX - rect.left) / rect.width * 1280;
+      const vy = (clientY - rect.top) / rect.height * 720;
+      const dx = vx - POT_CX_S;
+      const dy = vy - POT_CY_S;
+      let deg = Math.atan2(dx, -dy) * 180 / Math.PI;   // 0 = straight up, CW positive
+      deg = Math.max(-POT_SWEEP_DEG, Math.min(POT_SWEEP_DEG, deg));
+      return (deg / POT_SWEEP_DEG) * VOS_MAX_MV;
+    }
+
+    function applyPotFromPointer(e) {
+      vosSlider.value = pointerToVos(e.clientX, e.clientY).toFixed(2);
+      updateBar();
+    }
+
+    potHitEl.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      potDragging = true;
+      try { potHitEl.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+      applyPotFromPointer(e);
+    });
+    potHitEl.addEventListener('pointermove', (e) => {
+      if (!potDragging) return;
+      applyPotFromPointer(e);
+    });
+    function endPotDrag(e) {
+      if (!potDragging) return;
+      potDragging = false;
+      try { potHitEl.releasePointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    }
+    potHitEl.addEventListener('pointerup', endPotDrag);
+    potHitEl.addEventListener('pointercancel', endPotDrag);
 
     function setActiveUI(n) {
       document.querySelectorAll('.stepper-btn').forEach(b => {
@@ -674,19 +1044,6 @@
       stage.setAttribute('data-stage', String(n));
     }
 
-    function tweenBarToZero(durationMs) {
-      const startTime = performance.now();
-      const startVos = parseFloat(vosSlider.value);
-      function step(now) {
-        const t = Math.min(1, (now - startTime) / durationMs);
-        const eased = 1 - Math.pow(1 - t, 3);
-        vosSlider.value = (startVos * (1 - eased)).toFixed(2);
-        updateBar();
-        if (t < 1) requestAnimationFrame(step);
-      }
-      requestAnimationFrame(step);
-    }
-
     async function switchPhase(n) {
       if (switching || n === currentPhase) return;
       switching = true;
@@ -694,16 +1051,20 @@
       const newObjs = phMap[n];
       setActiveUI(n);
 
+      // When entering phase 3, push the closed-loop gain high enough that
+      // the residual offset produces a visible V_out bar, and make sure V_os
+      // starts non-zero so there's something to trim.
+      if (n === 3) {
+        gainSlider.value = '101';
+        if (parseFloat(vosSlider.value) === 0) vosSlider.value = '2.0';
+        updateBar();
+      }
+
       const anims = [];
       for (const o of oldObjs) anims.push(new FadeOut(o, { duration: 0.45 }));
-      for (const o of newObjs) anims.push(new FadeIn(o,  { duration: 0.45 }));
+      for (const o of newObjs) anims.push(new FadeIn(o, { duration: 0.45 }));
       await scene.play(...anims);
       currentPhase = n;
-
-      if (n === 3) {
-        tweenBarToZero(1100);
-        await scene.play(new Rotate(potArrow, { angle: -Math.PI / 2, duration: 1.0, aboutPoint: [POT_CX, POT_CY, 0] }));
-      }
       switching = false;
     }
 
@@ -716,45 +1077,74 @@
     // =================================================================
     await scene.play(new Write(title, { duration: 0.6 }));
 
+    // Step 1: draw the op-amp package on the LHS
     await scene.play(
-      new Create(p1Frame, { duration: 0.5 }),
-      new FadeIn(p1FrameLbl),
-      new Create(p1Rail),
-      new Write(p1RailLbl),
-      new FadeIn(fadedTri),
-      new FadeIn(fadedPlus),
-      new FadeIn(fadedMinus),
-      new FadeIn(fadedLbl)
+      new Create(opTri, { duration: 0.6 }),
+      new FadeIn(opPlus), new FadeIn(opMinus),
+      new Create(opInPlusStub), new Create(opInMinusStub),
+      new FadeIn(opInPlusLbl), new FadeIn(opInMinusLbl),
+      new Create(opOutStub), new FadeIn(opOutLbl),
+      new FadeIn(opPartLbl)
     );
 
+    // Step 2: highlight the input region, expand the zoom cone into the callout
+
+    const highlightCircle2 = highlightCircle.copy();
+    phase1Objs.push(highlightCircle2);
+
     await scene.play(
-      new Create(q1InLead), new Write(q1InLbl),
-      new Create(q1Base), new Create(q1Strap), new Create(q1Coll), new Create(q1Emit), new Create(q1CollUp),
-      new Write(q1Lbl),
-      new Create(q2InLead), new Write(q2InLbl),
-      new Create(q2Base), new Create(q2Strap), new Create(q2Coll), new Create(q2Emit), new Create(q2CollUp),
-      new Write(q2Lbl),
-      new Create(emitJoin), new Create(tailWire),
+      new Create(highlightCircle, { duration: 0.7 })
+    )
+    await scene.wait(0.5)
+
+    await scene.play(
+      new Transform(highlightCircle2, callout, { duration: 1.4 }),
+      new FadeIn(calloutLbl, { duration: 1.4 }),
+      new Create(zoomLineU, { duration: 1.4 }),
+      new Create(zoomLineL, { duration: 1.4 })
+    );
+
+    await scene.wait(0.2)
+
+
+
+    // Step 3: populate the callout with the differential pair
+    await scene.play(
+      new Create(vccRail), new Write(vccLbl),
+      new Create(rC1Rect), new Create(rC2Rect),
+      new Create(rC1TopWire), new Create(rC2TopWire),
+      new Write(rC1Lbl), new Write(rC2Lbl),
+      new Create(q1Strap), new Create(q1Base),
+      new Create(q1Coll), new Create(q1CollUp),
+      new Create(q1Emit), new Create(q1EmitDown),
+      new FadeIn(q1EmitArrow),
+      new Write(q1Lbl), new Write(q1InLbl),
+      new Create(q2Strap), new Create(q2Base),
+      new Create(q2Coll), new Create(q2CollUp),
+      new Create(q2Emit), new Create(q2EmitDown),
+      new FadeIn(q2EmitArrow),
+      new Write(q2Lbl), new Write(q2InLbl),
+      new Create(emitJoin), new FadeIn(emitNodeDot),
+      new Create(tailJoinWire),
       new Create(tailSrc),
-      new Create(tailArrowMain), new Create(tailArrowL), new Create(tailArrowR),
+      new Create(tailArrMain), new Create(tailArrL), new Create(tailArrR),
       new Write(tailLbl),
-      new Create(tailGndWire), new Create(p1GndA), new Create(p1GndB), new Create(p1GndC)
+      new Create(tailGndWire),
+      new Create(gnd1), new Create(gnd2), new Create(gnd3)
     );
 
+    // Step 4: RHS bullet block + boxed LM741 note
     await scene.play(
-      new Create(p1Conn1), new Create(p1Conn2), new FadeIn(livesInsideLbl)
+      new Write(p1Bullets), new Write(p1TypVals)
     );
 
-    await scene.play(
-      new FadeIn(p1Caption), new FadeIn(p1Caption2), new Write(p1TypVals)
-    );
-
-    // Mismatch pulse — fade in, out, in, out, and leave visible
-    await scene.play(new FadeIn(mismatch, { duration: 0.35 }));
-    await scene.play(new FadeOut(mismatch, { duration: 0.35 }));
-    await scene.play(new FadeIn(mismatch, { duration: 0.35 }));
-    await scene.play(new FadeOut(mismatch, { duration: 0.35 }));
-    await scene.play(new FadeIn(mismatch, { duration: 0.4 }));
+    // Step 5: pulse the mismatch halos on Q1 and Q2
+    await scene.play(new FadeIn(mismatch1, { duration: 0.35 }), new FadeIn(mismatch, { duration: 0.35 }));
+    await scene.play(new FadeOut(mismatch1, { duration: 0.35 }), new FadeOut(mismatch, { duration: 0.35 }));
+    await scene.play(new FadeIn(mismatch1, { duration: 0.35 }), new FadeIn(mismatch, { duration: 0.35 }));
+    await scene.play(new FadeOut(mismatch1, { duration: 0.35 }), new FadeOut(mismatch, { duration: 0.35 }));
+    await scene.play(new FadeIn(mismatch1, { duration: 0.4 }), new FadeIn(mismatch, { duration: 0.4 }));
   </script>
 </body>
+
 </html>

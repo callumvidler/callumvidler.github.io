@@ -2052,7 +2052,7 @@
       const penLogMin = 2, penLogMax = 7; // 100Ω to 10MΩ
       const penXRange = [penLogMin, penLogMax];
       const penYRange = [penLogMin, penLogMax];
-      const GRID_N = 50;
+      const GRID_N = 40;
       const cellW = (penFrame.x1 - penFrame.x0) / GRID_N;
       const cellH = (penFrame.y1 - penFrame.y0) / GRID_N;
 
@@ -2061,22 +2061,17 @@
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
       const penParasitic = (r1v, r2v) => 10e3 * 2 * Math.PI * r2v * S4_CPAR;
 
-      // Color interpolation: green (0) → yellow (0.5) → red (1+)
+      // Color interpolation: green (0) → yellow (0.5) → red (1+). Returns hex.
+      const toHex = (n) => { const h = clamp(Math.round(n), 0, 255).toString(16); return h.length < 2 ? '0' + h : h; };
       const penColor = (penalty) => {
         const p = clamp(penalty, 0, 1);
+        let rv, gv, bv;
         if (IS_LIGHT) {
-          // Light theme: green → amber → red
-          const r = Math.round(16 + p * 204);
-          const g_val = Math.round(185 - p * 147);
-          const b_val = Math.round(129 - p * 91);
-          return 'rgb(' + r + ',' + g_val + ',' + b_val + ')';
+          rv = 16 + p * 204; gv = 185 - p * 147; bv = 129 - p * 91;
         } else {
-          // Dark theme: teal-green → amber → red
-          const r = Math.round(30 + p * 194);
-          const g_val = Math.round(180 - p * 100);
-          const b_val = Math.round(110 - p * 80);
-          return 'rgb(' + r + ',' + g_val + ',' + b_val + ')';
+          rv = 30 + p * 194; gv = 180 - p * 100; bv = 110 - p * 80;
         }
+        return '#' + toHex(rv) + toHex(gv) + toHex(bv);
       };
 
       const heatmapObjs = [];
@@ -2150,11 +2145,12 @@
       const cbLow = await makeText('Safe', 10, ACCENT, [barX + 0.22, penFrame.y0 + 0.08, 0], barX + 0.22);
       const cbHigh = await makeText('Danger', 10, RED, [barX + 0.22, penFrame.y1 - 0.08, 0], barX + 0.22);
 
-      const penStatics = [...heatmapObjs, penBorder, sweetOutline, sweetLabel, penXLabel, penYLabelText, ...penTickLabelsArr, ...colorBarObjs, cbLow, cbHigh];
-      const penStaticOverlays = [];
+      // Heatmap cells are NOT animated (2500 objects) — added directly
+      const penChrome = [penBorder, sweetOutline, sweetLabel, penXLabel, penYLabelText, ...penTickLabelsArr, ...colorBarObjs, cbLow, cbHigh];
 
-      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle, ...penStaticOverlays);
-      animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penStatics, penTitle, ...penStaticOverlays);
+      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...heatmapObjs, ...penChrome, penTitle);
+      // Only animate the chrome, not the heatmap grid
+      animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penChrome, penTitle);
 
       return {
         objs,
@@ -2163,7 +2159,7 @@
           circuitStage: circuitObjs,
           liveLabels,
           stepPlot: [...stepStatics, stepTitle],
-          penPlot: [...penStatics, penTitle, ...penStaticOverlays]
+          penPlot: [...penChrome, penTitle]
         },
         live: { liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label },
         stepFrame,

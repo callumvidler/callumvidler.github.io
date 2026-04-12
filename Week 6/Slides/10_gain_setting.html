@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slide 10 - Gain Setting by Feedback</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
@@ -56,7 +59,9 @@
       box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
     }
 
-    .ol-panel.visible { display: flex; }
+    .ol-panel.visible {
+      display: flex;
+    }
 
     .ol-title {
       font-family: 'IBM Plex Mono', monospace;
@@ -66,7 +71,10 @@
       text-transform: uppercase;
     }
 
-    .ol-row { display: grid; gap: 4px; }
+    .ol-row {
+      display: grid;
+      gap: 4px;
+    }
 
     .ol-row label {
       display: flex;
@@ -76,7 +84,10 @@
       font-size: 11px;
     }
 
-    .ol-row .v { color: var(--slide-text); font-variant-numeric: tabular-nums; }
+    .ol-row .v {
+      color: var(--slide-text);
+      font-variant-numeric: tabular-nums;
+    }
 
     .ol-panel input[type="range"] {
       width: 100%;
@@ -96,7 +107,10 @@
       font-size: 11px;
     }
 
-    .ol-readout .k { color: var(--slide-text-dim); }
+    .ol-readout .k {
+      color: var(--slide-text-dim);
+    }
+
     .ol-readout .v {
       text-align: right;
       color: var(--slide-text);
@@ -127,8 +141,14 @@
       opacity: 0.75;
       transition: opacity 0.15s;
     }
-    #s2Controls:hover { opacity: 1; }
-    #s2Controls.visible { display: flex; }
+
+    #s2Controls:hover {
+      opacity: 1;
+    }
+
+    #s2Controls.visible {
+      display: flex;
+    }
 
     #s2StepSlider {
       width: 100px;
@@ -157,9 +177,10 @@
     }
   </style>
 </head>
+
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">12 / 22</span>
+    <span class="slide-num">12 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">
@@ -178,7 +199,8 @@
       <div class="ol-readout">
         <span class="k">Unclipped V<sub>out</sub></span><span class="v" id="voutRawVal">0.00 V</span>
         <span class="k">Clipped V<sub>out</sub></span><span class="v" id="voutClipVal">0.00 V</span>
-        <span class="k">Linear limit ±V<sub>sat</sub>/A<sub>OL</sub></span><span class="v" id="linearVal">+/- 65 uV</span>
+        <span class="k">Linear limit ±V<sub>sat</sub>/A<sub>OL</sub></span><span class="v" id="linearVal">+/- 65
+          uV</span>
         <span class="ol-strip" id="explainVal">The linear window is tiny, so a small Vin sends output to a rail.</span>
       </div>
     </div>
@@ -325,6 +347,14 @@
       if (state.section2AnimObjects.length) {
         scene.remove(...state.section2AnimObjects);
         state.section2AnimObjects = [];
+      }
+      // Clean up any traveling labels left on screen from mid-animation
+      if (state.section2Ctx && state.section2Ctx.travelLabels) {
+        for (const lab of state.section2Ctx.travelLabels) {
+          scene.remove(lab.tvout);
+          scene.remove(lab.tbv);
+          scene.remove(lab.tvd);
+        }
       }
       state.section2AnimToken += 1;
       state.section2Ctx = null;
@@ -531,40 +561,40 @@
       const S2_CX = -4.60;
       const S2_CY = -1.30;
       const TRI_HALF_H = 0.85;
-      const TRI_IN_X   = S2_CX - 0.90;   // -5.50
+      const TRI_IN_X = S2_CX - 0.90;   // -5.50
       const TRI_APEX_X = S2_CX + 0.80;   // -3.80
       const LEFT_COL_X = -5.85;
-      const TAP_X      = -2.75;
-      const OUT_X      = -2.05;
-      const VIN_X      = -6.15;
-      const plusY      = S2_CY + 0.35;
-      const minusY     = S2_CY - 0.35;
-      const JUNC_Y     = -2.65;
-      const GND_Y      = -3.60;
+      const TAP_X = -2.75;
+      const OUT_X = -2.05;
+      const VIN_X = -6.15;
+      const plusY = S2_CY + 0.35;
+      const minusY = S2_CY - 0.35;
+      const JUNC_Y = -2.65;
+      const GND_Y = -3.60;
 
       const tri = new Polygon({
         vertices: [
-          [TRI_IN_X,   S2_CY - TRI_HALF_H, 0],
-          [TRI_IN_X,   S2_CY + TRI_HALF_H, 0],
-          [TRI_APEX_X, S2_CY,              0]
+          [TRI_IN_X, S2_CY - TRI_HALF_H, 0],
+          [TRI_IN_X, S2_CY + TRI_HALF_H, 0],
+          [TRI_APEX_X, S2_CY, 0]
         ],
         color: MUTED2,
         strokeWidth: 1.7,
         fillOpacity: 0.13
       });
 
-      const plusSym  = await makeText('+', 18, ACCENT, [TRI_IN_X + 0.30, plusY,  0]);
-      const minusSym = await makeText('-', 18, RED,    [TRI_IN_X + 0.30, minusY, 0]);
+      const plusSym = await makeText('+', 18, ACCENT, [TRI_IN_X + 0.30, plusY, 0]);
+      const minusSym = await makeText('-', 18, RED, [TRI_IN_X + 0.30, minusY, 0]);
 
-      const vinLead  = new Line({ start: [VIN_X, plusY, 0], end: [TRI_IN_X, plusY, 0], color: FG, strokeWidth: 1.8 });
+      const vinLead = new Line({ start: [VIN_X, plusY, 0], end: [TRI_IN_X, plusY, 0], color: FG, strokeWidth: 1.8 });
       const vinSrcDot = new Dot({ point: [VIN_X, plusY, 0], color: FG, radius: 0.07 });
-      const vinLabel  = await makeMath('V_{in}', 0.50, FG, [VIN_X, plusY + 0.34, 0]);
+      const vinLabel = await makeMath('V_{in}', 0.50, FG, [VIN_X, plusY + 0.34, 0]);
 
       const outApexToNode = new Line({ start: [TRI_APEX_X, S2_CY, 0], end: [TAP_X, S2_CY, 0], color: FG, strokeWidth: 1.8 });
-      const outToEnd      = new Line({ start: [TAP_X,       S2_CY, 0], end: [OUT_X, S2_CY, 0], color: FG, strokeWidth: 1.8 });
-      const outApexDot    = new Dot({ point: [TAP_X, S2_CY, 0], color: FG, radius: 0.06 });
-      const outNodeDot    = new Dot({ point: [OUT_X, S2_CY, 0], color: FG, radius: 0.07 });
-      const voutLabel     = await makeMath('V_{out}', 0.50, YELLOW, [OUT_X + 0.26, S2_CY + 0.32, 0]);
+      const outToEnd = new Line({ start: [TAP_X, S2_CY, 0], end: [OUT_X, S2_CY, 0], color: FG, strokeWidth: 1.8 });
+      const outApexDot = new Dot({ point: [TAP_X, S2_CY, 0], color: FG, radius: 0.06 });
+      const outNodeDot = new Dot({ point: [OUT_X, S2_CY, 0], color: FG, radius: 0.07 });
+      const voutLabel = await makeMath('V_{out}', 0.50, YELLOW, [OUT_X + 0.26, S2_CY + 0.32, 0]);
 
       const R2_W = 1.05;
       const R2_H = 0.34;
@@ -573,45 +603,45 @@
       r2Rect.moveTo([R2_CX, JUNC_Y, 0]);
       const r2Label = await makeMath('R_{2}', 0.50, ACCENT, [R2_CX, JUNC_Y + R2_H / 2 + 0.22, 0]);
 
-      const fbTap     = new Line({ start: [TAP_X, S2_CY, 0],             end: [TAP_X, JUNC_Y, 0],               color: FG, strokeWidth: 1.8 });
-      const fbAcrossR = new Line({ start: [TAP_X, JUNC_Y, 0],            end: [R2_CX + R2_W / 2, JUNC_Y, 0],    color: FG, strokeWidth: 1.8 });
-      const fbAcrossL = new Line({ start: [R2_CX - R2_W / 2, JUNC_Y, 0], end: [LEFT_COL_X, JUNC_Y, 0],          color: FG, strokeWidth: 1.8 });
-      const fbLeftCol = new Line({ start: [LEFT_COL_X, JUNC_Y, 0],       end: [LEFT_COL_X, minusY, 0],          color: FG, strokeWidth: 1.8 });
-      const fbStub    = new Line({ start: [LEFT_COL_X, minusY, 0],       end: [TRI_IN_X, minusY, 0],            color: FG, strokeWidth: 1.8 });
+      const fbTap = new Line({ start: [TAP_X, S2_CY, 0], end: [TAP_X, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+      const fbAcrossR = new Line({ start: [TAP_X, JUNC_Y, 0], end: [R2_CX + R2_W / 2, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+      const fbAcrossL = new Line({ start: [R2_CX - R2_W / 2, JUNC_Y, 0], end: [LEFT_COL_X, JUNC_Y, 0], color: FG, strokeWidth: 1.8 });
+      const fbLeftCol = new Line({ start: [LEFT_COL_X, JUNC_Y, 0], end: [LEFT_COL_X, minusY, 0], color: FG, strokeWidth: 1.8 });
+      const fbStub = new Line({ start: [LEFT_COL_X, minusY, 0], end: [TRI_IN_X, minusY, 0], color: FG, strokeWidth: 1.8 });
 
       const R1_W = 0.34;
       const R1_H = 0.78;
       const R1_CY = (JUNC_Y + GND_Y) / 2;
-      const r1WireTop = new Line({ start: [LEFT_COL_X, JUNC_Y, 0],            end: [LEFT_COL_X, R1_CY + R1_H / 2, 0], color: FG, strokeWidth: 1.8 });
-      const r1WireBot = new Line({ start: [LEFT_COL_X, R1_CY - R1_H / 2, 0],  end: [LEFT_COL_X, GND_Y, 0],            color: FG, strokeWidth: 1.8 });
+      const r1WireTop = new Line({ start: [LEFT_COL_X, JUNC_Y, 0], end: [LEFT_COL_X, R1_CY + R1_H / 2, 0], color: FG, strokeWidth: 1.8 });
+      const r1WireBot = new Line({ start: [LEFT_COL_X, R1_CY - R1_H / 2, 0], end: [LEFT_COL_X, GND_Y, 0], color: FG, strokeWidth: 1.8 });
       const r1Rect = new Rectangle({ width: R1_W, height: R1_H, color: ACCENT, strokeWidth: 2, fillOpacity: 0.22 });
       r1Rect.moveTo([LEFT_COL_X, R1_CY, 0]);
       const r1Label = await makeMath('R_{1}', 0.50, ACCENT, [LEFT_COL_X - 0.40, R1_CY, 0]);
 
-      const plusPinDot  = new Dot({ point: [TRI_IN_X, plusY,   0], color: FG, radius: 0.045 });
-      const minusPinDot = new Dot({ point: [TRI_IN_X, minusY,  0], color: FG, radius: 0.045 });
-      const juncDot     = new Dot({ point: [LEFT_COL_X, JUNC_Y, 0], color: FG, radius: 0.06 });
+      const plusPinDot = new Dot({ point: [TRI_IN_X, plusY, 0], color: FG, radius: 0.045 });
+      const minusPinDot = new Dot({ point: [TRI_IN_X, minusY, 0], color: FG, radius: 0.045 });
+      const juncDot = new Dot({ point: [LEFT_COL_X, JUNC_Y, 0], color: FG, radius: 0.06 });
 
-      const gndBar1 = new Line({ start: [LEFT_COL_X - 0.32, GND_Y,        0], end: [LEFT_COL_X + 0.32, GND_Y,        0], color: FG, strokeWidth: 3 });
+      const gndBar1 = new Line({ start: [LEFT_COL_X - 0.32, GND_Y, 0], end: [LEFT_COL_X + 0.32, GND_Y, 0], color: FG, strokeWidth: 3 });
       const gndBar2 = new Line({ start: [LEFT_COL_X - 0.20, GND_Y - 0.13, 0], end: [LEFT_COL_X + 0.20, GND_Y - 0.13, 0], color: FG, strokeWidth: 2 });
       const gndBar3 = new Line({ start: [LEFT_COL_X - 0.09, GND_Y - 0.25, 0], end: [LEFT_COL_X + 0.09, GND_Y - 0.25, 0], color: FG, strokeWidth: 1 });
 
       const betaLabel = await makeMath('\\beta=\\dfrac{R_{1}}{R_{1}+R_{2}}', 0.44, BLUE, [5.20, 0.30, 0]);
 
       // ── Block diagram (feedback loop, matches slide 08 style) ──
-      const BD_FWD_Y  = 2.10;
-      const BD_FB_Y   = 1.00;
-      const BD_JX     = 0.80;
-      const BD_JR     = 0.28;
-      const BD_AX     = 2.60;
-      const BD_AW     = 1.30;
-      const BD_AH     = 0.62;
-      const BD_BX     = 2.60;
-      const BD_BW     = 1.05;
-      const BD_BH     = 0.48;
-      const BD_TAP    = 4.40;
-      const BD_OUT    = 5.60;
-      const BD_IN     = -0.10;
+      const BD_FWD_Y = 2.10;
+      const BD_FB_Y = 1.00;
+      const BD_JX = 0.80;
+      const BD_JR = 0.28;
+      const BD_AX = 2.60;
+      const BD_AW = 1.30;
+      const BD_AH = 0.62;
+      const BD_BX = 2.60;
+      const BD_BW = 1.05;
+      const BD_BH = 0.48;
+      const BD_TAP = 4.40;
+      const BD_OUT = 5.60;
+      const BD_IN = -0.10;
 
       const bdTip = (ex, ey, dx, dy, col = FG) => {
         const len = Math.sqrt(dx * dx + dy * dy);
@@ -635,24 +665,24 @@
       bdBetaRect.moveTo([BD_BX, BD_FB_Y, 0]);
       const bdBetaLbl = await makeMath('\\beta', 0.52, BLUE, [BD_BX, BD_FB_Y, 0]);
 
-      const bdInArr   = new Line({ start: [BD_IN, BD_FWD_Y, 0],            end: [BD_JX - BD_JR, BD_FWD_Y, 0],    color: FG, strokeWidth: 1.8 });
-      const bdInTip   = bdTip(BD_JX - BD_JR, BD_FWD_Y, 1, 0);
-      const bdSumToA  = new Line({ start: [BD_JX + BD_JR, BD_FWD_Y, 0],    end: [BD_AX - BD_AW / 2, BD_FWD_Y, 0], color: FG, strokeWidth: 1.8 });
-      const bdSumTip  = bdTip(BD_AX - BD_AW / 2, BD_FWD_Y, 1, 0);
-      const bdOutArr  = new Line({ start: [BD_AX + BD_AW / 2, BD_FWD_Y, 0], end: [BD_OUT, BD_FWD_Y, 0],           color: FG, strokeWidth: 1.8 });
-      const bdOutTip  = bdTip(BD_OUT, BD_FWD_Y, 1, 0);
+      const bdInArr = new Line({ start: [BD_IN, BD_FWD_Y, 0], end: [BD_JX - BD_JR, BD_FWD_Y, 0], color: FG, strokeWidth: 1.8 });
+      const bdInTip = bdTip(BD_JX - BD_JR, BD_FWD_Y, 1, 0);
+      const bdSumToA = new Line({ start: [BD_JX + BD_JR, BD_FWD_Y, 0], end: [BD_AX - BD_AW / 2, BD_FWD_Y, 0], color: FG, strokeWidth: 1.8 });
+      const bdSumTip = bdTip(BD_AX - BD_AW / 2, BD_FWD_Y, 1, 0);
+      const bdOutArr = new Line({ start: [BD_AX + BD_AW / 2, BD_FWD_Y, 0], end: [BD_OUT, BD_FWD_Y, 0], color: FG, strokeWidth: 1.8 });
+      const bdOutTip = bdTip(BD_OUT, BD_FWD_Y, 1, 0);
 
-      const bdFbDown  = new Line({ start: [BD_TAP, BD_FWD_Y, 0],           end: [BD_TAP, BD_FB_Y, 0],            color: BLUE, strokeWidth: 1.8 });
-      const bdFbRight = new Line({ start: [BD_TAP, BD_FB_Y, 0],            end: [BD_BX + BD_BW / 2, BD_FB_Y, 0], color: BLUE, strokeWidth: 1.8 });
-      const bdFbLeft  = new Line({ start: [BD_BX - BD_BW / 2, BD_FB_Y, 0], end: [BD_JX, BD_FB_Y, 0],             color: BLUE, strokeWidth: 1.8 });
-      const bdFbUp    = new Line({ start: [BD_JX, BD_FB_Y, 0],             end: [BD_JX, BD_FWD_Y - BD_JR, 0],    color: BLUE, strokeWidth: 1.8 });
+      const bdFbDown = new Line({ start: [BD_TAP, BD_FWD_Y, 0], end: [BD_TAP, BD_FB_Y, 0], color: BLUE, strokeWidth: 1.8 });
+      const bdFbRight = new Line({ start: [BD_TAP, BD_FB_Y, 0], end: [BD_BX + BD_BW / 2, BD_FB_Y, 0], color: BLUE, strokeWidth: 1.8 });
+      const bdFbLeft = new Line({ start: [BD_BX - BD_BW / 2, BD_FB_Y, 0], end: [BD_JX, BD_FB_Y, 0], color: BLUE, strokeWidth: 1.8 });
+      const bdFbUp = new Line({ start: [BD_JX, BD_FB_Y, 0], end: [BD_JX, BD_FWD_Y - BD_JR, 0], color: BLUE, strokeWidth: 1.8 });
       const bdFbUpTip = bdTip(BD_JX, BD_FWD_Y - BD_JR, 0, 1, BLUE);
-      const bdTapDot  = new Dot({ point: [BD_TAP, BD_FWD_Y, 0], color: FG, radius: 0.055 });
+      const bdTapDot = new Dot({ point: [BD_TAP, BD_FWD_Y, 0], color: FG, radius: 0.055 });
 
       const bdPlusLbl = await makeMath('+', 0.38, FG, [BD_JX - BD_JR - 0.18, BD_FWD_Y + 0.18, 0]);
-      const bdMinLbl  = await makeMath('-', 0.38, FG, [BD_JX + 0.18, BD_FWD_Y - BD_JR - 0.18, 0]);
+      const bdMinLbl = await makeMath('-', 0.38, FG, [BD_JX + 0.18, BD_FWD_Y - BD_JR - 0.18, 0]);
 
-      const bdVinLbl  = await makeMath('V_{in}', 0.48, FG, [BD_IN - 0.30, BD_FWD_Y + 0.30, 0]);
+      const bdVinLbl = await makeMath('V_{in}', 0.48, FG, [BD_IN - 0.30, BD_FWD_Y + 0.30, 0]);
       const bdVoutStatic = await makeMath('V_{out}', 0.48, FG, [BD_OUT + 0.05, BD_FWD_Y + 0.30, 0]);
 
       // Pre-render dynamic labels for each step (0..8) so the slider works synchronously
@@ -682,7 +712,7 @@
       const bcBez = (t) => {
         const u = 1 - t;
         return [u * u * bcP0x + 2 * u * t * bcCPx + t * t * bcP2x,
-                u * u * bcP0y + 2 * u * t * bcCPy + t * t * bcP2y];
+        u * u * bcP0y + 2 * u * t * bcCPy + t * t * bcP2y];
       };
       for (let i = 0; i < bcSegs; i++) {
         const [x0, y0] = bcBez(i / bcSegs);
@@ -786,6 +816,23 @@
 
       const bd = { BD_FWD_Y, BD_FB_Y, BD_JX, BD_JR, BD_AX, BD_AW, BD_AH, BD_BX, BD_BW, BD_BH, BD_TAP, BD_OUT, BD_IN };
 
+      // Pre-render traveling labels for the feedback animation.
+      // For each iteration k (0..S2_STEPS-1) we need:
+      //   travelVout: the Vout value that travels along the feedback path
+      //   travelBetaVout: the βVout value after the β block
+      //   travelVd: the Vd value that travels into A_OL
+      const OFF = [20, 20, 0]; // off-screen parking position
+      const travelLabels = [];
+      for (let k = 0; k < S2_STEPS; k++) {
+        const vOutNew = s2Vouts[k + 1];
+        const vd = S2_V_IN - S2_BETA * s2Vouts[k];
+        const bv = S2_BETA * vOutNew;
+        const tvout = await makeMath(vOutNew.toFixed(1), 0.36, CYAN, OFF);
+        const tbv = await makeMath((bv >= 0 ? '' : '') + bv.toFixed(2), 0.34, BLUE, OFF);
+        const tvd = await makeMath((vd >= 0 ? '' : '') + vd.toFixed(2), 0.34, ACCENT, OFF);
+        travelLabels.push({ tvout, tbv, tvd });
+      }
+
       return {
         objs,
         animated,
@@ -801,7 +848,8 @@
         settleXRange,
         settleYRange,
         bd,
-        bdDynLabels
+        bdDynLabels,
+        travelLabels
       };
     };
 
@@ -1055,8 +1103,8 @@
       s2StepLabel.textContent = 'k=' + n;
     };
 
-    // Animate a dot sliding along a series of [x, y] waypoints
-    const animateDotAlongPath = (waypoints, color, durationMs, staleCheck) => new Promise((resolve) => {
+    // Move an existing scene object along waypoints (obj must support .moveTo())
+    const animateObjAlongPath = (obj, waypoints, durationMs, staleCheck) => new Promise((resolve) => {
       if (waypoints.length < 2 || staleCheck()) { resolve(); return; }
       const segs = [];
       let totalLen = 0;
@@ -1067,128 +1115,20 @@
         segs.push({ sx: waypoints[i][0], sy: waypoints[i][1], dx, dy, len, cumLen: totalLen });
         totalLen += len;
       }
-      const dot = new Dot({ point: [waypoints[0][0], waypoints[0][1], 0], color, radius: 0.08 });
-      scene.add(dot);
-      const easeOut = (t) => 1 - (1 - t) * (1 - t);
+      obj.moveTo([waypoints[0][0], waypoints[0][1], 0]);
+      const easeInOut = (t) => 0.5 - 0.5 * Math.cos(Math.PI * t);
       const t0 = performance.now();
       const tick = (now) => {
-        if (staleCheck()) { scene.remove(dot); resolve(); return; }
+        if (staleCheck()) { resolve(); return; }
         const rawT = clamp((now - t0) / durationMs, 0, 1);
-        const dist = easeOut(rawT) * totalLen;
+        const dist = easeInOut(rawT) * totalLen;
         let seg = segs[segs.length - 1];
         for (let i = 0; i < segs.length; i++) {
           if (dist <= segs[i].cumLen + segs[i].len) { seg = segs[i]; break; }
         }
         const segT = seg.len > 0.001 ? clamp((dist - seg.cumLen) / seg.len, 0, 1) : 1;
-        const px = seg.sx + seg.dx * segT;
-        const py = seg.sy + seg.dy * segT;
-        dot.moveTo([px, py, 0]);
-        if (rawT >= 1) { scene.remove(dot); resolve(); return; }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
-
-    // Animate a line being drawn progressively along waypoints (leaves a trail).
-    // Returns the array of Line objects so the caller can manage cleanup.
-    const animateLineAlongPath = (waypoints, color, strokeWidth, durationMs, staleCheck) => new Promise((resolve) => {
-      if (waypoints.length < 2 || staleCheck()) { resolve([]); return; }
-      const segs = [];
-      let totalLen = 0;
-      for (let i = 0; i < waypoints.length - 1; i++) {
-        const dx = waypoints[i + 1][0] - waypoints[i][0];
-        const dy = waypoints[i + 1][1] - waypoints[i][1];
-        const len = Math.sqrt(dx * dx + dy * dy);
-        segs.push({ sx: waypoints[i][0], sy: waypoints[i][1], ex: waypoints[i + 1][0], ey: waypoints[i + 1][1], dx, dy, len, cumLen: totalLen });
-        totalLen += len;
-      }
-      const drawnLines = [];
-      let currentTip = null;
-      const easeOut = (t) => 1 - (1 - t) * (1 - t);
-      const t0 = performance.now();
-      const tick = (now) => {
-        if (staleCheck()) {
-          if (currentTip) scene.remove(currentTip);
-          drawnLines.forEach(l => scene.remove(l));
-          resolve([]);
-          return;
-        }
-        const rawT = clamp((now - t0) / durationMs, 0, 1);
-        const dist = easeOut(rawT) * totalLen;
-        // Draw completed segments
-        while (drawnLines.length < segs.length && dist >= segs[drawnLines.length].cumLen + segs[drawnLines.length].len) {
-          const s = segs[drawnLines.length];
-          if (currentTip) { scene.remove(currentTip); currentTip = null; }
-          const line = new Line({ start: [s.sx, s.sy, 0], end: [s.ex, s.ey, 0], color, strokeWidth });
-          scene.add(line);
-          drawnLines.push(line);
-        }
-        // Draw partial current segment
-        const segIdx = drawnLines.length;
-        if (segIdx < segs.length) {
-          const s = segs[segIdx];
-          const segT = s.len > 0.001 ? clamp((dist - s.cumLen) / s.len, 0, 1) : 1;
-          const tipX = s.sx + s.dx * segT;
-          const tipY = s.sy + s.dy * segT;
-          if (currentTip) scene.remove(currentTip);
-          currentTip = new Line({ start: [s.sx, s.sy, 0], end: [tipX, tipY, 0], color, strokeWidth });
-          scene.add(currentTip);
-        }
-        if (rawT >= 1) {
-          if (currentTip) { scene.remove(currentTip); currentTip = null; }
-          // Ensure all segments are drawn
-          while (drawnLines.length < segs.length) {
-            const s = segs[drawnLines.length];
-            const line = new Line({ start: [s.sx, s.sy, 0], end: [s.ex, s.ey, 0], color, strokeWidth });
-            scene.add(line);
-            drawnLines.push(line);
-          }
-          resolve(drawnLines);
-          return;
-        }
-        requestAnimationFrame(tick);
-      };
-      requestAnimationFrame(tick);
-    });
-
-    // Animate an arrow rotating from one direction to another on the settling graph.
-    // Draws a line+arrowhead from origin, initially pointing at oldAngle, rotating to newAngle.
-    const animateVectorRotation = (scene, origin, arrowLen, oldAngle, newAngle, durationMs, staleCheck) => new Promise((resolve) => {
-      if (staleCheck()) { resolve(); return; }
-      const easeInOut = (t) => 0.5 - 0.5 * Math.cos(Math.PI * t);
-      let shaft = null;
-      let head = null;
-      const t0 = performance.now();
-      const tick = (now) => {
-        if (staleCheck()) {
-          if (shaft) scene.remove(shaft);
-          if (head) scene.remove(head);
-          resolve();
-          return;
-        }
-        const rawT = clamp((now - t0) / durationMs, 0, 1);
-        const t = easeInOut(rawT);
-        const angle = oldAngle + (newAngle - oldAngle) * t;
-        const ex = origin[0] + arrowLen * Math.cos(angle);
-        const ey = origin[1] + arrowLen * Math.sin(angle);
-        if (shaft) scene.remove(shaft);
-        if (head) scene.remove(head);
-        shaft = new Line({ start: [origin[0], origin[1], 0], end: [ex, ey, 0], color: CYAN, strokeWidth: 2.4 });
-        scene.add(shaft);
-        // arrowhead
-        const ux = Math.cos(angle), uy = Math.sin(angle);
-        const px = -uy, py = ux;
-        head = new Polygon({
-          vertices: [[ex, ey, 0], [ex - ux * 0.10 + px * 0.06, ey - uy * 0.10 + py * 0.06, 0], [ex - ux * 0.10 - px * 0.06, ey - uy * 0.10 - py * 0.06, 0]],
-          color: CYAN, strokeWidth: 0, fillOpacity: 1
-        });
-        scene.add(head);
-        if (rawT >= 1) {
-          scene.remove(shaft);
-          scene.remove(head);
-          resolve();
-          return;
-        }
+        obj.moveTo([seg.sx + seg.dx * segT, seg.sy + seg.dy * segT, 0]);
+        if (rawT >= 1) { resolve(); return; }
         requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
@@ -1202,111 +1142,123 @@
       if (!c || !c.bd) return;
 
       const bd = c.bd;
-      const mp = (x, y) => mapPoint(c.settleFrame, x, y, c.settleXRange, c.settleYRange);
+      const tl = c.travelLabels;
+      if (!tl) return;
 
-      // Define block-diagram path waypoints
-      const forwardPath = [
-        [bd.BD_IN, bd.BD_FWD_Y],
-        [bd.BD_JX - bd.BD_JR, bd.BD_FWD_Y],
-      ];
-      const sigmaToOutput = [
-        [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y],
-        [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y],
-      ];
-      const aolToTap = [
-        [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y],
-        [bd.BD_TAP, bd.BD_FWD_Y],
-      ];
-      const tapToOutput = [
-        [bd.BD_TAP, bd.BD_FWD_Y],
-        [bd.BD_OUT, bd.BD_FWD_Y],
-      ];
-
-      // Precompute arrow angles on the settling graph for vector rotation
-      const arrowAngles = [];
-      for (let k = 0; k < S2_STEPS; k++) {
-        const sp = mp(k, s2Ys[k]);
-        const ep = mp(k + 1, s2Ys[k + 1]);
-        arrowAngles.push(Math.atan2(ep[1] - sp[1], ep[0] - sp[0]));
-      }
-
-      // Full feedback path as one continuous set of waypoints for line drawing
-      const fullFeedbackPath = [
+      // Waypoints for each segment of the block diagram
+      const tapToBetaEntrance = [
         [bd.BD_TAP, bd.BD_FWD_Y],
         [bd.BD_TAP, bd.BD_FB_Y],
         [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y],
+      ];
+      const betaExitToSigma = [
         [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y],
         [bd.BD_JX, bd.BD_FB_Y],
         [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
       ];
+      const sigmaToAolEntrance = [
+        [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y],
+        [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y],
+      ];
+      const aolExitToTap = [
+        [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y],
+        [bd.BD_TAP, bd.BD_FWD_Y],
+      ];
+
+      // Position helpers — offset labels so they don't overlap the wires
+      const ABOVE = 0.28;
+      const BELOW = -0.30;
+
+      // Speed ramp: slow for first iterations, fast for later ones
+      // Returns a duration multiplier (higher = slower)
+      const speedFor = (k) => {
+        if (k <= 1) return 1.0;
+        if (k <= 3) return 0.65;
+        if (k <= 6) return 0.35;
+        if (k <= 10) return 0.18;
+        return 0.10;
+      };
+
+      // Temporary objects added during the animation that need cleanup
+      let tempObjs = [];
+      const addTemp = (obj) => { scene.add(obj); tempObjs.push(obj); };
+      const clearTemp = () => { tempObjs.forEach(o => scene.remove(o)); tempObjs = []; };
 
       drawSection2AtStep(0);
       if (stale()) return;
-      await scene.wait(0.4);
+      await scene.wait(0.5);
       if (stale()) return;
-
-      let prevFbLines = []; // track drawn feedback lines for cleanup
 
       for (let k = 0; k < S2_STEPS; k++) {
         if (stale()) return;
+        clearTemp();
 
-        // Clean up previous iteration's feedback lines
-        if (prevFbLines.length) {
-          prevFbLines.forEach(l => scene.remove(l));
-          prevFbLines = [];
-        }
+        const speed = speedFor(k);
+        const moveDur = Math.max(60, 400 * speed);
+        const pauseDur = Math.max(0.05, 0.4 * speed);
+        const lab = tl[k];
 
-        const isFirst = k === 0;
-        const pulseDur = isFirst ? 220 : 160;
-
-        // 1. Vin pulse enters summing junction
-        await animateDotAlongPath(forwardPath, CYAN, pulseDur, stale);
+        // ── Phase 1: Vd travels from Σ into A_OL ──
+        // Position Vd label at Σ output and move it to A_OL entrance
+        lab.tvd.moveTo([bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y + ABOVE, 0]);
+        addTemp(lab.tvd);
+        await animateObjAlongPath(lab.tvd,
+          sigmaToAolEntrance.map(([x, y]) => [x, y + ABOVE]),
+          moveDur, stale);
         if (stale()) return;
 
-        // 2. Pulse through Sigma -> A_OL (Vd computed here)
-        await animateDotAlongPath(sigmaToOutput, ACCENT, pulseDur, stale);
+        // Brief pause at A_OL (Vd being amplified → Vout)
+        await scene.wait(pauseDur * 0.5);
+        if (stale()) return;
+        scene.remove(lab.tvd);
+
+        // ── Phase 2: Vout emerges from A_OL, travels to tap/output ──
+        lab.tvout.moveTo([bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y + ABOVE, 0]);
+        addTemp(lab.tvout);
+        await animateObjAlongPath(lab.tvout,
+          aolExitToTap.map(([x, y]) => [x, y + ABOVE]),
+          moveDur, stale);
         if (stale()) return;
 
-        // 3. Pulse through A_OL -> tap point (Vout computed here)
-        await animateDotAlongPath(aolToTap, CYAN, pulseDur, stale);
-        if (stale()) return;
-
-        // 4. Vector rotation on settling graph: arrow appears with previous
-        //    gradient then rotates to the correct direction
-        const sp = mp(k, s2Ys[k]);
-        const ep = mp(k + 1, s2Ys[k + 1]);
-        const arrowLen = Math.sqrt((ep[0] - sp[0]) ** 2 + (ep[1] - sp[1]) ** 2);
-        const correctAngle = arrowAngles[k];
-        // Previous arrow's angle (for k=0, use horizontal = 0)
-        const prevAngle = k > 0 ? arrowAngles[k - 1] : 0;
-
-        if (Math.abs(prevAngle - correctAngle) > 0.01) {
-          const rotateDur = isFirst ? 450 : 300;
-          await animateVectorRotation(scene, sp, arrowLen, prevAngle, correctAngle, rotateDur, stale);
-          if (stale()) return;
-        }
-
-        // 5. Snap to final state with all arrows drawn
+        // Update settling graph to show the new data point
         drawSection2AtStep(k + 1);
         if (stale()) return;
 
-        // 6. Output dot exits right, feedback line draws along full path
-        const outputPulse = animateDotAlongPath(tapToOutput, CYAN, pulseDur * 0.8, stale);
-        const fbLineDraw = animateLineAlongPath(fullFeedbackPath, BLUE, 2.2, pulseDur * 2.5, stale);
-        const [, fbLines] = await Promise.all([outputPulse, fbLineDraw]);
+        await scene.wait(pauseDur * 0.5);
         if (stale()) return;
-        prevFbLines = fbLines || [];
 
-        // Pause — longer on first iteration (saturation moment)
-        const pauseDur = isFirst ? 0.55 : 0.15;
-        await scene.wait(pauseDur);
+        // ── Phase 3: Vout value "copies" and travels along feedback path to β ──
+        // The original tvout stays briefly at the output, then we move the copy
+        lab.tvout.moveTo([bd.BD_TAP, bd.BD_FWD_Y + ABOVE, 0]);
+        await animateObjAlongPath(lab.tvout,
+          tapToBetaEntrance.map(([x, y]) => [x, y + BELOW]),
+          moveDur * 1.3, stale);
+        if (stale()) return;
+
+        // Brief pause at β (multiplication happening)
+        await scene.wait(pauseDur * 0.7);
+        if (stale()) return;
+        scene.remove(lab.tvout);
+
+        // ── Phase 4: βVout emerges from β, travels to Σ ──
+        lab.tbv.moveTo([bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y + BELOW, 0]);
+        addTemp(lab.tbv);
+        await animateObjAlongPath(lab.tbv,
+          betaExitToSigma.map(([x, y]) => [x, y + BELOW]),
+          moveDur * 1.1, stale);
+        if (stale()) return;
+
+        // Brief pause at Σ (subtraction happening)
+        await scene.wait(pauseDur * 0.5);
+        if (stale()) return;
+        clearTemp();
+
+        // Pause between iterations
+        await scene.wait(pauseDur * 0.3);
         if (stale()) return;
       }
 
-      // Clean up final feedback lines
-      if (prevFbLines.length) {
-        prevFbLines.forEach(l => scene.remove(l));
-      }
+      clearTemp();
     };
 
     const runSection1GuidedDemo = async (token = state.renderToken) => {
@@ -1675,6 +1627,7 @@
     await renderSection(true, state.renderToken);
   </script>
 </body>
+
 </html>
 <!--
 <!DOCTYPE html>
@@ -1805,7 +1758,7 @@
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">12 / 22</span>
+    <span class="slide-num">12 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">
@@ -2328,7 +2281,7 @@
 </head>
 <body class="slide">
   <header class="slide-header">
-    <span class="slide-num">12 / 22</span>
+    <span class="slide-num">12 / 19</span>
   </header>
 
   <div id="stage" class="manim-stage">

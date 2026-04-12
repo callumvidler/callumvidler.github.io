@@ -3,19 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 16 — Common-Mode Noise</title>
+  <title>Slide 15 — Common-Mode Noise</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
   <script>
-    // Theme bridge:
-    //   1. Priority: ?theme= URL param (presenter sets this when loading).
-    //   2. Fallback: sessionStorage, preserved across the reload triggered
-    //      by the module's themechange listener (theme.js always forces
-    //      'light' at parse time, so we need our own persistence).
-    // Also hides the per-slide toggle button when embedded in the presenter.
     (function () {
       var qp = new URLSearchParams(location.search);
       var qt = qp.get('theme');
@@ -38,6 +32,105 @@
       }
     })();
   </script>
+  <style>
+    /* Stage 3 overlays — hidden until compression transition completes */
+    .cm-graph-wrap {
+      position: absolute;
+      left: 28px;
+      right: 330px;
+      bottom: 30px;
+      height: 260px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      z-index: 8;
+    }
+    .cm-graph-wrap.visible { opacity: 1; pointer-events: auto; }
+    .cm-graph-wrap canvas { width: 100%; height: 100%; display: block; }
+
+    .ol-panel {
+      position: absolute;
+      right: 14px;
+      bottom: 30px;
+      z-index: 9;
+      width: 290px;
+      padding: 14px 16px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--slide-border);
+      background: var(--slide-surface);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    [data-theme="light"] .ol-panel {
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    }
+    .ol-panel.visible { display: flex; }
+
+    .ol-title {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--slide-accent);
+      font-size: 10px;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+    }
+
+    .ol-row { display: grid; gap: 4px; }
+    .ol-row label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--slide-text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+    .ol-row .v { color: var(--slide-text); font-variant-numeric: tabular-nums; }
+
+    .ol-panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 18px;
+    }
+
+    .cm-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .cm-toggle button {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      padding: 6px 0;
+      background: transparent;
+      color: var(--slide-text-dim);
+      border: 1px solid var(--slide-border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    .cm-toggle button:hover { color: var(--slide-text); }
+    .cm-toggle button.active {
+      background: var(--slide-accent);
+      color: var(--slide-bg);
+      border-color: var(--slide-accent);
+    }
+
+    .ol-readout {
+      margin-top: 2px;
+      border-top: 1px solid var(--slide-border);
+      padding-top: 8px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 4px 10px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+    }
+    .ol-readout .k { color: var(--slide-text-dim); }
+    .ol-readout .v { color: var(--slide-text); text-align: right; }
+  </style>
 </head>
 <body class="slide">
   <header class="slide-header">
@@ -48,11 +141,34 @@
     <div class="stage-fallback">Loading manim-web scene…</div>
   </div>
 
+  <div id="cm-graph-wrap" class="cm-graph-wrap">
+    <canvas id="cm-graph"></canvas>
+  </div>
+
+  <aside id="cm-panel" class="ol-panel cm-panel">
+    <div class="ol-title">Mains interference</div>
+    <div class="ol-row">
+      <label>Noise amplitude <span class="v" data-readout="amp">1.50×</span></label>
+      <input type="range" id="cm-amp" min="0" max="2" step="0.01" value="1.5">
+    </div>
+    <div class="ol-row">
+      <label>Line frequency <span class="v" data-readout="freq">50 Hz</span></label>
+      <div class="cm-toggle">
+        <button type="button" data-freq="50" class="active">50</button>
+        <button type="button" data-freq="60">60</button>
+      </div>
+    </div>
+    <div class="ol-readout">
+      <span class="k">v_i1 pk-pk</span><span class="v" data-readout="v1pp">—</span>
+      <span class="k">v_i2 pk-pk</span><span class="v" data-readout="v2pp">—</span>
+      <span class="k">v_i1 − v_i2 pk-pk</span><span class="v" data-readout="vdpp">—</span>
+    </div>
+  </aside>
+
   <script type="module">
     import {
       Scene, Rectangle, Polygon, Circle, Line, Text, MathTex, VGroup, Dot,
-      Create, Write, FadeIn,
-      UP, DOWN, LEFT, RIGHT, WHITE
+      Create, Write, FadeIn, FadeOut
     } from 'https://esm.sh/manim-web@0.3.18';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
@@ -73,119 +189,12 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
-    const title = new Text({ text: 'Common-Mode Noise & Rejection', fontSize: 40, color: FG, fontUrl: FONT_URL });
-    await title.loadGlyphs?.();
-    title.moveTo([-3.5, 3.5, 0]);
-    const TITLE_LEFT_X = -6.2;
-    if (typeof title.getLeft === 'function') {
-      title.shift([TITLE_LEFT_X - title.getLeft()[0], 0, 0]);
-    }
+    // ── Stage 1: concept panels (Task 2) ──
+    // ── Stage 2: ECG scenario (Tasks 3–4) ──
+    // ── Compression transition (Task 5) ──
+    // ── Stage 3: signal module + render loop + controls (Tasks 6–9) ──
 
-    const bullets = [
-      'Common-mode noise appears equally on both inputs',
-      'Typical source: 50/60 Hz mains capacitive coupling',
-      'Goal: reject common-mode before amplification',
-      'Avoid converting common-mode into differential output'
-    ];
-    const bulletObjs = [];
-    for (let i = 0; i < bullets.length; i++) {
-      const b = new Text({ text: '•  ' + bullets[i], fontSize: 14, color: MUTED, fontUrl: FONT_URL });
-      await b.loadGlyphs?.();
-      b.moveTo([2.25, 1.8 - i * 0.34, 0]);
-      bulletObjs.push(b);
-    }
-
-    // ── Hospital bed (stylised) ──
-    const bed = new Rectangle({ width: 4.0, height: 0.4, color: MUTED, strokeWidth: 2, fillOpacity: 0.1 });
-    bed.moveTo([-2.8, -1.1, 0]);
-    const bedLeg1 = new Line({ start: [-4.6, -1.3, 0], end: [-4.6, -1.9, 0], color: MUTED });
-    const bedLeg2 = new Line({ start: [-1.0, -1.3, 0], end: [-1.0, -1.9, 0], color: MUTED });
-    const pillow = new Polygon({
-      vertices: [[-5.0, -0.9, 0], [-4.2, -0.9, 0], [-4.2, -0.65, 0], [-5.0, -0.65, 0]],
-      color: MAG, strokeWidth: 1.5, fillOpacity: 0.2
-    });
-
-    // ── Patient stick figure ──
-    const head = new Circle({ radius: 0.22, color: FG, strokeWidth: 2, fillOpacity: 0.1 });
-    head.moveTo([-4.6, -0.4, 0]);
-    const body = new Line({ start: [-4.4, -0.7, 0], end: [-1.6, -0.8, 0], color: FG, strokeWidth: 2 });
-    const arm1 = new Line({ start: [-3.8, -0.75, 0], end: [-3.4, -0.95, 0], color: FG });
-    const arm2 = new Line({ start: [-3.8, -0.75, 0], end: [-3.4, -0.55, 0], color: FG });
-
-    // ── Two electrode dots on the chest ──
-    const elec1 = new Dot({ point: [-3.3, -0.55, 0], color: YELLOW, radius: 0.09 });
-    const elec2 = new Dot({ point: [-3.3, -0.95, 0], color: YELLOW, radius: 0.09 });
-    const lead1 = new Line({ start: [-3.3, -0.55, 0], end: [ 1.5, 0.3, 0], color: FG });
-    const lead2 = new Line({ start: [-3.3, -0.95, 0], end: [ 1.5, -0.3, 0], color: FG });
-
-    // ── Mains cord on the right ──
-    const mains = new Line({ start: [4.5,  2.4, 0], end: [4.5, -1.9, 0], color: RED, strokeWidth: 3 });
-    const mainsLbl = new Text({ text: 'Mains 50 Hz', fontSize: 14, color: RED, fontUrl: FONT_URL });
-    await mainsLbl.loadGlyphs?.();
-    mainsLbl.moveTo([4.5, 2.8, 0]);
-    const leadLbl1 = new MathTex({ latex: 'v_{i1}', color: FG });
-    const leadLbl2 = new MathTex({ latex: 'v_{i2}', color: FG });
-    await leadLbl1.waitForRender?.();
-    await leadLbl2.waitForRender?.();
-    leadLbl1.scale(0.45).moveTo([1.8, 0.55, 0]);
-    leadLbl2.scale(0.45).moveTo([1.8, -0.55, 0]);
-
-    // ── Capacitive coupling (dashed look using short lines) ──
-    const couple = [];
-    const addDashes = (xs, ys, xe, ye, n) => {
-      for (let i = 0; i < n; i++) {
-        const t0 = i / n, t1 = (i + 0.5) / n;
-        couple.push(new Line({
-          start: [xs + (xe - xs) * t0, ys + (ye - ys) * t0, 0],
-          end:   [xs + (xe - xs) * t1, ys + (ye - ys) * t1, 0],
-          color: MAG, strokeWidth: 2
-        }));
-      }
-    };
-    addDashes(4.5, 1.0, -4.0, -0.3, 10);
-    addDashes(4.5, 0.5, -4.0, -1.1, 10);
-
-    const capLbl = new Text({ text: 'C_couple', fontSize: 12, color: MAG, fontUrl: FONT_URL });
-    await capLbl.loadGlyphs?.();
-    capLbl.moveTo([0.3, 0.9, 0]);
-
-    // ── Scope-style sine waves on each lead ──
-    const mkSine = (y0) => {
-      const lines = [];
-      const N = 60;
-      const x0 = 1.8, x1 = 5.2;
-      for (let i = 1; i <= N; i++) {
-        const t0 = (i - 1) / N, t1 = i / N;
-        const xa = x0 + t0 * (x1 - x0), xb = x0 + t1 * (x1 - x0);
-        const ya = y0 + 0.25 * Math.sin(t0 * Math.PI * 4);
-        const yb = y0 + 0.25 * Math.sin(t1 * Math.PI * 4);
-        lines.push(new Line({ start: [xa, ya, 0], end: [xb, yb, 0], color: RED, strokeWidth: 2 }));
-      }
-      return new VGroup(...lines);
-    };
-    const wave1 = mkSine(0.3);
-    const wave2 = mkSine(-0.3);
-
-    // ── Sequence ──
-    await scene.play(new Write(title, { duration: 0.7 }));
-    await scene.play(
-      new Create(bed), new Create(bedLeg1), new Create(bedLeg2), new Create(pillow),
-      new Create(head), new Create(body), new Create(arm1), new Create(arm2)
-    );
-    await scene.play(new FadeIn(elec1), new FadeIn(elec2), new Create(lead1), new Create(lead2));
-    await scene.play(new Write(leadLbl1), new Write(leadLbl2));
-    await scene.play(new Create(mains), new FadeIn(mainsLbl));
-    for (const c of couple) scene.add(c);
-    await scene.play(new FadeIn(capLbl));
-    await scene.play(new Create(wave1, { duration: 1.8, lagRatio: 0.03 }), new Create(wave2, { duration: 1.8, lagRatio: 0.03 }));
-    const caption = new Text({ text: 'Identical signal on both leads → common-mode', fontSize: 16, color: FG, fontUrl: FONT_URL });
-    await caption.loadGlyphs?.();
-    caption.moveTo([0, -2.9, 0]);
-    await scene.play(new FadeIn(caption));
-    for (const b of bulletObjs) {
-      await scene.play(new FadeIn(b, { duration: 0.2 }));
-    }
-    await scene.wait(2);
+    await scene.wait(0.1);
   </script>
 </body>
 </html>

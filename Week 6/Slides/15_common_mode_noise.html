@@ -314,16 +314,14 @@
     // Stage 1 play sequence
     await scene.play(new Write(stage1Title, { duration: 0.6 }));
     await scene.play(
-      new Create(leftPanel._border),  new Create(rightPanel._border),
-      new Write(leftPanel._headerText), new Write(rightPanel._headerText),
-      { duration: 0.5 }
+      new Create(leftPanel._border, { duration: 0.5 }),  new Create(rightPanel._border, { duration: 0.5 }),
+      new Write(leftPanel._headerText, { duration: 0.5 }), new Write(rightPanel._headerText, { duration: 0.5 })
     );
     await scene.play(
-      new Create(leftPanel._wireTop),  new Create(leftPanel._wireBot),
-      new Create(rightPanel._wireTop), new Create(rightPanel._wireBot),
-      new Create(leftPanel._leadTop),  new Create(leftPanel._leadBot),
-      new Create(rightPanel._leadTop), new Create(rightPanel._leadBot),
-      { duration: 0.4 }
+      new Create(leftPanel._wireTop, { duration: 0.4 }),  new Create(leftPanel._wireBot, { duration: 0.4 }),
+      new Create(rightPanel._wireTop, { duration: 0.4 }), new Create(rightPanel._wireBot, { duration: 0.4 }),
+      new Create(leftPanel._leadTop, { duration: 0.4 }),  new Create(leftPanel._leadBot, { duration: 0.4 }),
+      new Create(rightPanel._leadTop, { duration: 0.4 }), new Create(rightPanel._leadBot, { duration: 0.4 })
     );
     await scene.play(
       new Create(leftPanel._waveTop,  { duration: 1.1, lagRatio: 0.02 }),
@@ -332,13 +330,11 @@
       new Create(rightPanel._waveBot, { duration: 1.1, lagRatio: 0.02 })
     );
     await scene.play(
-      new FadeIn(leftPanel._sumCircle),  new Write(leftPanel._sumMinus),
-      new FadeIn(rightPanel._sumCircle), new Write(rightPanel._sumMinus),
-      { duration: 0.3 }
+      new FadeIn(leftPanel._sumCircle, { duration: 0.3 }),  new Write(leftPanel._sumMinus, { duration: 0.3 }),
+      new FadeIn(rightPanel._sumCircle, { duration: 0.3 }), new Write(rightPanel._sumMinus, { duration: 0.3 })
     );
     await scene.play(
-      new Write(leftPanel._eqn), new Write(rightPanel._eqn),
-      { duration: 0.5 }
+      new Write(leftPanel._eqn, { duration: 0.5 }), new Write(rightPanel._eqn, { duration: 0.5 })
     );
     await scene.play(new FadeIn(stage1Caption, { duration: 0.4 }));
     await scene.wait(1.5);
@@ -495,19 +491,18 @@
     // Stage 2 play sequence
     await scene.play(new Write(slideTitle, { duration: 0.6 }));
     await scene.play(
-      new Create(bed), new Create(bedLegL), new Create(bedLegR), new Create(pillow),
-      { duration: 0.4 }
+      new Create(bed, { duration: 0.4 }), new Create(bedLegL, { duration: 0.4 }),
+      new Create(bedLegR, { duration: 0.4 }), new Create(pillow, { duration: 0.4 })
     );
     await scene.play(new Create(patient, { duration: 1.2 }));
     await scene.play(new FadeIn(patient, { duration: 0.3 }));
     await scene.play(
-      new FadeIn(elec1), new FadeIn(elec2),
-      new Create(lead1), new Create(lead2),
-      new Create(ampBox), new FadeIn(ampLbl),
-      { duration: 0.5 }
+      new FadeIn(elec1, { duration: 0.5 }), new FadeIn(elec2, { duration: 0.5 }),
+      new Create(lead1, { duration: 0.5 }), new Create(lead2, { duration: 0.5 }),
+      new Create(ampBox, { duration: 0.5 }), new FadeIn(ampLbl, { duration: 0.5 })
     );
-    await scene.play(new Write(elecLbl1), new Write(elecLbl2), { duration: 0.3 });
-    await scene.play(new Create(mains), new FadeIn(mainsLbl), { duration: 0.4 });
+    await scene.play(new Write(elecLbl1, { duration: 0.3 }), new Write(elecLbl2, { duration: 0.3 }));
+    await scene.play(new Create(mains, { duration: 0.4 }), new FadeIn(mainsLbl, { duration: 0.4 }));
     await scene.play(new FadeIn(couple1Group, { duration: 0.4 }));
     await scene.play(new FadeIn(couple2Group, { duration: 0.4 }));
     await scene.play(new FadeIn(capLbl, { duration: 0.2 }));

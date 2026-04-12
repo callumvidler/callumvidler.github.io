@@ -2101,12 +2101,15 @@
       };
     };
 
-    let s4Drawing = false;
-    let s4DrawQueued = false;
-    const drawSection4 = async () => {
+    // Synchronous text helper — no await, font already cached from build phase
+    const quickText = (text, fontSize, color, pos) => {
+      const t = new Text({ text, fontSize, color, fontUrl: FONT_URL });
+      t.moveTo(pos);
+      return t;
+    };
+
+    const drawSection4 = () => {
       if (!state.section4Ctx) return;
-      if (s4Drawing) { s4DrawQueued = true; return; }
-      s4Drawing = true;
       const ctx = state.section4Ctx;
       const { stepFrame, penFrame } = ctx;
 
@@ -2191,12 +2194,11 @@
         }
       }
 
-      // Annotation
+      // Annotation (synchronous)
       const betaStr = beta.toFixed(3);
       const gainStr = acl < 1000 ? acl.toFixed(1) : acl.toFixed(0);
-      const stepAnno1 = await makeText('\u03B2=' + betaStr, 11, BLUE, [stepFrame.x1 - 0.70, stepFrame.y1 - 0.18, 0]);
-      const stepAnno2 = await makeText('Acl=' + gainStr, 11, CYAN, [stepFrame.x1 - 0.70, stepFrame.y1 - 0.38, 0]);
-      g.push(stepAnno1, stepAnno2);
+      g.push(quickText('\u03B2=' + betaStr, 11, BLUE, [stepFrame.x1 - 0.70, stepFrame.y1 - 0.18, 0]));
+      g.push(quickText('Acl=' + gainStr, 11, CYAN, [stepFrame.x1 - 0.70, stepFrame.y1 - 0.38, 0]));
 
       // Step response Y-axis tick labels
       const yStep = yMax > 10 ? 5 : yMax > 2 ? 1 : yMax > 0.5 ? 0.2 : 0.05;
@@ -2204,8 +2206,7 @@
         const py = mapPoint(stepFrame, 0, v, stepXRange, stepYRange)[1];
         if (py > stepFrame.y0 + 0.10 && py < stepFrame.y1 - 0.10) {
           const vStr = v >= 1 ? v.toFixed(0) + 'V' : (v * 1e3).toFixed(0) + 'mV';
-          const tickLbl = await makeText(vStr, 9, MUTED, [stepFrame.x0 - 0.28, py, 0]);
-          g.push(tickLbl);
+          g.push(quickText(vStr, 9, MUTED, [stepFrame.x0 - 0.28, py, 0]));
         }
       }
 
@@ -2219,8 +2220,7 @@
           if (t >= 1e-3) tStr = (t * 1e3).toFixed(1) + 'ms';
           else if (t >= 1e-6) tStr = (t * 1e6).toFixed(0) + '\u00B5s';
           else tStr = (t * 1e9).toFixed(0) + 'ns';
-          const tickLbl = await makeText(tStr, 9, MUTED, [px, stepFrame.y0 - 0.16, 0]);
-          g.push(tickLbl);
+          g.push(quickText(tStr, 9, MUTED, [px, stepFrame.y0 - 0.16, 0]));
         }
       }
 
@@ -2253,36 +2253,23 @@
       if (markerLogR >= penLogMin && markerLogR <= penLogMax) {
         const mx = mapPoint(penFrame, markerLogR, 0, penXRange, penYRange)[0];
         g.push(new Line({ start: [mx, penFrame.y0 + 0.05, 0], end: [mx, penFrame.y1 - 0.05, 0], color: FG, strokeWidth: 2.2 }));
-        const markerLabel = await makeText('\u25C6 You', 10, FG, [mx, penFrame.y1 - 0.34, 0]);
-        g.push(markerLabel);
+        g.push(quickText('\u25C6 You', 10, FG, [mx, penFrame.y1 - 0.34, 0]));
       }
 
       scene.add(...g);
       state.interactiveObjects = g;
 
-      // Update live circuit labels
-      const updateLiveLabel = async (old, latex, color, pos) => {
+      // Update live circuit labels (synchronous — use plain text, not MathTex)
+      for (const old of [ctx.live.liveBetaLabel, ctx.live.liveGainLabel, ctx.live.liveR1Label, ctx.live.liveR2Label]) {
         scene.remove(old);
-        const scale = old === ctx.live.liveBetaLabel || old === ctx.live.liveGainLabel ? 0.44 : 0.36;
-        const next = await makeMath(latex, scale, color, pos);
-        scene.add(next);
-        return next;
-      };
-      ctx.live.liveBetaLabel = await updateLiveLabel(ctx.live.liveBetaLabel, '\\beta=' + betaStr, BLUE, [-4.10, 2.30, 0]);
-      ctx.live.liveGainLabel = await updateLiveLabel(ctx.live.liveGainLabel, 'A_{CL}=' + gainStr, CYAN, [-4.10, 1.90, 0]);
-      const r1Latex = r1 >= 1e6 ? (r1 / 1e6).toFixed(r1 >= 10e6 ? 0 : 1) + '\\,\\text{M}\\Omega'
-        : r1 >= 1e3 ? (r1 / 1e3).toFixed(r1 >= 10e3 ? 0 : 1) + '\\,\\text{k}\\Omega'
-        : r1.toFixed(0) + '\\,\\Omega';
-      const r2Latex = r2 >= 1e6 ? (r2 / 1e6).toFixed(r2 >= 10e6 ? 0 : 1) + '\\,\\text{M}\\Omega'
-        : r2 >= 1e3 ? (r2 / 1e3).toFixed(r2 >= 10e3 ? 0 : 1) + '\\,\\text{k}\\Omega'
-        : r2.toFixed(0) + '\\,\\Omega';
+      }
+      ctx.live.liveBetaLabel = quickText('\u03B2=' + betaStr, 14, BLUE, [-4.10, 2.30, 0]);
+      ctx.live.liveGainLabel = quickText('Acl=' + gainStr, 14, CYAN, [-4.10, 1.90, 0]);
       const r1Color = r1 < 1e3 ? RED : r1 > 1e6 ? YELLOW : ACCENT;
       const r2Color = r2 < 1e3 ? RED : r2 > 1e6 ? YELLOW : ACCENT;
-      ctx.live.liveR1Label = await updateLiveLabel(ctx.live.liveR1Label, 'R_1=' + r1Latex, r1Color, [-3.40, -0.80, 0]);
-      ctx.live.liveR2Label = await updateLiveLabel(ctx.live.liveR2Label, 'R_2=' + r2Latex, r2Color, [-3.40, -1.10, 0]);
-
-      s4Drawing = false;
-      if (s4DrawQueued) { s4DrawQueued = false; queueSection4Draw(); }
+      ctx.live.liveR1Label = quickText('R1=' + formatR(r1), 12, r1Color, [-3.40, -0.80, 0]);
+      ctx.live.liveR2Label = quickText('R2=' + formatR(r2), 12, r2Color, [-3.40, -1.10, 0]);
+      scene.add(ctx.live.liveBetaLabel, ctx.live.liveGainLabel, ctx.live.liveR1Label, ctx.live.liveR2Label);
     };
 
     const queueSection4Draw = () => {

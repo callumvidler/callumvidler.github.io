@@ -130,6 +130,36 @@
     }
     .ol-readout .k { color: var(--slide-text-dim); }
     .ol-readout .v { color: var(--slide-text); text-align: right; }
+
+    .stage-nav {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 11;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--slide-text-dim);
+    }
+    .stage-nav button {
+      background: transparent;
+      border: 1px solid var(--slide-border);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      color: var(--slide-text-dim);
+      cursor: pointer;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .stage-nav button:hover:not(:disabled) {
+      color: var(--slide-text);
+      border-color: var(--slide-text-dim);
+    }
+    .stage-nav button:disabled { opacity: 0.25; cursor: default; }
   </style>
 </head>
 <body class="slide">
@@ -165,6 +195,12 @@
     </div>
   </aside>
 
+  <nav class="stage-nav" id="stage-nav">
+    <button id="nav-prev" disabled>&#8249; prev</button>
+    <span id="nav-indicator">1 / 3</span>
+    <button id="nav-next">next &#8250;</button>
+  </nav>
+
   <script type="module">
     import {
       Scene, Rectangle, Polygon, Circle, Line, Text, MathTex, VGroup, Dot,
@@ -188,31 +224,6 @@
     const stage = document.getElementById('stage');
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
-
-    // Click-to-advance helper: shows a hint, waits for click/key, removes hint
-    const hintEl = document.createElement('div');
-    hintEl.style.cssText = `
-      position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
-      font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px;
-      color:${MUTED}; opacity:0; transition:opacity 0.4s ease; z-index:10;
-      pointer-events:none; text-transform:uppercase;
-    `;
-    hintEl.textContent = 'click to continue';
-    document.body.appendChild(hintEl);
-
-    function waitForClick() {
-      return new Promise(resolve => {
-        hintEl.style.opacity = '1';
-        function handler() {
-          hintEl.style.opacity = '0';
-          document.removeEventListener('click', handler);
-          document.removeEventListener('keydown', handler);
-          resolve();
-        }
-        document.addEventListener('click', handler);
-        document.addEventListener('keydown', handler);
-      });
-    }
 
     // ── Stage 1: concept panels ─────────────────────────────────────────────
     const LEFT_PANEL_CX = -3.4, RIGHT_PANEL_CX = 3.4, PANEL_CY = 0.1;
@@ -335,50 +346,6 @@
       await p._eqn.waitForRender?.();
       p._eqn.scale(0.55).moveTo([p._cx, PANEL_CY - PANEL_H / 2 - 0.35, 0]);
     }
-
-    // Stage 1 play sequence
-    await scene.play(new Write(stage1Title, { duration: 0.6 }));
-    await scene.play(
-      new Create(leftPanel._border, { duration: 0.5 }),  new Create(rightPanel._border, { duration: 0.5 }),
-      new Write(leftPanel._headerText, { duration: 0.5 }), new Write(rightPanel._headerText, { duration: 0.5 })
-    );
-    await scene.play(
-      new Create(leftPanel._wireTop, { duration: 0.4 }),  new Create(leftPanel._wireBot, { duration: 0.4 }),
-      new Create(rightPanel._wireTop, { duration: 0.4 }), new Create(rightPanel._wireBot, { duration: 0.4 }),
-      new Create(leftPanel._leadTop, { duration: 0.4 }),  new Create(leftPanel._leadBot, { duration: 0.4 }),
-      new Create(rightPanel._leadTop, { duration: 0.4 }), new Create(rightPanel._leadBot, { duration: 0.4 })
-    );
-    await scene.play(
-      new Create(leftPanel._waveTop,  { duration: 1.1, lagRatio: 0.02 }),
-      new Create(leftPanel._waveBot,  { duration: 1.1, lagRatio: 0.02 }),
-      new Create(rightPanel._waveTop, { duration: 1.1, lagRatio: 0.02 }),
-      new Create(rightPanel._waveBot, { duration: 1.1, lagRatio: 0.02 })
-    );
-    await scene.play(
-      new FadeIn(leftPanel._sumCircle, { duration: 0.3 }),  new Write(leftPanel._sumMinus, { duration: 0.3 }),
-      new FadeIn(rightPanel._sumCircle, { duration: 0.3 }), new Write(rightPanel._sumMinus, { duration: 0.3 })
-    );
-    await scene.play(
-      new Write(leftPanel._eqn, { duration: 0.5 }), new Write(rightPanel._eqn, { duration: 0.5 })
-    );
-    await scene.play(new FadeIn(stage1Caption, { duration: 0.4 }));
-    await waitForClick();
-
-    // Fade Stage 1 out entirely
-    const stage1All = new VGroup(
-      stage1Title, stage1Caption,
-      leftPanel._border, leftPanel._headerText,
-      leftPanel._wireTop, leftPanel._wireBot,
-      leftPanel._waveTop, leftPanel._waveBot,
-      leftPanel._sumCircle, leftPanel._sumMinus,
-      leftPanel._leadTop, leftPanel._leadBot, leftPanel._eqn,
-      rightPanel._border, rightPanel._headerText,
-      rightPanel._wireTop, rightPanel._wireBot,
-      rightPanel._waveTop, rightPanel._waveBot,
-      rightPanel._sumCircle, rightPanel._sumMinus,
-      rightPanel._leadTop, rightPanel._leadBot, rightPanel._eqn
-    );
-    await scene.play(new FadeOut(stage1All, { duration: 0.5 }));
 
     // ── Stage 2: ECG scenario ────────────────────────────────────────────────
     const SLIDE_TITLE_LEFT_X = -6.2;
@@ -513,29 +480,22 @@
     await stage2Caption.loadGlyphs?.();
     stage2Caption.moveTo([0, -2.70, 0]);
 
-    // Stage 2 play sequence
-    await scene.play(new Write(slideTitle, { duration: 0.6 }));
-    await scene.play(
-      new Create(bed, { duration: 0.4 }), new Create(bedLegL, { duration: 0.4 }),
-      new Create(bedLegR, { duration: 0.4 }), new Create(pillow, { duration: 0.4 })
+    // ── Stage groups ─────────────────────────────────────────────────────────
+    const stage1Group = new VGroup(
+      stage1Title, stage1Caption,
+      leftPanel._border, leftPanel._headerText,
+      leftPanel._wireTop, leftPanel._wireBot,
+      leftPanel._waveTop, leftPanel._waveBot,
+      leftPanel._sumCircle, leftPanel._sumMinus,
+      leftPanel._leadTop, leftPanel._leadBot, leftPanel._eqn,
+      rightPanel._border, rightPanel._headerText,
+      rightPanel._wireTop, rightPanel._wireBot,
+      rightPanel._waveTop, rightPanel._waveBot,
+      rightPanel._sumCircle, rightPanel._sumMinus,
+      rightPanel._leadTop, rightPanel._leadBot, rightPanel._eqn
     );
-    await scene.play(new Create(patient, { duration: 1.2 }));
-    await scene.play(new FadeIn(patient, { duration: 0.3 }));
-    await scene.play(
-      new FadeIn(elec1, { duration: 0.5 }), new FadeIn(elec2, { duration: 0.5 }),
-      new Create(lead1, { duration: 0.5 }), new Create(lead2, { duration: 0.5 }),
-      new Create(ampBox, { duration: 0.5 }), new FadeIn(ampLbl, { duration: 0.5 })
-    );
-    await scene.play(new Write(elecLbl1, { duration: 0.3 }), new Write(elecLbl2, { duration: 0.3 }));
-    await scene.play(new Create(mains, { duration: 0.4 }), new FadeIn(mainsLbl, { duration: 0.4 }));
-    await scene.play(new FadeIn(couple1Group, { duration: 0.4 }));
-    await scene.play(new FadeIn(couple2Group, { duration: 0.4 }));
-    await scene.play(new FadeIn(capLbl, { duration: 0.2 }));
-    await scene.play(new FadeIn(stage2Caption, { duration: 0.3 }));
-    await waitForClick();
 
-    // ── Compression transition ────────────────────────────────────────────────
-    const sceneGroup = new VGroup(
+    const stage2Body = new VGroup(
       bed, bedLegL, bedLegR, pillow,
       patient,
       elec1, elec2, elecLbl1, elecLbl2,
@@ -545,44 +505,20 @@
       stage2Caption
     );
 
-    // Scale the whole scenario down and move it into the top ~60% of the canvas,
-    // leaving the bottom ~40% clear for the interactive graph + panel.
-    const SCENE_GROUP_SCALE  = 0.55;
-    const SCENE_GROUP_TARGET = [0, 1.20, 0];
-
-    // Manim-web doesn't expose a Transform-to-target helper for arbitrary groups,
-    // so we scale in place, then moveTo. Both calls take effect before the next
-    // scene.play; we wrap in a short wait so the visual transition is perceptible.
-    sceneGroup.scale(SCENE_GROUP_SCALE);
-    sceneGroup.moveTo(SCENE_GROUP_TARGET);
-
-    // Trigger a no-op play so manim-web flushes the new positions to canvas
-    await scene.play(new FadeIn(sceneGroup, { duration: 0.01 }));
-    await scene.wait(0.3);
-
-    // Reveal Stage 3 overlays (canvas + control panel)
-    const cmGraphWrap = document.getElementById('cm-graph-wrap');
-    const cmPanel     = document.getElementById('cm-panel');
-    cmGraphWrap.classList.add('visible');
-    cmPanel.classList.add('visible');
-
-    // ── Stage 3: signal module ────────────────────────────────────────────────
-
-    // Mutable state read by the render loop on every frame
+    // ── Signal module (always available, render loop deferred) ─────────────
     const state = {
-      amplitude: 1.5,   // noise amplitude in R-peak units
-      frequency: 50,    // mains frequency in Hz
-      tStart:   performance.now() / 1000
+      amplitude: 1.5,
+      frequency: 50,
+      tStart: performance.now() / 1000
     };
 
-    // Synthesized ECG — sum of five Gaussians (P, Q, R, S, T) over one beat
-    const HEART_PERIOD_S = 60 / 72;  // 0.8333... s
+    const HEART_PERIOD_S = 60 / 72;
     const GAUSSIANS = [
-      { center: 0.12, amp:  0.15, sigma: 0.025 }, // P
-      { center: 0.30, amp: -0.10, sigma: 0.008 }, // Q
-      { center: 0.32, amp:  1.00, sigma: 0.010 }, // R (peak = 1.0)
-      { center: 0.34, amp: -0.25, sigma: 0.010 }, // S
-      { center: 0.48, amp:  0.30, sigma: 0.040 }  // T
+      { center: 0.12, amp:  0.15, sigma: 0.025 },
+      { center: 0.30, amp: -0.10, sigma: 0.008 },
+      { center: 0.32, amp:  1.00, sigma: 0.010 },
+      { center: 0.34, amp: -0.25, sigma: 0.010 },
+      { center: 0.48, amp:  0.30, sigma: 0.040 }
     ];
     function ecg(t) {
       const tBeat = ((t % HEART_PERIOD_S) + HEART_PERIOD_S) % HEART_PERIOD_S;
@@ -593,170 +529,114 @@
       }
       return y;
     }
-
     function mainsNoise(t) {
       return state.amplitude * Math.sin(2 * Math.PI * state.frequency * t);
     }
 
-    // Ring buffers — one per trace, each 3 s of history at 120 Hz = 360 samples
     const SAMPLE_RATE_HZ = 120;
     const TIME_WINDOW_S  = 3.0;
-    const RING_LEN       = SAMPLE_RATE_HZ * TIME_WINDOW_S; // 360
+    const RING_LEN       = SAMPLE_RATE_HZ * TIME_WINDOW_S;
     const buf_v1 = new Float32Array(RING_LEN);
     const buf_v2 = new Float32Array(RING_LEN);
     const buf_vd = new Float32Array(RING_LEN);
-    let ringHead = 0;          // index of the oldest sample
-    let ringFilled = 0;         // samples written so far (caps at RING_LEN)
+    let ringHead = 0, ringFilled = 0;
     let lastSampleTime = state.tStart;
 
     function pushSample(v1, v2, vd) {
       const idx = (ringHead + ringFilled) % RING_LEN;
-      buf_v1[idx] = v1;
-      buf_v2[idx] = v2;
-      buf_vd[idx] = vd;
-      if (ringFilled < RING_LEN) {
-        ringFilled++;
-      } else {
-        ringHead = (ringHead + 1) % RING_LEN;
-      }
+      buf_v1[idx] = v1; buf_v2[idx] = v2; buf_vd[idx] = vd;
+      if (ringFilled < RING_LEN) ringFilled++;
+      else ringHead = (ringHead + 1) % RING_LEN;
     }
-
     function sampleAt(t) {
       const v1 = ecg(t) + mainsNoise(t);
-      const v2 = 0      + mainsNoise(t);
-      const vd = v1 - v2;   // = ecg(t), analytically
-      return [v1, v2, vd];
+      const v2 = mainsNoise(t);
+      return [v1, v2, v1 - v2];
     }
-
     function peakToPeak(buf) {
       if (ringFilled === 0) return 0;
       let lo = Infinity, hi = -Infinity;
       for (let i = 0; i < ringFilled; i++) {
-        const idx = (ringHead + i) % RING_LEN;
-        const x = buf[idx];
-        if (x < lo) lo = x;
-        if (x > hi) hi = x;
+        const v = buf[(ringHead + i) % RING_LEN];
+        if (v < lo) lo = v; if (v > hi) hi = v;
       }
       return hi - lo;
     }
 
-    // ── Stage 3: canvas render loop ────────────────────────────────────────────
+    // ── Canvas render loop (started on first stage-3 visit) ───────────────
     const canvas = document.getElementById('cm-graph');
     const ctx = canvas.getContext('2d');
-
-    // Trace layout — three stacked rows in the canvas
     const TRACES = [
-      { buf: buf_v1, label: 'v_i1',            color: BLUE   },
-      { buf: buf_v2, label: 'v_i2',            color: CYAN   },
-      { buf: buf_vd, label: 'v_i1 − v_i2',     color: ACCENT }
+      { buf: buf_v1, label: 'v_i1',        color: BLUE   },
+      { buf: buf_v2, label: 'v_i2',        color: CYAN   },
+      { buf: buf_vd, label: 'v_i1 − v_i2', color: ACCENT }
     ];
-    const ROW_GAP = 10;            // px between trace rows
-    const LEFT_GUTTER = 80;        // px reserved for labels at the left
-    const RIGHT_GUTTER = 16;
+    const ROW_GAP = 10, LEFT_GUTTER = 80, RIGHT_GUTTER = 16;
 
     function resizeCanvas() {
       const dpr = window.devicePixelRatio || 1;
-      const cssW = canvas.clientWidth;
-      const cssH = canvas.clientHeight;
-      canvas.width  = Math.round(cssW * dpr);
-      canvas.height = Math.round(cssH * dpr);
+      canvas.width  = Math.round(canvas.clientWidth * dpr);
+      canvas.height = Math.round(canvas.clientHeight * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-
     function drawFrame() {
-      const cssW = canvas.clientWidth;
-      const cssH = canvas.clientHeight;
+      const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
       ctx.clearRect(0, 0, cssW, cssH);
-
       const rowH = (cssH - ROW_GAP * (TRACES.length - 1)) / TRACES.length;
       const plotW = cssW - LEFT_GUTTER - RIGHT_GUTTER;
-
-      // Grid + baselines + labels per row
       ctx.font = '11px "IBM Plex Mono", monospace';
       ctx.textBaseline = 'middle';
-
       for (let r = 0; r < TRACES.length; r++) {
         const tr = TRACES[r];
-        const y0 = r * (rowH + ROW_GAP);
-        const yMid = y0 + rowH / 2;
-
-        // Row background: faint border top + bottom
-        ctx.strokeStyle = MUTED2;
-        ctx.lineWidth = 1;
+        const y0 = r * (rowH + ROW_GAP), yMid = y0 + rowH / 2;
+        ctx.strokeStyle = MUTED2; ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(LEFT_GUTTER, y0);
-        ctx.lineTo(cssW - RIGHT_GUTTER, y0);
-        ctx.moveTo(LEFT_GUTTER, y0 + rowH);
-        ctx.lineTo(cssW - RIGHT_GUTTER, y0 + rowH);
+        ctx.moveTo(LEFT_GUTTER, y0); ctx.lineTo(cssW - RIGHT_GUTTER, y0);
+        ctx.moveTo(LEFT_GUTTER, y0 + rowH); ctx.lineTo(cssW - RIGHT_GUTTER, y0 + rowH);
         ctx.stroke();
-
-        // Baseline (0 V)
-        ctx.strokeStyle = MUTED;
-        ctx.setLineDash([2, 4]);
-        ctx.beginPath();
-        ctx.moveTo(LEFT_GUTTER, yMid);
-        ctx.lineTo(cssW - RIGHT_GUTTER, yMid);
-        ctx.stroke();
+        ctx.strokeStyle = MUTED; ctx.setLineDash([2, 4]);
+        ctx.beginPath(); ctx.moveTo(LEFT_GUTTER, yMid); ctx.lineTo(cssW - RIGHT_GUTTER, yMid); ctx.stroke();
         ctx.setLineDash([]);
-
-        // Row label
-        ctx.fillStyle = MUTED;
-        ctx.textAlign = 'right';
+        ctx.fillStyle = MUTED; ctx.textAlign = 'right';
         ctx.fillText(tr.label, LEFT_GUTTER - 10, yMid);
-
-        // Trace
         if (ringFilled > 1) {
-          // y-scale: ±3.5 R-peak units maps to ±(rowH/2 - 4px)
           const yScale = (rowH / 2 - 4) / 3.5;
-          ctx.strokeStyle = tr.color;
-          ctx.lineWidth = 1.6;
-          ctx.beginPath();
+          ctx.strokeStyle = tr.color; ctx.lineWidth = 1.6; ctx.beginPath();
           for (let i = 0; i < ringFilled; i++) {
-            const idx = (ringHead + i) % RING_LEN;
             const x = LEFT_GUTTER + (i / (RING_LEN - 1)) * plotW;
-            const y = yMid - tr.buf[idx] * yScale;
-            if (i === 0) ctx.moveTo(x, y);
-            else         ctx.lineTo(x, y);
+            const y = yMid - tr.buf[(ringHead + i) % RING_LEN] * yScale;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
           }
           ctx.stroke();
         }
       }
     }
-
     function tick(nowMs) {
-      const nowS = nowMs / 1000;
-      const dt = 1 / SAMPLE_RATE_HZ;
-      // Produce all samples up to the current wall-clock time (catch up if we
-      // dropped frames) so the waveforms stay phase-consistent.
+      const nowS = nowMs / 1000, dt = 1 / SAMPLE_RATE_HZ;
       while (lastSampleTime + dt <= nowS) {
         lastSampleTime += dt;
-        const tRel = lastSampleTime - state.tStart;
-        const [v1, v2, vd] = sampleAt(tRel);
+        const [v1, v2, vd] = sampleAt(lastSampleTime - state.tStart);
         pushSample(v1, v2, vd);
       }
       drawFrame();
       requestAnimationFrame(tick);
     }
 
-    // Kick off the loop once the canvas has been laid out
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    requestAnimationFrame(tick);
-
-    // ── Stage 3: control wiring ────────────────────────────────────────────────
-    const ampSlider = document.getElementById('cm-amp');
-    const ampOut    = document.querySelector('[data-readout="amp"]');
-    const freqOut   = document.querySelector('[data-readout="freq"]');
-    const v1ppOut   = document.querySelector('[data-readout="v1pp"]');
-    const v2ppOut   = document.querySelector('[data-readout="v2pp"]');
-    const vdppOut   = document.querySelector('[data-readout="vdpp"]');
+    // ── Control wiring ────────────────────────────────────────────────────────
+    const cmGraphWrap = document.getElementById('cm-graph-wrap');
+    const cmPanel     = document.getElementById('cm-panel');
+    const ampSlider   = document.getElementById('cm-amp');
+    const ampOut  = document.querySelector('[data-readout="amp"]');
+    const freqOut = document.querySelector('[data-readout="freq"]');
+    const v1ppOut = document.querySelector('[data-readout="v1pp"]');
+    const v2ppOut = document.querySelector('[data-readout="v2pp"]');
+    const vdppOut = document.querySelector('[data-readout="vdpp"]');
     const freqButtons = cmPanel.querySelectorAll('.cm-toggle button');
 
     ampSlider.addEventListener('input', () => {
       state.amplitude = parseFloat(ampSlider.value);
       ampOut.textContent = state.amplitude.toFixed(2) + '×';
     });
-
     freqButtons.forEach(btn => {
       btn.addEventListener('click', () => {
         const f = parseInt(btn.dataset.freq, 10);
@@ -765,15 +645,89 @@
         freqButtons.forEach(b => b.classList.toggle('active', b === btn));
       });
     });
-
-    // Readout refresh: piggyback on the animation loop via an interval
-    // (we update at ~15 Hz so the DOM writes do not thrash on every frame)
     setInterval(() => {
       v1ppOut.textContent = peakToPeak(buf_v1).toFixed(2);
       v2ppOut.textContent = peakToPeak(buf_v2).toFixed(2);
       vdppOut.textContent = peakToPeak(buf_vd).toFixed(2);
     }, 66);
+    window.addEventListener('resize', resizeCanvas);
 
+    // ── Stage navigation ──────────────────────────────────────────────────────
+    const SCENE_GROUP_SCALE  = 0.55;
+    const SCENE_GROUP_TARGET = [0, 1.20, 0];
+    let currentStage = 0;
+    let stage2Compressed = false;
+    let renderLoopStarted = false;
+    let stage2OrigCenter = null;
+
+    const navPrev = document.getElementById('nav-prev');
+    const navNext = document.getElementById('nav-next');
+    const navInd  = document.getElementById('nav-indicator');
+
+    function updateNav() {
+      navPrev.disabled = currentStage <= 1;
+      navNext.disabled = currentStage >= 3;
+      navInd.textContent = currentStage + ' / 3';
+    }
+
+    function goTo(n) {
+      if (n === currentStage || n < 1 || n > 3) return;
+
+      // ── Hide current stage ──
+      if (currentStage === 1) {
+        scene.remove(stage1Group);
+      } else if (currentStage === 2) {
+        scene.remove(stage2Body);
+        scene.remove(slideTitle);
+      } else if (currentStage === 3) {
+        if (stage2Compressed) {
+          stage2Body.scale(1 / SCENE_GROUP_SCALE);
+          if (stage2OrigCenter) stage2Body.moveTo(stage2OrigCenter);
+          stage2Compressed = false;
+        }
+        scene.remove(stage2Body);
+        scene.remove(slideTitle);
+        cmGraphWrap.classList.remove('visible');
+        cmPanel.classList.remove('visible');
+      }
+
+      currentStage = n;
+
+      // ── Show new stage ──
+      if (n === 1) {
+        scene.add(stage1Group);
+      } else if (n === 2) {
+        scene.add(slideTitle);
+        scene.add(stage2Body);
+      } else if (n === 3) {
+        scene.add(slideTitle);
+        if (!stage2Compressed) {
+          stage2OrigCenter = stage2Body.getCenter?.() || [0, -0.5, 0];
+          stage2Body.scale(SCENE_GROUP_SCALE);
+          stage2Body.moveTo(SCENE_GROUP_TARGET);
+          stage2Compressed = true;
+        }
+        scene.add(stage2Body);
+        cmGraphWrap.classList.add('visible');
+        cmPanel.classList.add('visible');
+        if (!renderLoopStarted) {
+          renderLoopStarted = true;
+          resizeCanvas();
+          requestAnimationFrame(tick);
+        }
+      }
+
+      updateNav();
+    }
+
+    navPrev.addEventListener('click', () => goTo(currentStage - 1));
+    navNext.addEventListener('click', () => goTo(currentStage + 1));
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight' || e.key === ' ') goTo(currentStage + 1);
+      if (e.key === 'ArrowLeft') goTo(currentStage - 1);
+    });
+
+    goTo(1);
     await scene.wait(0.1);
   </script>
 </body>

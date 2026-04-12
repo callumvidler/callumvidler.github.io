@@ -753,7 +753,7 @@
 
       animated.push(...eqStage, ...bulletStage, ...circuitStage, ...diagramStage, ...betaCalloutStage, ...graphStage);
 
-      const bd = { BD_FWD_Y, BD_FB_Y, BD_JX, BD_JR, BD_AX, BD_AW, BD_BX, BD_BW, BD_TAP, BD_OUT, BD_IN };
+      const bd = { BD_FWD_Y, BD_FB_Y, BD_JX, BD_JR, BD_AX, BD_AW, BD_AH, BD_BX, BD_BW, BD_BH, BD_TAP, BD_OUT, BD_IN };
 
       return {
         objs,
@@ -978,7 +978,8 @@
         scene.add(shaft);
         const head = makeArrowhead(sp[0], sp[1], ep[0], ep[1]);
         if (head) { objs.push(head); scene.add(head); }
-        const landDot = new Dot({ point: [ep[0], ep[1], 0], color: ACCENT, radius: 0.050 });
+        const dotColor = (k + 1 === 1) ? RED : ACCENT;
+        const landDot = new Dot({ point: [ep[0], ep[1], 0], color: dotColor, radius: 0.050 });
         objs.push(landDot);
         scene.add(landDot);
         if (k > 0) {
@@ -991,6 +992,26 @@
       const labels = c.bdDynLabels[n];
       objs.push(labels.vdL, labels.voL, labels.vfL);
       scene.add(labels.vdL, labels.voL, labels.vfL);
+
+      // Vd bar — height proportional to |Vd| relative to max |Vd| at k=0
+      const vdNow = Math.abs(S2_V_IN - S2_BETA * s2Vouts[n]);
+      const vdMax = Math.abs(S2_V_IN - S2_BETA * s2Vouts[0]); // = |Vin| = 1
+      const VD_BAR_MAX_H = 0.40;
+      const vdBarH = VD_BAR_MAX_H * (vdNow / vdMax);
+      if (vdBarH > 0.01) {
+        const vdBarX = (bd.BD_JX + bd.BD_JR + bd.BD_AX - bd.BD_AW / 2) / 2;
+        const vdBarY = bd.BD_FWD_Y;
+        const vdBar = new Rectangle({
+          width: 0.18,
+          height: vdBarH,
+          color: ACCENT,
+          strokeWidth: 1.2,
+          fillOpacity: 0.45
+        });
+        vdBar.moveTo([vdBarX, vdBarY, 0]);
+        objs.push(vdBar);
+        scene.add(vdBar);
+      }
 
       if (n === S2_STEPS) {
         const finalLbl = new Text({ text: 'Settled: V_d \u2192 0', fontSize: 13, color: ACCENT, fontUrl: FONT_URL });

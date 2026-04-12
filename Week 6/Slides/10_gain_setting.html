@@ -2408,23 +2408,17 @@
               });
               if (anims.length) await scene.play(...anims);
             };
-            await playGroup(sec.groups.eqStage, 1.0, true);
+            await playGroup(sec.groups.circuitStage, 1.0, false);
             if (stale()) return;
-            await scene.wait(0.5);
+            await scene.wait(0.2);
             if (stale()) return;
-            for (const bullet of sec.groups.bulletStage) {
-              await playGroup([bullet], 0.8, true);
-              if (stale()) return;
-              await scene.wait(0.25);
-              if (stale()) return;
-            }
-            await playGroup(sec.groups.circuitStage, 1.2, false);
+            await playGroup(sec.groups.liveLabels, 0.6, true);
             if (stale()) return;
-            await scene.wait(0.3);
+            await playGroup(sec.groups.stepPlot, 0.8, false);
             if (stale()) return;
-            await playGroup(sec.groups.liveLabels, 0.8, true);
+            await scene.wait(0.15);
             if (stale()) return;
-            await playGroup(sec.groups.barObjs, 1.0, false);
+            await playGroup(sec.groups.penPlot, 0.8, false);
             if (stale()) return;
           } else {
             scene.add(...sec.animated);

@@ -582,6 +582,9 @@
         cancelAnimationFrame(state.section4DrawRaf);
         state.section4DrawRaf = null;
       }
+      if (state.section4Ctx && state.section4Ctx._crossCanvas) {
+        state.section4Ctx._crossCanvas.style.display = 'none';
+      }
       state.section4Ctx = null;
       document.getElementById('s4Heatmap').style.display = 'none';
     };
@@ -2058,14 +2061,37 @@
       const SCENE_W = 14.22, SCENE_H = 8.0;
       const SCENE_X0 = -7.11, SCENE_Y0 = -4.0;
       const toScreenPctX = (mx) => (mx - SCENE_X0) / SCENE_W * 100;
-      const toScreenPctY = (my) => (1 - (my - SCENE_Y0) / SCENE_H) * 100; // flip Y
+      const toScreenPctY = (my) => (1 - (my - SCENE_Y0) / SCENE_H) * 100;
 
-      // Paint heatmap onto canvas using ImageData (instant)
+      // Viridis colormap (sampled at 9 stops)
+      const VIRIDIS = [
+        [68, 1, 84], [72, 35, 116], [64, 67, 135], [52, 94, 141],
+        [33, 144, 140], [43, 176, 127], [94, 201, 97], [186, 222, 40], [253, 231, 37]
+      ];
+      const viridisColor = (t) => {
+        const v = clamp(t, 0, 1) * (VIRIDIS.length - 1);
+        const i = Math.min(Math.floor(v), VIRIDIS.length - 2);
+        const f = v - i;
+        const a = VIRIDIS[i], b = VIRIDIS[i + 1];
+        return [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f), Math.round(a[2] + (b[2] - a[2]) * f)];
+      };
+
+      // Canvas layout: margins for labels outside the heatmap
       const hmCanvas = document.getElementById('s4Heatmap');
-      const GRID_N = 200; // high-res since it's just pixel data
-      hmCanvas.width = GRID_N;
-      hmCanvas.height = GRID_N;
+      const C_W = 500, C_H = 380; // total canvas size (rectangular)
+      const MARGIN = { top: 28, right: 50, bottom: 40, left: 52 };
+      const PLOT_W = C_W - MARGIN.left - MARGIN.right;
+      const PLOT_H = C_H - MARGIN.top - MARGIN.bottom;
+      hmCanvas.width = C_W;
+      hmCanvas.height = C_H;
       const hmCtx = hmCanvas.getContext('2d');
+
+      // Background
+      hmCtx.fillStyle = BG;
+      hmCtx.fillRect(0, 0, C_W, C_H);
+
+      // Paint heatmap into the plot area using ImageData
+      const GRID_N = 200;
       const imgData = hmCtx.createImageData(GRID_N, GRID_N);
       const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
@@ -2077,87 +2103,106 @@
           const logR2 = penLogMin + (iy + 0.5) / GRID_N * (penLogMax - penLogMin);
           const r1v = Math.pow(10, logR1);
           const r2v = Math.pow(10, logR2);
-          const p = clamp(Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v)), 0, 1);
-          let rv, gv, bv;
-          if (IS_LIGHT) {
-            rv = 16 + p * 204; gv = 185 - p * 147; bv = 129 - p * 91;
-          } else {
-            rv = 30 + p * 194; gv = 180 - p * 100; bv = 110 - p * 80;
-          }
-          // Canvas Y is flipped: row 0 = top = high R2
-          const row = GRID_N - 1 - iy;
+          // Invert: 0 = bad (high penalty), 1 = good (low penalty) for viridis (bright=good)
+          const worstP = clamp(Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v)), 0, 1);
+          const rgb = viridisColor(1 - worstP); // low penalty → bright yellow, high → dark purple
+          const row = GRID_N - 1 - iy; // flip Y
           const idx = (row * GRID_N + ix) * 4;
-          imgData.data[idx] = rv;
-          imgData.data[idx + 1] = gv;
-          imgData.data[idx + 2] = bv;
-          imgData.data[idx + 3] = 220; // alpha
+          imgData.data[idx] = rgb[0];
+          imgData.data[idx + 1] = rgb[1];
+          imgData.data[idx + 2] = rgb[2];
+          imgData.data[idx + 3] = 255;
         }
       }
-      hmCtx.putImageData(imgData, 0, 0);
+      // Draw the image data scaled to the plot area
+      const tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = GRID_N; tmpCanvas.height = GRID_N;
+      tmpCanvas.getContext('2d').putImageData(imgData, 0, 0);
+      hmCtx.imageSmoothingEnabled = false;
+      hmCtx.drawImage(tmpCanvas, MARGIN.left, MARGIN.top, PLOT_W, PLOT_H);
 
-      // Sweet-spot outline drawn on canvas
-      const sweetFrac0 = (4 - penLogMin) / (penLogMax - penLogMin);
-      const sweetFrac1 = (5 - penLogMin) / (penLogMax - penLogMin);
-      hmCtx.strokeStyle = IS_LIGHT ? '#0f172a' : '#e8ecf3';
-      hmCtx.lineWidth = 3;
-      const sx0 = sweetFrac0 * GRID_N, sx1 = sweetFrac1 * GRID_N;
-      const sy0 = (1 - sweetFrac1) * GRID_N, sy1 = (1 - sweetFrac0) * GRID_N;
-      hmCtx.strokeRect(sx0, sy0, sx1 - sx0, sy1 - sy0);
-      // Label
-      hmCtx.fillStyle = IS_LIGHT ? '#0f172a' : '#e8ecf3';
-      hmCtx.font = 'bold 12px "IBM Plex Mono", monospace';
+      // Sweet-spot outline (10kΩ–100kΩ)
+      const toPlotX = (logR) => MARGIN.left + (logR - penLogMin) / (penLogMax - penLogMin) * PLOT_W;
+      const toPlotY = (logR) => MARGIN.top + (1 - (logR - penLogMin) / (penLogMax - penLogMin)) * PLOT_H;
+      hmCtx.strokeStyle = '#ffffff';
+      hmCtx.lineWidth = 2;
+      hmCtx.setLineDash([6, 3]);
+      const sxL = toPlotX(4), sxR = toPlotX(5), syT = toPlotY(5), syB = toPlotY(4);
+      hmCtx.strokeRect(sxL, syT, sxR - sxL, syB - syT);
+      hmCtx.setLineDash([]);
+      hmCtx.fillStyle = '#ffffff';
+      hmCtx.font = 'bold 11px "IBM Plex Mono", monospace';
       hmCtx.textAlign = 'center';
-      hmCtx.fillText('Sweet Spot', (sx0 + sx1) / 2, sy0 - 4);
+      hmCtx.fillText('Sweet Spot', (sxL + sxR) / 2, syT - 5);
 
-      // Color bar on canvas right edge
-      const cbW = 12, cbX = GRID_N - cbW - 2;
-      for (let i = 0; i < GRID_N; i++) {
-        const p = clamp(1 - i / GRID_N, 0, 1); // top=danger, bottom=safe
-        let rv, gv, bv;
-        if (IS_LIGHT) { rv = 16 + p * 204; gv = 185 - p * 147; bv = 129 - p * 91; }
-        else { rv = 30 + p * 194; gv = 180 - p * 100; bv = 110 - p * 80; }
-        hmCtx.fillStyle = 'rgb(' + Math.round(rv) + ',' + Math.round(gv) + ',' + Math.round(bv) + ')';
-        hmCtx.fillRect(cbX, i, cbW, 1);
-      }
-      hmCtx.fillStyle = IS_LIGHT ? '#dc2626' : '#e06050';
-      hmCtx.font = '10px "IBM Plex Mono", monospace';
-      hmCtx.textAlign = 'left';
-      hmCtx.fillText('Danger', cbX - 38, 12);
-      hmCtx.fillStyle = IS_LIGHT ? '#10b981' : '#6aaa8e';
-      hmCtx.fillText('Safe', cbX - 24, GRID_N - 4);
+      // Axes border
+      hmCtx.strokeStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
+      hmCtx.lineWidth = 1.5;
+      hmCtx.setLineDash([]);
+      hmCtx.strokeRect(MARGIN.left, MARGIN.top, PLOT_W, PLOT_H);
 
-      // Axis tick labels drawn on canvas
+      // Tick labels — outside the plot area
       const tickVals = [2, 3, 4, 5, 6, 7];
-      const tickNames = ['100', '1k', '10k', '100k', '1M', '10M'];
-      hmCtx.fillStyle = IS_LIGHT ? '#64748b' : '#8a94a7';
-      hmCtx.font = '11px "IBM Plex Mono", monospace';
+      const tickNames = ['100\u03A9', '1k\u03A9', '10k\u03A9', '100k\u03A9', '1M\u03A9', '10M\u03A9'];
+      hmCtx.fillStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
+      hmCtx.font = '11px "IBM Plex Sans", sans-serif';
       for (let i = 0; i < tickVals.length; i++) {
-        const frac = (tickVals[i] - penLogMin) / (penLogMax - penLogMin);
-        // X-axis ticks (bottom)
+        const px = toPlotX(tickVals[i]);
+        const py = toPlotY(tickVals[i]);
+        // X-axis (below plot)
         hmCtx.textAlign = 'center';
-        hmCtx.fillText(tickNames[i], frac * GRID_N, GRID_N - 2);
-        // Y-axis ticks (left)
-        hmCtx.textAlign = 'right';
-        hmCtx.fillText(tickNames[i], 28, (1 - frac) * GRID_N + 4);
-        // Tick marks
-        hmCtx.strokeStyle = IS_LIGHT ? '#64748b' : '#8a94a7';
+        hmCtx.fillText(tickNames[i], px, MARGIN.top + PLOT_H + 16);
+        // Tick mark
+        hmCtx.strokeStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
         hmCtx.lineWidth = 1;
         hmCtx.beginPath();
-        hmCtx.moveTo(frac * GRID_N, GRID_N - 14); hmCtx.lineTo(frac * GRID_N, GRID_N - 10);
-        hmCtx.moveTo(30, (1 - frac) * GRID_N); hmCtx.lineTo(34, (1 - frac) * GRID_N);
+        hmCtx.moveTo(px, MARGIN.top + PLOT_H); hmCtx.lineTo(px, MARGIN.top + PLOT_H + 4);
+        hmCtx.stroke();
+        // Y-axis (left of plot)
+        hmCtx.textAlign = 'right';
+        hmCtx.fillText(tickNames[i], MARGIN.left - 6, py + 4);
+        hmCtx.beginPath();
+        hmCtx.moveTo(MARGIN.left, py); hmCtx.lineTo(MARGIN.left - 4, py);
         hmCtx.stroke();
       }
 
-      // Manim overlays: title and axis labels only
-      const penTitle = await makeText('Resistor Design Space', 14, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.18, 0]);
-      const penXLabel = await makeText('R\u2081 (\u03A9)', 13, MUTED, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y0 - 0.28, 0]);
-      const penYLabelText = await makeText('R\u2082 (\u03A9)', 13, MUTED, [penFrame.x0 - 0.30, (penFrame.y0 + penFrame.y1) / 2, 0]);
-      penYLabelText.rotate(Math.PI / 2);
+      // Axis titles
+      hmCtx.fillStyle = IS_LIGHT ? '#0f172a' : '#e8ecf3';
+      hmCtx.font = '13px "IBM Plex Sans", sans-serif';
+      hmCtx.textAlign = 'center';
+      hmCtx.fillText('R\u2081', MARGIN.left + PLOT_W / 2, C_H - 2);
+      // Y-axis title (rotated)
+      hmCtx.save();
+      hmCtx.translate(12, MARGIN.top + PLOT_H / 2);
+      hmCtx.rotate(-Math.PI / 2);
+      hmCtx.fillText('R\u2082', 0, 0);
+      hmCtx.restore();
 
-      const penChrome = [penXLabel, penYLabelText];
+      // Title
+      hmCtx.font = 'bold 14px "IBM Plex Sans", sans-serif';
+      hmCtx.fillText('Resistor Design Space', MARGIN.left + PLOT_W / 2, 18);
 
-      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penChrome, penTitle);
-      animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle, ...penChrome, penTitle);
+      // Color bar (right of plot)
+      const cbX = MARGIN.left + PLOT_W + 8, cbW = 12, cbH = PLOT_H;
+      for (let i = 0; i < cbH; i++) {
+        const t = 1 - i / cbH; // top=good(bright), bottom=bad(dark)
+        const rgb = viridisColor(t);
+        hmCtx.fillStyle = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+        hmCtx.fillRect(cbX, MARGIN.top + i, cbW, 1);
+      }
+      hmCtx.strokeStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
+      hmCtx.lineWidth = 1;
+      hmCtx.strokeRect(cbX, MARGIN.top, cbW, cbH);
+      hmCtx.fillStyle = IS_LIGHT ? '#475569' : '#a9b4c6';
+      hmCtx.font = '10px "IBM Plex Sans", sans-serif';
+      hmCtx.textAlign = 'left';
+      hmCtx.fillText('Safe', cbX + cbW + 3, MARGIN.top + 10);
+      hmCtx.fillText('Danger', cbX + cbW + 3, MARGIN.top + cbH - 2);
+
+      // No manim overlays for the penalty plot — everything is on canvas
+
+      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle);
+      animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle);
 
       return {
         objs,
@@ -2165,8 +2210,7 @@
         groups: {
           circuitStage: circuitObjs,
           liveLabels,
-          stepPlot: [...stepStatics, stepTitle],
-          penPlot: [...penChrome, penTitle]
+          stepPlot: [...stepStatics, stepTitle]
         },
         live: { liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label },
         stepFrame,
@@ -2318,14 +2362,14 @@
         }
       }
 
-      // ── PLOT 2: Position canvas + draw crosshair overlay ──
+      // ── PLOT 2: Position canvas + draw crosshair on canvas ──
       const { penLogMin, penLogMax, toScreenPctX, toScreenPctY } = ctx;
-      // Position the canvas element over the penFrame area
       const hmCanvas = document.getElementById('s4Heatmap');
       const stageEl = document.getElementById('stage');
       const stageRect = stageEl.getBoundingClientRect();
+      // Position canvas over penFrame area
       const hmLeft = toScreenPctX(penFrame.x0) / 100 * stageRect.width;
-      const hmTop = toScreenPctY(penFrame.y1) / 100 * stageRect.height; // y1 is top in manim
+      const hmTop = toScreenPctY(penFrame.y1) / 100 * stageRect.height;
       const hmWidth = (toScreenPctX(penFrame.x1) - toScreenPctX(penFrame.x0)) / 100 * stageRect.width;
       const hmHeight = (toScreenPctY(penFrame.y0) - toScreenPctY(penFrame.y1)) / 100 * stageRect.height;
       hmCanvas.style.left = hmLeft + 'px';
@@ -2333,27 +2377,68 @@
       hmCanvas.style.width = hmWidth + 'px';
       hmCanvas.style.height = hmHeight + 'px';
 
-      // Crosshair on manim canvas (lightweight — just 3 objects)
+      // Draw crosshair directly on the canvas overlay div
+      // We need a second canvas for the crosshair so we don't repaint the heatmap
+      if (!ctx._crossCanvas) {
+        ctx._crossCanvas = document.createElement('canvas');
+        ctx._crossCanvas.width = hmCanvas.width;
+        ctx._crossCanvas.height = hmCanvas.height;
+        ctx._crossCanvas.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:3;';
+        hmCanvas.parentElement.appendChild(ctx._crossCanvas);
+      }
+      const cc = ctx._crossCanvas;
+      cc.style.left = hmCanvas.style.left;
+      cc.style.top = hmCanvas.style.top;
+      cc.style.width = hmCanvas.style.width;
+      cc.style.height = hmCanvas.style.height;
+      cc.style.display = 'block';
+      const ccCtx = cc.getContext('2d');
+      ccCtx.clearRect(0, 0, cc.width, cc.height);
+
+      // Map R values to canvas plot coordinates (using same margins as build)
+      const HM_MARGIN = { top: 28, right: 50, bottom: 40, left: 52 };
+      const HM_PLOT_W = cc.width - HM_MARGIN.left - HM_MARGIN.right;
+      const HM_PLOT_H = cc.height - HM_MARGIN.top - HM_MARGIN.bottom;
       const logR1 = Math.log10(r1);
       const logR2 = Math.log10(r2);
-      const cursorX = penFrame.x0 + clamp((logR1 - penLogMin) / (penLogMax - penLogMin), 0, 1) * (penFrame.x1 - penFrame.x0);
-      const cursorY = penFrame.y0 + clamp((logR2 - penLogMin) / (penLogMax - penLogMin), 0, 1) * (penFrame.y1 - penFrame.y0);
-      g.push(new Line({ start: [cursorX, penFrame.y0, 0], end: [cursorX, penFrame.y1, 0], color: FG, strokeWidth: 1.0 }));
-      g.push(new Line({ start: [penFrame.x0, cursorY, 0], end: [penFrame.x1, cursorY, 0], color: FG, strokeWidth: 1.0 }));
-      g.push(new Dot({ point: [cursorX, cursorY, 0], color: FG, radius: 0.08 }));
+      const cxFrac = clamp((logR1 - penLogMin) / (penLogMax - penLogMin), 0, 1);
+      const cyFrac = clamp((logR2 - penLogMin) / (penLogMax - penLogMin), 0, 1);
+      const cpx = HM_MARGIN.left + cxFrac * HM_PLOT_W;
+      const cpy = HM_MARGIN.top + (1 - cyFrac) * HM_PLOT_H;
 
-      // Readout values
+      // Crosshair lines
+      ccCtx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ccCtx.lineWidth = 1.5;
+      ccCtx.setLineDash([4, 3]);
+      ccCtx.beginPath();
+      ccCtx.moveTo(cpx, HM_MARGIN.top); ccCtx.lineTo(cpx, HM_MARGIN.top + HM_PLOT_H);
+      ccCtx.moveTo(HM_MARGIN.left, cpy); ccCtx.lineTo(HM_MARGIN.left + HM_PLOT_W, cpy);
+      ccCtx.stroke();
+      ccCtx.setLineDash([]);
+
+      // Cursor dot
+      ccCtx.fillStyle = '#ffffff';
+      ccCtx.beginPath();
+      ccCtx.arc(cpx, cpy, 5, 0, 2 * Math.PI);
+      ccCtx.fill();
+      ccCtx.strokeStyle = '#000000';
+      ccCtx.lineWidth = 1.5;
+      ccCtx.stroke();
+
+      // Readout box on canvas
       const iOut = S4_VOUT_REF / (r1 + r2);
       const vOff = S4_IB * (r1 * r2) / (r1 + r2);
       const fPar = 1 / (2 * Math.PI * r2 * S4_CPAR);
       const iStr = iOut >= 1e-3 ? (iOut * 1e3).toFixed(1) + 'mA' : (iOut * 1e6).toFixed(0) + '\u00B5A';
       const vStr = vOff >= 1e-3 ? (vOff * 1e3).toFixed(1) + 'mV' : (vOff * 1e6).toFixed(0) + '\u00B5V';
       const fStr = fPar >= 1e6 ? (fPar / 1e6).toFixed(1) + 'MHz' : fPar >= 1e3 ? (fPar / 1e3).toFixed(0) + 'kHz' : fPar.toFixed(0) + 'Hz';
-      const rboxX = penFrame.x1 - 1.60;
-      const rboxY = penFrame.y0 + 0.12;
-      g.push(quickText('Iout=' + iStr, 11, RED, [rboxX, rboxY + 0.44, 0]));
-      g.push(quickText('Voff=' + vStr, 11, YELLOW, [rboxX, rboxY + 0.22, 0]));
-      g.push(quickText('fpar=' + fStr, 11, BLUE, [rboxX, rboxY, 0]));
+      // Draw readout in top-right corner of plot
+      const rbX = HM_MARGIN.left + HM_PLOT_W - 4, rbY = HM_MARGIN.top + 6;
+      ccCtx.font = '11px "IBM Plex Mono", monospace';
+      ccCtx.textAlign = 'right';
+      ccCtx.fillStyle = '#f87171'; ccCtx.fillText('Iout = ' + iStr, rbX, rbY + 12);
+      ccCtx.fillStyle = '#fbbf24'; ccCtx.fillText('Voff = ' + vStr, rbX, rbY + 26);
+      ccCtx.fillStyle = '#5b9cf8'; ccCtx.fillText('fpar = ' + fStr, rbX, rbY + 40);
 
       scene.add(...g);
       state.interactiveObjects = g;
@@ -2526,10 +2611,6 @@
             await playGroup(sec.groups.liveLabels, 0.6, true);
             if (stale()) return;
             await playGroup(sec.groups.stepPlot, 0.8, false);
-            if (stale()) return;
-            await scene.wait(0.15);
-            if (stale()) return;
-            await playGroup(sec.groups.penPlot, 0.8, false);
             if (stale()) return;
           } else {
             scene.add(...sec.animated);

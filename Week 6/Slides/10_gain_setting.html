@@ -2101,8 +2101,12 @@
       };
     };
 
+    let s4Drawing = false;
+    let s4DrawQueued = false;
     const drawSection4 = async () => {
       if (!state.section4Ctx) return;
+      if (s4Drawing) { s4DrawQueued = true; return; }
+      s4Drawing = true;
       const ctx = state.section4Ctx;
       const { stepFrame, penFrame } = ctx;
 
@@ -2276,6 +2280,9 @@
       const r2Color = r2 < 1e3 ? RED : r2 > 1e6 ? YELLOW : ACCENT;
       ctx.live.liveR1Label = await updateLiveLabel(ctx.live.liveR1Label, 'R_1=' + r1Latex, r1Color, [-4.10, -3.10, 0]);
       ctx.live.liveR2Label = await updateLiveLabel(ctx.live.liveR2Label, 'R_2=' + r2Latex, r2Color, [-4.10, -3.40, 0]);
+
+      s4Drawing = false;
+      if (s4DrawQueued) { s4DrawQueued = false; queueSection4Draw(); }
     };
 
     const queueSection4Draw = () => {

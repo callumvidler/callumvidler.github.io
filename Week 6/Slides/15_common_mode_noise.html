@@ -189,6 +189,31 @@
     stage.querySelector('.stage-fallback')?.remove();
     const scene = new Scene(stage, { width: 1280, height: 720, backgroundColor: BG });
 
+    // Click-to-advance helper: shows a hint, waits for click/key, removes hint
+    const hintEl = document.createElement('div');
+    hintEl.style.cssText = `
+      position:absolute; bottom:24px; left:50%; transform:translateX(-50%);
+      font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px;
+      color:${MUTED}; opacity:0; transition:opacity 0.4s ease; z-index:10;
+      pointer-events:none; text-transform:uppercase;
+    `;
+    hintEl.textContent = 'click to continue';
+    document.body.appendChild(hintEl);
+
+    function waitForClick() {
+      return new Promise(resolve => {
+        hintEl.style.opacity = '1';
+        function handler() {
+          hintEl.style.opacity = '0';
+          document.removeEventListener('click', handler);
+          document.removeEventListener('keydown', handler);
+          resolve();
+        }
+        document.addEventListener('click', handler);
+        document.addEventListener('keydown', handler);
+      });
+    }
+
     // ── Stage 1: concept panels ─────────────────────────────────────────────
     const LEFT_PANEL_CX = -3.4, RIGHT_PANEL_CX = 3.4, PANEL_CY = 0.1;
     const PANEL_W = 4.5, PANEL_H = 2.8;
@@ -337,7 +362,7 @@
       new Write(leftPanel._eqn, { duration: 0.5 }), new Write(rightPanel._eqn, { duration: 0.5 })
     );
     await scene.play(new FadeIn(stage1Caption, { duration: 0.4 }));
-    await scene.wait(1.5);
+    await waitForClick();
 
     // Fade Stage 1 out entirely
     const stage1All = new VGroup(
@@ -507,7 +532,7 @@
     await scene.play(new FadeIn(couple2Group, { duration: 0.4 }));
     await scene.play(new FadeIn(capLbl, { duration: 0.2 }));
     await scene.play(new FadeIn(stage2Caption, { duration: 0.3 }));
-    await scene.wait(1.0);
+    await waitForClick();
 
     // ── Compression transition ────────────────────────────────────────────────
     const sceneGroup = new VGroup(

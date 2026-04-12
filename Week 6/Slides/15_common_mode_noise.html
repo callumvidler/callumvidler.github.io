@@ -33,6 +33,16 @@
     })();
   </script>
   <style>
+    .manim-stage { position: relative; }
+    #s1-waves {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
     /* Stage 3 overlays — hidden until compression transition completes */
     .cm-graph-wrap {
       position: absolute;
@@ -140,6 +150,7 @@
 
   <div id="stage" class="manim-stage">
     <div class="stage-fallback">Loading manim-web scene…</div>
+    <canvas id="s1-waves" width="1280" height="720"></canvas>
   </div>
 
   <div id="cm-graph-wrap" class="cm-graph-wrap">
@@ -226,23 +237,6 @@
         color: MUTED, strokeWidth: 2
       });
 
-      // Waveform polylines
-      const mkWave = (y0, phase) => {
-        const segs = [];
-        const N = 80;
-        const xL = cx - WIRE_HALF_LEN, xR = cx + WIRE_HALF_LEN - 0.30;
-        for (let i = 1; i <= N; i++) {
-          const t0 = (i - 1) / N, t1 = i / N;
-          const xa = xL + t0 * (xR - xL), xb = xL + t1 * (xR - xL);
-          const ya = y0 + WAVE_AMP * Math.sin(t0 * Math.PI * 2 * WAVE_CYCLES + phase);
-          const yb = y0 + WAVE_AMP * Math.sin(t1 * Math.PI * 2 * WAVE_CYCLES + phase);
-          segs.push(new Line({ start: [xa, ya, 0], end: [xb, yb, 0], color, strokeWidth: 2 }));
-        }
-        return new VGroup(...segs);
-      };
-      const waveTop = mkWave(PANEL_CY + WIRE_Y_TOP, 0);
-      const waveBot = mkWave(PANEL_CY + WIRE_Y_BOT, phaseBot); // 0 = in-phase, PI = inverted
-
       // Summing circle + "−" glyph
       const sumCircle = new Circle({ radius: 0.22, color: FG, strokeWidth: 2, fillOpacity: 0 });
       const sumX = cx + WIRE_HALF_LEN - 0.05;
@@ -271,7 +265,6 @@
       group._border = border;
       group._headerText = headerText;
       group._wireTop = wireTop; group._wireBot = wireBot;
-      group._waveTop = waveTop; group._waveBot = waveBot;
       group._sumCircle = sumCircle; group._sumMinus = sumMinus;
       group._leadTop = leadTop; group._leadBot = leadBot;
       group._eqn = eqn;
@@ -456,12 +449,10 @@
       stage1Title, stage1Caption,
       leftPanel._border, leftPanel._headerText,
       leftPanel._wireTop, leftPanel._wireBot,
-      leftPanel._waveTop, leftPanel._waveBot,
       leftPanel._sumCircle, leftPanel._sumMinus,
       leftPanel._leadTop, leftPanel._leadBot, leftPanel._eqn,
       rightPanel._border, rightPanel._headerText,
       rightPanel._wireTop, rightPanel._wireBot,
-      rightPanel._waveTop, rightPanel._waveBot,
       rightPanel._sumCircle, rightPanel._sumMinus,
       rightPanel._leadTop, rightPanel._leadBot, rightPanel._eqn
     );
@@ -623,6 +614,63 @@
     }, 66);
     window.addEventListener('resize', resizeCanvas);
 
+    // ── Stage 1 animated waveforms (HTML canvas overlay) ────────────────────
+    const s1Canvas = document.getElementById('s1-waves');
+    const s1Ctx = s1Canvas.getContext('2d');
+    const FRAME_W = 14.222, FRAME_H = 8.0;
+    function worldToPixel(wx, wy) {
+      return [
+        (wx + FRAME_W / 2) * (1280 / FRAME_W),
+        (FRAME_H / 2 - wy) * (720 / FRAME_H)
+      ];
+    }
+
+    const WAVE_DEFS = [
+      { cx: LEFT_PANEL_CX,  y0: PANEL_CY + WIRE_Y_TOP, phase: 0,         color: BLUE },
+      { cx: LEFT_PANEL_CX,  y0: PANEL_CY + WIRE_Y_BOT, phase: 0,         color: BLUE },
+      { cx: RIGHT_PANEL_CX, y0: PANEL_CY + WIRE_Y_TOP, phase: 0,         color: RED  },
+      { cx: RIGHT_PANEL_CX, y0: PANEL_CY + WIRE_Y_BOT, phase: Math.PI,   color: RED  },
+    ];
+
+    let s1AnimId = null;
+    let s1Visible = false;
+
+    function drawWaves(time) {
+      s1Ctx.clearRect(0, 0, 1280, 720);
+      const tSec = time / 1000;
+      for (const w of WAVE_DEFS) {
+        const xL = w.cx - WIRE_HALF_LEN;
+        const xR = w.cx + WIRE_HALF_LEN - 0.30;
+        s1Ctx.strokeStyle = w.color;
+        s1Ctx.lineWidth = 2;
+        s1Ctx.beginPath();
+        const N = 120;
+        for (let i = 0; i <= N; i++) {
+          const t = i / N;
+          const wx = xL + t * (xR - xL);
+          const wy = w.y0 + WAVE_AMP * Math.sin(t * Math.PI * 2 * WAVE_CYCLES + w.phase + tSec * 3);
+          const [px, py] = worldToPixel(wx, wy);
+          if (i === 0) s1Ctx.moveTo(px, py);
+          else s1Ctx.lineTo(px, py);
+        }
+        s1Ctx.stroke();
+      }
+      if (s1Visible) s1AnimId = requestAnimationFrame(drawWaves);
+    }
+
+    function startS1Waves() {
+      s1Visible = true;
+      s1Canvas.style.display = '';
+      if (!s1AnimId) s1AnimId = requestAnimationFrame(drawWaves);
+    }
+    function stopS1Waves() {
+      s1Visible = false;
+      if (s1AnimId) { cancelAnimationFrame(s1AnimId); s1AnimId = null; }
+      s1Ctx.clearRect(0, 0, 1280, 720);
+      s1Canvas.style.display = 'none';
+    }
+    s1Canvas.style.display = 'none';
+
     // ── Stage navigation ──────────────────────────────────────────────────────
     const SCENE_GROUP_SCALE  = 0.55;
     const SCENE_GROUP_TARGET = [0, 1.20, 0];
@@ -649,6 +697,7 @@
       // ── Hide current stage ──
       if (currentStage === 1) {
         scene.remove(stage1Group);
+        stopS1Waves();
       } else if (currentStage === 2) {
         scene.remove(stage2Body);
         scene.remove(slideTitle);
@@ -689,12 +738,8 @@
             new Create(rightPanel._leadTop, { duration: 0.4 }),
             new Create(rightPanel._leadBot, { duration: 0.4 })
           );
-          await scene.play(
-            new Create(leftPanel._waveTop, { duration: 1.1, lagRatio: 0.02 }),
-            new Create(leftPanel._waveBot, { duration: 1.1, lagRatio: 0.02 }),
-            new Create(rightPanel._waveTop, { duration: 1.1, lagRatio: 0.02 }),
-            new Create(rightPanel._waveBot, { duration: 1.1, lagRatio: 0.02 })
-          );
+          startS1Waves();
+          await scene.wait(0.8);
           await scene.play(
             new FadeIn(leftPanel._sumCircle, { duration: 0.3 }),
             new Write(leftPanel._sumMinus, { duration: 0.3 }),
@@ -709,6 +754,7 @@
           animating = false;
         } else {
           scene.add(stage1Group);
+          startS1Waves();
         }
       } else if (n === 2) {
         scene.add(slideTitle);

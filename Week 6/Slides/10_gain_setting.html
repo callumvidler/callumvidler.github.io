@@ -707,11 +707,42 @@
         betaLabel, ...bdBetaCalloutParts, bcTip
       ].filter(Boolean);
 
-      // ── Settle graph (shorter, below block diagram) ──
+      // ── Settle graph (larger, below block diagram) ──
       const settleXRange = [-0.3, 17.3];
       const settleYRange = [-0.08, 1.45];
-      const settleFrame = { x0: 0.35, x1: 5.55, y0: -3.00, y1: -0.80 };
-      const settleStatics = await frameStatics(settleFrame, 'step k', 'V_out / V_final', AXIS, settleXRange, settleYRange);
+      const settleFrame = { x0: 0.10, x1: 5.80, y0: -3.30, y1: -0.50 };
+      const settleStatics = await (async () => {
+        const f = settleFrame;
+        const xr = settleXRange, yr = settleYRange;
+        const surface = new Rectangle({
+          width: f.x1 - f.x0, height: f.y1 - f.y0,
+          color: MUTED2, strokeWidth: 0, fillOpacity: IS_LIGHT ? 0.25 : 0.18
+        });
+        surface.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+        const border = new Rectangle({
+          width: f.x1 - f.x0, height: f.y1 - f.y0,
+          color: AXIS, strokeWidth: 1.3, fillOpacity: 0
+        });
+        border.moveTo([(f.x0 + f.x1) / 2, (f.y0 + f.y1) / 2, 0]);
+        const xAxisY = mapPoint(f, 0, 0, xr, yr)[1];
+        const yAxisX = mapPoint(f, 0, 0, xr, yr)[0];
+        const xAxis = new Line({ start: [f.x0 + 0.10, xAxisY, 0], end: [f.x1 - 0.10, xAxisY, 0], color: AXIS, strokeWidth: 1.4 });
+        const yAxis = new Line({ start: [yAxisX, f.y0 + 0.10, 0], end: [yAxisX, f.y1 - 0.10, 0], color: AXIS, strokeWidth: 1.4 });
+        const xTicks = [];
+        const yTicks = [];
+        for (let i = 1; i <= 6; i++) {
+          const tx = f.x0 + 0.24 + ((f.x1 - f.x0 - 0.48) * i) / 7;
+          xTicks.push(new Line({ start: [tx, xAxisY - 0.04, 0], end: [tx, xAxisY + 0.04, 0], color: MUTED2, strokeWidth: 1.0 }));
+        }
+        for (let i = 1; i <= 4; i++) {
+          const ty = f.y0 + 0.24 + ((f.y1 - f.y0 - 0.48) * i) / 5;
+          yTicks.push(new Line({ start: [yAxisX - 0.04, ty, 0], end: [yAxisX + 0.04, ty, 0], color: MUTED2, strokeWidth: 1.0 }));
+        }
+        const xt = await makeMath('\\text{step }k', 0.34, MUTED, [(f.x0 + f.x1) / 2, f.y0 - 0.30, 0]);
+        const yt = await makeMath('V_{out}\\!/\\!V_{final}', 0.32, MUTED, [f.x0 - 0.48, (f.y0 + f.y1) / 2, 0]);
+        yt.rotate(Math.PI / 2);
+        return [surface, border, xAxis, yAxis, ...xTicks, ...yTicks, xt, yt];
+      })();
       const settleTitle = await makeText(
         'Iterative feedback settling',
         14,
@@ -1058,6 +1089,68 @@
       requestAnimationFrame(tick);
     });
 
+    // Animate a line being drawn progressively along waypoints (leaves a trail).
+    // Returns the array of Line objects so the caller can manage cleanup.
+    const animateLineAlongPath = (waypoints, color, strokeWidth, durationMs, staleCheck) => new Promise((resolve) => {
+      if (waypoints.length < 2 || staleCheck()) { resolve([]); return; }
+      const segs = [];
+      let totalLen = 0;
+      for (let i = 0; i < waypoints.length - 1; i++) {
+        const dx = waypoints[i + 1][0] - waypoints[i][0];
+        const dy = waypoints[i + 1][1] - waypoints[i][1];
+        const len = Math.sqrt(dx * dx + dy * dy);
+        segs.push({ sx: waypoints[i][0], sy: waypoints[i][1], ex: waypoints[i + 1][0], ey: waypoints[i + 1][1], dx, dy, len, cumLen: totalLen });
+        totalLen += len;
+      }
+      const drawnLines = [];
+      let currentTip = null;
+      const easeOut = (t) => 1 - (1 - t) * (1 - t);
+      const t0 = performance.now();
+      const tick = (now) => {
+        if (staleCheck()) {
+          if (currentTip) scene.remove(currentTip);
+          drawnLines.forEach(l => scene.remove(l));
+          resolve([]);
+          return;
+        }
+        const rawT = clamp((now - t0) / durationMs, 0, 1);
+        const dist = easeOut(rawT) * totalLen;
+        // Draw completed segments
+        while (drawnLines.length < segs.length && dist >= segs[drawnLines.length].cumLen + segs[drawnLines.length].len) {
+          const s = segs[drawnLines.length];
+          if (currentTip) { scene.remove(currentTip); currentTip = null; }
+          const line = new Line({ start: [s.sx, s.sy, 0], end: [s.ex, s.ey, 0], color, strokeWidth });
+          scene.add(line);
+          drawnLines.push(line);
+        }
+        // Draw partial current segment
+        const segIdx = drawnLines.length;
+        if (segIdx < segs.length) {
+          const s = segs[segIdx];
+          const segT = s.len > 0.001 ? clamp((dist - s.cumLen) / s.len, 0, 1) : 1;
+          const tipX = s.sx + s.dx * segT;
+          const tipY = s.sy + s.dy * segT;
+          if (currentTip) scene.remove(currentTip);
+          currentTip = new Line({ start: [s.sx, s.sy, 0], end: [tipX, tipY, 0], color, strokeWidth });
+          scene.add(currentTip);
+        }
+        if (rawT >= 1) {
+          if (currentTip) { scene.remove(currentTip); currentTip = null; }
+          // Ensure all segments are drawn
+          while (drawnLines.length < segs.length) {
+            const s = segs[drawnLines.length];
+            const line = new Line({ start: [s.sx, s.sy, 0], end: [s.ex, s.ey, 0], color, strokeWidth });
+            scene.add(line);
+            drawnLines.push(line);
+          }
+          resolve(drawnLines);
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
     // Animate an arrow rotating from one direction to another on the settling graph.
     // Draws a line+arrowhead from origin, initially pointing at oldAngle, rotating to newAngle.
     const animateVectorRotation = (scene, origin, arrowLen, oldAngle, newAngle, durationMs, staleCheck) => new Promise((resolve) => {
@@ -1128,16 +1221,6 @@
         [bd.BD_TAP, bd.BD_FWD_Y],
         [bd.BD_OUT, bd.BD_FWD_Y],
       ];
-      const feedbackPath = [
-        [bd.BD_TAP, bd.BD_FWD_Y],
-        [bd.BD_TAP, bd.BD_FB_Y],
-        [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y],
-      ];
-      const betaToSigma = [
-        [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y],
-        [bd.BD_JX, bd.BD_FB_Y],
-        [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
-      ];
 
       // Precompute arrow angles on the settling graph for vector rotation
       const arrowAngles = [];
@@ -1147,13 +1230,31 @@
         arrowAngles.push(Math.atan2(ep[1] - sp[1], ep[0] - sp[0]));
       }
 
+      // Full feedback path as one continuous set of waypoints for line drawing
+      const fullFeedbackPath = [
+        [bd.BD_TAP, bd.BD_FWD_Y],
+        [bd.BD_TAP, bd.BD_FB_Y],
+        [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y],
+        [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y],
+        [bd.BD_JX, bd.BD_FB_Y],
+        [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
+      ];
+
       drawSection2AtStep(0);
       if (stale()) return;
       await scene.wait(0.4);
       if (stale()) return;
 
+      let prevFbLines = []; // track drawn feedback lines for cleanup
+
       for (let k = 0; k < S2_STEPS; k++) {
         if (stale()) return;
+
+        // Clean up previous iteration's feedback lines
+        if (prevFbLines.length) {
+          prevFbLines.forEach(l => scene.remove(l));
+          prevFbLines = [];
+        }
 
         const isFirst = k === 0;
         const pulseDur = isFirst ? 220 : 160;
@@ -1189,20 +1290,22 @@
         drawSection2AtStep(k + 1);
         if (stale()) return;
 
-        // 6. Pulse exits to output and feedback simultaneously
+        // 6. Output dot exits right, feedback line draws along full path
         const outputPulse = animateDotAlongPath(tapToOutput, CYAN, pulseDur * 0.8, stale);
-        const fbPulse = (async () => {
-          await animateDotAlongPath(feedbackPath, BLUE, pulseDur * 1.2, stale);
-          if (stale()) return;
-          await animateDotAlongPath(betaToSigma, BLUE, pulseDur * 1.0, stale);
-        })();
-        await Promise.all([outputPulse, fbPulse]);
+        const fbLineDraw = animateLineAlongPath(fullFeedbackPath, BLUE, 2.2, pulseDur * 2.5, stale);
+        const [, fbLines] = await Promise.all([outputPulse, fbLineDraw]);
         if (stale()) return;
+        prevFbLines = fbLines || [];
 
         // Pause — longer on first iteration (saturation moment)
         const pauseDur = isFirst ? 0.55 : 0.15;
         await scene.wait(pauseDur);
         if (stale()) return;
+      }
+
+      // Clean up final feedback lines
+      if (prevFbLines.length) {
+        prevFbLines.forEach(l => scene.remove(l));
       }
     };
 

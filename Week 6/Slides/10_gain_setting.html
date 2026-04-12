@@ -1882,44 +1882,58 @@
     const S4_VRAIL = 13.5;                    // supply rail ±13.5V
 
     const computeStepResponse = (beta, nSamples) => {
-      // Closed-loop: s^2 + s*(w1+w2) + w1*w2*(1 + beta*A_OL) = 0
+      // Closed-loop: s^2 + b*s + c = 0
+      // H(s) = G / (s^2 + b*s + c),  G = A_OL * w1 * w2
       const b_coeff = S4_W1 + S4_W2;
       const c_coeff = S4_W1 * S4_W2 * (1 + beta * S4_AOL);
       const disc = b_coeff * b_coeff - 4 * c_coeff;
       const dcGain = S4_AOL / (1 + beta * S4_AOL);
       const target = dcGain * S4_VSTEP;
+      const finalVal = target; // DC steady-state for step input
 
-      // Settling time estimate
+      // Analytical step response (exact — no numerical instability)
       let tSettle;
+      let evalY; // function of t returning y(t)
+
       if (disc >= 0) {
-        const p1 = (-b_coeff + Math.sqrt(disc)) / 2;
-        const p2 = (-b_coeff - Math.sqrt(disc)) / 2;
-        tSettle = 5 / Math.min(Math.abs(p1), Math.abs(p2));
+        // Overdamped or critically damped: two real poles
+        const sqrtDisc = Math.sqrt(disc);
+        const p1 = (-b_coeff + sqrtDisc) / 2; // slower pole (less negative)
+        const p2 = (-b_coeff - sqrtDisc) / 2; // faster pole (more negative)
+        tSettle = 5 / Math.abs(p1); // settle based on slow pole
+        if (Math.abs(p1 - p2) < 1e-6 * Math.abs(p1)) {
+          // Critically damped: y(t) = finalVal * [1 - (1 - p1*t) * exp(p1*t)]
+          evalY = (t) => finalVal * (1 - (1 - p1 * t) * Math.exp(p1 * t));
+        } else {
+          // Overdamped: y(t) = finalVal * [1 + (p1*exp(p2*t) - p2*exp(p1*t)) / (p2 - p1)]
+          // Note: p1, p2 are both negative, p2 < p1
+          const denom = p2 - p1;
+          evalY = (t) => {
+            // For large |p2*t|, exp(p2*t) vanishes — avoid computing it
+            const e1 = Math.exp(p1 * t);
+            const e2 = Math.abs(p2 * t) < 500 ? Math.exp(p2 * t) : 0;
+            return finalVal * (1 + (p1 * e2 - p2 * e1) / denom);
+          };
+        }
       } else {
+        // Underdamped: complex poles at -sigma ± j*wd
         const sigma = b_coeff / 2;
+        const wd = Math.sqrt(-disc) / 2;
         tSettle = 5 / sigma;
+        // y(t) = finalVal * [1 - exp(-sigma*t) * (cos(wd*t) + (sigma/wd)*sin(wd*t))]
+        const sigmaOverWd = sigma / wd;
+        evalY = (t) => {
+          const env = Math.exp(-sigma * t);
+          return finalVal * (1 - env * (Math.cos(wd * t) + sigmaOverWd * Math.sin(wd * t)));
+        };
       }
+
       tSettle = clamp(tSettle, 1e-7, 0.1);
       const dt = tSettle / nSamples;
-
-      // RK4 numerical simulation of: y'' + b*y' + c*y = A_OL*w1*w2*Vstep
-      const forcing = S4_AOL * S4_W1 * S4_W2 * S4_VSTEP;
-      let y = 0, yd = 0;
       const pts = new Float64Array(nSamples + 1);
       pts[0] = 0;
       for (let i = 1; i <= nSamples; i++) {
-        const f = (yv, ydv) => forcing - c_coeff * yv - b_coeff * ydv;
-        const k1y = yd;
-        const k1yd = f(y, yd);
-        const k2y = yd + 0.5 * dt * k1yd;
-        const k2yd = f(y + 0.5 * dt * k1y, yd + 0.5 * dt * k1yd);
-        const k3y = yd + 0.5 * dt * k2yd;
-        const k3yd = f(y + 0.5 * dt * k2y, yd + 0.5 * dt * k2yd);
-        const k4y = yd + dt * k3yd;
-        const k4yd = f(y + dt * k3y, yd + dt * k3yd);
-        y += (dt / 6) * (k1y + 2 * k2y + 2 * k3y + k4y);
-        yd += (dt / 6) * (k1yd + 2 * k2yd + 2 * k3yd + k4yd);
-        pts[i] = clamp(y, -S4_VRAIL, S4_VRAIL);
+        pts[i] = clamp(evalY(i * dt), -S4_VRAIL, S4_VRAIL);
       }
       return { pts, dt, tSettle, target, dcGain };
     };

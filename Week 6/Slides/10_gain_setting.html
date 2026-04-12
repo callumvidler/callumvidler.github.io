@@ -2307,9 +2307,13 @@
         }
       };
 
+      // Normalisation: penalty=1 at the threshold where problems become serious
+      // Current: 25mA is the op-amp output limit
       drawPenCurve((r1s, r2s) => (S4_VOUT_REF / (r1s + r2s)) / 25e-3, RED);
-      drawPenCurve((r1s, r2s) => (S4_IB * (r1s * r2s) / (r1s + r2s)) / 1e-3, YELLOW);
-      drawPenCurve((r1s, r2s) => 100e3 / (1 / (2 * Math.PI * r2s * S4_CPAR)), BLUE);
+      // Offset: 10mV is where DC offset becomes problematic in most circuits
+      drawPenCurve((r1s, r2s) => (S4_IB * (r1s * r2s) / (r1s + r2s)) / 10e-3, YELLOW);
+      // Parasitic pole: 10kHz is where the parasitic pole starts cutting into useful bandwidth
+      drawPenCurve((r1s, r2s) => 10e3 / (1 / (2 * Math.PI * r2s * S4_CPAR)), BLUE);
 
       // Vertical "you are here" marker
       const rGeo = Math.sqrt(r1 * r2);

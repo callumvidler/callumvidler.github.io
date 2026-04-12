@@ -184,8 +184,8 @@
     </div>
 
     <div id="s2Controls">
-      <input type="range" id="s2StepSlider" min="0" max="8" step="1" value="8">
-      <span id="s2StepLabel">k=8</span>
+      <input type="range" id="s2StepSlider" min="0" max="16" step="1" value="16">
+      <span id="s2StepLabel">k=16</span>
       <button type="button" id="s2ReplayBtn">&#x21bb;</button>
     </div>
 
@@ -708,7 +708,7 @@
       ].filter(Boolean);
 
       // ── Settle graph (shorter, below block diagram) ──
-      const settleXRange = [-0.3, 8.8];
+      const settleXRange = [-0.3, 17.3];
       const settleYRange = [-0.08, 1.45];
       const settleFrame = { x0: 0.35, x1: 5.55, y0: -3.00, y1: -0.80 };
       const settleStatics = await frameStatics(settleFrame, 'step k', 'V_out / V_final', AXIS, settleXRange, settleYRange);
@@ -915,8 +915,8 @@
     const S2_BETA = 0.1;
     const S2_V_FINAL = 10;
     const S2_VSAT = 13;
-    const S2_TAU = 1.2;
-    const S2_STEPS = 8;
+    const S2_TAU = 3.0;
+    const S2_STEPS = 16;
     const s2Vouts = [0, S2_VSAT];
     for (let i = 2; i <= S2_STEPS; i++) s2Vouts.push(S2_V_FINAL + (S2_VSAT - S2_V_FINAL) * Math.exp(-(i - 1) / S2_TAU));
     const s2Ys = s2Vouts.map(v => v / S2_V_FINAL);
@@ -1058,6 +1058,49 @@
       requestAnimationFrame(tick);
     });
 
+    // Animate an arrow rotating from one direction to another on the settling graph.
+    // Draws a line+arrowhead from origin, initially pointing at oldAngle, rotating to newAngle.
+    const animateVectorRotation = (scene, origin, arrowLen, oldAngle, newAngle, durationMs, staleCheck) => new Promise((resolve) => {
+      if (staleCheck()) { resolve(); return; }
+      const easeInOut = (t) => 0.5 - 0.5 * Math.cos(Math.PI * t);
+      let shaft = null;
+      let head = null;
+      const t0 = performance.now();
+      const tick = (now) => {
+        if (staleCheck()) {
+          if (shaft) scene.remove(shaft);
+          if (head) scene.remove(head);
+          resolve();
+          return;
+        }
+        const rawT = clamp((now - t0) / durationMs, 0, 1);
+        const t = easeInOut(rawT);
+        const angle = oldAngle + (newAngle - oldAngle) * t;
+        const ex = origin[0] + arrowLen * Math.cos(angle);
+        const ey = origin[1] + arrowLen * Math.sin(angle);
+        if (shaft) scene.remove(shaft);
+        if (head) scene.remove(head);
+        shaft = new Line({ start: [origin[0], origin[1], 0], end: [ex, ey, 0], color: CYAN, strokeWidth: 2.4 });
+        scene.add(shaft);
+        // arrowhead
+        const ux = Math.cos(angle), uy = Math.sin(angle);
+        const px = -uy, py = ux;
+        head = new Polygon({
+          vertices: [[ex, ey, 0], [ex - ux * 0.10 + px * 0.06, ey - uy * 0.10 + py * 0.06, 0], [ex - ux * 0.10 - px * 0.06, ey - uy * 0.10 - py * 0.06, 0]],
+          color: CYAN, strokeWidth: 0, fillOpacity: 1
+        });
+        scene.add(head);
+        if (rawT >= 1) {
+          scene.remove(shaft);
+          scene.remove(head);
+          resolve();
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+
     const runSection2Animation = async (token) => {
       const runId = ++state.section2AnimToken;
       const stale = () => token !== state.renderToken || runId !== state.section2AnimToken || state.currentSection !== 2;
@@ -1066,6 +1109,7 @@
       if (!c || !c.bd) return;
 
       const bd = c.bd;
+      const mp = (x, y) => mapPoint(c.settleFrame, x, y, c.settleXRange, c.settleYRange);
 
       // Define block-diagram path waypoints
       const forwardPath = [
@@ -1095,6 +1139,14 @@
         [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
       ];
 
+      // Precompute arrow angles on the settling graph for vector rotation
+      const arrowAngles = [];
+      for (let k = 0; k < S2_STEPS; k++) {
+        const sp = mp(k, s2Ys[k]);
+        const ep = mp(k + 1, s2Ys[k + 1]);
+        arrowAngles.push(Math.atan2(ep[1] - sp[1], ep[0] - sp[0]));
+      }
+
       drawSection2AtStep(0);
       if (stale()) return;
       await scene.wait(0.4);
@@ -1118,24 +1170,37 @@
         await animateDotAlongPath(aolToTap, CYAN, pulseDur, stale);
         if (stale()) return;
 
-        // 4. Update the settling graph and labels to show the new state
+        // 4. Vector rotation on settling graph: arrow appears with previous
+        //    gradient then rotates to the correct direction
+        const sp = mp(k, s2Ys[k]);
+        const ep = mp(k + 1, s2Ys[k + 1]);
+        const arrowLen = Math.sqrt((ep[0] - sp[0]) ** 2 + (ep[1] - sp[1]) ** 2);
+        const correctAngle = arrowAngles[k];
+        // Previous arrow's angle (for k=0, use horizontal = 0)
+        const prevAngle = k > 0 ? arrowAngles[k - 1] : 0;
+
+        if (Math.abs(prevAngle - correctAngle) > 0.01) {
+          const rotateDur = isFirst ? 450 : 300;
+          await animateVectorRotation(scene, sp, arrowLen, prevAngle, correctAngle, rotateDur, stale);
+          if (stale()) return;
+        }
+
+        // 5. Snap to final state with all arrows drawn
         drawSection2AtStep(k + 1);
         if (stale()) return;
 
-        // 5. Pulse exits to output (brief)
-        // Run output and feedback pulses: output exits right, feedback goes down
+        // 6. Pulse exits to output and feedback simultaneously
         const outputPulse = animateDotAlongPath(tapToOutput, CYAN, pulseDur * 0.8, stale);
         const fbPulse = (async () => {
           await animateDotAlongPath(feedbackPath, BLUE, pulseDur * 1.2, stale);
           if (stale()) return;
-          // 6. Beta output -> back to Sigma
           await animateDotAlongPath(betaToSigma, BLUE, pulseDur * 1.0, stale);
         })();
         await Promise.all([outputPulse, fbPulse]);
         if (stale()) return;
 
         // Pause — longer on first iteration (saturation moment)
-        const pauseDur = isFirst ? 0.55 : 0.20;
+        const pauseDur = isFirst ? 0.55 : 0.15;
         await scene.wait(pauseDur);
         if (stale()) return;
       }

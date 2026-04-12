@@ -2028,14 +2028,47 @@
       const liveLabels = [liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label];
 
       // ── Step Response Plot (top-right) ──
-      const stepFrame = { x0: -1.40, x1: 6.10, y0: 0.20, y1: 2.80 };
-      const stepStatics = await frameStatics(stepFrame, 'Time', 'Vout (V)', AXIS);
-      const stepTitle = await makeText('Step Response', 12, FG, [(stepFrame.x0 + stepFrame.x1) / 2, stepFrame.y1 + 0.16, 0]);
+      // Only draw border + background; axes and ticks are dynamic (y-range changes)
+      const stepFrame = { x0: -0.60, x1: 6.10, y0: 0.20, y1: 2.80 };
+      const stepSurface = new Rectangle({
+        width: stepFrame.x1 - stepFrame.x0, height: stepFrame.y1 - stepFrame.y0,
+        color: MUTED2, strokeWidth: 0, fillOpacity: IS_LIGHT ? 0.25 : 0.18
+      });
+      stepSurface.moveTo([(stepFrame.x0 + stepFrame.x1) / 2, (stepFrame.y0 + stepFrame.y1) / 2, 0]);
+      const stepBorder = new Rectangle({
+        width: stepFrame.x1 - stepFrame.x0, height: stepFrame.y1 - stepFrame.y0,
+        color: AXIS, strokeWidth: 1.3, fillOpacity: 0
+      });
+      stepBorder.moveTo([(stepFrame.x0 + stepFrame.x1) / 2, (stepFrame.y0 + stepFrame.y1) / 2, 0]);
+      const stepTitle = await makeText('Step Response (200mV input)', 14, FG, [(stepFrame.x0 + stepFrame.x1) / 2, stepFrame.y1 + 0.18, 0]);
+      const stepXLabel = await makeText('Time', 12, MUTED, [(stepFrame.x0 + stepFrame.x1) / 2, stepFrame.y0 - 0.32, 0]);
+      const stepYLabel = await makeText('Vout', 12, MUTED, [stepFrame.x0 - 0.38, (stepFrame.y0 + stepFrame.y1) / 2, 0]);
+      stepYLabel.rotate(Math.PI / 2);
+      const stepStatics = [stepSurface, stepBorder, stepXLabel, stepYLabel];
 
       // ── Penalty Plot (bottom-right) ──
-      const penFrame = { x0: -1.40, x1: 6.10, y0: -3.40, y1: -0.40 };
-      const penStatics = await frameStatics(penFrame, 'Resistor Scale (Ω)', 'Penalty', AXIS);
-      const penTitle = await makeText('Resistor Sweet Spot', 12, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.16, 0]);
+      // Fixed data range, so axes can be static
+      const penFrame = { x0: -0.60, x1: 6.10, y0: -3.40, y1: -0.40 };
+      const penSurface = new Rectangle({
+        width: penFrame.x1 - penFrame.x0, height: penFrame.y1 - penFrame.y0,
+        color: MUTED2, strokeWidth: 0, fillOpacity: IS_LIGHT ? 0.25 : 0.18
+      });
+      penSurface.moveTo([(penFrame.x0 + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      const penBorder = new Rectangle({
+        width: penFrame.x1 - penFrame.x0, height: penFrame.y1 - penFrame.y0,
+        color: AXIS, strokeWidth: 1.3, fillOpacity: 0
+      });
+      penBorder.moveTo([(penFrame.x0 + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      // X-axis at y=0 in data space (penalty=0 → bottom of plot)
+      const penXAxisY = penFrame.y0;
+      const penXAxis = new Line({ start: [penFrame.x0, penXAxisY, 0], end: [penFrame.x1, penXAxisY, 0], color: AXIS, strokeWidth: 1.4 });
+      // Y-axis at left edge
+      const penYAxis = new Line({ start: [penFrame.x0, penFrame.y0, 0], end: [penFrame.x0, penFrame.y1, 0], color: AXIS, strokeWidth: 1.4 });
+      const penTitle = await makeText('Resistor Sweet Spot', 14, FG, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y1 + 0.18, 0]);
+      const penXLabel = await makeText('Resistor Value', 12, MUTED, [(penFrame.x0 + penFrame.x1) / 2, penFrame.y0 - 0.32, 0]);
+      const penYLabel = await makeText('Penalty', 12, MUTED, [penFrame.x0 - 0.38, (penFrame.y0 + penFrame.y1) / 2, 0]);
+      penYLabel.rotate(Math.PI / 2);
+      const penStatics = [penSurface, penBorder, penXAxis, penYAxis, penXLabel, penYLabel];
 
       // ── Penalty plot static overlays (built once, never redrawn) ──
       const penLogMin = 1, penLogMax = 8;
@@ -2070,14 +2103,14 @@
       });
       dangerHigh.moveTo([(dangerHR[0] + penFrame.x1) / 2, (penFrame.y0 + penFrame.y1) / 2, 0]);
 
-      const sweetLabel = await makeText('Sweet Spot', 10, ACCENT, [(sweetL[0] + sweetR[0]) / 2, penFrame.y1 - 0.16, 0]);
+      const sweetLabel = await makeText('Sweet Spot', 12, ACCENT, [(sweetL[0] + sweetR[0]) / 2, penFrame.y1 - 0.20, 0]);
 
-      // Legend
-      const legX = penFrame.x0 + 0.20;
-      const legY = penFrame.y1 - 0.18;
-      const leg1 = await makeText('\u2014 I_out', 9, RED, [legX, legY, 0], legX);
-      const leg2 = await makeText('\u2014 V_offset', 9, YELLOW, [legX + 1.2, legY, 0], legX + 1.2);
-      const leg3 = await makeText('\u2014 f_parasitic', 9, BLUE, [legX + 2.6, legY, 0], legX + 2.6);
+      // Legend — top-right of penalty plot, stacked vertically for readability
+      const legX = penFrame.x1 - 1.30;
+      const legY0 = penFrame.y1 - 0.20;
+      const leg1 = await makeText('\u2014 Output Current', 11, RED, [legX, legY0, 0], legX);
+      const leg2 = await makeText('\u2014 Offset Voltage', 11, YELLOW, [legX, legY0 - 0.22, 0], legX);
+      const leg3 = await makeText('\u2014 Parasitic Pole', 11, BLUE, [legX, legY0 - 0.44, 0], legX);
 
       // X-axis tick labels
       const penTickLabelsArr = [];
@@ -2086,7 +2119,7 @@
       for (let i = 0; i < penTickValues.length; i++) {
         const tx = mapPoint(penFrame, penTickValues[i], 0, penXRange, penYRange)[0];
         if (tx >= penFrame.x0 + 0.15 && tx <= penFrame.x1 - 0.15) {
-          const tickLabel = await makeText(penTickNames[i], 9, MUTED, [tx, penFrame.y0 - 0.16, 0]);
+          const tickLabel = await makeText(penTickNames[i], 11, MUTED, [tx, penFrame.y0 - 0.18, 0]);
           penTickLabelsArr.push(tickLabel);
         }
       }
@@ -2166,9 +2199,16 @@
       const N_STEP = 200;
       const { pts, dt, tSettle, target } = computeStepResponse(beta, N_STEP);
 
+      // Y-range starts at 0 so the trace begins at the bottom
       const yMax = Math.min(S4_VRAIL * 1.1, Math.max(Math.abs(target) * 1.4, S4_VRAIL * 0.5));
       const stepXRange = [0, tSettle];
-      const stepYRange = [Math.min(0, -yMax * 0.05), yMax];
+      const stepYRange = [0, yMax];
+
+      // Draw dynamic axes (y-range changes with beta)
+      const xAxisY = stepFrame.y0; // y=0 maps to bottom of frame
+      const yAxisX = stepFrame.x0; // x=0 maps to left of frame
+      g.push(new Line({ start: [stepFrame.x0, xAxisY, 0], end: [stepFrame.x1, xAxisY, 0], color: AXIS, strokeWidth: 1.4 }));
+      g.push(new Line({ start: [yAxisX, stepFrame.y0, 0], end: [yAxisX, stepFrame.y1, 0], color: AXIS, strokeWidth: 1.4 }));
 
       // Draw step response trace
       let prev = null;
@@ -2176,13 +2216,15 @@
         const t = i * dt;
         const v = pts[i];
         const p = mapPoint(stepFrame, t, v, stepXRange, stepYRange);
+        // Clamp to frame bounds
+        const py = clamp(p[1], stepFrame.y0, stepFrame.y1);
         if (prev) {
-          g.push(new Line({ start: [prev[0], prev[1], 0], end: [p[0], p[1], 0], color: CYAN, strokeWidth: 2.2 }));
+          g.push(new Line({ start: [prev[0], prev[1], 0], end: [p[0], py, 0], color: CYAN, strokeWidth: 2.2 }));
         }
-        prev = p;
+        prev = [p[0], py];
       }
 
-      // Target dashed line
+      // Target dashed line (ideal final value)
       const clampedTarget = clamp(target, -S4_VRAIL, S4_VRAIL);
       const tgtY = mapPoint(stepFrame, 0, clampedTarget, stepXRange, stepYRange)[1];
       if (tgtY >= stepFrame.y0 && tgtY <= stepFrame.y1) {
@@ -2193,26 +2235,28 @@
           g.push(new Line({ start: [dx, tgtY, 0], end: [dEnd, tgtY, 0], color: YELLOW, strokeWidth: 1.2 }));
           dx = dEnd + gapLen;
         }
+        g.push(quickText(clampedTarget.toFixed(1) + 'V', 11, YELLOW, [stepFrame.x1 - 0.50, tgtY + 0.10, 0]));
       }
 
       // Rail lines (±13.5V) if within view
       for (const rail of [S4_VRAIL, -S4_VRAIL]) {
         const ry = mapPoint(stepFrame, 0, rail, stepXRange, stepYRange)[1];
-        if (ry >= stepFrame.y0 && ry <= stepFrame.y1) {
+        if (ry >= stepFrame.y0 + 0.05 && ry <= stepFrame.y1 - 0.05) {
           let dx = stepFrame.x0 + 0.12;
           while (dx < stepFrame.x1 - 0.12) {
             const dEnd = Math.min(dx + 0.12, stepFrame.x1 - 0.12);
             g.push(new Line({ start: [dx, ry, 0], end: [dEnd, ry, 0], color: RED, strokeWidth: 1.0 }));
             dx = dEnd + 0.10;
           }
+          g.push(quickText(rail > 0 ? '+Rail' : '-Rail', 10, RED, [stepFrame.x0 + 0.10, ry + 0.10, 0]));
         }
       }
 
       // Annotation (synchronous)
       const betaStr = beta.toFixed(3);
       const gainStr = acl < 1000 ? acl.toFixed(1) : acl.toFixed(0);
-      g.push(quickText('\u03B2=' + betaStr, 11, BLUE, [stepFrame.x1 - 0.70, stepFrame.y1 - 0.18, 0]));
-      g.push(quickText('Acl=' + gainStr, 11, CYAN, [stepFrame.x1 - 0.70, stepFrame.y1 - 0.38, 0]));
+      g.push(quickText('\u03B2=' + betaStr, 13, BLUE, [stepFrame.x1 - 0.80, stepFrame.y1 - 0.20, 0]));
+      g.push(quickText('Acl=' + gainStr, 13, CYAN, [stepFrame.x1 - 0.80, stepFrame.y1 - 0.42, 0]));
 
       // Step response Y-axis tick labels
       const yStep = yMax > 10 ? 5 : yMax > 2 ? 1 : yMax > 0.5 ? 0.2 : 0.05;
@@ -2220,21 +2264,27 @@
         const py = mapPoint(stepFrame, 0, v, stepXRange, stepYRange)[1];
         if (py > stepFrame.y0 + 0.10 && py < stepFrame.y1 - 0.10) {
           const vStr = v >= 1 ? v.toFixed(0) + 'V' : (v * 1e3).toFixed(0) + 'mV';
-          g.push(quickText(vStr, 9, MUTED, [stepFrame.x0 - 0.28, py, 0]));
+          g.push(quickText(vStr, 11, MUTED, [stepFrame.x0 - 0.30, py, 0]));
+          // Tick mark
+          g.push(new Line({ start: [stepFrame.x0, py, 0], end: [stepFrame.x0 + 0.06, py, 0], color: MUTED2, strokeWidth: 1 }));
         }
       }
+      // "0" label at origin
+      g.push(quickText('0', 11, MUTED, [stepFrame.x0 - 0.20, stepFrame.y0, 0]));
 
       // Step response X-axis tick labels
       const tDiv = tSettle / 5;
       for (let i = 1; i <= 4; i++) {
         const t = tDiv * i;
         const px = mapPoint(stepFrame, t, 0, stepXRange, stepYRange)[0];
-        if (px > stepFrame.x0 + 0.15 && px < stepFrame.x1 - 0.15) {
+        if (px > stepFrame.x0 + 0.20 && px < stepFrame.x1 - 0.20) {
           let tStr;
           if (t >= 1e-3) tStr = (t * 1e3).toFixed(1) + 'ms';
           else if (t >= 1e-6) tStr = (t * 1e6).toFixed(0) + '\u00B5s';
           else tStr = (t * 1e9).toFixed(0) + 'ns';
-          g.push(quickText(tStr, 9, MUTED, [px, stepFrame.y0 - 0.16, 0]));
+          g.push(quickText(tStr, 11, MUTED, [px, stepFrame.y0 - 0.18, 0]));
+          // Tick mark
+          g.push(new Line({ start: [px, stepFrame.y0, 0], end: [px, stepFrame.y0 + 0.06, 0], color: MUTED2, strokeWidth: 1 }));
         }
       }
 
@@ -2267,7 +2317,7 @@
       if (markerLogR >= penLogMin && markerLogR <= penLogMax) {
         const mx = mapPoint(penFrame, markerLogR, 0, penXRange, penYRange)[0];
         g.push(new Line({ start: [mx, penFrame.y0 + 0.05, 0], end: [mx, penFrame.y1 - 0.05, 0], color: FG, strokeWidth: 2.2 }));
-        g.push(quickText('\u25C6 You', 10, FG, [mx, penFrame.y1 - 0.34, 0]));
+        g.push(quickText('\u25C6 You are here', 11, FG, [mx + 0.12, penFrame.y1 - 0.34, 0]));
       }
 
       scene.add(...g);

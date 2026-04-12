@@ -349,11 +349,12 @@
         state.section2AnimObjects = [];
       }
       // Clean up any traveling labels left on screen from mid-animation
-      if (state.section2Ctx && state.section2Ctx.travelLabels) {
-        for (const lab of state.section2Ctx.travelLabels) {
-          scene.remove(lab.tvout);
-          scene.remove(lab.tbv);
-          scene.remove(lab.tvd);
+      if (state.section2Ctx) {
+        if (state.section2Ctx.vinChip) scene.remove(state.section2Ctx.vinChip);
+        if (state.section2Ctx.travelLabels) {
+          for (const lab of state.section2Ctx.travelLabels) {
+            scene.remove(lab.tvout, lab.tbv, lab.tvd, lab.opAol, lab.opBeta, lab.opSigma);
+          }
         }
       }
       state.section2AnimToken += 1;
@@ -816,21 +817,27 @@
 
       const bd = { BD_FWD_Y, BD_FB_Y, BD_JX, BD_JR, BD_AX, BD_AW, BD_AH, BD_BX, BD_BW, BD_BH, BD_TAP, BD_OUT, BD_IN };
 
-      // Pre-render traveling labels for the feedback animation.
-      // For each iteration k (0..S2_STEPS-1) we need:
-      //   travelVout: the Vout value that travels along the feedback path
-      //   travelBetaVout: the βVout value after the β block
-      //   travelVd: the Vd value that travels into A_OL
+      // Pre-render traveling value "chips" for the feedback animation.
+      // Each chip is a MathTex label. We create circle backgrounds on-the-fly.
+      // For each iteration k we need values and operation labels.
       const OFF = [20, 20, 0]; // off-screen parking position
+      const CHIP_SCALE = 0.30;
       const travelLabels = [];
+      // Also pre-render the Vin chip (used at the start / at Σ each iteration)
+      const vinChip = await makeMath(S2_V_IN.toFixed(1), CHIP_SCALE, FG, OFF);
       for (let k = 0; k < S2_STEPS; k++) {
         const vOutNew = s2Vouts[k + 1];
         const vd = S2_V_IN - S2_BETA * s2Vouts[k];
         const bv = S2_BETA * vOutNew;
-        const tvout = await makeMath(vOutNew.toFixed(1), 0.36, CYAN, OFF);
-        const tbv = await makeMath((bv >= 0 ? '' : '') + bv.toFixed(2), 0.34, BLUE, OFF);
-        const tvd = await makeMath((vd >= 0 ? '' : '') + vd.toFixed(2), 0.34, ACCENT, OFF);
-        travelLabels.push({ tvout, tbv, tvd });
+        // Traveling value chips
+        const tvd = await makeMath(vd.toFixed(2), CHIP_SCALE, ACCENT, OFF);
+        const tvout = await makeMath(vOutNew.toFixed(1), CHIP_SCALE, CYAN, OFF);
+        const tbv = await makeMath(bv.toFixed(2), CHIP_SCALE, BLUE, OFF);
+        // Operation labels shown briefly at each block
+        const opAol = await makeMath('\\times A_{OL}=' + vOutNew.toFixed(1), CHIP_SCALE, CYAN, OFF);
+        const opBeta = await makeMath('\\times\\beta=' + bv.toFixed(2), CHIP_SCALE, BLUE, OFF);
+        const opSigma = await makeMath(S2_V_IN.toFixed(1) + '-' + bv.toFixed(2) + '=' + vd.toFixed(2), CHIP_SCALE, ACCENT, OFF);
+        travelLabels.push({ tvd, tvout, tbv, opAol, opBeta, opSigma });
       }
 
       return {
@@ -849,7 +856,8 @@
         settleYRange,
         bd,
         bdDynLabels,
-        travelLabels
+        travelLabels,
+        vinChip
       };
     };
 
@@ -1133,6 +1141,13 @@
       }, { duration: totalDuration }));
     };
 
+    // Create a circle background for a value chip
+    const makeChipBg = (x, y, col) => {
+      const bg = new Rectangle({ width: 0.48, height: 0.36, color: col, strokeWidth: 1.5, fillOpacity: 0.20 });
+      bg.moveTo([x, y, 0]);
+      return bg;
+    };
+
     const runSection2Animation = async (token) => {
       const runId = ++state.section2AnimToken;
       const stale = () => token !== state.renderToken || runId !== state.section2AnimToken || state.currentSection !== 2;
@@ -1144,41 +1159,76 @@
       const tl = c.travelLabels;
       if (!tl) return;
 
-      // Waypoints for each leg of the block diagram (with Y offset for labels)
-      const ABOVE = 0.28;
-      const BELOW = -0.30;
+      // Waypoints on the actual wire paths (centered on lines)
+      const inputToSigma = [
+        [bd.BD_IN, bd.BD_FWD_Y],
+        [bd.BD_JX - bd.BD_JR, bd.BD_FWD_Y],
+      ];
       const sigmaToAol = [
-        [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y + ABOVE],
-        [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y + ABOVE],
+        [bd.BD_JX + bd.BD_JR, bd.BD_FWD_Y],
+        [bd.BD_AX - bd.BD_AW / 2, bd.BD_FWD_Y],
       ];
       const aolToTap = [
-        [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y + ABOVE],
-        [bd.BD_TAP, bd.BD_FWD_Y + ABOVE],
+        [bd.BD_AX + bd.BD_AW / 2, bd.BD_FWD_Y],
+        [bd.BD_TAP, bd.BD_FWD_Y],
       ];
       const tapToBeta = [
-        [bd.BD_TAP, bd.BD_FWD_Y + BELOW],
-        [bd.BD_TAP, bd.BD_FB_Y + BELOW],
-        [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y + BELOW],
+        [bd.BD_TAP, bd.BD_FWD_Y],
+        [bd.BD_TAP, bd.BD_FB_Y],
+        [bd.BD_BX + bd.BD_BW / 2, bd.BD_FB_Y],
       ];
       const betaToSigma = [
-        [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y + BELOW],
-        [bd.BD_JX, bd.BD_FB_Y + BELOW],
-        [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR + BELOW],
+        [bd.BD_BX - bd.BD_BW / 2, bd.BD_FB_Y],
+        [bd.BD_JX, bd.BD_FB_Y],
+        [bd.BD_JX, bd.BD_FWD_Y - bd.BD_JR],
       ];
 
-      // Speed ramp: seconds per animation step — slow early, fast late
+      // Positions for operation labels (shown at each block)
+      const AOL_OP_POS = [bd.BD_AX, bd.BD_FWD_Y + 0.50, 0];
+      const BETA_OP_POS = [bd.BD_BX, bd.BD_FB_Y - 0.42, 0];
+      const SIGMA_OP_POS = [bd.BD_JX, bd.BD_FWD_Y + 0.52, 0];
+
+      // Speed ramp: seconds per full iteration — slow early, fast late
       const durationFor = (k) => {
-        if (k <= 1) return 1.0;
-        if (k <= 3) return 0.6;
-        if (k <= 6) return 0.35;
-        if (k <= 10) return 0.18;
-        return 0.08;
+        if (k <= 1) return 1.2;
+        if (k <= 3) return 0.7;
+        if (k <= 6) return 0.40;
+        if (k <= 10) return 0.20;
+        return 0.10;
       };
 
       // Temporary objects that need cleanup between iterations
       let tempObjs = [];
-      const addTemp = (obj) => { scene.add(obj); tempObjs.push(obj); };
+      const show = (...objs) => { for (const o of objs) { scene.add(o); tempObjs.push(o); } };
+      const hide = (...objs) => { for (const o of objs) { scene.remove(o); tempObjs = tempObjs.filter(t => t !== o); } };
       const clearTemp = () => { tempObjs.forEach(o => scene.remove(o)); tempObjs = []; };
+
+      // Helper: show a chip (circle bg + label) at a position, move along path, return bg
+      const moveChip = async (label, color, waypoints, dur) => {
+        const startX = waypoints[0][0], startY = waypoints[0][1];
+        const bg = makeChipBg(startX, startY, color);
+        label.moveTo([startX, startY, 0]);
+        show(bg, label);
+        // Move both bg and label together
+        await Promise.all([
+          shiftAlongWaypoints(bg, waypoints, dur, stale),
+          shiftAlongWaypoints(label, waypoints, dur, stale),
+        ]);
+        return bg;
+      };
+
+      // Helper: show operation label, pause, fade out
+      const flashOp = async (opLabel, pos, dur) => {
+        opLabel.moveTo(pos);
+        scene.remove(opLabel);
+        await scene.play(new FadeIn(opLabel, { duration: dur * 0.3 }));
+        if (stale()) return;
+        show(opLabel);
+        await scene.wait(dur * 0.5);
+        if (stale()) return;
+        await scene.play(new FadeOut(opLabel, { duration: dur * 0.2 }));
+        hide(opLabel);
+      };
 
       drawSection2AtStep(0);
       if (stale()) return;
@@ -1192,73 +1242,57 @@
         const dur = durationFor(k);
         const lab = tl[k];
 
-        // ── Phase 1: Vd travels from Σ into A_OL ──
-        lab.tvd.moveTo([sigmaToAol[0][0], sigmaToAol[0][1], 0]);
-        scene.remove(lab.tvd);
-        await scene.play(new FadeIn(lab.tvd, { duration: dur * 0.15 }));
-        if (stale()) return;
-        tempObjs.push(lab.tvd);
+        // ── Phase 1: Vin / Vd enters from left → Σ ──
+        if (k === 0) {
+          // First iteration: Vin enters from the input
+          const vinBg = await moveChip(c.vinChip, FG, inputToSigma, dur * 0.3);
+          if (stale()) return;
+          // No subtraction at Σ on first pass (no feedback yet)
+          await scene.wait(dur * 0.08);
+          if (stale()) return;
+          hide(vinBg, c.vinChip);
+        }
 
-        await shiftAlongWaypoints(lab.tvd, sigmaToAol, dur * 0.4, stale);
+        // ── Phase 2: Vd travels Σ → A_OL ──
+        const vdBg = await moveChip(lab.tvd, ACCENT, sigmaToAol, dur * 0.25);
         if (stale()) return;
 
-        // Pause at A_OL — Vd is being amplified
-        await scene.wait(dur * 0.15);
+        // ── Phase 3: Multiply at A_OL — show "× A_OL = Vout" ──
+        hide(vdBg, lab.tvd);
+        await flashOp(lab.opAol, AOL_OP_POS, dur * 0.25);
         if (stale()) return;
 
-        // Vd fades out inside A_OL
-        await scene.play(new FadeOut(lab.tvd, { duration: dur * 0.1 }));
-        if (stale()) return;
-        tempObjs = tempObjs.filter(o => o !== lab.tvd);
-
-        // ── Phase 2: Vout emerges from A_OL → tap/output ──
-        lab.tvout.moveTo([aolToTap[0][0], aolToTap[0][1], 0]);
-        scene.remove(lab.tvout);
-        await scene.play(new FadeIn(lab.tvout, { duration: dur * 0.15 }));
-        if (stale()) return;
-        tempObjs.push(lab.tvout);
-
-        await shiftAlongWaypoints(lab.tvout, aolToTap, dur * 0.35, stale);
+        // ── Phase 4: Vout emerges from A_OL → tap ──
+        const voutBg = await moveChip(lab.tvout, CYAN, aolToTap, dur * 0.2);
         if (stale()) return;
 
         // Update settling graph
         drawSection2AtStep(k + 1);
         if (stale()) return;
-        await scene.wait(dur * 0.12);
+        await scene.wait(dur * 0.05);
         if (stale()) return;
 
-        // ── Phase 3: Vout "copies" and travels feedback path → β ──
-        lab.tvout.moveTo([tapToBeta[0][0], tapToBeta[0][1], 0]);
-        await shiftAlongWaypoints(lab.tvout, tapToBeta, dur * 0.5, stale);
+        // ── Phase 5: Vout travels feedback path → β ──
+        hide(voutBg);
+        const voutFbBg = await moveChip(lab.tvout, CYAN, tapToBeta, dur * 0.3);
         if (stale()) return;
 
-        // Pause at β — multiplication happening
-        await scene.wait(dur * 0.15);
+        // ── Phase 6: Multiply at β — show "× β = βVout" ──
+        hide(voutFbBg, lab.tvout);
+        await flashOp(lab.opBeta, BETA_OP_POS, dur * 0.2);
         if (stale()) return;
 
-        // Vout fades, βVout appears
-        await scene.play(new FadeOut(lab.tvout, { duration: dur * 0.1 }));
-        if (stale()) return;
-        tempObjs = tempObjs.filter(o => o !== lab.tvout);
-
-        // ── Phase 4: βVout emerges from β → Σ ──
-        lab.tbv.moveTo([betaToSigma[0][0], betaToSigma[0][1], 0]);
-        scene.remove(lab.tbv);
-        await scene.play(new FadeIn(lab.tbv, { duration: dur * 0.12 }));
-        if (stale()) return;
-        tempObjs.push(lab.tbv);
-
-        await shiftAlongWaypoints(lab.tbv, betaToSigma, dur * 0.45, stale);
+        // ── Phase 7: βVout emerges from β → Σ ──
+        const bvBg = await moveChip(lab.tbv, BLUE, betaToSigma, dur * 0.25);
         if (stale()) return;
 
-        // Pause at Σ — subtraction happening
-        await scene.wait(dur * 0.12);
-        if (stale()) return;
-
-        // βVout fades at Σ, ready for next loop
-        await scene.play(new FadeOut(lab.tbv, { duration: dur * 0.1 }));
-        if (stale()) return;
-        tempObjs = tempObjs.filter(o => o !== lab.tbv);
+        // ── Phase 8: Subtraction at Σ — show "Vin - βVout = Vd" ──
+        hide(bvBg, lab.tbv);
+        if (k < S2_STEPS - 1) {
+          const nextLab = tl[k + 1];
+          await flashOp(nextLab.opSigma, SIGMA_OP_POS, dur * 0.2);
+          if (stale()) return;
+        }
       }
 
       clearTemp();

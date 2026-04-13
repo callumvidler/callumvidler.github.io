@@ -8,6 +8,35 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
   <link rel="stylesheet" href="slide.css">
+  <style>
+    .thermo-next-btn {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 22px;
+      background: var(--slide-surface);
+      color: var(--slide-text);
+      border: 1px solid var(--slide-border);
+      border-radius: 6px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-transform: lowercase;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.2s;
+      z-index: 10;
+    }
+    .thermo-next-btn:hover:not(:disabled) {
+      color: var(--slide-accent);
+      border-color: var(--slide-accent);
+      background: rgba(106, 170, 142, 0.08);
+    }
+    .thermo-next-btn:disabled {
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
   <script src="../../theme.js"></script>
   <script>
     (function () {
@@ -41,6 +70,7 @@
   <div id="stage" class="manim-stage">
     <div class="stage-fallback">Loading manim-web scene…</div>
   </div>
+  <button type="button" class="thermo-next-btn" id="thermoNextBtn" disabled>next</button>
 
   <script type="module">
     import {
@@ -73,23 +103,41 @@
     }
 
     // ── Bullet points (right side) ──
-    const bullets = [
-      'Set-point drives the "+" input, feedback drives the "−" input',
-      'Identical topology to a non-inverting op-amp amplifier loop',
-      'Output (room temp) tracks the reference — no sign inversion',
-      'Inverting amp instead sums input and feedback at the "−" node',
-      'Negative feedback drives the error toward zero in both systems'
+    // Each entry is a list of lines for one bullet. The first line of every
+    // bullet gets the • marker; continuation lines are indented to align
+    // with the text of the first line. Lines are kept short enough to fit
+    // inside the right-side column at fontSize 18 (~50 chars max per line).
+    const bulletLines = [
+      ['The Σ block compares the set-point and', 'the measured room temperature'],
+      ['Their difference is the error signal'],
+      ['Heater drives hard while the error is large,', 'easing off as the room warms'],
+      ['Like the inverting amp, input and feedback', 'meet at one summing node'],
+      ['Op-amp gain drives that error to ~0;', 'here room temp tracks the set-point']
     ];
-    const bulletObjs = [];
+    const FS_BULLET = 18;
+    const LINE_H = 0.34;
+    const BULLET_GAP = 0.14;
     const BULLET_LEFT_X = 2.5;
-    for (let i = 0; i < bullets.length; i++) {
-      const b = new Text({ text: '•  ' + bullets[i], fontSize: 15, color: MUTED, fontUrl: FONT_URL });
-      await b.loadGlyphs?.();
-      b.moveTo([4, 1.5 - i * 0.5, 0]);
-      if (typeof b.getLeft === 'function') {
-        b.shift([BULLET_LEFT_X - b.getLeft()[0], 0, 0]);
+    const BULLET_INDENT_X = BULLET_LEFT_X + 0.32;
+    const bulletObjs = [];
+    let bulletCursorY = 2.6;
+    for (const lines of bulletLines) {
+      const lineObjs = [];
+      for (let li = 0; li < lines.length; li++) {
+        const isFirst = li === 0;
+        const text = (isFirst ? '•  ' : '') + lines[li];
+        const leftX = isFirst ? BULLET_LEFT_X : BULLET_INDENT_X;
+        const t = new Text({ text, fontSize: FS_BULLET, color: MUTED, fontUrl: FONT_URL });
+        await t.loadGlyphs?.();
+        t.moveTo([4, bulletCursorY, 0]);
+        if (typeof t.getLeft === 'function') {
+          t.shift([leftX - t.getLeft()[0], 0, 0]);
+        }
+        lineObjs.push(t);
+        bulletCursorY -= LINE_H;
       }
-      bulletObjs.push(b);
+      bulletCursorY -= BULLET_GAP;
+      bulletObjs.push(lineObjs);
     }
 
     // ── Block diagram (left / upper-left) ──
@@ -300,6 +348,21 @@
     );
     await scene.play(new Write(roomOutLbl));
 
+    // ── Pause: wait for the user to click "next" before revealing the
+    // graph and the bullet points. The button is hidden (disabled+opacity:0)
+    // until the block diagram has finished drawing, so it appears at the
+    // moment it becomes meaningful and disappears once clicked.
+    const nextBtn = document.getElementById('thermoNextBtn');
+    if (nextBtn) {
+      nextBtn.disabled = false;
+      await new Promise((resolve) => {
+        nextBtn.addEventListener('click', () => {
+          nextBtn.disabled = true;
+          resolve();
+        }, { once: true });
+      });
+    }
+
     await scene.play(new Create(plotFrame), new Create(gridGroup));
     await scene.play(new Create(xAxis), new Create(yAxis), new Write(xLbl), new Write(yLbl));
     await scene.play(new Create(setLine1), new Write(setLbl1));
@@ -342,8 +405,8 @@
       await scene.play(...anims);
     }
 
-    for (const b of bulletObjs) {
-      await scene.play(new FadeIn(b, { duration: 0.2 }));
+    for (const group of bulletObjs) {
+      await scene.play(...group.map((t) => new FadeIn(t, { duration: 0.2 })));
     }
     await scene.wait(1.5);
   </script>

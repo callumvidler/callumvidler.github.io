@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Slide 4 — LM741 Pinout</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
   <link rel="stylesheet" href="slide.css">
   <script src="../../theme.js"></script>
@@ -16,8 +19,8 @@
       var ss = null;
       try { ss = sessionStorage.getItem('slideTheme'); } catch (e) { /* ignore */ }
       var pick = (qt === 'dark' || qt === 'light') ? qt
-               : (ss === 'dark' || ss === 'light') ? ss
-               : null;
+        : (ss === 'dark' || ss === 'light') ? ss
+          : null;
       if (pick) document.documentElement.setAttribute('data-theme', pick);
       window.addEventListener('themechange', function (e) {
         try {
@@ -33,6 +36,7 @@
     })();
   </script>
 </head>
+
 <body class="slide">
   <header class="slide-header">
     <span class="slide-num">05 / 19</span>
@@ -51,17 +55,17 @@
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
     const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
-    const BG     = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
-    const FG     = IS_LIGHT ? '#1a1a1e' : '#ffffff';
-    const MUTED  = IS_LIGHT ? '#6a6a72' : '#8892a4';
+    const BG = IS_LIGHT ? '#f5f5f7' : '#0a0e14';
+    const FG = IS_LIGHT ? '#1a1a1e' : '#ffffff';
+    const MUTED = IS_LIGHT ? '#6a6a72' : '#8892a4';
     const MUTED2 = IS_LIGHT ? '#b0b0b6' : '#505868';
     const ACCENT = IS_LIGHT ? '#3d8b6e' : '#6aaa8e';
     const YELLOW = IS_LIGHT ? '#b8860b' : '#ffcc44';
-    const RED    = IS_LIGHT ? '#c74034' : '#e06050';
-    const BLUE   = IS_LIGHT ? '#3a68c8' : '#5a8dee';
-    const MAG    = IS_LIGHT ? '#a050a0' : '#d070d0';
-    const CYAN   = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
-    const BLACK  = IS_LIGHT ? '#000000' : '#ffffff';
+    const RED = IS_LIGHT ? '#c74034' : '#e06050';
+    const BLUE = IS_LIGHT ? '#3a68c8' : '#5a8dee';
+    const MAG = IS_LIGHT ? '#a050a0' : '#d070d0';
+    const CYAN = IS_LIGHT ? '#3d8ea0' : '#58c0d8';
+    const BLACK = IS_LIGHT ? '#000000' : '#ffffff';
     window.addEventListener('themechange', () => location.reload());
 
     const stage = document.getElementById('stage');
@@ -81,7 +85,7 @@
 
     // ── DIP-8 package body (centered, enlarged) ──
     const BODY_CX = 0, BODY_CY = -0.3;
-    const BODY_W  = 3.0, BODY_H = 4.2;
+    const BODY_W = 3.0, BODY_H = 4.2;
     const body = new Rectangle({ width: BODY_W, height: BODY_H, color: MUTED, strokeWidth: 2, fillOpacity: 0.05 });
     body.moveTo([BODY_CX, BODY_CY, 0]);
 
@@ -95,14 +99,14 @@
     const pinYs = [1.4, 0.55, -0.3, -1.15]; // top → bottom on each side
 
     const pinSpec = [
-      { n: 1, xy: [L, pinYs[0], 0], fn: 'Offset Null',            color: MUTED },
-      { n: 2, xy: [L, pinYs[1], 0], fn: 'Inverting Input (−)',    color: RED    },
+      { n: 1, xy: [L, pinYs[0], 0], fn: 'Offset Null', color: MUTED },
+      { n: 2, xy: [L, pinYs[1], 0], fn: 'Inverting Input (−)', color: RED },
       { n: 3, xy: [L, pinYs[2], 0], fn: 'Non-Inverting Input (+)', color: ACCENT },
-      { n: 4, xy: [L, pinYs[3], 0], fn: 'V− (Negative Supply)',   color: MAG    },
-      { n: 5, xy: [R, pinYs[3], 0], fn: 'Offset Null',            color: MUTED  },
-      { n: 6, xy: [R, pinYs[2], 0], fn: 'Output',                 color: BLUE   },
-      { n: 7, xy: [R, pinYs[1], 0], fn: 'V+ (Positive Supply)',   color: YELLOW },
-      { n: 8, xy: [R, pinYs[0], 0], fn: 'NC',                     color: MUTED  }
+      { n: 4, xy: [L, pinYs[3], 0], fn: 'V− (Negative Supply)', color: MAG },
+      { n: 5, xy: [R, pinYs[3], 0], fn: 'Offset Null', color: MUTED },
+      { n: 6, xy: [R, pinYs[2], 0], fn: 'Output', color: BLUE },
+      { n: 7, xy: [R, pinYs[1], 0], fn: 'V+ (Positive Supply)', color: YELLOW },
+      { n: 8, xy: [R, pinYs[0], 0], fn: 'NC', color: MUTED }
     ];
 
     const pinDots = [], pinNums = [], pinLeads = [], pinFnLabels = [];
@@ -111,8 +115,8 @@
 
       // short external lead stub
       const lead = new Line({
-        start: [p.xy[0],                p.xy[1], 0],
-        end:   [p.xy[0] + 0.28 * side,  p.xy[1], 0],
+        start: [p.xy[0], p.xy[1], 0],
+        end: [p.xy[0] + 0.28 * side, p.xy[1], 0],
         color: MUTED
       });
 
@@ -174,21 +178,21 @@
     const smallR = SMALL_CX + SMALL_W / 2;
     const smallYs = [1.0, 0.35, -0.3, -0.95];
     const smallPinSpec = [
-      { n: 1, xy: [smallL, smallYs[0], 0], fn: 'Offset Null',      color: MUTED  },
-      { n: 2, xy: [smallL, smallYs[1], 0], fn: 'Inv. In (−)',      color: RED    },
-      { n: 3, xy: [smallL, smallYs[2], 0], fn: 'Non-Inv. In (+)',  color: ACCENT },
-      { n: 4, xy: [smallL, smallYs[3], 0], fn: 'V−  Supply',       color: MAG    },
-      { n: 5, xy: [smallR, smallYs[3], 0], fn: 'Offset Null',      color: MUTED  },
-      { n: 6, xy: [smallR, smallYs[2], 0], fn: 'Output',           color: BLUE   },
-      { n: 7, xy: [smallR, smallYs[1], 0], fn: 'V+  Supply',       color: YELLOW },
-      { n: 8, xy: [smallR, smallYs[0], 0], fn: 'NC',               color: MUTED  }
+      { n: 1, xy: [smallL, smallYs[0], 0], fn: 'Offset Null', color: MUTED },
+      { n: 2, xy: [smallL, smallYs[1], 0], fn: 'Inv. In (−)', color: RED },
+      { n: 3, xy: [smallL, smallYs[2], 0], fn: 'Non-Inv. In (+)', color: ACCENT },
+      { n: 4, xy: [smallL, smallYs[3], 0], fn: 'V−  Supply', color: MAG },
+      { n: 5, xy: [smallR, smallYs[3], 0], fn: 'Offset Null', color: MUTED },
+      { n: 6, xy: [smallR, smallYs[2], 0], fn: 'Output', color: BLUE },
+      { n: 7, xy: [smallR, smallYs[1], 0], fn: 'V+  Supply', color: YELLOW },
+      { n: 8, xy: [smallR, smallYs[0], 0], fn: 'NC', color: MUTED }
     ];
     const smallDots = [], smallNums = [], smallLeads = [], smallFnLabels = [];
     for (const p of smallPinSpec) {
       const side = p.xy[0] < SMALL_CX ? -1 : 1;
       const lead = new Line({
         start: [p.xy[0], p.xy[1], 0],
-        end:   [p.xy[0] + 0.22 * side, p.xy[1], 0],
+        end: [p.xy[0] + 0.22 * side, p.xy[1], 0],
         color: MUTED
       });
       const dot = new Circle({ radius: 0.08, color: p.color, strokeWidth: 1.6, fillOpacity: 1 });
@@ -217,7 +221,7 @@
     const transitionDur = 0.9;
     await scene.play(
       ...oldDipParts.map(o => new FadeOut(o, { shift: [-1.8, 0, 0], duration: transitionDur })),
-      ...newDipParts.map(o => new FadeIn(o,  { shift: [-1.2, 0, 0], duration: transitionDur })),
+      ...newDipParts.map(o => new FadeIn(o, { shift: [-1.2, 0, 0], duration: transitionDur })),
       new MoveAlongPath(subtitle, {
         path: new Line({ start: [0, 2.5, 0], end: [SMALL_CX, 1.75, 0] }),
         duration: transitionDur, rateFunc: linear
@@ -225,14 +229,14 @@
     );
 
     // ── Equivalent circuit on the right (scaled from slide 3) ──
-    const CIRC_S  = 0.65;
+    const CIRC_S = 0.65;
     const CIRC_DX = 3.9;
     const CIRC_DY = 0;
     const xf = (x, y) => [x * CIRC_S + CIRC_DX, y * CIRC_S + CIRC_DY, 0];
 
-    const eqHeader = new Text({ text: 'Equivalent Circuit', fontSize: 15, color: MUTED, fontUrl: FONT_URL });
+    const eqHeader = new Text({ text: 'Equivalent Circuit', fontSize: 25, color: MUTED, fontUrl: FONT_URL });
     await eqHeader.loadGlyphs?.();
-    eqHeader.moveTo([xf(-1.9, 0)[0], 3.05, 0]);
+    eqHeader.moveTo([xf(-1.9, 0)[0], 2.5, 0]);
 
     const eqTri = new Polygon({
       vertices: [xf(-5.2, -2.2), xf(-5.2, 2.2), xf(1.2, 0)],
@@ -240,21 +244,21 @@
     });
 
     const supplyX = -3.5;
-    const eqVsPlus  = new Line({ start: xf(supplyX,  2.45), end: xf(supplyX,  1.6), color: YELLOW, strokeWidth: 1.8 });
-    const eqVsMinus = new Line({ start: xf(supplyX, -2.45), end: xf(supplyX, -1.6), color: MAG,    strokeWidth: 1.8 });
+    const eqVsPlus = new Line({ start: xf(supplyX, 2.45), end: xf(supplyX, 1.6), color: YELLOW, strokeWidth: 1.8 });
+    const eqVsMinus = new Line({ start: xf(supplyX, -2.45), end: xf(supplyX, -1.6), color: MAG, strokeWidth: 1.8 });
     const eqVsPL = new MathTex({ latex: 'V_{S+}', color: YELLOW });
     const eqVsML = new MathTex({ latex: 'V_{S-}', color: MAG });
     await eqVsPL.waitForRender?.();
     await eqVsML.waitForRender?.();
-    eqVsPL.scale(0.42).moveTo([xf(supplyX,  2.45)[0], xf(supplyX,  2.45)[1] + 0.22, 0]);
+    eqVsPL.scale(0.42).moveTo([xf(supplyX, 2.45)[0], xf(supplyX, 2.45)[1] + 0.22, 0]);
     eqVsML.scale(0.42).moveTo([xf(supplyX, -2.45)[0], xf(supplyX, -2.45)[1] - 0.22, 0]);
 
-    const eqInPlus  = new Line({ start: xf(-6.1,  0.8), end: xf(-4.3,  0.8), color: FG });
+    const eqInPlus = new Line({ start: xf(-6.1, 0.8), end: xf(-4.3, 0.8), color: FG });
     const eqInMinus = new Line({ start: xf(-6.1, -0.8), end: xf(-4.3, -0.8), color: FG });
 
     const eqRin = new Rectangle({ width: 0.34 * CIRC_S, height: 1.2 * CIRC_S, color: ACCENT, strokeWidth: 1.8 });
     eqRin.moveTo(xf(-4.3, 0));
-    const eqRinJT = new Line({ start: xf(-4.3,  0.8), end: xf(-4.3,  0.6), color: FG });
+    const eqRinJT = new Line({ start: xf(-4.3, 0.8), end: xf(-4.3, 0.6), color: FG });
     const eqRinJB = new Line({ start: xf(-4.3, -0.8), end: xf(-4.3, -0.6), color: FG });
     const eqRinLbl = new MathTex({ latex: 'R_{in}', color: ACCENT });
     await eqRinLbl.waitForRender?.();
@@ -265,7 +269,7 @@
       color: YELLOW, strokeWidth: 1.8, fillOpacity: 0.08
     });
     const eqDiamondLbl = new MathTex({ latex: 'A_{OL}\\,v_{in}', color: YELLOW });
-    const eqDepPlus  = new MathTex({ latex: '+', color: FG });
+    const eqDepPlus = new MathTex({ latex: '+', color: FG });
     const eqDepMinus = new MathTex({ latex: '-', color: FG });
     await eqDiamondLbl.waitForRender?.();
     await eqDepPlus.waitForRender?.();
@@ -280,10 +284,10 @@
     await eqRoutLbl.waitForRender?.();
     eqRoutLbl.scale(0.42).moveTo(xf(-1.3, 0.55));
 
-    const eqWireDiaUp   = new Line({ start: xf(-2.9, -0.18), end: xf(-2.9, 0),  color: FG });
-    const eqWireDiaRout = new Line({ start: xf(-2.9,  0),    end: xf(-1.9, 0),  color: FG });
-    const eqWireRoutOut = new Line({ start: xf(-0.7,  0),    end: xf( 1.2, 0),  color: FG });
-    const eqOutLead     = new Line({ start: xf( 1.2,  0),    end: xf( 2.2, 0),  color: BLUE, strokeWidth: 1.8 });
+    const eqWireDiaUp = new Line({ start: xf(-2.9, -0.18), end: xf(-2.9, 0), color: FG });
+    const eqWireDiaRout = new Line({ start: xf(-2.9, 0), end: xf(-1.9, 0), color: FG });
+    const eqWireRoutOut = new Line({ start: xf(-0.7, 0), end: xf(1.2, 0), color: FG });
+    const eqOutLead = new Line({ start: xf(1.2, 0), end: xf(2.2, 0), color: BLUE, strokeWidth: 1.8 });
     const eqOutLbl = new MathTex({ latex: 'v_{out}', color: BLUE });
     await eqOutLbl.waitForRender?.();
     eqOutLbl.scale(0.55).moveTo([xf(2.2, 0)[0] + 0.32, xf(2.2, 0)[1], 0]);
@@ -293,7 +297,7 @@
     const eqGnd2 = new Line({ start: xf(-3.10, -2.03), end: xf(-2.70, -2.03), color: FG, strokeWidth: 1.8 });
     const eqGnd3 = new Line({ start: xf(-3.00, -2.16), end: xf(-2.80, -2.16), color: FG, strokeWidth: 1 });
 
-    const eqVPlusLbl  = new MathTex({ latex: 'v_{+}', color: ACCENT });
+    const eqVPlusLbl = new MathTex({ latex: 'v_{+}', color: ACCENT });
     const eqVMinusLbl = new MathTex({ latex: 'v_{-}', color: RED });
     await eqVPlusLbl.waitForRender?.();
     await eqVMinusLbl.waitForRender?.();
@@ -324,11 +328,11 @@
       t.moveTo(pos);
       return t;
     };
-    const tag3 = await mkTag('pin 3', ACCENT, [xf(-6.1,  0.8)[0] - 0.22, xf(-6.1,  0.8)[1] + 0.32, 0]);
-    const tag2 = await mkTag('pin 2', RED,    [xf(-6.1, -0.8)[0] - 0.22, xf(-6.1, -0.8)[1] - 0.32, 0]);
-    const tag7 = await mkTag('pin 7', YELLOW, [xf(supplyX,  2.45)[0] + 0.45, xf(supplyX,  2.45)[1] + 0.22, 0]);
-    const tag4 = await mkTag('pin 4', MAG,    [xf(supplyX, -2.45)[0] + 0.45, xf(supplyX, -2.45)[1] - 0.22, 0]);
-    const tag6 = await mkTag('pin 6', BLUE,   [xf(2.2, 0)[0] + 0.32, xf(2.2, 0)[1] - 0.32, 0]);
+    const tag3 = await mkTag('pin 3', ACCENT, [xf(-6.1, 0.8)[0] - 0.22, xf(-6.1, 0.8)[1] + 0.32, 0]);
+    const tag2 = await mkTag('pin 2', RED, [xf(-6.1, -0.8)[0] - 0.22, xf(-6.1, -0.8)[1] - 0.32, 0]);
+    const tag7 = await mkTag('pin 7', YELLOW, [xf(supplyX, 2.45)[0] + 0.45, xf(supplyX, 2.45)[1] + 0.22, 0]);
+    const tag4 = await mkTag('pin 4', MAG, [xf(supplyX, -2.45)[0] + 0.45, xf(supplyX, -2.45)[1] - 0.22, 0]);
+    const tag6 = await mkTag('pin 6', BLUE, [xf(2.2, 0)[0] + 0.32, xf(2.2, 0)[1] - 0.32, 0]);
 
     for (const t of [tag3, tag2, tag7, tag4, tag6]) {
       await scene.play(new FadeIn(t, { duration: 0.35 }));
@@ -358,7 +362,7 @@
     const gXAxis = new Line({ start: [gX - gXExt - 0.15, gY, 0], end: [gX + gXExt + 0.18, gY, 0], color: MUTED, strokeWidth: 1.5 });
     const gYAxis = new Line({ start: [gX, gY - gYExt - 0.12, 0], end: [gX, gY + gYExt + 0.18, 0], color: MUTED, strokeWidth: 1.5 });
 
-    const gXLbl = new MathTex({ latex: 'v_{in}',  color: FG });
+    const gXLbl = new MathTex({ latex: 'v_{in}', color: FG });
     const gYLbl = new MathTex({ latex: 'v_{out}', color: FG });
     await gXLbl.waitForRender?.();
     await gYLbl.waitForRender?.();
@@ -366,9 +370,9 @@
     gYLbl.scale(0.4).moveTo([gX + 0.28, gY + gYExt + 0.32, 0]);
 
     // Saturation rail markers (short ticks at ±V_sat on the y-axis)
-    const gSatPlus  = new Line({ start: [gX - 0.06, gY + gYExt, 0], end: [gX + 0.06, gY + gYExt, 0], color: MUTED, strokeWidth: 1.2 });
+    const gSatPlus = new Line({ start: [gX - 0.06, gY + gYExt, 0], end: [gX + 0.06, gY + gYExt, 0], color: MUTED, strokeWidth: 1.2 });
     const gSatMinus = new Line({ start: [gX - 0.06, gY - gYExt, 0], end: [gX + 0.06, gY - gYExt, 0], color: MUTED, strokeWidth: 1.2 });
-    const gSatPlusLbl  = new MathTex({ latex: '+V_{sat}', color: MUTED });
+    const gSatPlusLbl = new MathTex({ latex: '+V_{sat}', color: MUTED });
     const gSatMinusLbl = new MathTex({ latex: '-V_{sat}', color: MUTED });
     await gSatPlusLbl.waitForRender?.();
     await gSatMinusLbl.waitForRender?.();
@@ -376,11 +380,11 @@
     gSatMinusLbl.scale(0.32).moveTo([gX - 0.38, gY - gYExt, 0]);
 
     // Transfer curve: saturated low, steep linear slope through V_OS, saturated high
-    const gBottom = new Line({ start: [gX - gXExt,               gY - gYExt, 0], end: [gX + VOS - linearHalfW, gY - gYExt, 0], color: BLUE, strokeWidth: 2.6 });
-    const gVert   = new Line({ start: [gX + VOS - linearHalfW,   gY - gYExt, 0], end: [gX + VOS + linearHalfW, gY + gYExt, 0], color: BLUE, strokeWidth: 2.6 });
-    const gTop    = new Line({ start: [gX + VOS + linearHalfW,   gY + gYExt, 0], end: [gX + gXExt,             gY + gYExt, 0], color: BLUE, strokeWidth: 2.6 });
+    const gBottom = new Line({ start: [gX - gXExt, gY - gYExt, 0], end: [gX + VOS - linearHalfW, gY - gYExt, 0], color: BLUE, strokeWidth: 2.6 });
+    const gVert = new Line({ start: [gX + VOS - linearHalfW, gY - gYExt, 0], end: [gX + VOS + linearHalfW, gY + gYExt, 0], color: BLUE, strokeWidth: 2.6 });
+    const gTop = new Line({ start: [gX + VOS + linearHalfW, gY + gYExt, 0], end: [gX + gXExt, gY + gYExt, 0], color: BLUE, strokeWidth: 2.6 });
 
-    const VOS_X_offset = 0.3; 
+    const VOS_X_offset = 0.3;
     const VOS_Y_offset = 0.15;
 
     // V_OS tick on the x-axis + label
@@ -396,26 +400,26 @@
       new FadeIn(offsetCaption, { duration: 0.4 }),
       new Create(gXAxis, { duration: 0.4 }),
       new Create(gYAxis, { duration: 0.4 }),
-      new FadeIn(gXLbl,  { duration: 0.4 }),
-      new FadeIn(gYLbl,  { duration: 0.4 }),
-      new Create(gSatPlus,  { duration: 0.4 }),
+      new FadeIn(gXLbl, { duration: 0.4 }),
+      new FadeIn(gYLbl, { duration: 0.4 }),
+      new Create(gSatPlus, { duration: 0.4 }),
       new Create(gSatMinus, { duration: 0.4 }),
-      new FadeIn(gSatPlusLbl,  { duration: 0.4 }),
+      new FadeIn(gSatPlusLbl, { duration: 0.4 }),
       new FadeIn(gSatMinusLbl, { duration: 0.4 }),
       new Create(gBottom, { duration: 0.4 }),
-      new Create(gVert,   { duration: 0.4 }),
-      new Create(gTop,    { duration: 0.4 }),
-      new Create(gTick,   { duration: 0.4 }),
+      new Create(gVert, { duration: 0.4 }),
+      new Create(gTop, { duration: 0.4 }),
+      new Create(gTick, { duration: 0.4 }),
       new FadeIn(gVosLbl, { duration: 0.4 })
     );
 
     // Infinite loop: null the offset, then release it, repeating forever
     const loopSegments = [
       { obj: gBottom, start: [gX + (VOS - linearHalfW - gXExt) / 2, gY - gYExt, 0] },
-      { obj: gVert,   start: [gX + VOS,                              gY,         0] },
-      { obj: gTop,    start: [gX + (VOS + linearHalfW + gXExt) / 2, gY + gYExt, 0] },
-      { obj: gTick,   start: [gX + VOS,                              gY,         0] },
-      { obj: gVosLbl, start: [gX + VOS + VOS_X_offset, gY - VOS_Y_offset,  0] }
+      { obj: gVert, start: [gX + VOS, gY, 0] },
+      { obj: gTop, start: [gX + (VOS + linearHalfW + gXExt) / 2, gY + gYExt, 0] },
+      { obj: gTick, start: [gX + VOS, gY, 0] },
+      { obj: gVosLbl, start: [gX + VOS + VOS_X_offset, gY - VOS_Y_offset, 0] }
     ];
     const loopDur = 1.4;
     const loopPause = 0.9;
@@ -439,4 +443,5 @@
     }
   </script>
 </body>
+
 </html>

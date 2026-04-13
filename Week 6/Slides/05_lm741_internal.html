@@ -56,12 +56,36 @@
 
     .lm741-image-wrap {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 12px;
       width: 100%;
       height: 100%;
       padding-top: 36px;
       min-height: 0;
+    }
+
+    .lm741-disclaimer {
+      flex: 0 0 auto;
+      width: 100%;
+      font-size: 13px;
+      color: var(--slide-text-dim);
+      line-height: 1.5;
+    }
+
+    .lm741-disclaimer ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+
+    .lm741-disclaimer li {
+      margin-bottom: 2px;
+    }
+
+    .lm741-disclaimer strong {
+      color: var(--slide-text);
+      font-weight: 600;
     }
 
     .lm741-figure {
@@ -69,6 +93,8 @@
       aspect-ratio: 1352 / 837;
       max-width: 100%;
       max-height: 100%;
+      flex: 1 1 auto;
+      min-height: 0;
       background: #ffffff;
       border-radius: 6px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
@@ -232,6 +258,13 @@
       <div class="lm741-title">Internal Circuitry of the LM741 Op-Amp</div>
       <button type="button" class="lm741-labels-btn" id="lm741LabelsBtn">labels</button>
       <div class="lm741-image-wrap">
+        <div class="lm741-disclaimer">
+          <ul>
+            <li>You do <strong>not</strong> need to understand this circuit in detail</li>
+            <li>You will <strong>not</strong> be expected to analyse it in any great detail</li>
+            <li>It's shown only to give a sense of the complexity hidden inside a single op-amp</li>
+          </ul>
+        </div>
         <div class="lm741-figure">
           <img src="Images/Slide5_LM741_Internal.png" alt="LM741 internal schematic with functional blocks highlighted">
           <div class="lm741-overlay blue"    style="left: 8.2%;  top: 23.2%; width: 29.5%; height: 73.5%;"></div>

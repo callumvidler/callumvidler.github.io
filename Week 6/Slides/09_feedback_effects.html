@@ -496,10 +496,10 @@
         start: [-6.1, -1.30, 0], end: [-0.4, -1.30, 0],
         color: MUTED2, strokeWidth: 1.0
       });
-      const takeaway = new Text({ text: 'Takeaway — the open-loop curve is a fixed property of the chip.', fontSize: 12, color: FG, fontUrl: FONT_URL });
+      const takeaway = new Text({ text: '', fontSize: 15, color: FG, fontUrl: FONT_URL });
       await takeaway.loadGlyphs?.();
       takeaway.moveTo([-3.25, -1.70, 0]);
-      const takeaway2 = new Text({ text: 'Feedback can only move us along it — never off it.', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
+      const takeaway2 = new Text({ text: '', fontSize: 12, color: MUTED, fontUrl: FONT_URL });
       await takeaway2.loadGlyphs?.();
       takeaway2.moveTo([-3.25, -2.10, 0]);
 
@@ -868,7 +868,7 @@
 
       // Caption above the plot that frames the visual reading.
       const plotCaption = new Text({
-        text: 'Every closed-loop plateau meets the open-loop slope at the SAME point.',
+        text: '',
         fontSize: 12, color: MUTED, fontUrl: FONT_URL
       });
       await plotCaption.loadGlyphs?.();
@@ -896,7 +896,7 @@
       invEq.scale(0.72).moveTo([0, -2.45, 0]);
       const invSub = new Text({
         text: 'Every factor of gain you give up buys the same factor of bandwidth.',
-        fontSize: 11, color: YELLOW, fontUrl: FONT_URL
+        fontSize: 18, color: YELLOW, fontUrl: FONT_URL
       });
       await invSub.loadGlyphs?.();
       invSub.moveTo([0, -3.04, 0]);
@@ -923,9 +923,9 @@
       // Use the full-width Bode frame; the slider panel lives over the top-right.
       const frame = { x0: -5.3, x1: 5.2, y0: -2.55, y1: 2.05 };
       const bode = await makeBodeStatics(frame, true);
-      const asympLbl = new Text({
-        text: 'Drag the slider — every closed-loop asymptote meets the open-loop line at  f_unity.',
-        fontSize: 12, color: MUTED, fontUrl: FONT_URL
+      const asympLbl = new MathTex({
+        latex: '\\text {Drag the slider — every closed-loop asymptote meets the open-loop line at} \\; f_{unity}.',
+        fontSize: 18, color: MUTED, fontUrl: FONT_URL
       });
       await asympLbl.loadGlyphs?.();
       asympLbl.moveTo([(frame.x0 + frame.x1) / 2, frame.y1 + 0.35, 0]);
@@ -986,7 +986,7 @@
         if (subtitleLatex) {
           sub = new MathTex({ latex: subtitleLatex, color: MUTED });
           await sub.waitForRender?.();
-          sub.scale(0.34).moveTo([f.x0 + 0.22, f.y1 + 0.11, 0]);
+          sub.scale(0.34).moveTo([f.x0 + 0.2, f.y1 + 0.11, 0]);
           if (typeof sub.getLeft === 'function') sub.shift([f.x0 + 0.22 - sub.getLeft()[0], 0, 0]);
         }
         return { surface, border, baseline, lbl, sub };
@@ -1001,9 +1001,9 @@
       );
 
       // x-axis label (common to both panels)
-      const tLbl = new Text({ text: 'compressed time  →', fontSize: 11, color: MUTED, fontUrl: FONT_URL });
+      const tLbl = new Text({ text: 'compressed time  →', fontSize: 16, color: MUTED, fontUrl: FONT_URL });
       await tLbl.loadGlyphs?.();
-      tLbl.moveTo([(ecgOut.x0 + ecgOut.x1) / 2, ecgOut.y0 - 0.32, 0]);
+      tLbl.moveTo([(ecgOut.x0 + ecgOut.x1) / 2 + 1.5, ecgOut.y0 - 0.2, 0]);
 
       // Draw the clean ECG once; it's constant across slider updates.
       const drawEcg = (frame, samples) => {

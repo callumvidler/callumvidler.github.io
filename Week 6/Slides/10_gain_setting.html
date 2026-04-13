@@ -195,10 +195,14 @@
       -webkit-backdrop-filter: blur(10px);
       font-family: 'IBM Plex Sans', sans-serif;
     }
+
     [data-theme="light"] #s3Quiz {
       box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.03);
     }
-    #s3Quiz.visible { display: block; }
+
+    #s3Quiz.visible {
+      display: block;
+    }
 
     .quiz-question {
       font-size: 16px;
@@ -224,20 +228,27 @@
       cursor: pointer;
       transition: border-color 0.15s, background 0.15s;
     }
+
     .quiz-option:hover:not(.locked) {
       border-color: var(--slide-accent);
       background: rgba(106, 170, 142, 0.08);
     }
+
     .quiz-option.correct {
       border-color: #10b981;
       background: rgba(16, 185, 129, 0.12);
     }
+
     .quiz-option.incorrect {
       border-color: #e06050;
       background: rgba(224, 96, 80, 0.10);
       opacity: 0.7;
     }
-    .quiz-option.locked { cursor: default; }
+
+    .quiz-option.locked {
+      cursor: default;
+    }
+
     .quiz-option .opt-label {
       font-family: 'IBM Plex Mono', monospace;
       font-weight: 600;
@@ -256,8 +267,14 @@
       line-height: 1.55;
       color: var(--slide-text);
     }
-    .quiz-explanation.visible { display: block; }
-    .quiz-explanation strong { color: var(--slide-accent); }
+
+    .quiz-explanation.visible {
+      display: block;
+    }
+
+    .quiz-explanation strong {
+      color: var(--slide-accent);
+    }
 
     .quiz-reset {
       display: none;
@@ -271,8 +288,15 @@
       font-size: 12px;
       cursor: pointer;
     }
-    .quiz-reset.visible { display: inline-block; }
-    .quiz-reset:hover { color: var(--slide-text); border-color: var(--slide-accent); }
+
+    .quiz-reset.visible {
+      display: inline-block;
+    }
+
+    .quiz-reset:hover {
+      color: var(--slide-text);
+      border-color: var(--slide-accent);
+    }
 
     /* ── Section 4 Controls ── */
     #s4Panel {
@@ -292,15 +316,49 @@
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
+
     [data-theme="light"] #s4Panel {
       box-shadow: 0 6px 20px rgba(15, 23, 42, 0.07);
     }
-    #s4Panel.visible { display: flex; }
-    #s4Panel .ol-title { font-family: 'IBM Plex Mono', monospace; color: var(--slide-accent); font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; }
-    #s4Panel .ol-row { display: grid; gap: 2px; }
-    #s4Panel .ol-row label { display: flex; justify-content: space-between; color: var(--slide-text-dim); font-family: 'IBM Plex Mono', monospace; font-size: 10px; }
-    #s4Panel .ol-row .v { color: var(--slide-text); font-variant-numeric: tabular-nums; }
-    #s4Panel input[type="range"] { width: 100%; accent-color: var(--slide-accent); cursor: pointer; height: 14px; margin: 0; }
+
+    #s4Panel.visible {
+      display: flex;
+    }
+
+    #s4Panel .ol-title {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--slide-accent);
+      font-size: 9px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+    }
+
+    #s4Panel .ol-row {
+      display: grid;
+      gap: 2px;
+    }
+
+    #s4Panel .ol-row label {
+      display: flex;
+      justify-content: space-between;
+      color: var(--slide-text-dim);
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 10px;
+    }
+
+    #s4Panel .ol-row .v {
+      color: var(--slide-text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    #s4Panel input[type="range"] {
+      width: 100%;
+      accent-color: var(--slide-accent);
+      cursor: pointer;
+      height: 14px;
+      margin: 0;
+    }
+
     .s4-compact {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -310,8 +368,18 @@
       border-top: 1px solid var(--slide-border);
       padding-top: 4px;
     }
-    .s4-compact .k { color: var(--slide-text-dim); }
-    .s4-compact .v { text-align: right; color: var(--slide-text); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+    .s4-compact .k {
+      color: var(--slide-text-dim);
+    }
+
+    .s4-compact .v {
+      text-align: right;
+      color: var(--slide-text);
+      font-weight: 500;
+      font-variant-numeric: tabular-nums;
+    }
+
     .s4-warning {
       font-family: 'IBM Plex Mono', monospace;
       font-size: 9px;
@@ -320,16 +388,19 @@
       border-radius: 4px;
       border-left: 2px solid transparent;
     }
+
     .s4-warning.warn-low {
       color: var(--slide-red, #e06050);
       border-left-color: var(--slide-red, #e06050);
       background: rgba(224, 96, 80, 0.10);
     }
+
     .s4-warning.warn-high {
       color: var(--slide-yellow, #ffcc44);
       border-left-color: var(--slide-yellow, #ffcc44);
       background: rgba(255, 204, 68, 0.10);
     }
+
     .s4-warning.warn-ok {
       color: var(--slide-accent);
       border-left-color: var(--slide-accent);
@@ -373,31 +444,45 @@
 
     <div id="s3Quiz">
       <div class="quiz-question">
-        If the closed-loop gain is simply set by the ratio R<sub>2</sub>/R<sub>1</sub>, does it matter what actual values I choose for R<sub>2</sub> and R<sub>1</sub>?
+        If the closed-loop gain is simply set by the ratio R<sub>2</sub>/R<sub>1</sub>, does it matter what actual
+        values I choose for R<sub>2</sub> and R<sub>1</sub>?
       </div>
       <button class="quiz-option" data-answer="a">
-        <span class="opt-label">A)</span> No &mdash; any values of R<sub>2</sub> and R<sub>1</sub> giving the correct ratio will work identically.
+        <span class="opt-label">A)</span> No &mdash; any values of R<sub>2</sub> and R<sub>1</sub> giving the correct
+        ratio will work identically.
       </button>
       <button class="quiz-option" data-answer="b">
-        <span class="opt-label">B)</span> Yes &mdash; resistors too low waste power and overload the output; too high introduces noise and offset errors.
+        <span class="opt-label">B)</span> Yes &mdash; resistors too low waste power and overload the output; too high
+        introduces noise and offset errors.
       </button>
       <button class="quiz-option" data-answer="c">
-        <span class="opt-label">C)</span> Yes &mdash; but only because standard resistor values limit the available ratios.
+        <span class="opt-label">C)</span> Yes &mdash; but only because standard resistor values limit the available
+        ratios.
       </button>
       <div class="quiz-explanation" id="s3Explanation">
         <strong>Correct: B</strong><br><br>
-        The gain equation A<sub>CL</sub> = R<sub>2</sub>/R<sub>1</sub> only cares about the <em>ratio</em>, but practical constraints set a useful range &mdash; typically <strong>10 k&Omega; to 100 k&Omega;</strong>:<br><br>
-        <strong>Too low (&lt; 1 k&Omega;):</strong> The op-amp output must drive heavy current through low-value resistors. Most op-amps can only source ~20&ndash;25 mA, so small resistances cause the output to clip, distort, or overheat.<br><br>
-        <strong>Too high (&gt; 1 M&Omega;):</strong> Input bias currents (nA&ndash;&mu;A) flowing through large resistances create significant DC offset voltages at the output. Additionally, stray board capacitance (~pF) in parallel with high-value resistors forms unintended low-pass filters that limit bandwidth. Johnson (thermal) noise also scales with &radic;R.<br><br>
-        The "sweet spot" of <strong>10 k&Omega;&ndash;100 k&Omega;</strong> keeps current draw manageable, offsets small, and parasitic effects negligible.
+        The gain equation A<sub>CL</sub> = R<sub>2</sub>/R<sub>1</sub> only cares about the <em>ratio</em>, but
+        practical constraints set a useful range &mdash; typically <strong>10 k&Omega; to 100 k&Omega;</strong>:<br><br>
+        <strong>Too low (&lt; 1 k&Omega;):</strong> The op-amp output must drive heavy current through low-value
+        resistors. Most op-amps can only source ~20&ndash;25 mA, so small resistances cause the output to clip, distort,
+        or overheat.<br><br>
+        <strong>Too high (&gt; 1 M&Omega;):</strong> Input bias currents (nA&ndash;&mu;A) flowing through large
+        resistances create significant DC offset voltages at the output. Additionally, stray board capacitance (~pF) in
+        parallel with high-value resistors forms unintended low-pass filters that limit bandwidth. Johnson (thermal)
+        noise also scales with &radic;R.<br><br>
+        The "sweet spot" of <strong>10 k&Omega;&ndash;100 k&Omega;</strong> keeps current draw manageable, offsets
+        small, and parasitic effects negligible.
       </div>
       <button class="quiz-reset" id="s3Reset">Try Again</button>
     </div>
 
+    <div id="s4StepWrap" style="display:none;position:absolute;z-index:2;border-radius:4px;overflow:hidden;">
+      <svg id="s4StepSVG" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:100%;"></svg>
+    </div>
     <div id="s4HeatmapWrap" style="display:none;position:absolute;z-index:2;border-radius:4px;overflow:hidden;">
       <svg id="s4HeatmapSVG" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%;height:100%;"></svg>
-      <canvas id="s4HeatmapCanvas" style="position:absolute;pointer-events:none;image-rendering:pixelated;"></canvas>
-      <svg id="s4CrosshairSVG" xmlns="http://www.w3.org/2000/svg" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;"></svg>
+      <svg id="s4CrosshairSVG" xmlns="http://www.w3.org/2000/svg"
+        style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:3;"></svg>
     </div>
 
     <div id="s4Panel">
@@ -426,6 +511,7 @@
 
   <script type="module">
     import { Scene, Line, Rectangle, Polygon, Dot, Text, MathTex, Create, Write, FadeIn, Transform, MoveAlongPath, linear } from 'https://esm.sh/manim-web@0.3.18';
+    import * as d3 from 'https://esm.sh/d3@7';
 
     const FONT_URL = 'https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/fonts/KaTeX_Main-Regular.ttf';
     const IS_LIGHT = document.documentElement.getAttribute('data-theme') === 'light';
@@ -588,6 +674,7 @@
       }
       state.section4Ctx = null;
       document.getElementById('s4HeatmapWrap').style.display = 'none';
+      document.getElementById('s4StepWrap').style.display = 'none';
     };
 
     const sectionLabel = (idx) => ['Open-loop op-amp', 'Closed-loop gain', 'Resistor value quiz', 'Beta & resistor explorer'][idx - 1];
@@ -605,6 +692,7 @@
       const showS4 = state.currentSection === 4 && state.section4ControlsReady;
       s4Panel.classList.toggle('visible', showS4);
       document.getElementById('s4HeatmapWrap').style.display = showS4 ? 'block' : 'none';
+      document.getElementById('s4StepWrap').style.display = showS4 ? 'block' : 'none';
     };
 
     const buildPersistentChrome = async () => {
@@ -925,13 +1013,12 @@
       const bdMinLbl = await makeMath('-', 0.38, FG, [BD_JX + 0.18, BD_FWD_Y - BD_JR - 0.18, 0]);
 
       const bdVinLbl = await makeMath('V_{in}', 0.48, FG, [BD_IN - 0.30, BD_FWD_Y + 0.30, 0]);
-      const bdVoutStatic = await makeMath('V_{out}', 0.48, FG, [BD_OUT + 0.05, BD_FWD_Y + 0.30, 0]);
 
       // Pre-render dynamic labels for each step (0..8) so the slider works synchronously
       const VD_LBL_X = (BD_JX + BD_JR + BD_AX - BD_AW / 2) / 2;
-      const VD_LBL_Y = BD_FWD_Y + 0.42;
-      const VOUT_LBL_X = (BD_AX + BD_AW / 2 + BD_TAP) / 2;
-      const VOUT_LBL_Y = BD_FWD_Y + 0.42;
+      const VD_LBL_Y = BD_FWD_Y + 0.88;
+      const VOUT_LBL_X = BD_OUT + 0.05;
+      const VOUT_LBL_Y = BD_FWD_Y + 0.30;
       const VFB_LBL_X = (BD_BX - BD_BW / 2 + BD_JX) / 2;
       const VFB_LBL_Y = BD_FB_Y - 0.38;
 
@@ -947,9 +1034,9 @@
       }
 
       const bdBetaCalloutParts = [];
-      const bcP0x = 5.20, bcP0y = 0.65;
-      const bcCPx = 4.20, bcCPy = 0.30;
-      const bcP2x = BD_BX + BD_BW / 2, bcP2y = BD_FB_Y;
+      const bcP0x = 4.55, bcP0y = 0.65;
+      const bcCPx = BD_BX, bcCPy = 0.10;
+      const bcP2x = BD_BX, bcP2y = BD_FB_Y - BD_BH / 2 - 0.15;
       const bcSegs = 14;
       const bcBez = (t) => {
         const u = 1 - t;
@@ -972,7 +1059,7 @@
         bdJunc, bdSigma, bdAolRect, bdAolLbl, bdBetaRect, bdBetaLbl,
         bdInArr, bdInTip, bdSumToA, bdSumTip, bdOutArr, bdOutTip,
         bdFbDown, bdFbRight, bdFbLeft, bdFbUp, bdFbUpTip, bdTapDot,
-        bdPlusLbl, bdMinLbl, bdVinLbl, bdVoutStatic
+        bdPlusLbl, bdMinLbl, bdVinLbl
       ].filter(Boolean);
 
       const betaCalloutObjs = [
@@ -1504,169 +1591,169 @@
       if (stale()) return;
 
       try {
-      // ═══════════════════════════════════════════════════════════
-      // DOT-ANIMATED ITERATIONS (k = 0..3)
-      // ═══════════════════════════════════════════════════════════
-      let prevBvChip = null, prevBvLbl = null;
+        // ═══════════════════════════════════════════════════════════
+        // DOT-ANIMATED ITERATIONS (k = 0..3)
+        // ═══════════════════════════════════════════════════════════
+        let prevBvChip = null, prevBvLbl = null;
 
-      for (let k = 0; k < DOT_ITERS; k++) {
-        if (stale()) return;
-        clearTemp();
-
-        const speed = speedFor(k);
-        const hold = opHoldFor(k);
-        const lab = tl[k];
-
-        // ── Phase A: Two dots converge on Σ ──
-        // IMPORTANT: scene.play() cannot be called concurrently, so for
-        // parallel movement we must put all MoveAlongPath in ONE scene.play().
-        if (k === 0) {
-          const vinLbl = c.vinChips[0];
-          const fbLbl = c.zeroFbChip;
-          const vinSx = pathInputToSigma[0].getStart();
-          const fbSx = pathBetaToSigma[0].getStart();
-          const vinDot = makeChipDot(vinSx[0], vinSx[1], FG);
-          const fbDot = makeChipDot(fbSx[0], fbSx[1], BLUE);
-          vinLbl.moveTo(vinSx);
-          fbLbl.moveTo(fbSx);
-          show(vinDot, vinLbl, fbDot, fbLbl);
-          // betaToSigma has 2 segments, inputToSigma has 1 segment.
-          // First: fb dot alone along segment 0 (horizontal left)
-          await playSegment([fbDot, fbLbl], pathBetaToSigma[0], speed);
+        for (let k = 0; k < DOT_ITERS; k++) {
           if (stale()) return;
-          // Then: fb dot segment 1 (up to sigma) + vin dot (left to sigma)
-          // in one scene.play() so both arrive at sigma together
-          {
-            const fbSeg = pathBetaToSigma[1];
-            const vinSeg = pathInputToSigma[0];
-            const fbDur = segDurAt(fbSeg, speed);
-            const vinDur = segDurAt(vinSeg, speed);
-            const dur = Math.max(fbDur, vinDur); // sync to longer segment
-            await scene.play(
-              new MoveAlongPath(fbDot,  { path: fbSeg,  duration: dur, rateFunc: linear }),
-              new MoveAlongPath(fbLbl,  { path: fbSeg,  duration: dur, rateFunc: linear }),
-              new MoveAlongPath(vinDot, { path: vinSeg, duration: dur, rateFunc: linear }),
-              new MoveAlongPath(vinLbl, { path: vinSeg, duration: dur, rateFunc: linear }),
-            );
+          clearTemp();
+
+          const speed = speedFor(k);
+          const hold = opHoldFor(k);
+          const lab = tl[k];
+
+          // ── Phase A: Two dots converge on Σ ──
+          // IMPORTANT: scene.play() cannot be called concurrently, so for
+          // parallel movement we must put all MoveAlongPath in ONE scene.play().
+          if (k === 0) {
+            const vinLbl = c.vinChips[0];
+            const fbLbl = c.zeroFbChip;
+            const vinSx = pathInputToSigma[0].getStart();
+            const fbSx = pathBetaToSigma[0].getStart();
+            const vinDot = makeChipDot(vinSx[0], vinSx[1], FG);
+            const fbDot = makeChipDot(fbSx[0], fbSx[1], BLUE);
+            vinLbl.moveTo(vinSx);
+            fbLbl.moveTo(fbSx);
+            show(vinDot, vinLbl, fbDot, fbLbl);
+            // betaToSigma has 2 segments, inputToSigma has 1 segment.
+            // First: fb dot alone along segment 0 (horizontal left)
+            await playSegment([fbDot, fbLbl], pathBetaToSigma[0], speed);
+            if (stale()) return;
+            // Then: fb dot segment 1 (up to sigma) + vin dot (left to sigma)
+            // in one scene.play() so both arrive at sigma together
+            {
+              const fbSeg = pathBetaToSigma[1];
+              const vinSeg = pathInputToSigma[0];
+              const fbDur = segDurAt(fbSeg, speed);
+              const vinDur = segDurAt(vinSeg, speed);
+              const dur = Math.max(fbDur, vinDur); // sync to longer segment
+              await scene.play(
+                new MoveAlongPath(fbDot, { path: fbSeg, duration: dur, rateFunc: linear }),
+                new MoveAlongPath(fbLbl, { path: fbSeg, duration: dur, rateFunc: linear }),
+                new MoveAlongPath(vinDot, { path: vinSeg, duration: dur, rateFunc: linear }),
+                new MoveAlongPath(vinLbl, { path: vinSeg, duration: dur, rateFunc: linear }),
+              );
+            }
+            if (stale()) return;
+            hide(vinDot, vinLbl, fbDot, fbLbl);
+          } else {
+            const vinLbl = c.vinChips[k];
+            const vinSx = pathInputToSigma[0].getStart();
+            const vinDot = makeChipDot(vinSx[0], vinSx[1], FG);
+            vinLbl.moveTo(vinSx);
+            show(vinDot, vinLbl);
+            await moveAlongPath([vinDot, vinLbl], pathInputToSigma, speed);
+            if (stale()) return;
+            hide(vinDot, vinLbl);
+            if (prevBvChip) { hide(prevBvChip, prevBvLbl); prevBvChip = null; prevBvLbl = null; }
           }
+
+          // ── Phase B: Highlight Σ + flash operation label ──
+          show(hl.bdSigmaHL);
+          await flashOp(lab.opSigma, SIGMA_OP_POS, hold);
           if (stale()) return;
-          hide(vinDot, vinLbl, fbDot, fbLbl);
-        } else {
-          const vinLbl = c.vinChips[k];
-          const vinSx = pathInputToSigma[0].getStart();
-          const vinDot = makeChipDot(vinSx[0], vinSx[1], FG);
-          vinLbl.moveTo(vinSx);
-          show(vinDot, vinLbl);
-          await moveAlongPath([vinDot, vinLbl], pathInputToSigma, speed);
-          if (stale()) return;
-          hide(vinDot, vinLbl);
-          if (prevBvChip) { hide(prevBvChip, prevBvLbl); prevBvChip = null; prevBvLbl = null; }
-        }
+          hide(hl.bdSigmaHL);
 
-        // ── Phase B: Highlight Σ + flash operation label ──
-        show(hl.bdSigmaHL);
-        await flashOp(lab.opSigma, SIGMA_OP_POS, hold);
-        if (stale()) return;
-        hide(hl.bdSigmaHL);
-
-        // ── Phase C: Vd exits Σ → travels to A_OL ──
-        {
-          const sx = pathSigmaToAol[0].getStart();
-          const vdDot = makeChipDot(sx[0], sx[1], ACCENT);
-          lab.tvd.moveTo(sx);
-          show(vdDot, lab.tvd);
-          await moveAlongPath([vdDot, lab.tvd], pathSigmaToAol, speed);
-          if (stale()) return;
-          hide(vdDot, lab.tvd);
-        }
-
-        // Highlight A_OL + flash operation label
-        show(hl.bdAolHL);
-        await flashOp(lab.opAol, AOL_OP_POS, hold);
-        if (stale()) return;
-        hide(hl.bdAolHL);
-
-        // ── Phase D: Vout exits A_OL → reaches tap point ──
-        {
-          const sx = pathAolToTap[0].getStart();
-          var voutDot = makeChipDot(sx[0], sx[1], CYAN);
-          lab.tvout.moveTo(sx);
-          show(voutDot, lab.tvout);
-          await moveAlongPath([voutDot, lab.tvout], pathAolToTap, speed);
-          if (stale()) return;
-        }
-
-        // ── Phase E: Dot splits — forward to Vout + feedback down to β ──
-        drawSection2AtStep(k + 1);
-        if (stale()) return;
-
-        // Create duplicate for forward path at the tap point
-        {
-          const fwdSx = pathTapToOutput[0].getStart();
-          const fwdDot = makeChipDot(fwdSx[0], fwdSx[1], CYAN);
-          lab.tvoutFwd.moveTo(fwdSx);
-          show(fwdDot, lab.tvoutFwd);
-
-          // tapToBeta has 2 segments (down, then left), tapToOutput has 1 segment.
-          // Play first segments of both paths in one scene.play():
-          // fwd dot goes right, fb dot goes down — both start from tap point.
+          // ── Phase C: Vd exits Σ → travels to A_OL ──
           {
-            const fwdSeg = pathTapToOutput[0];
-            const fbSeg0 = pathTapToBeta[0];
-            const fwdDur = segDurAt(fwdSeg, speed);
-            const fbDur0 = segDurAt(fbSeg0, speed);
-            const dur = Math.max(fwdDur, fbDur0);
-            await scene.play(
-              new MoveAlongPath(fwdDot,      { path: fwdSeg, duration: dur, rateFunc: linear }),
-              new MoveAlongPath(lab.tvoutFwd, { path: fwdSeg, duration: dur, rateFunc: linear }),
-              new MoveAlongPath(voutDot,     { path: fbSeg0, duration: dur, rateFunc: linear }),
-              new MoveAlongPath(lab.tvout,   { path: fbSeg0, duration: dur, rateFunc: linear }),
-            );
+            const sx = pathSigmaToAol[0].getStart();
+            const vdDot = makeChipDot(sx[0], sx[1], ACCENT);
+            lab.tvd.moveTo(sx);
+            show(vdDot, lab.tvd);
+            await moveAlongPath([vdDot, lab.tvd], pathSigmaToAol, speed);
+            if (stale()) return;
+            hide(vdDot, lab.tvd);
           }
-          if (stale()) return;
-          // Forward dot done — hide it
-          hide(fwdDot, lab.tvoutFwd);
 
-          // Feedback dot continues along remaining segment (left to beta input)
-          if (pathTapToBeta.length > 1) {
-            await playSegment([voutDot, lab.tvout], pathTapToBeta[1], speed);
+          // Highlight A_OL + flash operation label
+          show(hl.bdAolHL);
+          await flashOp(lab.opAol, AOL_OP_POS, hold);
+          if (stale()) return;
+          hide(hl.bdAolHL);
+
+          // ── Phase D: Vout exits A_OL → reaches tap point ──
+          {
+            const sx = pathAolToTap[0].getStart();
+            var voutDot = makeChipDot(sx[0], sx[1], CYAN);
+            lab.tvout.moveTo(sx);
+            show(voutDot, lab.tvout);
+            await moveAlongPath([voutDot, lab.tvout], pathAolToTap, speed);
             if (stale()) return;
           }
-          hide(voutDot, lab.tvout);
-        }
 
-        // ── Phase F: Highlight β + flash, then bV exits β → traces to Σ ──
-        show(hl.bdBetaHL);
-        await flashOp(lab.opBeta, BETA_OP_POS, hold);
-        if (stale()) return;
-        hide(hl.bdBetaHL);
-
-        {
-          const sx = pathBetaToSigma[0].getStart();
-          const bvDot = makeChipDot(sx[0], sx[1], BLUE);
-          lab.tbv.moveTo(sx);
-          show(bvDot, lab.tbv);
-          await moveAlongPath([bvDot, lab.tbv], pathBetaToSigma, speed);
+          // ── Phase E: Dot splits — forward to Vout + feedback down to β ──
+          drawSection2AtStep(k + 1);
           if (stale()) return;
-          if (k < DOT_ITERS - 1) {
-            prevBvChip = bvDot;
-            prevBvLbl = lab.tbv;
-          } else {
-            hide(bvDot, lab.tbv);
+
+          // Create duplicate for forward path at the tap point
+          {
+            const fwdSx = pathTapToOutput[0].getStart();
+            const fwdDot = makeChipDot(fwdSx[0], fwdSx[1], CYAN);
+            lab.tvoutFwd.moveTo(fwdSx);
+            show(fwdDot, lab.tvoutFwd);
+
+            // tapToBeta has 2 segments (down, then left), tapToOutput has 1 segment.
+            // Play first segments of both paths in one scene.play():
+            // fwd dot goes right, fb dot goes down — both start from tap point.
+            {
+              const fwdSeg = pathTapToOutput[0];
+              const fbSeg0 = pathTapToBeta[0];
+              const fwdDur = segDurAt(fwdSeg, speed);
+              const fbDur0 = segDurAt(fbSeg0, speed);
+              const dur = Math.max(fwdDur, fbDur0);
+              await scene.play(
+                new MoveAlongPath(fwdDot, { path: fwdSeg, duration: dur, rateFunc: linear }),
+                new MoveAlongPath(lab.tvoutFwd, { path: fwdSeg, duration: dur, rateFunc: linear }),
+                new MoveAlongPath(voutDot, { path: fbSeg0, duration: dur, rateFunc: linear }),
+                new MoveAlongPath(lab.tvout, { path: fbSeg0, duration: dur, rateFunc: linear }),
+              );
+            }
+            if (stale()) return;
+            // Forward dot done — hide it
+            hide(fwdDot, lab.tvoutFwd);
+
+            // Feedback dot continues along remaining segment (left to beta input)
+            if (pathTapToBeta.length > 1) {
+              await playSegment([voutDot, lab.tvout], pathTapToBeta[1], speed);
+              if (stale()) return;
+            }
+            hide(voutDot, lab.tvout);
+          }
+
+          // ── Phase F: Highlight β + flash, then bV exits β → traces to Σ ──
+          show(hl.bdBetaHL);
+          await flashOp(lab.opBeta, BETA_OP_POS, hold);
+          if (stale()) return;
+          hide(hl.bdBetaHL);
+
+          {
+            const sx = pathBetaToSigma[0].getStart();
+            const bvDot = makeChipDot(sx[0], sx[1], BLUE);
+            lab.tbv.moveTo(sx);
+            show(bvDot, lab.tbv);
+            await moveAlongPath([bvDot, lab.tbv], pathBetaToSigma, speed);
+            if (stale()) return;
+            if (k < DOT_ITERS - 1) {
+              prevBvChip = bvDot;
+              prevBvLbl = lab.tbv;
+            } else {
+              hide(bvDot, lab.tbv);
+            }
           }
         }
-      }
 
-      clearTemp();
+        clearTemp();
 
-      // ═══════════════════════════════════════════════════════════
-      // VALUES-ONLY MODE (k = DOT_ITERS..S2_STEPS-1)
-      // ═══════════════════════════════════════════════════════════
-      for (let k = DOT_ITERS; k < S2_STEPS; k++) {
-        if (stale()) return;
-        drawSection2AtStep(k + 1);
-        await scene.wait(valuesOnlyDelay(k));
-      }
+        // ═══════════════════════════════════════════════════════════
+        // VALUES-ONLY MODE (k = DOT_ITERS..S2_STEPS-1)
+        // ═══════════════════════════════════════════════════════════
+        for (let k = DOT_ITERS; k < S2_STEPS; k++) {
+          if (stale()) return;
+          drawSection2AtStep(k + 1);
+          await scene.wait(valuesOnlyDelay(k));
+        }
 
       } finally {
         clearTemp();
@@ -1965,14 +2052,17 @@
       const s4Tag = await makeText('SECTION 4 - BETA & RESISTOR EXPLORER', 14, ACCENT, [-6.1, 2.86, 0], -6.1);
 
       // ── Compact op-amp circuit (left column) ──
-      const CX = -4.30, CY = 0.90;
+      // CIRC_DX offsets the whole circuit horizontally. Kept at 0 so the
+      // circuit stays on the LHS and the two plots fill the space to its right.
+      const CIRC_DX = 0;
+      const CX = -4.30 + CIRC_DX, CY = 0.90;
       const TRI_H = 0.70;
       const TRI_IN_X = CX - 0.75;
       const TRI_APEX_X = CX + 0.65;
-      const LEFT_X = -5.55;
-      const TAP_X = -2.60;
-      const OUT_X = -2.10;
-      const VIN_X = -5.90;
+      const LEFT_X = -5.55 + CIRC_DX;
+      const TAP_X = -2.60 + CIRC_DX;
+      const OUT_X = -2.10 + CIRC_DX;
+      const VIN_X = -5.90 + CIRC_DX;
       const plusY = CY + 0.28;
       const minusY = CY - 0.28;
       const JUNC_Y = -0.30;
@@ -2020,11 +2110,13 @@
       const gndB2 = new Line({ start: [LEFT_X - 0.16, GND_Y - 0.10, 0], end: [LEFT_X + 0.16, GND_Y - 0.10, 0], color: FG, strokeWidth: 1.8 });
       const gndB3 = new Line({ start: [LEFT_X - 0.07, GND_Y - 0.19, 0], end: [LEFT_X + 0.07, GND_Y - 0.19, 0], color: FG, strokeWidth: 1.0 });
 
-      // Live labels on circuit
-      const liveBetaLabel = await makeMath('\\beta=0.100', 0.44, BLUE, [-4.10, 2.30, 0]);
-      const liveGainLabel = await makeMath('A_{CL}=10.0', 0.44, CYAN, [-4.10, 1.90, 0]);
-      const liveR1Label = await makeMath('R_1=10\\,\\text{k}\\Omega', 0.36, ACCENT, [-3.40, -0.80, 0]);
-      const liveR2Label = await makeMath('R_2=90\\,\\text{k}\\Omega', 0.36, ACCENT, [-3.40, -1.10, 0]);
+      // Live labels on circuit — shifted by the same offset as the circuit
+      const LLX_TOP = -4.10 + CIRC_DX;    // β / A_CL column
+      const LLX_RES = -3.40 + CIRC_DX;    // R1 / R2 column
+      const liveBetaLabel = await makeMath('\\beta=0.100', 0.44, BLUE, [LLX_TOP, 2.30, 0]);
+      const liveGainLabel = await makeMath('A_{CL}=10.0', 0.44, CYAN, [LLX_TOP, 1.90, 0]);
+      const liveR1Label = await makeMath('R_1=10\\,\\text{k}\\Omega', 0.36, ACCENT, [LLX_RES, -0.80, 0]);
+      const liveR2Label = await makeMath('R_2=90\\,\\text{k}\\Omega', 0.36, ACCENT, [LLX_RES, -1.10, 0]);
 
       const circuitObjs = [
         tri, plusSym, minusSym, vinLead, vinDot, vinLabel,
@@ -2035,27 +2127,14 @@
       ];
       const liveLabels = [liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label];
 
-      // ── Step Response Plot (top-right) ──
-      // Only draw border + background; axes and ticks are dynamic (y-range changes)
-      const stepFrame = { x0: -0.60, x1: 6.10, y0: 0.20, y1: 2.80 };
-      const stepSurface = new Rectangle({
-        width: stepFrame.x1 - stepFrame.x0, height: stepFrame.y1 - stepFrame.y0,
-        color: MUTED2, strokeWidth: 0, fillOpacity: IS_LIGHT ? 0.25 : 0.18
-      });
-      stepSurface.moveTo([(stepFrame.x0 + stepFrame.x1) / 2, (stepFrame.y0 + stepFrame.y1) / 2, 0]);
-      const stepBorder = new Rectangle({
-        width: stepFrame.x1 - stepFrame.x0, height: stepFrame.y1 - stepFrame.y0,
-        color: AXIS, strokeWidth: 1.3, fillOpacity: 0
-      });
-      stepBorder.moveTo([(stepFrame.x0 + stepFrame.x1) / 2, (stepFrame.y0 + stepFrame.y1) / 2, 0]);
-      const stepTitle = await makeText('Step Response (200mV input)', 14, FG, [(stepFrame.x0 + stepFrame.x1) / 2, stepFrame.y1 + 0.18, 0]);
-      const stepXLabel = await makeText('Time', 12, MUTED, [(stepFrame.x0 + stepFrame.x1) / 2, stepFrame.y0 - 0.32, 0]);
-      const stepYLabel = await makeText('Vout', 12, MUTED, [stepFrame.x0 - 0.38, (stepFrame.y0 + stepFrame.y1) / 2, 0]);
-      stepYLabel.rotate(Math.PI / 2);
-      const stepStatics = [stepSurface, stepBorder, stepXLabel, stepYLabel];
+      // ── Step Response Plot (centre, left square) — rendered as HTML SVG overlay ──
+      // Two 4.10 × 4.10 square plots sit to the RIGHT of the op-amp circuit.
+      // The circuit's rightmost element (voutLabel) ends around x ≈ -1.55,
+      // so the left edge of the step plot at x = -1.40 gives a ~0.15 gap.
+      const stepFrame = { x0: -1.40, x1: 2.70, y0: -2.05, y1: 2.05 };
 
-      // ── 2D Penalty Heatmap (bottom-right) — rendered on HTML Canvas ──
-      const penFrame = { x0: 0.20, x1: 6.10, y0: -3.60, y1: 0.00 };
+      // ── 2D Penalty Contour Plot (RHS, right square) — rendered via d3.contours ──
+      const penFrame = { x0: 2.90, x1: 7.00, y0: -2.05, y1: 2.05 };
       const penLogMin = 2, penLogMax = 7; // 100Ω to 10MΩ
 
       // Manim coords to screen %: scene is 14.22 wide (-7.11..+7.11), 8 tall (-4..+4)
@@ -2064,178 +2143,183 @@
       const toScreenPctX = (mx) => (mx - SCENE_X0) / SCENE_W * 100;
       const toScreenPctY = (my) => (1 - (my - SCENE_Y0) / SCENE_H) * 100;
 
-      // Viridis colormap (sampled at 9 stops)
-      const VIRIDIS = [
-        [68, 1, 84], [72, 35, 116], [64, 67, 135], [52, 94, 141],
-        [33, 144, 140], [43, 176, 127], [94, 201, 97], [186, 222, 40], [253, 231, 37]
-      ];
-      const viridisColor = (t) => {
-        const v = clamp(t, 0, 1) * (VIRIDIS.length - 1);
-        const i = Math.min(Math.floor(v), VIRIDIS.length - 2);
-        const f = v - i;
-        const a = VIRIDIS[i], b = VIRIDIS[i + 1];
-        return [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f), Math.round(a[2] + (b[2] - a[2]) * f)];
-      };
-
-      // ── SVG + Canvas hybrid: SVG for axes/labels, Canvas for heatmap pixels ──
-      const MARGIN = { top: 32, right: 62, bottom: 52, left: 62 };
+      // ── Layout ──
+      // Margins chosen so SVG_W == SVG_H (square), letting the plot fit its
+      // square penFrame box with no aspect-fit letterbox.
+      // Horizontal: 84 + 74 = 158. Vertical must also sum to 158 → 65 + 93.
+      const MARGIN = { top: 65, right: 74, bottom: 93, left: 84 };
       const PLOT_SIZE = 440;
       const PLOT_W = PLOT_SIZE, PLOT_H = PLOT_SIZE;
       const SVG_W = PLOT_SIZE + MARGIN.left + MARGIN.right;
       const SVG_H = PLOT_SIZE + MARGIN.top + MARGIN.bottom;
 
-      const svgNS = 'http://www.w3.org/2000/svg';
-      const svgEl = (tag, attrs, textContent) => {
-        const el = document.createElementNS(svgNS, tag);
-        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-        if (textContent !== undefined) el.textContent = textContent;
-        return el;
-      };
-
-      const toPlotX = (logR) => MARGIN.left + (logR - penLogMin) / (penLogMax - penLogMin) * PLOT_W;
-      const toPlotY = (logR) => MARGIN.top + (1 - (logR - penLogMin) / (penLogMax - penLogMin)) * PLOT_H;
       const AXIS_COLOR = IS_LIGHT ? '#475569' : '#a9b4c6';
       const TITLE_COLOR = IS_LIGHT ? '#0f172a' : '#e8ecf3';
 
-      // ── Build main SVG (axes, labels, title, color bar, sweet-spot) ──
-      const mainSvg = document.getElementById('s4HeatmapSVG');
-      mainSvg.setAttribute('viewBox', '0 0 ' + SVG_W + ' ' + SVG_H);
-      mainSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-      mainSvg.innerHTML = '';
+      // ── d3 scales ──
+      const xScale = d3.scaleLog().base(10).domain([Math.pow(10, penLogMin), Math.pow(10, penLogMax)]).range([0, PLOT_W]);
+      const yScale = d3.scaleLog().base(10).domain([Math.pow(10, penLogMin), Math.pow(10, penLogMax)]).range([PLOT_H, 0]);
+      const tickVals = [1e2, 1e3, 1e4, 1e5, 1e6, 1e7];
+      const tickFmt = (r) => {
+        if (r >= 1e6) return (r / 1e6) + 'M\u03A9';
+        if (r >= 1e3) return (r / 1e3) + 'k\u03A9';
+        return r + '\u03A9';
+      };
 
-      // Defs: viridis gradient for color bar (32 stops)
-      const defs = svgEl('defs', {});
-      const grad = svgEl('linearGradient', { id: 'viridisGrad', x1: '0', y1: '0', x2: '0', y2: '1' });
-      const GRAD_STOPS = 32;
-      for (let i = 0; i <= GRAD_STOPS; i++) {
-        const t = 1 - i / GRAD_STOPS; // top=bright(safe), bottom=dark(danger)
-        const rgb = viridisColor(t);
-        grad.appendChild(svgEl('stop', { offset: (i / GRAD_STOPS * 100) + '%', 'stop-color': 'rgb(' + rgb.join(',') + ')' }));
-      }
-      defs.appendChild(grad);
-      mainSvg.appendChild(defs);
+      // ── Build main SVG via d3 ──
+      const mainSvgNode = document.getElementById('s4HeatmapSVG');
+      mainSvgNode.setAttribute('viewBox', '0 0 ' + SVG_W + ' ' + SVG_H);
+      mainSvgNode.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      mainSvgNode.innerHTML = '';
+      const svg = d3.select(mainSvgNode);
 
       // Background
-      mainSvg.appendChild(svgEl('rect', { x: 0, y: 0, width: SVG_W, height: SVG_H, fill: BG }));
+      svg.append('rect').attr('x', 0).attr('y', 0).attr('width', SVG_W).attr('height', SVG_H).attr('fill', BG);
 
-      // Plot title
-      mainSvg.appendChild(svgEl('text', {
-        x: MARGIN.left + PLOT_W / 2, y: 18,
-        'text-anchor': 'middle', fill: TITLE_COLOR,
-        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '17', 'font-weight': 'bold'
-      }, 'Resistor Design Space'));
-
-      // Axes border
-      mainSvg.appendChild(svgEl('rect', {
-        x: MARGIN.left, y: MARGIN.top, width: PLOT_W, height: PLOT_H,
-        fill: 'none', stroke: AXIS_COLOR, 'stroke-width': '1.5'
-      }));
-
-      // Tick marks & labels
-      const tickVals = [2, 3, 4, 5, 6, 7];
-      const tickNames = ['100\u03A9', '1k\u03A9', '10k\u03A9', '100k\u03A9', '1M\u03A9', '10M\u03A9'];
-      for (let i = 0; i < tickVals.length; i++) {
-        const px = toPlotX(tickVals[i]);
-        const py = toPlotY(tickVals[i]);
-        // X-axis tick + label
-        mainSvg.appendChild(svgEl('line', { x1: px, y1: MARGIN.top + PLOT_H, x2: px, y2: MARGIN.top + PLOT_H + 4, stroke: AXIS_COLOR, 'stroke-width': '1' }));
-        mainSvg.appendChild(svgEl('text', {
-          x: px, y: MARGIN.top + PLOT_H + 18,
-          'text-anchor': 'middle', fill: AXIS_COLOR,
-          'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '14'
-        }, tickNames[i]));
-        // Y-axis tick + label
-        mainSvg.appendChild(svgEl('line', { x1: MARGIN.left, y1: py, x2: MARGIN.left - 4, y2: py, stroke: AXIS_COLOR, 'stroke-width': '1' }));
-        mainSvg.appendChild(svgEl('text', {
-          x: MARGIN.left - 6, y: py + 5,
-          'text-anchor': 'end', fill: AXIS_COLOR,
-          'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '14'
-        }, tickNames[i]));
+      // Defs: viridis gradient for colour bar (32 stops)
+      const defs = svg.append('defs');
+      const grad = defs.append('linearGradient').attr('id', 'viridisGrad').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+      const GRAD_STOPS = 32;
+      for (let i = 0; i <= GRAD_STOPS; i++) {
+        grad.append('stop')
+          .attr('offset', (i / GRAD_STOPS * 100) + '%')
+          .attr('stop-color', d3.interpolateViridis(1 - i / GRAD_STOPS)); // top=bright(safe), bottom=dark(danger)
       }
 
-      // Axis titles
-      mainSvg.appendChild(svgEl('text', {
-        x: MARGIN.left + PLOT_W / 2, y: SVG_H - 2,
-        'text-anchor': 'middle', fill: TITLE_COLOR,
-        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '16', 'font-weight': '600'
-      }, 'R\u2081'));
-      const yTitle = svgEl('text', {
-        x: 0, y: 0,
-        'text-anchor': 'middle', fill: TITLE_COLOR,
-        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '16', 'font-weight': '600',
-        transform: 'translate(14,' + (MARGIN.top + PLOT_H / 2) + ') rotate(-90)'
-      }, 'R\u2082');
-      mainSvg.appendChild(yTitle);
+      // Clip path so contour fills never escape the plot area
+      defs.append('clipPath').attr('id', 's4PlotClip')
+        .append('rect').attr('x', 0).attr('y', 0).attr('width', PLOT_W).attr('height', PLOT_H);
 
-      // Sweet-spot outline (10kΩ–100kΩ)
-      const sxL = toPlotX(4), sxR = toPlotX(5), syT = toPlotY(5), syB = toPlotY(4);
-      mainSvg.appendChild(svgEl('rect', {
-        x: sxL, y: syT, width: sxR - sxL, height: syB - syT,
-        fill: 'none', stroke: '#ffffff', 'stroke-width': '2', 'stroke-dasharray': '6,3'
-      }));
-      mainSvg.appendChild(svgEl('text', {
-        x: (sxL + sxR) / 2, y: syT - 5,
-        'text-anchor': 'middle', fill: '#ffffff',
-        'font-family': '"IBM Plex Mono", monospace', 'font-size': '14', 'font-weight': 'bold'
-      }, 'Sweet Spot'));
+      // Plot title — sits ~18 px above the top of the plot area
+      svg.append('text')
+        .attr('x', MARGIN.left + PLOT_W / 2).attr('y', MARGIN.top - 18)
+        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 18).attr('font-weight', 'bold')
+        .text('Resistor Design Space');
 
-      // Color bar (right of plot) — SVG gradient rect
-      const cbX = MARGIN.left + PLOT_W + 8, cbW = 12, cbH = PLOT_H;
-      mainSvg.appendChild(svgEl('rect', {
-        x: cbX, y: MARGIN.top, width: cbW, height: cbH,
-        fill: 'url(#viridisGrad)', stroke: AXIS_COLOR, 'stroke-width': '1'
-      }));
-      mainSvg.appendChild(svgEl('text', {
-        x: cbX + cbW + 3, y: MARGIN.top + 10,
-        'text-anchor': 'start', fill: AXIS_COLOR,
-        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '13'
-      }, 'Safe'));
-      mainSvg.appendChild(svgEl('text', {
-        x: cbX + cbW + 3, y: MARGIN.top + cbH - 2,
-        'text-anchor': 'start', fill: AXIS_COLOR,
-        'font-family': '"IBM Plex Sans", sans-serif', 'font-size': '13'
-      }, 'Danger'));
+      // Plot group (translated to plot origin)
+      const plotG = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
 
-      // ── High-resolution heatmap canvas (pixels only, no labels) ──
-      const hmCanvas = document.getElementById('s4HeatmapCanvas');
-      const DPR = window.devicePixelRatio || 1;
-      const GRID_N = 400;
-      const CANVAS_PX = Math.round(PLOT_SIZE * DPR);
-      hmCanvas.width = CANVAS_PX;
-      hmCanvas.height = CANVAS_PX;
-      // Position canvas over the plot area within the wrapper
-      hmCanvas.style.left = (MARGIN.left / SVG_W * 100) + '%';
-      hmCanvas.style.top = (MARGIN.top / SVG_H * 100) + '%';
-      hmCanvas.style.width = (PLOT_SIZE / SVG_W * 100) + '%';
-      hmCanvas.style.height = (PLOT_SIZE / SVG_H * 100) + '%';
-
-      const hmCtx = hmCanvas.getContext('2d');
-      const imgData = hmCtx.createImageData(GRID_N, GRID_N);
+      // ── Evaluate penalty on a regular grid (linear in log-space) ──
       const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
       const penParasitic = (r1v, r2v) => 10e3 * 2 * Math.PI * r2v * S4_CPAR;
 
-      for (let ix = 0; ix < GRID_N; ix++) {
-        for (let iy = 0; iy < GRID_N; iy++) {
+      const GRID_N = 200;
+      const values = new Float64Array(GRID_N * GRID_N);
+      for (let iy = 0; iy < GRID_N; iy++) {
+        // iy=0 → top row (highest R2); iy=N-1 → bottom row (lowest R2)
+        const logR2 = penLogMax - (iy + 0.5) / GRID_N * (penLogMax - penLogMin);
+        const r2v = Math.pow(10, logR2);
+        for (let ix = 0; ix < GRID_N; ix++) {
           const logR1 = penLogMin + (ix + 0.5) / GRID_N * (penLogMax - penLogMin);
-          const logR2 = penLogMin + (iy + 0.5) / GRID_N * (penLogMax - penLogMin);
           const r1v = Math.pow(10, logR1);
-          const r2v = Math.pow(10, logR2);
-          const worstP = clamp(Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v)), 0, 1);
-          const rgb = viridisColor(1 - worstP);
-          const row = GRID_N - 1 - iy;
-          const idx = (row * GRID_N + ix) * 4;
-          imgData.data[idx] = rgb[0];
-          imgData.data[idx + 1] = rgb[1];
-          imgData.data[idx + 2] = rgb[2];
-          imgData.data[idx + 3] = 255;
+          const worstP = Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v));
+          values[iy * GRID_N + ix] = clamp(worstP, 0, 1);
         }
       }
-      const tmpCanvas = document.createElement('canvas');
-      tmpCanvas.width = GRID_N; tmpCanvas.height = GRID_N;
-      tmpCanvas.getContext('2d').putImageData(imgData, 0, 0);
-      hmCtx.imageSmoothingEnabled = false;
-      hmCtx.drawImage(tmpCanvas, 0, 0, CANVAS_PX, CANVAS_PX);
+
+      // Background fill = brightest viridis (safe). Iso-contours at higher
+      // penalty thresholds are painted on top with progressively darker colours,
+      // producing a nested band effect that mimics a filled contour plot.
+      plotG.append('rect')
+        .attr('x', 0).attr('y', 0).attr('width', PLOT_W).attr('height', PLOT_H)
+        .attr('fill', d3.interpolateViridis(1));
+
+      const NUM_LEVELS = 24;
+      const thresholds = d3.range(1, NUM_LEVELS + 1).map(i => i / NUM_LEVELS);
+      const contourGen = d3.contours().size([GRID_N, GRID_N]).thresholds(thresholds);
+      const contoursData = contourGen(values);
+
+      // Grid coordinates [0, GRID_N] → plot pixels [0, PLOT_W/H]
+      const gridProjection = d3.geoTransform({
+        point: function (x, y) {
+          this.stream.point(x / GRID_N * PLOT_W, y / GRID_N * PLOT_H);
+        }
+      });
+      const gridPath = d3.geoPath(gridProjection);
+
+      const contourLayer = plotG.append('g').attr('clip-path', 'url(#s4PlotClip)');
+      contourLayer.selectAll('path')
+        .data(contoursData)
+        .join('path')
+        .attr('d', gridPath)
+        .attr('fill', d => d3.interpolateViridis(1 - d.value))
+        .attr('stroke', 'none');
+
+      // ── Axes via d3.axisBottom / d3.axisLeft ──
+      const xAxis = d3.axisBottom(xScale).tickValues(tickVals).tickFormat(tickFmt).tickSize(5);
+      const yAxis = d3.axisLeft(yScale).tickValues(tickVals).tickFormat(tickFmt).tickSize(5);
+
+      const xAxisG = svg.append('g')
+        .attr('transform', `translate(${MARGIN.left},${MARGIN.top + PLOT_H})`)
+        .call(xAxis);
+      const yAxisG = svg.append('g')
+        .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`)
+        .call(yAxis);
+
+      // Style axes (d3 defaults are black + small font)
+      for (const ax of [xAxisG, yAxisG]) {
+        ax.selectAll('path.domain').attr('stroke', AXIS_COLOR).attr('stroke-width', 1.5);
+        ax.selectAll('.tick line').attr('stroke', AXIS_COLOR);
+        ax.selectAll('.tick text')
+          .attr('fill', AXIS_COLOR)
+          .attr('font-family', '"IBM Plex Sans", sans-serif')
+          .attr('font-size', 17);
+      }
+
+      // Top + right border lines (d3 only draws bottom/left — complete the rectangle)
+      svg.append('line')
+        .attr('x1', MARGIN.left).attr('y1', MARGIN.top)
+        .attr('x2', MARGIN.left + PLOT_W).attr('y2', MARGIN.top)
+        .attr('stroke', AXIS_COLOR).attr('stroke-width', 1.5);
+      svg.append('line')
+        .attr('x1', MARGIN.left + PLOT_W).attr('y1', MARGIN.top)
+        .attr('x2', MARGIN.left + PLOT_W).attr('y2', MARGIN.top + PLOT_H)
+        .attr('stroke', AXIS_COLOR).attr('stroke-width', 1.5);
+
+      // Axis titles — placed close to the plot rather than at SVG edges
+      // so the extra vertical padding (for SVG squareness) isn't visible.
+      svg.append('text')
+        .attr('x', MARGIN.left + PLOT_W / 2).attr('y', MARGIN.top + PLOT_H + 48)
+        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 20).attr('font-weight', 600)
+        .text('R\u2081');
+      svg.append('text')
+        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 20).attr('font-weight', 600)
+        .attr('transform', `translate(18,${MARGIN.top + PLOT_H / 2}) rotate(-90)`)
+        .text('R\u2082');
+
+      // Sweet-spot outline (10kΩ–100kΩ) using d3 scales
+      const sxL = xScale(1e4), sxR = xScale(1e5);
+      const syT = yScale(1e5), syB = yScale(1e4);
+      plotG.append('rect')
+        .attr('x', sxL).attr('y', syT)
+        .attr('width', sxR - sxL).attr('height', syB - syT)
+        .attr('fill', 'none').attr('stroke', '#ffffff')
+        .attr('stroke-width', 2).attr('stroke-dasharray', '6,3');
+      plotG.append('text')
+        .attr('x', (sxL + sxR) / 2).attr('y', syT - 5)
+        .attr('text-anchor', 'middle').attr('fill', '#ffffff')
+        .attr('font-family', '"IBM Plex Mono", monospace').attr('font-size', 14).attr('font-weight', 'bold')
+        .text('Sweet Spot');
+
+      // Colour bar (right of plot)
+      const cbX = MARGIN.left + PLOT_W + 8, cbW = 12, cbH = PLOT_H;
+      svg.append('rect')
+        .attr('x', cbX).attr('y', MARGIN.top).attr('width', cbW).attr('height', cbH)
+        .attr('fill', 'url(#viridisGrad)').attr('stroke', AXIS_COLOR).attr('stroke-width', 1);
+      svg.append('text')
+        .attr('x', cbX + cbW + 3).attr('y', MARGIN.top + 10)
+        .attr('text-anchor', 'start').attr('fill', AXIS_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 13)
+        .text('Safe');
+      svg.append('text')
+        .attr('x', cbX + cbW + 3).attr('y', MARGIN.top + cbH - 2)
+        .attr('text-anchor', 'start').attr('fill', AXIS_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 13)
+        .text('Danger');
 
       // ── Crosshair SVG setup ──
       const crossSvg = document.getElementById('s4CrosshairSVG');
@@ -2243,8 +2327,59 @@
       crossSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       crossSvg.innerHTML = '';
 
-      objs.push(s4Tag, ...circuitObjs, ...liveLabels, ...stepStatics, stepTitle);
-      animated.push(...circuitObjs, ...liveLabels, ...stepStatics, stepTitle);
+      // ── Step Response SVG (matching geometry to contour SVG) ──
+      // Same SVG_W × SVG_H and same inner plot area so the two plots are
+      // visually identical boxes when positioned side-by-side.
+      const stepSvgNode = document.getElementById('s4StepSVG');
+      stepSvgNode.setAttribute('viewBox', '0 0 ' + SVG_W + ' ' + SVG_H);
+      stepSvgNode.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      stepSvgNode.innerHTML = '';
+      const stepSvg = d3.select(stepSvgNode);
+
+      // Background
+      stepSvg.append('rect')
+        .attr('x', 0).attr('y', 0).attr('width', SVG_W).attr('height', SVG_H)
+        .attr('fill', BG);
+
+      // Plot area background + border (same position as contour's plot area)
+      stepSvg.append('rect')
+        .attr('x', MARGIN.left).attr('y', MARGIN.top)
+        .attr('width', PLOT_W).attr('height', PLOT_H)
+        .attr('fill', IS_LIGHT ? 'rgba(100,116,139,0.08)' : 'rgba(169,180,198,0.06)')
+        .attr('stroke', AXIS_COLOR).attr('stroke-width', 1.5);
+
+      // Clip path for step plot (reused for dynamic layer)
+      stepSvg.append('defs').append('clipPath').attr('id', 's4StepClip')
+        .append('rect').attr('x', 0).attr('y', 0).attr('width', PLOT_W).attr('height', PLOT_H);
+
+      // Plot title
+      stepSvg.append('text')
+        .attr('x', MARGIN.left + PLOT_W / 2).attr('y', MARGIN.top - 18)
+        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 18).attr('font-weight', 'bold')
+        .text('Step Response (200 mV input)');
+
+      // X-axis title
+      stepSvg.append('text')
+        .attr('x', MARGIN.left + PLOT_W / 2).attr('y', MARGIN.top + PLOT_H + 48)
+        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 20).attr('font-weight', 600)
+        .text('Time');
+
+      // Y-axis title
+      stepSvg.append('text')
+        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 20).attr('font-weight', 600)
+        .attr('transform', `translate(18,${MARGIN.top + PLOT_H / 2}) rotate(-90)`)
+        .text('V\u2092\u2099\u209C');
+
+      // Dynamic layer (cleared and redrawn each slider update)
+      const stepPlotG = stepSvg.append('g')
+        .attr('class', 's4StepDynamic')
+        .attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+
+      objs.push(s4Tag, ...circuitObjs, ...liveLabels);
+      animated.push(...circuitObjs, ...liveLabels);
 
       return {
         objs,
@@ -2252,9 +2387,10 @@
         groups: {
           circuitStage: circuitObjs,
           liveLabels,
-          stepPlot: [...stepStatics, stepTitle]
+          stepPlot: []
         },
         live: { liveBetaLabel, liveGainLabel, liveR1Label, liveR2Label },
+        liveLabelX: { top: LLX_TOP, res: LLX_RES },
         stepFrame,
         penFrame,
         penLogMin,
@@ -2264,7 +2400,11 @@
         SVG_W,
         SVG_H,
         MARGIN,
-        PLOT_SIZE
+        PLOT_SIZE,
+        stepSvg,
+        stepPlotG,
+        stepPlotW: PLOT_W,
+        stepPlotH: PLOT_H
       };
     };
 
@@ -2315,131 +2455,149 @@
       }
       const g = [];
 
-      // ── PLOT 1: Step Response ──
+      const betaStr = beta.toFixed(3);
+      const gainStr = acl < 1000 ? acl.toFixed(1) : acl.toFixed(0);
+
+      // ── PLOT 1: Step Response (rendered as HTML SVG overlay via d3) ──
       const N_STEP = 200;
       const { pts, dt, tSettle, target } = computeStepResponse(beta, N_STEP);
 
       // Y-range starts at 0 so the trace begins at the bottom
       const yMax = Math.min(S4_VRAIL * 1.1, Math.max(Math.abs(target) * 1.4, S4_VRAIL * 0.5));
-      const stepXRange = [0, tSettle];
-      const stepYRange = [0, yMax];
+      const stepX = d3.scaleLinear().domain([0, tSettle]).range([0, ctx.stepPlotW]);
+      const stepY = d3.scaleLinear().domain([0, yMax]).range([ctx.stepPlotH, 0]);
 
-      // Draw dynamic axes (y-range changes with beta)
-      const xAxisY = stepFrame.y0; // y=0 maps to bottom of frame
-      const yAxisX = stepFrame.x0; // x=0 maps to left of frame
-      g.push(new Line({ start: [stepFrame.x0, xAxisY, 0], end: [stepFrame.x1, xAxisY, 0], color: AXIS, strokeWidth: 1.4 }));
-      g.push(new Line({ start: [yAxisX, stepFrame.y0, 0], end: [yAxisX, stepFrame.y1, 0], color: AXIS, strokeWidth: 1.4 }));
+      // Clear dynamic layer
+      ctx.stepPlotG.selectAll('*').remove();
 
-      // Draw step response trace
-      let prev = null;
-      for (let i = 0; i <= N_STEP; i++) {
-        const t = i * dt;
-        const v = pts[i];
-        const p = mapPoint(stepFrame, t, v, stepXRange, stepYRange);
-        // Clamp to frame bounds
-        const py = clamp(p[1], stepFrame.y0, stepFrame.y1);
-        if (prev) {
-          g.push(new Line({ start: [prev[0], prev[1], 0], end: [p[0], py, 0], color: CYAN, strokeWidth: 2.2 }));
-        }
-        prev = [p[0], py];
+      // Axes (d3)
+      const tickFmtTime = (t) => {
+        if (t === 0) return '0';
+        if (t >= 1e-3) return (t * 1e3).toFixed(1) + ' ms';
+        if (t >= 1e-6) return (t * 1e6).toFixed(0) + ' \u00B5s';
+        return (t * 1e9).toFixed(0) + ' ns';
+      };
+      const tickFmtVolt = (v) => {
+        if (v === 0) return '0';
+        return v >= 1 ? v.toFixed(0) + ' V' : (v * 1e3).toFixed(0) + ' mV';
+      };
+
+      const s4AxisColor = IS_LIGHT ? '#475569' : '#a9b4c6';
+
+      const xAxisSel = ctx.stepPlotG.append('g')
+        .attr('transform', `translate(0, ${ctx.stepPlotH})`)
+        .call(d3.axisBottom(stepX).ticks(5).tickFormat(tickFmtTime).tickSize(5));
+      const yAxisSel = ctx.stepPlotG.append('g')
+        .call(d3.axisLeft(stepY).ticks(5).tickFormat(tickFmtVolt).tickSize(5));
+      for (const ax of [xAxisSel, yAxisSel]) {
+        ax.selectAll('path.domain').attr('stroke', s4AxisColor).attr('stroke-width', 1.5);
+        ax.selectAll('.tick line').attr('stroke', s4AxisColor);
+        ax.selectAll('.tick text')
+          .attr('fill', s4AxisColor)
+          .attr('font-family', '"IBM Plex Sans", sans-serif')
+          .attr('font-size', 15);
       }
 
-      // Target dashed line (ideal final value)
+      // Top + right border lines so the plot area is fully boxed
+      ctx.stepPlotG.append('line')
+        .attr('x1', 0).attr('y1', 0).attr('x2', ctx.stepPlotW).attr('y2', 0)
+        .attr('stroke', s4AxisColor).attr('stroke-width', 1.5);
+      ctx.stepPlotG.append('line')
+        .attr('x1', ctx.stepPlotW).attr('y1', 0)
+        .attr('x2', ctx.stepPlotW).attr('y2', ctx.stepPlotH)
+        .attr('stroke', s4AxisColor).attr('stroke-width', 1.5);
+
+      // Target (ideal final value) dashed line + label
       const clampedTarget = clamp(target, -S4_VRAIL, S4_VRAIL);
-      const tgtY = mapPoint(stepFrame, 0, clampedTarget, stepXRange, stepYRange)[1];
-      if (tgtY >= stepFrame.y0 && tgtY <= stepFrame.y1) {
-        const dashLen = 0.18, gapLen = 0.12;
-        let dx = stepFrame.x0 + 0.12;
-        while (dx < stepFrame.x1 - 0.12) {
-          const dEnd = Math.min(dx + dashLen, stepFrame.x1 - 0.12);
-          g.push(new Line({ start: [dx, tgtY, 0], end: [dEnd, tgtY, 0], color: YELLOW, strokeWidth: 1.2 }));
-          dx = dEnd + gapLen;
-        }
-        g.push(quickText(clampedTarget.toFixed(1) + 'V', 11, YELLOW, [stepFrame.x1 - 0.50, tgtY + 0.10, 0]));
+      if (clampedTarget >= 0 && clampedTarget <= yMax) {
+        const tY = stepY(clampedTarget);
+        ctx.stepPlotG.append('line')
+          .attr('x1', 0).attr('x2', ctx.stepPlotW)
+          .attr('y1', tY).attr('y2', tY)
+          .attr('stroke', '#fbbf24').attr('stroke-width', 1.5).attr('stroke-dasharray', '8,5');
+        ctx.stepPlotG.append('text')
+          .attr('x', ctx.stepPlotW - 8).attr('y', tY - 6)
+          .attr('text-anchor', 'end').attr('fill', '#fbbf24')
+          .attr('font-family', '"IBM Plex Mono", monospace').attr('font-size', 14)
+          .text(clampedTarget.toFixed(1) + ' V');
       }
 
-      // Rail lines (±13.5V) if within view
+      // Rail lines (±S4_VRAIL) if within view
       for (const rail of [S4_VRAIL, -S4_VRAIL]) {
-        const ry = mapPoint(stepFrame, 0, rail, stepXRange, stepYRange)[1];
-        if (ry >= stepFrame.y0 + 0.05 && ry <= stepFrame.y1 - 0.05) {
-          let dx = stepFrame.x0 + 0.12;
-          while (dx < stepFrame.x1 - 0.12) {
-            const dEnd = Math.min(dx + 0.12, stepFrame.x1 - 0.12);
-            g.push(new Line({ start: [dx, ry, 0], end: [dEnd, ry, 0], color: RED, strokeWidth: 1.0 }));
-            dx = dEnd + 0.10;
-          }
-          g.push(quickText(rail > 0 ? '+Rail' : '-Rail', 10, RED, [stepFrame.x0 + 0.10, ry + 0.10, 0]));
+        if (rail >= 0 && rail <= yMax) {
+          const ry = stepY(rail);
+          ctx.stepPlotG.append('line')
+            .attr('x1', 0).attr('x2', ctx.stepPlotW)
+            .attr('y1', ry).attr('y2', ry)
+            .attr('stroke', '#f87171').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+          ctx.stepPlotG.append('text')
+            .attr('x', 8).attr('y', ry - 6)
+            .attr('fill', '#f87171')
+            .attr('font-family', '"IBM Plex Mono", monospace').attr('font-size', 12)
+            .text(rail > 0 ? '+Rail' : '-Rail');
         }
       }
 
-      // Annotation (synchronous)
-      const betaStr = beta.toFixed(3);
-      const gainStr = acl < 1000 ? acl.toFixed(1) : acl.toFixed(0);
-      g.push(quickText('\u03B2=' + betaStr, 13, BLUE, [stepFrame.x1 - 0.80, stepFrame.y1 - 0.20, 0]));
-      g.push(quickText('Acl=' + gainStr, 13, CYAN, [stepFrame.x1 - 0.80, stepFrame.y1 - 0.42, 0]));
+      // Trace (clipped to plot area)
+      const traceData = [];
+      for (let i = 0; i <= N_STEP; i++) traceData.push({ t: i * dt, v: pts[i] });
+      const traceLine = d3.line()
+        .x(d => stepX(d.t))
+        .y(d => stepY(Math.max(0, Math.min(yMax, d.v))));
+      ctx.stepPlotG.append('path')
+        .datum(traceData)
+        .attr('fill', 'none')
+        .attr('stroke', '#22d3ee')
+        .attr('stroke-width', 2.5)
+        .attr('stroke-linejoin', 'round')
+        .attr('stroke-linecap', 'round')
+        .attr('clip-path', 'url(#s4StepClip)')
+        .attr('d', traceLine);
 
-      // Step response Y-axis tick labels
-      const yStep = yMax > 10 ? 5 : yMax > 2 ? 1 : yMax > 0.5 ? 0.2 : 0.05;
-      for (let v = yStep; v <= yMax; v += yStep) {
-        const py = mapPoint(stepFrame, 0, v, stepXRange, stepYRange)[1];
-        if (py > stepFrame.y0 + 0.10 && py < stepFrame.y1 - 0.10) {
-          const vStr = v >= 1 ? v.toFixed(0) + 'V' : (v * 1e3).toFixed(0) + 'mV';
-          g.push(quickText(vStr, 11, MUTED, [stepFrame.x0 - 0.30, py, 0]));
-          // Tick mark
-          g.push(new Line({ start: [stepFrame.x0, py, 0], end: [stepFrame.x0 + 0.06, py, 0], color: MUTED2, strokeWidth: 1 }));
-        }
-      }
-      // "0" label at origin
-      g.push(quickText('0', 11, MUTED, [stepFrame.x0 - 0.20, stepFrame.y0, 0]));
+      // β / A_cl annotation (top-right of plot)
+      const annotG = ctx.stepPlotG.append('g').attr('transform', `translate(${ctx.stepPlotW - 12}, 20)`);
+      annotG.append('text')
+        .attr('text-anchor', 'end').attr('fill', '#60a5fa')
+        .attr('font-family', '"IBM Plex Mono", monospace').attr('font-size', 16)
+        .text('\u03B2 = ' + betaStr);
+      annotG.append('text').attr('y', 20)
+        .attr('text-anchor', 'end').attr('fill', '#22d3ee')
+        .attr('font-family', '"IBM Plex Mono", monospace').attr('font-size', 16)
+        .text('A\u1D9C\u02E1 = ' + gainStr);
 
-      // Step response X-axis tick labels
-      const tDiv = tSettle / 5;
-      for (let i = 1; i <= 4; i++) {
-        const t = tDiv * i;
-        const px = mapPoint(stepFrame, t, 0, stepXRange, stepYRange)[0];
-        if (px > stepFrame.x0 + 0.20 && px < stepFrame.x1 - 0.20) {
-          let tStr;
-          if (t >= 1e-3) tStr = (t * 1e3).toFixed(1) + 'ms';
-          else if (t >= 1e-6) tStr = (t * 1e6).toFixed(0) + '\u00B5s';
-          else tStr = (t * 1e9).toFixed(0) + 'ns';
-          g.push(quickText(tStr, 11, MUTED, [px, stepFrame.y0 - 0.18, 0]));
-          // Tick mark
-          g.push(new Line({ start: [px, stepFrame.y0, 0], end: [px, stepFrame.y0 + 0.06, 0], color: MUTED2, strokeWidth: 1 }));
-        }
-      }
-
-      // ── PLOT 2: Position wrapper + draw crosshair as SVG ──
+      // ── Position BOTH plot overlays (step + contour) using the same logic ──
       const { penLogMin, penLogMax, toScreenPctX, toScreenPctY, SVG_W: svgW, SVG_H: svgH, MARGIN: hmMargin, PLOT_SIZE: plotSize } = ctx;
-      const wrap = document.getElementById('s4HeatmapWrap');
       const stageEl = document.getElementById('stage');
       const stageRect = stageEl.getBoundingClientRect();
-      // Available region from penFrame
-      const availLeft = toScreenPctX(penFrame.x0) / 100 * stageRect.width;
-      const availTop = toScreenPctY(penFrame.y1) / 100 * stageRect.height;
-      const availW = (toScreenPctX(penFrame.x1) - toScreenPctX(penFrame.x0)) / 100 * stageRect.width;
-      const availH = (toScreenPctY(penFrame.y0) - toScreenPctY(penFrame.y1)) / 100 * stageRect.height;
-      // Fit SVG aspect ratio within available region, centered
-      const svgAspect = svgW / svgH;
-      let hmWidth, hmHeight;
-      if (availW / availH > svgAspect) {
-        hmHeight = availH;
-        hmWidth = availH * svgAspect;
-      } else {
-        hmWidth = availW;
-        hmHeight = availW / svgAspect;
-      }
-      const hmLeft = availLeft + (availW - hmWidth) / 2;
-      const hmTop = availTop + (availH - hmHeight) / 2;
-      wrap.style.left = hmLeft + 'px';
-      wrap.style.top = hmTop + 'px';
-      wrap.style.width = hmWidth + 'px';
-      wrap.style.height = hmHeight + 'px';
+
+      const positionWrap = (wrapId, frame) => {
+        const wrap = document.getElementById(wrapId);
+        const availLeft = toScreenPctX(frame.x0) / 100 * stageRect.width;
+        const availTop = toScreenPctY(frame.y1) / 100 * stageRect.height;
+        const availW = (toScreenPctX(frame.x1) - toScreenPctX(frame.x0)) / 100 * stageRect.width;
+        const availH = (toScreenPctY(frame.y0) - toScreenPctY(frame.y1)) / 100 * stageRect.height;
+        const aspect = svgW / svgH;
+        let w, h;
+        if (availW / availH > aspect) {
+          h = availH;
+          w = h * aspect;
+        } else {
+          w = availW;
+          h = w / aspect;
+        }
+        wrap.style.left = (availLeft + (availW - w) / 2) + 'px';
+        wrap.style.top = (availTop + (availH - h) / 2) + 'px';
+        wrap.style.width = w + 'px';
+        wrap.style.height = h + 'px';
+      };
+      positionWrap('s4StepWrap', stepFrame);
+      positionWrap('s4HeatmapWrap', penFrame);
 
       // Create crosshair SVG elements once, then update attributes
       const svgNS = 'http://www.w3.org/2000/svg';
       if (!ctx._crossEls) {
         const crossSvg = document.getElementById('s4CrosshairSVG');
-        const mkEl = (tag, attrs) => { const el = document.createElementNS(svgNS, tag); for (const [k,v] of Object.entries(attrs)) el.setAttribute(k,v); return el; };
+        const mkEl = (tag, attrs) => { const el = document.createElementNS(svgNS, tag); for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v); return el; };
         ctx._crossEls = {
           vLine: mkEl('line', { stroke: 'rgba(255,255,255,0.8)', 'stroke-width': '1.5', 'stroke-dasharray': '4,3' }),
           hLine: mkEl('line', { stroke: 'rgba(255,255,255,0.8)', 'stroke-width': '1.5', 'stroke-dasharray': '4,3' }),
@@ -2483,14 +2641,16 @@
 
       // Update live circuit labels (synchronous — use plain text, not MathTex)
       for (const old of [ctx.live.liveBetaLabel, ctx.live.liveGainLabel, ctx.live.liveR1Label, ctx.live.liveR2Label]) {
-        scene.remove(old);
+        if (old) scene.remove(old);
       }
-      ctx.live.liveBetaLabel = quickText('\u03B2=' + betaStr, 14, BLUE, [-4.10, 2.30, 0]);
-      ctx.live.liveGainLabel = quickText('Acl=' + gainStr, 14, CYAN, [-4.10, 1.90, 0]);
+      const llxTop = ctx.liveLabelX.top;
+      const llxRes = ctx.liveLabelX.res;
+      ctx.live.liveBetaLabel = quickText('\u03B2=' + betaStr, 14, BLUE, [llxTop, 2.30, 0]);
+      ctx.live.liveGainLabel = quickText('Acl=' + gainStr, 14, CYAN, [llxTop, 1.90, 0]);
       const r1Color = r1 < 1e3 ? RED : r1 > 1e6 ? YELLOW : ACCENT;
       const r2Color = r2 < 1e3 ? RED : r2 > 1e6 ? YELLOW : ACCENT;
-      ctx.live.liveR1Label = quickText('R1=' + formatR(r1), 12, r1Color, [-3.40, -0.80, 0]);
-      ctx.live.liveR2Label = quickText('R2=' + formatR(r2), 12, r2Color, [-3.40, -1.10, 0]);
+      ctx.live.liveR1Label = quickText('R1=' + formatR(r1), 12, r1Color, [llxRes, -0.80, 0]);
+      ctx.live.liveR2Label = quickText('R2=' + formatR(r2), 12, r2Color, [llxRes, -1.10, 0]);
       scene.add(ctx.live.liveBetaLabel, ctx.live.liveGainLabel, ctx.live.liveR1Label, ctx.live.liveR2Label);
     };
 

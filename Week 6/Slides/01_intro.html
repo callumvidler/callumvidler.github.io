@@ -155,6 +155,10 @@
     const vsMinus = makeVerticalDottedRail(cx, vsMinusStart[1], vsMinusEnd[1], RAIL_COLOR);
     const vsPlusLabel = new MathTex({ latex: 'V_{S +}', color: RAIL_COLOR, fontSize: 52 });
     const vsMinusLabel = new MathTex({ latex: 'V_{S -}', color: RAIL_COLOR, fontSize: 52 });
+    const vsPlusDesc = new Text({ text: '(Positive Supply Rail)', fontSize: 16, color: MUTED, fontUrl: FONT_URL });
+    const vsMinusDesc = new Text({ text: '(Negative Supply Rail)', fontSize: 16, color: MUTED, fontUrl: FONT_URL });
+    const nonInvLabel = new Text({ text: 'Non-inverting input', fontSize: 16, color: MUTED, fontUrl: FONT_URL });
+    const invLabel = new Text({ text: 'Inverting input', fontSize: 16, color: MUTED, fontUrl: FONT_URL });
 
     // ── Equation ──
     const eqn = new MathTex({
@@ -172,6 +176,10 @@
       voutLabel.waitForRender?.(),
       vsPlusLabel.waitForRender?.(),
       vsMinusLabel.waitForRender?.(),
+      vsPlusDesc.loadGlyphs?.(),
+      vsMinusDesc.loadGlyphs?.(),
+      nonInvLabel.loadGlyphs?.(),
+      invLabel.loadGlyphs?.(),
       eqn.waitForRender?.()
     ]);
 
@@ -180,6 +188,10 @@
     voutLabel.scale(0.55).nextTo(outLine.getEnd(), RIGHT, 0.15);
     vsPlusLabel.scale(0.5).nextTo(vsPlusEnd, UP, 0.1);
     vsMinusLabel.scale(0.5).nextTo(vsMinusEnd, DOWN, 0.1);
+    nonInvLabel.nextTo(vPlusLabel, UP, 0.12);
+    invLabel.nextTo(vMinusLabel, DOWN, 0.12);
+    vsPlusDesc.nextTo(vsPlusLabel, RIGHT, 0.15);
+    vsMinusDesc.nextTo(vsMinusLabel, RIGHT, 0.15);
 
     eqn.scale(0.7).moveTo([4.5, -2, 0]);
 
@@ -207,7 +219,9 @@
     await scene.play(
       new Write(vPlusLabel),
       new Write(vMinusLabel),
-      new Write(voutLabel)
+      new Write(voutLabel),
+      new FadeIn(nonInvLabel),
+      new FadeIn(invLabel)
     );
     await scene.wait(0.3);
 
@@ -215,7 +229,9 @@
       new FadeIn(vsPlus),
       new FadeIn(vsMinus),
       new Write(vsPlusLabel),
-      new Write(vsMinusLabel)
+      new Write(vsMinusLabel),
+      new FadeIn(vsPlusDesc),
+      new FadeIn(vsMinusDesc)
     );
     await scene.wait(0.2);
 

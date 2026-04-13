@@ -237,6 +237,13 @@
     minusSign.moveTo([TRI_IN_X + 0.3, minusY, 0]);
     plusSign.moveTo([TRI_IN_X + 0.3, plusY,  0]);
 
+    // ── Input type labels (small annotations paired with + / − signs) ──
+    const invLbl    = new Text({ text: 'inverting',     fontSize: 12, color: RED,    fontUrl: FONT_URL });
+    const nonInvLbl = new Text({ text: 'non-inverting', fontSize: 12, color: ACCENT, fontUrl: FONT_URL });
+    await Promise.all([invLbl.loadGlyphs?.(), nonInvLbl.loadGlyphs?.()]);
+    invLbl.moveTo([-5.0, 1.90, 0]);
+    nonInvLbl.moveTo([-5.15, 0.30, 0]);
+
     // ── Output wire ──
     const outWire  = new Line({ start: [TRI_APEX_X, CY, 0], end: [OUT_X, CY, 0], color: FG, strokeWidth: 1.8 });
     const vOutPort = new Circle({ radius: 0.07, color: FG, strokeWidth: 2, fillColor: '#000000', fillOpacity: 1 }).moveTo([OUT_X, CY, 0]);
@@ -340,6 +347,7 @@
     await scene.play(
       new Create(tri),
       new Write(plusSign), new Write(minusSign),
+      new Write(invLbl), new Write(nonInvLbl),
       new Create(outWire), new Create(vOutPort), new Write(vOutLbl)
     );
 

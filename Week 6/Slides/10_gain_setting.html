@@ -2210,26 +2210,82 @@
       defs.append('clipPath').attr('id', 's4PlotClip')
         .append('rect').attr('x', 0).attr('y', 0).attr('width', PLOT_W).attr('height', PLOT_H);
 
-      // Plot title — sits ~18 px above the top of the plot area
+      // Plot title — sits just above the plot area
       svg.append('text')
-        .attr('x', MARGIN.left + PLOT_W / 2).attr('y', MARGIN.top - 18)
-        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('x', MARGIN.left + PLOT_W / 2).attr('y', MARGIN.top - 46)
+        .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+        .attr('fill', TITLE_COLOR)
         .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 18).attr('font-weight', 'bold')
         .text('Resistor Design Space');
+
+      // Component legend — the scalar field is the SUM of these four terms.
+      // Rendered above the plot area, outside it, as the user requested.
+      const legendItems = [
+        { label: 'I\u2092\u1D64\u209C',    color: '#60a5fa' },  // Iout — blue
+        { label: 'V\u2092\u2098',          color: '#a78bfa' },  // Voff — violet
+        { label: 'f\u209A\u2090\u1D63',    color: '#fb923c' },  // fpar — orange
+        { label: '\u03B2 ratio',           color: '#f472b6' }   // β — pink
+      ];
+      const legendY = MARGIN.top - 18;              // vertical centre
+      const legendSwatch = 14;
+      const legendFont = 14;
+      const legendItemGap = 22;
+      // Rough width per label at font 14 (~8 px per char, generous padding)
+      const estTextW = (s) => s.length * 8 + 4;
+      const itemWidths = legendItems.map(it => legendSwatch + 5 + estTextW(it.label));
+      const totalW = itemWidths.reduce((a, b) => a + b, 0) + legendItemGap * (legendItems.length - 1);
+      const legendG = svg.append('g').attr('class', 's4Legend');
+      let legendCursor = MARGIN.left + PLOT_W / 2 - totalW / 2;
+      legendItems.forEach((it, i) => {
+        // Filled colour swatch
+        legendG.append('rect')
+          .attr('x', legendCursor)
+          .attr('y', legendY - legendSwatch / 2)
+          .attr('width', legendSwatch).attr('height', legendSwatch)
+          .attr('rx', 2).attr('ry', 2)
+          .attr('fill', it.color)
+          .attr('stroke', TITLE_COLOR).attr('stroke-width', 0.6);
+        // Label
+        legendG.append('text')
+          .attr('x', legendCursor + legendSwatch + 5)
+          .attr('y', legendY)
+          .attr('dominant-baseline', 'middle')
+          .attr('fill', TITLE_COLOR)
+          .attr('font-family', '"IBM Plex Sans", sans-serif')
+          .attr('font-size', legendFont)
+          .text(it.label);
+        legendCursor += itemWidths[i] + legendItemGap;
+      });
 
       // Plot group (translated to plot origin)
       const plotG = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
 
       // ── Evaluate penalty SUM on a regular grid (log-space in R₁, R₂) ──
-      // Each term is dimensionless (already normalized to its "max acceptable"
-      // value): penCurrent = Iout/25 mA, penOffset = Voff/10 mV, penParasitic
-      // ≈ parasitic RC penalty. The TOTAL penalty is the sum of all three —
-      // this is what the contour plot now shows. It is minimised exactly
-      // where Iout, Voff and fpar are all simultaneously small (the sweet spot).
-      const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
+      // Each term is dimensionless (normalized to its "max acceptable" value):
+      //   penCurrent  = Iout / 2 mA           (was 25 mA — loosened to
+      //                                         2 mA for LINEAR operation,
+      //                                         which pushes the minimum of
+      //                                         the sum up into the sweet
+      //                                         spot instead of sitting
+      //                                         around R ≈ 7 kΩ.)
+      //   penOffset   = Voff / 10 mV
+      //   penParasitic ≈ parasitic-pole penalty (penalty = 1 when fp ≈ 10 kHz)
+      //   penBeta     = log10(max/min R-ratio)² / 8
+      //                 Penalises extreme R₁:R₂ ratios (e.g. 1 kΩ ↔ 10 MΩ)
+      //                 where β → 0 (gain too high) or design is impractical.
+      // The TOTAL penalty is the sum of all four — this is what the contour
+      // plot shows. It is minimised near the centre of the sweet spot where
+      // all four terms are simultaneously small and R₁ ≈ R₂.
+      const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 2e-3;
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
       const penParasitic = (r1v, r2v) => 10e3 * 2 * Math.PI * r2v * S4_CPAR;
-      const penaltySum = (r1v, r2v) => penCurrent(r1v, r2v) + penOffset(r1v, r2v) + penParasitic(r1v, r2v);
+      const penBeta = (r1v, r2v) => {
+        const ratio = Math.max(r1v, r2v) / Math.min(r1v, r2v);
+        const l = Math.log10(ratio);
+        return l * l / 8;
+      };
+      const penaltySum = (r1v, r2v) =>
+        penCurrent(r1v, r2v) + penOffset(r1v, r2v) + penParasitic(r1v, r2v) + penBeta(r1v, r2v);
 
       const GRID_N = 200;
       const values = new Float64Array(GRID_N * GRID_N);
@@ -2401,9 +2457,13 @@
         .append('rect').attr('x', 0).attr('y', 0).attr('width', PLOT_W).attr('height', PLOT_H);
 
       // Plot title
+      // Step plot title — centred vertically in the (enlarged) top margin so
+      // it mirrors the contour plot's legend+title stack on the right.
       stepSvg.append('text')
-        .attr('x', MARGIN.left + PLOT_W / 2).attr('y', MARGIN.top - 18)
-        .attr('text-anchor', 'middle').attr('fill', TITLE_COLOR)
+        .attr('x', MARGIN.left + PLOT_W / 2)
+        .attr('y', MARGIN.top / 2)
+        .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+        .attr('fill', TITLE_COLOR)
         .attr('font-family', '"IBM Plex Sans", sans-serif').attr('font-size', 18).attr('font-weight', 'bold')
         .text('Step Response (200 mV input)');
 

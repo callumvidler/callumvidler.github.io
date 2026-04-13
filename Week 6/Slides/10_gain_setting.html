@@ -2145,9 +2145,12 @@
 
       // ── Layout ──
       // Margins chosen so SVG_W == SVG_H (square), letting the plot fit its
-      // square penFrame box with no aspect-fit letterbox.
-      // Horizontal: 84 + 74 = 158. Vertical must also sum to 158 → 65 + 93.
-      const MARGIN = { top: 65, right: 74, bottom: 93, left: 84 };
+      // square penFrame box with no aspect-fit letterbox. Top margin is
+      // enlarged (was 65) so a three-item component legend (Iout, Voff,
+      // fparasitic) fits above the plot title. Horizontal margins are
+      // bumped symmetrically to keep the SVG square.
+      // Horizontal: 99 + 89 = 188. Vertical: 95 + 93 = 188. ✓
+      const MARGIN = { top: 95, right: 89, bottom: 93, left: 99 };
       const PLOT_SIZE = 440;
       const PLOT_W = PLOT_SIZE, PLOT_H = PLOT_SIZE;
       const SVG_W = PLOT_SIZE + MARGIN.left + MARGIN.right;
@@ -2176,14 +2179,31 @@
       // Background
       svg.append('rect').attr('x', 0).attr('y', 0).attr('width', SVG_W).attr('height', SVG_H).attr('fill', BG);
 
-      // Defs: viridis gradient for colour bar (32 stops)
+      // ── Sum-magnitude colour scale ──
+      // We plot the *sum* of three normalized penalty terms (Iout, Voff, fpar).
+      // At the sweet spot all three are near zero → sum is minimum → green.
+      // Away from it one or more terms blow up → sum grows → red.
+      // Colours are indexed on a log scale since the sum spans several orders
+      // of magnitude across the 100 Ω → 10 MΩ design space.
+      const SUM_CLIP_MIN = 0.05;  // anything below this looks "ideal"
+      const SUM_CLIP_MAX = 30;    // anything above this looks "worst"
+      const logMin = Math.log10(SUM_CLIP_MIN);
+      const logMax = Math.log10(SUM_CLIP_MAX);
+      const colorForSum = (s) => {
+        const clamped = Math.max(SUM_CLIP_MIN, Math.min(SUM_CLIP_MAX, s));
+        const t = (Math.log10(clamped) - logMin) / (logMax - logMin);
+        return d3.interpolateRdYlGn(1 - t); // t=0 → green (low), t=1 → red (high)
+      };
+
       const defs = svg.append('defs');
-      const grad = defs.append('linearGradient').attr('id', 'viridisGrad').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+      const grad = defs.append('linearGradient').attr('id', 's4PenGrad').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
       const GRAD_STOPS = 32;
       for (let i = 0; i <= GRAD_STOPS; i++) {
+        // Top of the bar = low sum (green/safe), bottom = high sum (red/danger)
+        const t = i / GRAD_STOPS;
         grad.append('stop')
-          .attr('offset', (i / GRAD_STOPS * 100) + '%')
-          .attr('stop-color', d3.interpolateViridis(1 - i / GRAD_STOPS)); // top=bright(safe), bottom=dark(danger)
+          .attr('offset', (t * 100) + '%')
+          .attr('stop-color', d3.interpolateRdYlGn(1 - t));
       }
 
       // Clip path so contour fills never escape the plot area
@@ -2200,10 +2220,16 @@
       // Plot group (translated to plot origin)
       const plotG = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
 
-      // ── Evaluate penalty on a regular grid (linear in log-space) ──
+      // ── Evaluate penalty SUM on a regular grid (log-space in R₁, R₂) ──
+      // Each term is dimensionless (already normalized to its "max acceptable"
+      // value): penCurrent = Iout/25 mA, penOffset = Voff/10 mV, penParasitic
+      // ≈ parasitic RC penalty. The TOTAL penalty is the sum of all three —
+      // this is what the contour plot now shows. It is minimised exactly
+      // where Iout, Voff and fpar are all simultaneously small (the sweet spot).
       const penCurrent = (r1v, r2v) => (S4_VOUT_REF / (r1v + r2v)) / 25e-3;
       const penOffset = (r1v, r2v) => (S4_IB * (r1v * r2v) / (r1v + r2v)) / 10e-3;
       const penParasitic = (r1v, r2v) => 10e3 * 2 * Math.PI * r2v * S4_CPAR;
+      const penaltySum = (r1v, r2v) => penCurrent(r1v, r2v) + penOffset(r1v, r2v) + penParasitic(r1v, r2v);
 
       const GRID_N = 200;
       const values = new Float64Array(GRID_N * GRID_N);
@@ -2214,22 +2240,25 @@
         for (let ix = 0; ix < GRID_N; ix++) {
           const logR1 = penLogMin + (ix + 0.5) / GRID_N * (penLogMax - penLogMin);
           const r1v = Math.pow(10, logR1);
-          const worstP = Math.max(penCurrent(r1v, r2v), penOffset(r1v, r2v), penParasitic(r1v, r2v));
-          values[iy * GRID_N + ix] = clamp(worstP, 0, 1);
+          values[iy * GRID_N + ix] = penaltySum(r1v, r2v);
         }
       }
 
-      // Background fill = brightest viridis (safe). Iso-contours at higher
-      // penalty thresholds are painted on top with progressively darker colours,
-      // producing a nested band effect that mimics a filled contour plot.
+      // Plot-area background = the "ideal" colour so any sub-threshold gaps
+      // blend in smoothly with the lowest filled contour.
       plotG.append('rect')
         .attr('x', 0).attr('y', 0).attr('width', PLOT_W).attr('height', PLOT_H)
-        .attr('fill', d3.interpolateViridis(1));
+        .attr('fill', colorForSum(SUM_CLIP_MIN));
 
-      const NUM_LEVELS = 24;
-      const thresholds = d3.range(1, NUM_LEVELS + 1).map(i => i / NUM_LEVELS);
-      const contourGen = d3.contours().size([GRID_N, GRID_N]).thresholds(thresholds);
-      const contoursData = contourGen(values);
+      // Filled contour bands at log-spaced thresholds between SUM_CLIP_MIN
+      // and SUM_CLIP_MAX. Each higher threshold paints a smaller nested region.
+      const NUM_BANDS = 22;
+      const filledThresholds = d3.range(0, NUM_BANDS + 1).map(i => {
+        const tLog = logMin + (i / NUM_BANDS) * (logMax - logMin);
+        return Math.pow(10, tLog);
+      });
+      const filledGen = d3.contours().size([GRID_N, GRID_N]).thresholds(filledThresholds);
+      const filledData = filledGen(values);
 
       // Grid coordinates [0, GRID_N] → plot pixels [0, PLOT_W/H]
       const gridProjection = d3.geoTransform({
@@ -2241,11 +2270,27 @@
 
       const contourLayer = plotG.append('g').attr('clip-path', 'url(#s4PlotClip)');
       contourLayer.selectAll('path')
-        .data(contoursData)
+        .data(filledData)
         .join('path')
         .attr('d', gridPath)
-        .attr('fill', d => d3.interpolateViridis(1 - d.value))
+        .attr('fill', d => colorForSum(d.value))
         .attr('stroke', 'none');
+
+      // Overlaid iso-contour LINES at order-of-magnitude thresholds. These give
+      // the classic topographic-map feel and let the viewer read off the sum
+      // magnitude directly.
+      const lineThresholds = [0.1, 0.3, 1, 3, 10];
+      const lineGen = d3.contours().size([GRID_N, GRID_N]).thresholds(lineThresholds);
+      const lineData = lineGen(values);
+      const contourLineLayer = plotG.append('g').attr('clip-path', 'url(#s4PlotClip)');
+      contourLineLayer.selectAll('path')
+        .data(lineData)
+        .join('path')
+        .attr('d', gridPath)
+        .attr('fill', 'none')
+        .attr('stroke', 'rgba(0,0,0,0.45)')
+        .attr('stroke-width', d => d.value === 1 ? 1.8 : 1.0)
+        .attr('stroke-dasharray', d => d.value === 1 ? null : '4,3');
 
       // ── Axes via d3.axisBottom / d3.axisLeft ──
       const xAxis = d3.axisBottom(xScale).tickValues(tickVals).tickFormat(tickFmt).tickSize(5);
@@ -2291,25 +2336,28 @@
         .attr('transform', `translate(18,${MARGIN.top + PLOT_H / 2}) rotate(-90)`)
         .text('R\u2082');
 
-      // Sweet-spot outline (10kΩ–100kΩ) using d3 scales
+      // Sweet-spot outline (10kΩ–100kΩ) using d3 scales — use a dark outline
+      // because the RdYlGn colormap includes light-yellow bands where a white
+      // stroke would disappear.
       const sxL = xScale(1e4), sxR = xScale(1e5);
       const syT = yScale(1e5), syB = yScale(1e4);
       plotG.append('rect')
         .attr('x', sxL).attr('y', syT)
         .attr('width', sxR - sxL).attr('height', syB - syT)
-        .attr('fill', 'none').attr('stroke', '#ffffff')
-        .attr('stroke-width', 2).attr('stroke-dasharray', '6,3');
+        .attr('fill', 'none').attr('stroke', '#0f172a')
+        .attr('stroke-width', 2.2).attr('stroke-dasharray', '6,3');
       plotG.append('text')
-        .attr('x', (sxL + sxR) / 2).attr('y', syT - 5)
-        .attr('text-anchor', 'middle').attr('fill', '#ffffff')
+        .attr('x', (sxL + sxR) / 2).attr('y', syT - 6)
+        .attr('text-anchor', 'middle').attr('fill', '#0f172a')
         .attr('font-family', '"IBM Plex Mono", monospace').attr('font-size', 14).attr('font-weight', 'bold')
+        .attr('paint-order', 'stroke').attr('stroke', 'rgba(255,255,255,0.8)').attr('stroke-width', 3)
         .text('Sweet Spot');
 
       // Colour bar (right of plot)
       const cbX = MARGIN.left + PLOT_W + 8, cbW = 12, cbH = PLOT_H;
       svg.append('rect')
         .attr('x', cbX).attr('y', MARGIN.top).attr('width', cbW).attr('height', cbH)
-        .attr('fill', 'url(#viridisGrad)').attr('stroke', AXIS_COLOR).attr('stroke-width', 1);
+        .attr('fill', 'url(#s4PenGrad)').attr('stroke', AXIS_COLOR).attr('stroke-width', 1);
       svg.append('text')
         .attr('x', cbX + cbW + 3).attr('y', MARGIN.top + 10)
         .attr('text-anchor', 'start').attr('fill', AXIS_COLOR)

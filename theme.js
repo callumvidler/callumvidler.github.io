@@ -1,6 +1,7 @@
 (function () {
-    var theme = 'light';
-    localStorage.setItem('theme', theme);
+    var stored = null;
+    try { stored = localStorage.getItem('theme'); } catch (e) {}
+    var theme = (stored === 'dark' || stored === 'light') ? stored : 'light';
     document.documentElement.setAttribute('data-theme', theme);
 
     // Theme-aware color helper for canvas/JS drawing code.

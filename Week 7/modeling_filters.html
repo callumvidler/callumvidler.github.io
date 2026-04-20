@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Modeling Filters</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0a0a10;
+        --bg-2: #12131c;
+        --bg-panel: rgba(22,23,32,0.75);
+        --fg: #eef0f5;
+        --text: #eef0f5;
+        --text-dim: #d4d7e0;
+        --muted: #8b90a3;
+        --real: #58a6ff;
+        --imag: #ff5c7a;
+        --time: #7be089;
+        --accent: #ffcf5c;
+        --grid: rgba(255,255,255,0.06);
+        --border: rgba(255,255,255,0.09);
+        --border-hover: rgba(255,255,255,0.18);
+        --c-lp: #58a6ff;
+        --c-hp: #ff5c7a;
+        --c-bp: #7be089;
+        --c-notch: #ffcf5c;
+        --body-size: 17px;
+        --math-size: 18px;
+        --hero-size: 64px;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: var(--body-size); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+      body { overflow-x: hidden; min-height: 100vh; }
+
+      .katex { font-size: var(--math-size) !important; }
+      .katex-display { margin: 0.6em 0 !important; }
+      .katex-display > .katex { font-size: calc(var(--math-size) * 1.08) !important; }
+
+      a { color: var(--accent); }
+
+      .brand { position: fixed; top: 20px; left: 24px; z-index: 40; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 10px; }
+      .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: conic-gradient(var(--c-lp), var(--c-hp), var(--c-bp), var(--c-notch), var(--c-lp)); }
+
+      .back-btn { position: fixed; top: 18px; right: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(22,23,32,0.6); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; backdrop-filter: blur(8px); transition: all 0.15s; }
+      .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+      section.scene {
+        min-height: 100vh;
+        padding: 100px 56px 80px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: start;
+        position: relative;
+        border-bottom: 1px solid var(--border);
+      }
+      section.scene.full { grid-template-columns: 1fr; max-width: 1180px; margin: 0 auto; }
+      section.scene .copy { max-width: 640px; }
+
+      .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+      .eyebrow .num { color: var(--accent); }
+      .eyebrow .bar { flex: 0 0 28px; height: 1px; background: var(--accent); }
+
+      h1.hero { font-size: var(--hero-size); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; margin: 0 0 24px; }
+      h1.hero em { font-style: normal; background: linear-gradient(135deg, var(--c-lp), var(--c-notch)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      h2 { font-size: 36px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--fg); }
+      h2 em { font-style: normal; }
+      h3 { font-size: 17px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); letter-spacing: -0.01em; }
+      p { margin: 0 0 14px; color: var(--text-dim); }
+      p.lead { font-size: calc(var(--body-size) + 2px); color: var(--fg); }
+      p.dim { color: var(--muted); }
+      strong { color: var(--fg); font-weight: 600; }
+      em.lp { font-style: normal; color: var(--c-lp); }
+      em.hp { font-style: normal; color: var(--c-hp); }
+      em.bp { font-style: normal; color: var(--c-bp); }
+      em.nt { font-style: normal; color: var(--c-notch); }
+      em.acc { font-style: normal; color: var(--accent); }
+
+      .eq-block { display: block; margin: 16px 0; padding: 14px 18px; background: rgba(255,207,92,0.05); border: 1px solid rgba(255,207,92,0.18); border-radius: 10px; text-align: center; color: var(--fg); }
+      .eq-line { display: block; padding: 12px 16px; margin: 12px 0; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; text-align: center; color: var(--fg); }
+
+      .callout { margin-top: 18px; padding: 14px 18px; border-left: 2px solid var(--accent); background: rgba(255,207,92,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: var(--text-dim); line-height: 1.7; }
+      .callout.lp { border-left-color: var(--c-lp); background: rgba(88,166,255,0.06); }
+      .callout.hp { border-left-color: var(--c-hp); background: rgba(255,92,122,0.06); }
+      .callout.bp { border-left-color: var(--c-bp); background: rgba(123,224,137,0.06); }
+      .callout.nt { border-left-color: var(--c-notch); background: rgba(255,207,92,0.06); }
+
+      .controls { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; padding: 14px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; backdrop-filter: blur(8px); }
+      .control-group { display: grid; grid-template-columns: 130px 1fr 110px; align-items: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .control-group label { color: var(--muted); }
+      .control-group .control-value { color: var(--accent); text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .control-group input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; height: auto; }
+      .control-group input[type=range]::-webkit-slider-runnable-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); margin-top: -5.5px; cursor: grab; border: 2px solid var(--bg); }
+      .control-group input[type=range]::-moz-range-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); cursor: grab; }
+
+      .plot-stack { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+      .plot-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .plot-box {
+        position: relative;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-2);
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+      }
+      .plot-box.wide { aspect-ratio: 1.8 / 1; }
+      .plot-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .plot-box .label { position: absolute; top: 10px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .plot-box .label b { font-weight: 600; letter-spacing: 0.06em; color: var(--fg); }
+
+      .circuit-box {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-2);
+        padding: 18px 18px 10px;
+        margin-bottom: 14px;
+      }
+      .circuit-box .label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+      .circuit-box .label b { color: var(--fg); font-weight: 600; letter-spacing: 0.06em; }
+      .circuit-box svg { display: block; width: 100%; height: auto; max-height: 200px; }
+      .circuit-box svg .wire { stroke: var(--fg); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .circuit-box svg .dot  { fill: var(--fg); }
+      .circuit-box svg text  { fill: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .circuit-box svg .lab  { fill: var(--accent); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.05em; }
+
+      @media (max-width: 900px) {
+        section.scene { grid-template-columns: 1fr; padding: 80px 24px 60px; }
+        h1.hero { font-size: 44px; }
+        h2 { font-size: 28px; }
+        .back-btn { top: 14px; right: 16px; }
+        .brand { top: 16px; left: 16px; }
+        .control-group { grid-template-columns: 110px 1fr 80px; }
+      }
+
+      .landing { min-height: 100vh; display: grid; place-items: center; padding: 120px 56px 80px; position: relative; text-align: center; }
+      .landing .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 32px; }
+      .landing h1 { max-width: 22ch; margin-left: auto; margin-right: auto; }
+      .landing .sub { color: var(--muted); font-size: 18px; max-width: 64ch; margin: 20px auto 0; line-height: 1.6; }
+      .landing .tags { margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .field-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; display: inline-block; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+      .scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .scroll-hint .line { width: 1px; height: 32px; background: linear-gradient(var(--muted), transparent); animation: pulse 2s infinite; }
+      @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+      footer { padding: 60px 56px 80px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+</head>
+<body>
+
+<div class="brand"><span class="mark"></span><span>BMEN90033 · Week 7</span></div>
+<a class="back-btn" href="../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
+
+<!-- ================= LANDING ================= -->
+<section class="landing">
+    <div>
+        <div class="meta">BMEN90033 · WEEK 7 · BIOINSTRUMENTATION</div>
+        <h1 class="hero">Modeling <em>filters</em>.</h1>
+        <p class="sub">Four canonical second-order responses built from elementary passive networks. For each topology we derive the transfer function $H(s)$ from Kirchhoff's laws, locate its poles and zeros in the $s$-plane, and examine the resulting steady-state response to a composite sinusoidal input. The same four objects (circuit, transfer function, pole-zero diagram, frequency response) describe the filter from four complementary viewpoints, and the purpose of this page is to make the correspondence between them explicit.</p>
+        <div class="tags">
+            <span class="field-tag">low-pass</span>
+            <span class="field-tag">high-pass</span>
+            <span class="field-tag">band-pass</span>
+            <span class="field-tag">notch</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+</section>
+
+<!-- ================= LOW-PASS ================= -->
+<section class="scene" id="sec-lp">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>low-pass filter</span></div>
+        <h2>The <em class="lp">low-pass</em> RC network.</h2>
+        <p class="lead">Consider a resistor $R$ in series with a capacitor $C$, driven by an input voltage $v_{\text{in}}(t)$, with the output $v_{\text{out}}(t)$ taken across the capacitor. The capacitor presents an impedance $Z_C(s) = 1/(sC)$ in the Laplace domain, and the network forms a voltage divider between $R$ and $Z_C$.</p>
+        <div class="eq-line">$$H(s) = \frac{V_{\text{out}}(s)}{V_{\text{in}}(s)} = \frac{1/(sC)}{R + 1/(sC)} = \frac{1}{1 + sRC}.$$</div>
+        <p>Defining the cutoff frequency $\omega_c = 1/(RC)$ gives the canonical first-order low-pass form</p>
+        <div class="eq-block">$$H(s) = \frac{\omega_c}{s + \omega_c}.$$</div>
+        <p>The transfer function has a single <em class="lp">pole</em> at $s = -\omega_c$ on the negative real axis and no finite zeros. At $\omega = 0$ the capacitor is open-circuit and $H(0) = 1$. At $\omega \to \infty$ the capacitor short-circuits and $|H(j\omega)| \to 0$. The magnitude passes through $1/\sqrt{2}$ (the $-3$ dB point) at $\omega = \omega_c$ and rolls off asymptotically at $20$ dB per decade.</p>
+
+        <h3>Connection between circuit and $H(s)$</h3>
+        <p>The pole location $s = -1/(RC)$ is the reciprocal of the network time constant $\tau = RC$. The same quantity that governs the exponential charging of the capacitor in the time domain determines the corner frequency in the Laplace domain. The choice of component values $R$ and $C$ therefore fixes both the transient duration and the frequency response in one step.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>cutoff $\omega_c$</label><input type="range" id="lp-wc" min="0.2" max="3.0" step="0.01" value="1.0"><span class="control-value" id="lp-wc-val">1.00</span></div>
+        </div>
+        <div class="callout lp">
+            <strong>Applicability.</strong> The RC low-pass is used as an anti-aliasing prefilter prior to analog-to-digital conversion, as a smoothing stage after pulse-width-modulation demodulation, and as the dominant bandwidth-limiting element in instrumentation amplifiers for biopotentials such as the electrocardiogram.
+        </div>
+    </div>
+    <div>
+        <div class="circuit-box">
+            <div class="label">circuit · <b>RC low-pass</b></div>
+            <svg viewBox="0 0 500 220" preserveAspectRatio="xMidYMid meet">
+                <!-- Input voltage source v_i -->
+                <path class="wire" d="M 60 60 L 60 92"/>
+                <path class="wire" d="M 60 128 L 60 180"/>
+                <circle cx="60" cy="110" r="18" class="wire"/>
+                <path class="wire" d="M 50 110 Q 55 103 60 110 T 70 110"/>
+                <text x="60" y="85" text-anchor="middle" class="lab">+</text>
+                <text x="60" y="141" text-anchor="middle" class="lab">−</text>
+                <text x="22" y="114" text-anchor="end">v<tspan dy="4" font-size="9">i</tspan></text>
+                <!-- top rail to resistor -->
+                <path class="wire" d="M 60 60 L 170 60"/>
+                <!-- Resistor (zigzag) -->
+                <path class="wire" d="M 170 60 L 178 52 L 190 68 L 202 52 L 214 68 L 226 52 L 238 68 L 246 60"/>
+                <text x="208" y="42" text-anchor="middle" class="lab">R</text>
+                <!-- wire to V_out+ node -->
+                <path class="wire" d="M 246 60 L 360 60"/>
+                <circle cx="360" cy="60" r="3.5" class="dot"/>
+                <text x="372" y="50">v<tspan dy="4" font-size="9">out+</tspan></text>
+                <!-- Capacitor to bottom rail -->
+                <path class="wire" d="M 360 60 L 360 102"/>
+                <path class="wire" d="M 342 102 L 378 102"/>
+                <path class="wire" d="M 342 114 L 378 114"/>
+                <text x="390" y="112" class="lab">C</text>
+                <path class="wire" d="M 360 114 L 360 180"/>
+                <!-- V_out- node on bottom rail -->
+                <circle cx="360" cy="180" r="3.5" class="dot"/>
+                <text x="372" y="188">v<tspan dy="4" font-size="9">out−</tspan></text>
+                <!-- bottom rail return -->
+                <path class="wire" d="M 60 180 L 360 180"/>
+            </svg>
+        </div>
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>pole–zero</b></div><canvas data-plot="pz" data-filter="lp"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>|H(jω)| in dB</b></div><canvas data-plot="bode" data-filter="lp"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">time-domain · <b>input</b> <span style="color:var(--muted)">(dim)</span> vs <b style="color:var(--c-lp)">output</b></div><canvas data-plot="time" data-filter="lp"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= HIGH-PASS ================= -->
+<section class="scene" id="sec-hp">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>high-pass filter</span></div>
+        <h2>The <em class="hp">high-pass</em> RC network.</h2>
+        <p class="lead">Interchanging the positions of the resistor and capacitor produces the dual topology: the capacitor $C$ is placed in series with the input, and the output is taken across the resistor $R$ to ground. The voltage divider now contains $Z_C(s) = 1/(sC)$ in the upper arm and $R$ in the lower arm.</p>
+        <div class="eq-line">$$H(s) = \frac{R}{R + 1/(sC)} = \frac{sRC}{1 + sRC}.$$</div>
+        <p>With $\omega_c = 1/(RC)$ this reduces to</p>
+        <div class="eq-block">$$H(s) = \frac{s}{s + \omega_c}.$$</div>
+        <p>The denominator is identical to the low-pass case, so the filter shares the same pole at $s = -\omega_c$. The numerator, however, introduces a <em class="hp">zero at the origin</em>. At $\omega = 0$ the capacitor blocks the direct-current component and $|H(0)| = 0$. At $\omega \to \infty$ the capacitor acts as a short and $|H(j\omega)| \to 1$. The magnitude reaches $1/\sqrt{2}$ at $\omega = \omega_c$ and approaches the asymptotic pass gain at $+20$ dB per decade.</p>
+
+        <h3>Connection between circuit and $H(s)$</h3>
+        <p>The zero at the origin is a direct algebraic consequence of the series capacitor: evaluating $H(s)$ at $s = 0$ corresponds to the steady direct-current case, for which the capacitor carries no current and the output voltage across $R$ must vanish. The pole location is unchanged because the impedance sum $R + 1/(sC)$ forms the denominator of both topologies.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>cutoff $\omega_c$</label><input type="range" id="hp-wc" min="0.2" max="3.0" step="0.01" value="1.0"><span class="control-value" id="hp-wc-val">1.00</span></div>
+        </div>
+        <div class="callout hp">
+            <strong>Applicability.</strong> The RC high-pass removes the slowly-varying baseline component from biopotential recordings: electrode half-cell potentials, respiration-induced drift, and low-frequency motion artefact all lie below the diagnostic band and are attenuated by placement of $\omega_c$ below the signal bandwidth.
+        </div>
+    </div>
+    <div>
+        <div class="circuit-box">
+            <div class="label">circuit · <b>RC high-pass</b></div>
+            <svg viewBox="0 0 500 220" preserveAspectRatio="xMidYMid meet">
+                <!-- Input voltage source v_i -->
+                <path class="wire" d="M 60 60 L 60 92"/>
+                <path class="wire" d="M 60 128 L 60 180"/>
+                <circle cx="60" cy="110" r="18" class="wire"/>
+                <path class="wire" d="M 50 110 Q 55 103 60 110 T 70 110"/>
+                <text x="60" y="85" text-anchor="middle" class="lab">+</text>
+                <text x="60" y="141" text-anchor="middle" class="lab">−</text>
+                <text x="22" y="114" text-anchor="end">v<tspan dy="4" font-size="9">i</tspan></text>
+                <!-- top rail to capacitor -->
+                <path class="wire" d="M 60 60 L 190 60"/>
+                <!-- Capacitor -->
+                <path class="wire" d="M 190 46 L 190 74"/>
+                <path class="wire" d="M 202 46 L 202 74"/>
+                <text x="196" y="38" text-anchor="middle" class="lab">C</text>
+                <!-- wire to V_out+ node -->
+                <path class="wire" d="M 202 60 L 360 60"/>
+                <circle cx="360" cy="60" r="3.5" class="dot"/>
+                <text x="372" y="50">v<tspan dy="4" font-size="9">out+</tspan></text>
+                <!-- Resistor from V_out+ to bottom rail -->
+                <path class="wire" d="M 360 60 L 360 78"/>
+                <path class="wire" d="M 360 78 L 352 86 L 368 96 L 352 106 L 368 116 L 352 126 L 368 136 L 360 144"/>
+                <text x="382" y="116" class="lab">R</text>
+                <path class="wire" d="M 360 144 L 360 180"/>
+                <!-- V_out- node on bottom rail -->
+                <circle cx="360" cy="180" r="3.5" class="dot"/>
+                <text x="372" y="188">v<tspan dy="4" font-size="9">out−</tspan></text>
+                <!-- bottom rail return -->
+                <path class="wire" d="M 60 180 L 360 180"/>
+            </svg>
+        </div>
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>pole–zero</b></div><canvas data-plot="pz" data-filter="hp"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>|H(jω)| in dB</b></div><canvas data-plot="bode" data-filter="hp"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">time-domain · <b>input</b> <span style="color:var(--muted)">(dim)</span> vs <b style="color:var(--c-hp)">output</b></div><canvas data-plot="time" data-filter="hp"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= BAND-PASS ================= -->
+<section class="scene" id="sec-bp">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>band-pass filter</span></div>
+        <h2>The <em class="bp">band-pass</em> series RLC.</h2>
+        <p class="lead">Adding an inductor to the high-pass network produces a series RLC circuit: $L$, $C$, and $R$ in series between the input terminal and ground, with the output taken across the resistor. The total impedance seen by the source is $Z(s) = sL + 1/(sC) + R$, and the transfer function is the fraction of this impedance contributed by $R$.</p>
+        <div class="eq-line">$$H(s) = \frac{R}{sL + 1/(sC) + R} = \frac{s R/L}{s^2 + s R/L + 1/(LC)}.$$</div>
+        <p>Introducing the resonant frequency $\omega_0 = 1/\sqrt{LC}$ and the quality factor $Q = \omega_0 L / R$ yields the second-order standard form</p>
+        <div class="eq-block">$$H(s) = \frac{(\omega_0/Q)\,s}{s^2 + (\omega_0/Q)\,s + \omega_0^2}.$$</div>
+        <p>The transfer function possesses a <em class="bp">zero at the origin</em> and a conjugate pair of <em class="bp">poles</em> at $s = -\omega_0/(2Q) \pm j\omega_0\sqrt{1 - 1/(4Q^2)}$. The magnitude is zero at both direct-current and infinite frequency, and reaches its maximum value of unity at $\omega = \omega_0$, where the inductive and capacitive reactances cancel and the impedance reduces to $R$ alone. The $-3$ dB bandwidth is $B = \omega_0 / Q$, and increasing $Q$ narrows the passband while leaving the centre frequency unchanged.</p>
+
+        <h3>Connection between circuit and $H(s)$</h3>
+        <p>The quadratic denominator arises because the circuit contains two independent energy-storage elements, $L$ and $C$. The resonance condition $\omega_0 = 1/\sqrt{LC}$ is the frequency at which the stored magnetic and electric energies exchange coherently; the damping $\omega_0/Q = R/L$ is set by the resistive loss that removes energy from this exchange. The zero at the origin again reflects the fact that the series capacitor blocks any steady component of the input.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>quality $Q$</label><input type="range" id="bp-q" min="0.5" max="12" step="0.01" value="3.0"><span class="control-value" id="bp-q-val">3.00</span></div>
+        </div>
+        <div class="callout bp">
+            <strong>Applicability.</strong> Band-pass filtering is used to isolate a frequency band of interest in the presence of both low-frequency drift and high-frequency noise. Typical bioinstrumentation examples include the $0.5$–$150$ Hz diagnostic band of the electrocardiogram, the alpha-rhythm band of the electroencephalogram, and the pulsatile component of the photoplethysmogram.
+        </div>
+    </div>
+    <div>
+        <div class="circuit-box">
+            <div class="label">circuit · <b>series RLC, output across R</b></div>
+            <svg viewBox="0 0 580 220" preserveAspectRatio="xMidYMid meet">
+                <!-- Input voltage source v_i -->
+                <path class="wire" d="M 60 60 L 60 92"/>
+                <path class="wire" d="M 60 128 L 60 180"/>
+                <circle cx="60" cy="110" r="18" class="wire"/>
+                <path class="wire" d="M 50 110 Q 55 103 60 110 T 70 110"/>
+                <text x="60" y="85" text-anchor="middle" class="lab">+</text>
+                <text x="60" y="141" text-anchor="middle" class="lab">−</text>
+                <text x="22" y="114" text-anchor="end">v<tspan dy="4" font-size="9">i</tspan></text>
+                <!-- top rail to inductor -->
+                <path class="wire" d="M 60 60 L 140 60"/>
+                <!-- Inductor (arcs) -->
+                <path class="wire" d="M 140 60 A 10 10 0 0 1 160 60 A 10 10 0 0 1 180 60 A 10 10 0 0 1 200 60 A 10 10 0 0 1 220 60"/>
+                <text x="180" y="42" text-anchor="middle" class="lab">L</text>
+                <path class="wire" d="M 220 60 L 290 60"/>
+                <!-- Capacitor -->
+                <path class="wire" d="M 290 46 L 290 74"/>
+                <path class="wire" d="M 302 46 L 302 74"/>
+                <text x="296" y="38" text-anchor="middle" class="lab">C</text>
+                <!-- wire to V_out+ node -->
+                <path class="wire" d="M 302 60 L 430 60"/>
+                <circle cx="430" cy="60" r="3.5" class="dot"/>
+                <text x="442" y="50">v<tspan dy="4" font-size="9">out+</tspan></text>
+                <!-- Resistor to bottom rail -->
+                <path class="wire" d="M 430 60 L 430 78"/>
+                <path class="wire" d="M 430 78 L 422 86 L 438 96 L 422 106 L 438 116 L 422 126 L 438 136 L 430 144"/>
+                <text x="452" y="116" class="lab">R</text>
+                <path class="wire" d="M 430 144 L 430 180"/>
+                <!-- V_out- on bottom rail -->
+                <circle cx="430" cy="180" r="3.5" class="dot"/>
+                <text x="442" y="188">v<tspan dy="4" font-size="9">out−</tspan></text>
+                <!-- bottom rail return -->
+                <path class="wire" d="M 60 180 L 430 180"/>
+            </svg>
+        </div>
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>pole–zero</b></div><canvas data-plot="pz" data-filter="bp"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>|H(jω)| in dB</b></div><canvas data-plot="bode" data-filter="bp"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">time-domain · <b>input</b> <span style="color:var(--muted)">(dim)</span> vs <b style="color:var(--c-bp)">output</b></div><canvas data-plot="time" data-filter="bp"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= NOTCH ================= -->
+<section class="scene" id="sec-nt">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>notch filter</span></div>
+        <h2>The <em class="nt">notch</em> (band-stop) RLC.</h2>
+        <p class="lead">Retaining the series RLC topology but relocating the output terminals so that $v_{\text{out}}$ is taken across the <em>LC branch</em> rather than across $R$ produces the complement of the band-pass filter. The output impedance is now $sL + 1/(sC)$, and</p>
+        <div class="eq-line">$$H(s) = \frac{sL + 1/(sC)}{sL + 1/(sC) + R} = \frac{s^2 + 1/(LC)}{s^2 + s R/L + 1/(LC)}.$$</div>
+        <p>With the same definitions $\omega_0 = 1/\sqrt{LC}$ and $Q = \omega_0 L / R$ this becomes</p>
+        <div class="eq-block">$$H(s) = \frac{s^2 + \omega_0^2}{s^2 + (\omega_0/Q)\,s + \omega_0^2}.$$</div>
+        <p>The denominator is identical to that of the band-pass filter, so the pole pair is unchanged. The numerator, however, now carries a pair of <em class="nt">conjugate zeros at $s = \pm j\omega_0$</em>, located exactly on the imaginary axis. At $\omega = \omega_0$ the factor $(j\omega_0)^2 + \omega_0^2 = 0$ and the response vanishes identically, producing an ideal transmission null. Away from the notch, $|H(j\omega)| \to 1$ at both low and high frequency.</p>
+
+        <h3>Connection between circuit and $H(s)$</h3>
+        <p>The zero on the imaginary axis corresponds to the series resonance of $L$ and $C$: at $\omega_0 = 1/\sqrt{LC}$ the inductive and capacitive reactances are equal in magnitude and opposite in sign, the combined impedance $j\omega L + 1/(j\omega C)$ is zero, and no voltage appears across the LC branch regardless of the current delivered by the source. The width of the null in the frequency domain is again governed by $Q$: small $R$ (large $Q$) produces a sharp, narrow notch; large $R$ (small $Q$) produces a broad, shallow attenuation.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>quality $Q$</label><input type="range" id="nt-q" min="0.5" max="12" step="0.01" value="3.0"><span class="control-value" id="nt-q-val">3.00</span></div>
+        </div>
+        <div class="callout nt">
+            <strong>Applicability.</strong> The notch filter is used to reject a single, narrow-band interferer of known frequency while passing the surrounding spectrum with minimal attenuation. The canonical application in bioinstrumentation is the removal of $50$ Hz or $60$ Hz mains contamination from electrocardiographic, electroencephalographic, and electromyographic recordings.
+        </div>
+    </div>
+    <div>
+        <div class="circuit-box">
+            <div class="label">circuit · <b>series RLC, output across L and C</b></div>
+            <svg viewBox="0 0 580 220" preserveAspectRatio="xMidYMid meet">
+                <!-- Input voltage source v_i -->
+                <path class="wire" d="M 60 60 L 60 92"/>
+                <path class="wire" d="M 60 128 L 60 180"/>
+                <circle cx="60" cy="110" r="18" class="wire"/>
+                <path class="wire" d="M 50 110 Q 55 103 60 110 T 70 110"/>
+                <text x="60" y="85" text-anchor="middle" class="lab">+</text>
+                <text x="60" y="141" text-anchor="middle" class="lab">−</text>
+                <text x="22" y="114" text-anchor="end">v<tspan dy="4" font-size="9">i</tspan></text>
+                <!-- top rail to V_out+ node -->
+                <path class="wire" d="M 60 60 L 120 60"/>
+                <circle cx="120" cy="60" r="3.5" class="dot"/>
+                <text x="112" y="50" text-anchor="end">v<tspan dy="4" font-size="9">out+</tspan></text>
+                <!-- wire to inductor -->
+                <path class="wire" d="M 120 60 L 160 60"/>
+                <!-- Inductor (arcs) -->
+                <path class="wire" d="M 160 60 A 10 10 0 0 1 180 60 A 10 10 0 0 1 200 60 A 10 10 0 0 1 220 60 A 10 10 0 0 1 240 60"/>
+                <text x="200" y="42" text-anchor="middle" class="lab">L</text>
+                <path class="wire" d="M 240 60 L 300 60"/>
+                <!-- Capacitor -->
+                <path class="wire" d="M 300 46 L 300 74"/>
+                <path class="wire" d="M 312 46 L 312 74"/>
+                <text x="306" y="38" text-anchor="middle" class="lab">C</text>
+                <!-- wire to V_out- node -->
+                <path class="wire" d="M 312 60 L 380 60"/>
+                <circle cx="380" cy="60" r="3.5" class="dot"/>
+                <text x="392" y="50">v<tspan dy="4" font-size="9">out−</tspan></text>
+                <!-- wire to R -->
+                <path class="wire" d="M 380 60 L 430 60"/>
+                <!-- Resistor to bottom rail -->
+                <path class="wire" d="M 430 60 L 430 78"/>
+                <path class="wire" d="M 430 78 L 422 86 L 438 96 L 422 106 L 438 116 L 422 126 L 438 136 L 430 144"/>
+                <text x="452" y="116" class="lab">R</text>
+                <path class="wire" d="M 430 144 L 430 180"/>
+                <!-- bottom rail return -->
+                <path class="wire" d="M 60 180 L 430 180"/>
+            </svg>
+        </div>
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>pole–zero</b></div><canvas data-plot="pz" data-filter="nt"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>|H(jω)| in dB</b></div><canvas data-plot="bode" data-filter="nt"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">time-domain · <b>input</b> <span style="color:var(--muted)">(dim)</span> vs <b style="color:var(--c-notch)">output</b></div><canvas data-plot="time" data-filter="nt"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SUMMARY ================= -->
+<section class="scene full" id="sec-sum">
+    <div class="copy" style="max-width:900px; margin: 0 auto;">
+        <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>summary</span></div>
+        <h2>Four responses, four singularity patterns.</h2>
+        <p class="lead">Each of the four filters considered above is fully specified by the positions of its poles and zeros in the complex plane. The transfer function is the rational function whose numerator vanishes at the zeros and whose denominator vanishes at the poles; the frequency response is obtained by restricting this function to the imaginary axis. The summary below collects the defining structure of each filter.</p>
+        <div class="eq-line" style="text-align:left; padding-left: 24px;">
+            $H_{\text{LP}}(s) = \dfrac{\omega_c}{s + \omega_c}$ &nbsp;·&nbsp; one real pole, no finite zero.<br><br>
+            $H_{\text{HP}}(s) = \dfrac{s}{s + \omega_c}$ &nbsp;·&nbsp; one real pole, one zero at the origin.<br><br>
+            $H_{\text{BP}}(s) = \dfrac{(\omega_0/Q)\,s}{s^2 + (\omega_0/Q)\,s + \omega_0^2}$ &nbsp;·&nbsp; conjugate pole pair, one zero at the origin.<br><br>
+            $H_{\text{NT}}(s) = \dfrac{s^2 + \omega_0^2}{s^2 + (\omega_0/Q)\,s + \omega_0^2}$ &nbsp;·&nbsp; conjugate pole pair, conjugate zeros on the $j\omega$ axis.
+        </div>
+        <p>The second-order pair (band-pass and notch) share the same denominator because they arise from the same physical network; the distinction between them lies entirely in the location at which the output is measured, which selects a different numerator polynomial. This observation generalises: for a passive network with fixed topology, relocating the output port changes only the zeros of the transfer function, leaving the poles invariant. The pole pattern is therefore a property of the network; the zero pattern is a property of the measurement.</p>
+    </div>
+</section>
+
+<footer>
+    <p>Drawn with KaTeX and the HTML canvas element. Responses above are computed directly from pole and zero locations.</p>
+</footer>
+
+<script src="../theme.js"></script>
+<script>
+/* ============================================================
+   MODELING FILTERS — plotting code
+   ============================================================ */
+
+const Cx = {
+    add: (a,b) => ({re: a.re+b.re, im: a.im+b.im}),
+    sub: (a,b) => ({re: a.re-b.re, im: a.im-b.im}),
+    mul: (a,b) => ({re: a.re*b.re - a.im*b.im, im: a.re*b.im + a.im*b.re}),
+    div: (a,b) => {
+        const d = b.re*b.re + b.im*b.im;
+        return {re: (a.re*b.re+a.im*b.im)/d, im: (a.im*b.re-a.re*b.im)/d};
+    },
+    abs: a => Math.sqrt(a.re*a.re + a.im*a.im),
+    arg: a => Math.atan2(a.im, a.re),
+};
+
+/* Evaluate H(s) = k * prod(s - z_i) / prod(s - p_j) */
+function evalH(filt, s) {
+    let num = {re: 1, im: 0};
+    for (const z of filt.zeros) num = Cx.mul(num, Cx.sub(s, z));
+    let den = {re: 1, im: 0};
+    for (const p of filt.poles) den = Cx.mul(den, Cx.sub(s, p));
+    const H = Cx.div(num, den);
+    return {re: H.re * filt.gain, im: H.im * filt.gain};
+}
+function evalJw(filt, w) { return evalH(filt, {re: 0, im: w}); }
+
+/* ============================================================
+   FILTER DESIGNS (ω0 or ωc = 1 baseline)
+   ============================================================ */
+const STATE = {
+    lp: { wc: 1.0 },
+    hp: { wc: 1.0 },
+    bp: { w0: 1.0, Q: 3.0 },
+    nt: { w0: 1.0, Q: 3.0 },
+};
+
+function design(key) {
+    if (key === 'lp') {
+        const w = STATE.lp.wc;
+        return { poles: [{re: -w, im: 0}], zeros: [], gain: w, name: 'low-pass' };
+    }
+    if (key === 'hp') {
+        const w = STATE.hp.wc;
+        return { poles: [{re: -w, im: 0}], zeros: [{re: 0, im: 0}], gain: 1, name: 'high-pass' };
+    }
+    if (key === 'bp') {
+        const { w0, Q } = STATE.bp;
+        const a = w0/(2*Q);
+        const b = w0 * Math.sqrt(Math.max(0, 1 - 1/(4*Q*Q)));
+        // If Q < 0.5 poles are real — handle via the general quadratic
+        let poles;
+        if (1 - 1/(4*Q*Q) >= 0) {
+            poles = [{re: -a, im: b}, {re: -a, im: -b}];
+        } else {
+            const r = Math.sqrt(1/(4*Q*Q) - 1) * w0;
+            poles = [{re: -a + r, im: 0}, {re: -a - r, im: 0}];
+        }
+        return { poles, zeros: [{re: 0, im: 0}], gain: w0/Q, name: 'band-pass' };
+    }
+    if (key === 'nt') {
+        const { w0, Q } = STATE.nt;
+        const a = w0/(2*Q);
+        const b = w0 * Math.sqrt(Math.max(0, 1 - 1/(4*Q*Q)));
+        let poles;
+        if (1 - 1/(4*Q*Q) >= 0) {
+            poles = [{re: -a, im: b}, {re: -a, im: -b}];
+        } else {
+            const r = Math.sqrt(1/(4*Q*Q) - 1) * w0;
+            poles = [{re: -a + r, im: 0}, {re: -a - r, im: 0}];
+        }
+        return { poles, zeros: [{re: 0, im: w0}, {re: 0, im: -w0}], gain: 1, name: 'notch' };
+    }
+}
+
+const COLOR = {
+    lp:    getComputedStyle(document.documentElement).getPropertyValue('--c-lp').trim()   || '#58a6ff',
+    hp:    getComputedStyle(document.documentElement).getPropertyValue('--c-hp').trim()   || '#ff5c7a',
+    bp:    getComputedStyle(document.documentElement).getPropertyValue('--c-bp').trim()   || '#7be089',
+    nt:    getComputedStyle(document.documentElement).getPropertyValue('--c-notch').trim()|| '#ffcf5c',
+};
+
+/* ============================================================
+   CANVAS HELPERS
+   ============================================================ */
+function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, rect.width * dpr);
+    canvas.height = Math.max(1, rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, W: rect.width, H: rect.height };
+}
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ============================================================
+   POLE-ZERO PLOT
+   ============================================================ */
+function drawPZ(canvas, key) {
+    const { ctx, W, H } = setupCanvas(canvas);
+    const filt = design(key);
+    const color = COLOR[key];
+    const muted = cssVar('--muted') || '#8b90a3';
+    const grid  = cssVar('--grid')  || 'rgba(255,255,255,0.06)';
+
+    ctx.clearRect(0,0,W,H);
+    const padL=40, padR=16, padT=32, padB=32;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const cx = padL + plotW/2, cy = padT + plotH/2;
+
+    let ext = 1.6;
+    for (const p of filt.poles) ext = Math.max(ext, Math.abs(p.re)+0.4, Math.abs(p.im)+0.4);
+    for (const z of filt.zeros) ext = Math.max(ext, Math.abs(z.re)+0.4, Math.abs(z.im)+0.4);
+    const scale = Math.min(plotW, plotH) / (2*ext);
+    const xMap = re => cx + re*scale;
+    const yMap = im => cy - im*scale;
+
+    // grid
+    ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    for (let v=-Math.ceil(ext); v<=Math.ceil(ext); v+=0.5) {
+        if (Math.abs(v) < 1e-6) continue;
+        ctx.beginPath(); ctx.moveTo(xMap(v), padT); ctx.lineTo(xMap(v), padT+plotH); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(padL, yMap(v)); ctx.lineTo(padL+plotW, yMap(v)); ctx.stroke();
+    }
+
+    // LHP shading
+    ctx.fillStyle = 'rgba(88,166,255,0.04)';
+    ctx.fillRect(padL, padT, (cx-padL), plotH);
+
+    // axes
+    ctx.strokeStyle = muted; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(padL, cy); ctx.lineTo(padL+plotW, cy);
+    ctx.moveTo(cx, padT); ctx.lineTo(cx, padT+plotH); ctx.stroke();
+
+    // axis labels
+    ctx.fillStyle = muted; ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText('σ', padL+plotW-4, cy-10);
+    ctx.textAlign='left';
+    ctx.fillText('jω', cx+6, padT+10);
+
+    // unit circle
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.setLineDash([3,4]);
+    ctx.beginPath(); ctx.arc(cx, cy, scale, 0, Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // poles (×)
+    ctx.strokeStyle = color; ctx.lineWidth = 2.2;
+    for (const p of filt.poles) {
+        const x = xMap(p.re), y = yMap(p.im), r = 7;
+        ctx.beginPath();
+        ctx.moveTo(x-r, y-r); ctx.lineTo(x+r, y+r);
+        ctx.moveTo(x-r, y+r); ctx.lineTo(x+r, y-r);
+        ctx.stroke();
+    }
+    // zeros (○)
+    for (const z of filt.zeros) {
+        const x = xMap(z.re), y = yMap(z.im);
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.stroke();
+    }
+
+    // count
+    ctx.fillStyle = muted; ctx.textAlign='left';
+    ctx.fillText(`${filt.poles.length} pole${filt.poles.length!==1?'s':''} · ${filt.zeros.length} zero${filt.zeros.length!==1?'s':''}`, padL, padT+plotH+20);
+}
+
+/* ============================================================
+   BODE MAGNITUDE PLOT (log ω, dB)
+   ============================================================ */
+function drawBode(canvas, key) {
+    const { ctx, W, H } = setupCanvas(canvas);
+    const filt = design(key);
+    const color = COLOR[key];
+    const muted = cssVar('--muted') || '#8b90a3';
+    const grid  = cssVar('--grid')  || 'rgba(255,255,255,0.06)';
+    const dim   = cssVar('--text-dim') || '#d4d7e0';
+
+    ctx.clearRect(0,0,W,H);
+    const padL=48, padR=16, padT=32, padB=36;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const wMinLog = -2, wMaxLog = 2;   // decades, normalised
+    const dbMin = -60, dbMax = 10;
+
+    const xMap = lw => padL + (lw - wMinLog)/(wMaxLog - wMinLog) * plotW;
+    const yMap = db => padT + (dbMax - db)/(dbMax - dbMin) * plotH;
+
+    // grid — decades
+    ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    for (let d=wMinLog; d<=wMaxLog; d++) {
+        const x = xMap(d);
+        ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT+plotH); ctx.stroke();
+        for (let k=2; k<=9; k++) {
+            const lw = d + Math.log10(k);
+            if (lw > wMaxLog) break;
+            const xk = xMap(lw);
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.beginPath(); ctx.moveTo(xk, padT); ctx.lineTo(xk, padT+plotH); ctx.stroke();
+            ctx.strokeStyle = grid;
+        }
+    }
+    for (let db=dbMin; db<=dbMax; db+=10) {
+        const y = yMap(db);
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+plotW, y); ctx.stroke();
+    }
+
+    // axes
+    ctx.strokeStyle = muted; ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+plotH);
+    ctx.lineTo(padL+plotW, padT+plotH);
+    ctx.stroke();
+
+    // axis labels
+    ctx.fillStyle = muted; ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    for (let d=wMinLog; d<=wMaxLog; d++) {
+        ctx.fillText(`10${supExp(d)}`, xMap(d), padT+plotH+6);
+    }
+    ctx.textAlign='right'; ctx.textBaseline='middle';
+    for (let db=dbMin; db<=dbMax; db+=10) {
+        ctx.fillText(`${db}`, padL-6, yMap(db));
+    }
+    ctx.save();
+    ctx.fillStyle = muted;
+    ctx.translate(14, padT+plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center';
+    ctx.fillText('|H| [dB]', 0, 0);
+    ctx.restore();
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillText('ω  [log scale]', padL + plotW/2, padT+plotH+24);
+
+    // reference: unit gain line
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.setLineDash([3,4]);
+    ctx.beginPath(); ctx.moveTo(padL, yMap(0)); ctx.lineTo(padL+plotW, yMap(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // the curve
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath();
+    const N = 400;
+    for (let i=0; i<=N; i++) {
+        const lw = wMinLog + (wMaxLog - wMinLog) * i/N;
+        const w  = Math.pow(10, lw);
+        const H = evalJw(filt, w);
+        const mag = Cx.abs(H);
+        let db = 20*Math.log10(Math.max(mag, 1e-9));
+        db = Math.max(dbMin-30, Math.min(dbMax+30, db));
+        const x = xMap(lw), y = yMap(db);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // ω0 / ωc marker at the current design frequency
+    const wMark = (key==='bp' || key==='nt') ? STATE[key].w0 : STATE[key].wc;
+    const lwMark = Math.log10(wMark);
+    if (lwMark >= wMinLog && lwMark <= wMaxLog) {
+        ctx.strokeStyle = 'rgba(255,207,92,0.5)';
+        ctx.setLineDash([2,3]);
+        ctx.beginPath();
+        ctx.moveTo(xMap(lwMark), padT);
+        ctx.lineTo(xMap(lwMark), padT+plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(255,207,92,0.9)';
+        ctx.font = "500 10px 'JetBrains Mono', monospace";
+        ctx.textAlign='left'; ctx.textBaseline='top';
+        ctx.fillText((key==='bp'||key==='nt') ? 'ω₀' : 'ωc', xMap(lwMark)+4, padT+4);
+    }
+}
+
+function supExp(d) {
+    const sign = d < 0 ? '⁻' : '';
+    const abs = Math.abs(d).toString();
+    const map = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵'};
+    let s = '';
+    for (const ch of abs) s += map[ch] || ch;
+    return sign + s;
+}
+
+/* ============================================================
+   TIME-DOMAIN STEADY-STATE RESPONSE
+   ============================================================ */
+function componentsFor(key) {
+    // Frequencies scale with the current cutoff / resonance.
+    const wRef = (key==='bp' || key==='nt') ? STATE[key].w0 : STATE[key].wc;
+    if (key === 'lp' || key === 'hp')
+        return [{w: 0.3*wRef, a: 1.0}, {w: 3.0*wRef, a: 0.6}];
+    if (key === 'bp' || key === 'nt')
+        return [{w: 0.2*wRef, a: 0.7}, {w: 1.0*wRef, a: 0.9}, {w: 4.0*wRef, a: 0.5}];
+    return [];
+}
+
+function drawTime(canvas, key) {
+    const { ctx, W, H } = setupCanvas(canvas);
+    const filt = design(key);
+    const color = COLOR[key];
+    const muted = cssVar('--muted') || '#8b90a3';
+    const grid  = cssVar('--grid')  || 'rgba(255,255,255,0.06)';
+
+    ctx.clearRect(0,0,W,H);
+    const padL=40, padR=16, padT=30, padB=28;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const comps = componentsFor(key);
+    // Compute per-component output magnitude/phase
+    const out = comps.map(c => {
+        const Hv = evalJw(filt, c.w);
+        return { w: c.w, a: c.a, mag: Cx.abs(Hv), ph: Cx.arg(Hv) };
+    });
+
+    // Time axis covers enough to show the slowest component.
+    // Let tMax = 4 * 2π / min(ω).
+    const wMin = Math.min(...comps.map(c=>c.w));
+    const tMax = 4 * 2*Math.PI / wMin;
+
+    // Find amplitude extents
+    let inMax = 0, outMax = 0;
+    const nS = 600;
+    const tArr = new Float64Array(nS+1);
+    const xIn  = new Float64Array(nS+1);
+    const xOut = new Float64Array(nS+1);
+    for (let i=0; i<=nS; i++) {
+        const t = tMax * i/nS;
+        tArr[i] = t;
+        let si = 0, so = 0;
+        for (let k=0; k<comps.length; k++) {
+            si += comps[k].a * Math.sin(comps[k].w * t);
+            so += comps[k].a * out[k].mag * Math.sin(comps[k].w * t + out[k].ph);
+        }
+        xIn[i] = si; xOut[i] = so;
+        if (Math.abs(si) > inMax) inMax = Math.abs(si);
+        if (Math.abs(so) > outMax) outMax = Math.abs(so);
+    }
+    const yExt = Math.max(inMax, outMax, 0.1) * 1.1;
+
+    // grid
+    ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    for (let i=0; i<=4; i++) {
+        const y = padT + plotH*i/4;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL+plotW, y); ctx.stroke();
+    }
+    for (let i=0; i<=8; i++) {
+        const x = padL + plotW*i/8;
+        ctx.beginPath(); ctx.moveTo(x, padT); ctx.lineTo(x, padT+plotH); ctx.stroke();
+    }
+
+    // axes
+    ctx.strokeStyle = muted; ctx.lineWidth = 1.2;
+    const y0 = padT + plotH/2;
+    ctx.beginPath();
+    ctx.moveTo(padL, padT); ctx.lineTo(padL, padT+plotH);
+    ctx.moveTo(padL, y0);   ctx.lineTo(padL+plotW, y0);
+    ctx.stroke();
+
+    ctx.fillStyle = muted; ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    ctx.fillText('amplitude', padL+4, padT+2);
+    ctx.textAlign='right'; ctx.textBaseline='bottom';
+    ctx.fillText('time t', padL+plotW-4, padT+plotH-2);
+
+    const xMap = t => padL + t/tMax * plotW;
+    const yMap = y => y0 - y/yExt * (plotH/2);
+
+    // input trace (dim)
+    ctx.strokeStyle = 'rgba(255,255,255,0.30)'; ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    for (let i=0; i<=nS; i++) {
+        const x = xMap(tArr[i]); const y = yMap(xIn[i]);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // output trace (filter colour)
+    ctx.strokeStyle = color; ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i=0; i<=nS; i++) {
+        const x = xMap(tArr[i]); const y = yMap(xOut[i]);
+        if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+
+    // legend of components
+    ctx.fillStyle = muted; ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign='left'; ctx.textBaseline='top';
+    const parts = comps.map(c => `${c.a.toFixed(1)}·sin(${c.w.toFixed(1)}t)`);
+    ctx.fillText('x(t) = ' + parts.join(' + '), padL+4, padT+plotH-14);
+}
+
+/* ============================================================
+   RENDER ALL, WIRE UP CONTROLS
+   ============================================================ */
+function renderFilter(key) {
+    for (const c of document.querySelectorAll(`canvas[data-filter="${key}"]`)) {
+        const kind = c.dataset.plot;
+        if (kind === 'pz')   drawPZ(c, key);
+        else if (kind === 'bode') drawBode(c, key);
+        else if (kind === 'time') drawTime(c, key);
+    }
+}
+function renderAll() { ['lp','hp','bp','nt'].forEach(renderFilter); }
+
+function bind(inputId, valueId, cb, fmt) {
+    const input = document.getElementById(inputId);
+    const lab = document.getElementById(valueId);
+    if (!input || !lab) return;
+    const upd = () => {
+        const v = parseFloat(input.value);
+        lab.textContent = fmt ? fmt(v) : v.toFixed(2);
+        cb(v);
+    };
+    input.addEventListener('input', upd);
+    upd();
+}
+
+bind('lp-wc', 'lp-wc-val', v => { STATE.lp.wc = v; renderFilter('lp'); });
+bind('hp-wc', 'hp-wc-val', v => { STATE.hp.wc = v; renderFilter('hp'); });
+bind('bp-q',  'bp-q-val',  v => { STATE.bp.Q  = v; renderFilter('bp'); });
+bind('nt-q',  'nt-q-val',  v => { STATE.nt.Q  = v; renderFilter('nt'); });
+
+window.addEventListener('resize', () => { requestAnimationFrame(renderAll); });
+window.addEventListener('themechange', () => { renderAll(); });
+window.addEventListener('load', renderAll);
+renderAll();
+</script>
+</body>
+</html>

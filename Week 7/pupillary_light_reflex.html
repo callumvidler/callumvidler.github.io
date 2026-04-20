@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: The Pupillary Light Reflex</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0a0a10;
+        --bg-2: #12131c;
+        --bg-panel: rgba(22,23,32,0.75);
+        --fg: #eef0f5;
+        --text: #eef0f5;
+        --text-dim: #d4d7e0;
+        --text-muted: #8b90a3;
+        --muted: #8b90a3;
+        --real: #58a6ff;
+        --imag: #ff5c7a;
+        --time: #7be089;
+        --accent: #ffcf5c;
+        --blue: #58a6ff;
+        --red: #ff5c7a;
+        --green: #7be089;
+        --yellow: #ffcf5c;
+        --grid: rgba(255,255,255,0.06);
+        --border: rgba(255,255,255,0.09);
+        --border-hover: rgba(255,255,255,0.18);
+        --body-size: 17px;
+        --math-size: 18px;
+        --hero-size: 64px;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: var(--body-size); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+      body { overflow-x: hidden; min-height: 100vh; }
+
+      .katex { font-size: var(--math-size) !important; }
+      .katex-display { margin: 0.6em 0 !important; }
+      .katex-display > .katex { font-size: calc(var(--math-size) * 1.1) !important; }
+
+      a { color: var(--accent); }
+
+      .rail { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 60; pointer-events: none; }
+      .rail-fill { height: 100%; background: linear-gradient(90deg, var(--real), var(--accent)); width: 0%; transition: width 0.15s; }
+
+      .brand { position: fixed; top: 20px; left: 24px; z-index: 40; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 10px; }
+      .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: conic-gradient(var(--real), var(--imag), var(--time), var(--real)); }
+
+      .back-btn { position: fixed; top: 18px; right: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(22,23,32,0.6); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; backdrop-filter: blur(8px); transition: all 0.15s; }
+      .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+      section.scene {
+        min-height: 100vh;
+        padding: 100px 56px 80px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: center;
+        position: relative;
+        border-bottom: 1px solid var(--border);
+      }
+      section.scene.wide { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+      section.scene .copy { max-width: 680px; }
+      section.scene .canvas-wrap { position: relative; width: 100%; max-width: 720px; margin: 0 auto; }
+
+      .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+      .eyebrow .num { color: var(--accent); }
+      .eyebrow .bar { flex: 0 0 28px; height: 1px; background: var(--accent); }
+
+      h1.hero { font-size: var(--hero-size); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; margin: 0 0 24px; }
+      h1.hero em { font-style: normal; background: linear-gradient(135deg, var(--real), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      h2 { font-size: 38px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--fg); }
+      h3 { font-size: 18px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); letter-spacing: -0.01em; }
+      p { margin: 0 0 14px; color: #d4d7e0; }
+      p.lead { font-size: calc(var(--body-size) + 2px); color: var(--fg); }
+      p.dim { color: var(--muted); }
+      section.scene ul { padding-left: 20px; margin: 4px 0 14px; color: #d4d7e0; }
+      section.scene li { margin-bottom: 6px; line-height: 1.6; }
+      strong { color: var(--fg); font-weight: 600; }
+      em.real { font-style: normal; color: var(--real); }
+      em.imag { font-style: normal; color: var(--imag); }
+      em.time { font-style: normal; color: var(--time); }
+      em.acc  { font-style: normal; color: var(--accent); }
+
+      .controls { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; padding: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; backdrop-filter: blur(8px); }
+      .control-group { display: grid; grid-template-columns: 170px 1fr 90px; align-items: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .control-group label { color: var(--muted); }
+      .control-group .control-value { color: var(--accent); text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 0; }
+      .control-group input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; height: auto; }
+      .control-group input[type=range]::-webkit-slider-runnable-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); margin-top: -5.5px; cursor: grab; border: 2px solid var(--bg); }
+      .control-group input[type=range]::-moz-range-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); cursor: grab; }
+
+      .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+      .pillbtn { background: transparent; border: 1px solid var(--border); color: var(--fg); padding: 8px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; cursor: pointer; transition: all 0.15s; }
+      .pillbtn:hover { border-color: var(--accent); color: var(--accent); }
+      .pillbtn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,207,92,0.08); }
+
+      .plot { position: absolute; inset: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+      .plot .title { position: absolute; top: 10px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .plot .sub { position: absolute; top: 26px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); z-index: 2; }
+      .plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+      /* KaTeX overlays positioned by JS over the canvas */
+      .pz-ov { position: absolute; z-index: 3; pointer-events: none; white-space: nowrap; font-family: 'Inter', sans-serif; }
+      .pz-ov .katex { font-size: 14px !important; }
+      .pz-caption  { color: var(--text-dim); font-size: 12px; }
+      .pz-caption .katex { font-size: 13px !important; }
+      .pz-region   { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+      .pz-region.pz-stable   { color: var(--blue); }
+      .pz-region.pz-unstable { color: var(--red); }
+      .pz-axis     { color: var(--muted); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+      .pz-axis .katex { font-size: 12px !important; color: var(--muted); }
+      .pz-pole     { color: var(--red); font-size: 13px; }
+      .pz-pole .katex { font-size: 14px !important; color: var(--red); }
+      .pz-delay    { color: var(--accent); font-size: 12px; }
+      .pz-delay .katex { font-size: 13px !important; color: var(--accent); }
+
+      .eq-block { display: block; margin: 16px 0; padding: 16px 20px; background: rgba(255,207,92,0.05); border: 1px solid rgba(255,207,92,0.18); border-radius: 10px; text-align: center; color: var(--fg); }
+      .eq-line { display: block; padding: 14px 18px; margin: 14px 0; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; text-align: center; color: var(--fg); }
+
+      .callout { margin-top: 18px; padding: 16px 20px; border-left: 2px solid var(--accent); background: rgba(255,207,92,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: #d4d7e0; line-height: 1.7; }
+      .callout strong { color: var(--fg); }
+      .callout.ok { border-left-color: var(--time); background: rgba(123,224,137,0.06); }
+
+      .readout-bar { display: flex; gap: 22px; flex-wrap: wrap; padding: 12px 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; backdrop-filter: blur(8px); font-family: 'JetBrains Mono', monospace; }
+      .readout-item { font-size: 10.5px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: inline-flex; align-items: baseline; gap: 8px; }
+      .readout-item .val { color: var(--fg); font-size: 13px; text-transform: none; letter-spacing: 0; }
+      .readout-item .val.accent { color: var(--accent); }
+      .readout-item .val.green { color: var(--time); }
+      .readout-item .val.red { color: var(--imag); }
+
+      .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 18px 0 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+      details.derivation { margin: 18px 0 8px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.02); overflow: hidden; }
+      details.derivation > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px 18px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); transition: color 0.15s, background 0.15s; }
+      details.derivation > summary::-webkit-details-marker { display: none; }
+      details.derivation > summary:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+      details.derivation > summary .tag { color: var(--accent); }
+      details.derivation > summary .chev { margin-left: auto; font-size: 14px; color: var(--muted); transition: transform 0.2s; line-height: 1; }
+      details.derivation[open] > summary { border-bottom: 1px solid var(--border); color: var(--fg); }
+      details.derivation[open] > summary .chev { transform: rotate(90deg); color: var(--accent); }
+      details.derivation .body { padding: 18px 22px 22px; }
+      details.derivation .body > :first-child { margin-top: 0; }
+
+      .landing { min-height: 100vh; display: grid; place-items: center; padding: 120px 56px 80px; position: relative; text-align: center; }
+      .landing .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 32px; }
+      .landing h1 { max-width: 22ch; margin-left: auto; margin-right: auto; }
+      .landing .sub { color: var(--muted); font-size: 18px; max-width: 60ch; margin: 20px auto 0; line-height: 1.6; }
+      .landing .tags { margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .field-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; display: inline-block; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+      .scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .scroll-hint .line { width: 1px; height: 32px; background: linear-gradient(var(--muted), transparent); animation: pulse 2s infinite; }
+      @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+      footer { padding: 60px 56px 80px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+      @media (max-width: 900px) {
+        section.scene, section.scene.wide { grid-template-columns: 1fr; padding: 80px 24px 60px; }
+        .landing { padding: 100px 24px 60px; }
+        h1.hero { font-size: 44px; }
+        h2 { font-size: 28px; }
+        .back-btn { top: 14px; right: 16px; }
+        .brand { top: 16px; left: 16px; }
+        .control-group { grid-template-columns: 130px 1fr 80px; }
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+</head>
+<body>
+
+<div class="brand"><span class="mark"></span><span>BMEN90033 · Week 7</span></div>
+<a class="back-btn" href="../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
+<div class="rail"><div class="rail-fill" id="rail"></div></div>
+
+<!-- =========================== LANDING =========================== -->
+<section class="landing" id="s0">
+    <div>
+        <div class="meta">BMEN90033 · WEEK 7 · BIOINSTRUMENTATION</div>
+        <h1 class="hero">The <em>Pupillary Light Reflex</em>.</h1>
+        <p class="sub">The iris constricts under increased illuminance and dilates when illuminance falls. The response is well modelled as a first-order lag preceded by a transport delay, giving a transfer function with a single pole and an exponential delay term.</p>
+        <div class="tags">
+            <span class="field-tag">first order</span>
+            <span class="field-tag">transport delay</span>
+            <span class="field-tag">step response</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+</section>
+
+<!-- =========================== SECTION 1 — PHYSIOLOGY + ODE =========================== -->
+<section class="scene" id="s1">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>physiological model</span></div>
+        <h2>Input illuminance, output pupil area.</h2>
+        <p class="lead">Retinal photoreceptors encode the illuminance $L(t)$ and signal the pretectal nucleus. Efferent parasympathetic fibres then drive the <em>sphincter pupillae</em> to contract, reducing the pupil area $A(t)$. The afferent and efferent pathway together introduces a <em class="imag">transport delay</em> $T_d$ of approximately $180$ to $250\text{ ms}$ before any movement is observed.</p>
+        <p>The iris musculature is over-damped and is well approximated as a first-order lag with time constant $\tau \approx 200$ to $300\text{ ms}$. Combining the delay and the lag gives the linear model</p>
+        <div class="eq-line">$$\tau\,\frac{da(t)}{dt} + a(t) = -K\,L(t - T_d),$$</div>
+        <p>where $a(t) = A(t) - A_0$ is the deviation of pupil area from its dark-adapted resting value $A_0$. The negative sign reflects the inverse relationship between illuminance and pupil area. The gain $K$ has units of area per unit illuminance.</p>
+        <div class="callout">
+            <strong>Separation of effects.</strong> The delay $T_d$ and the time constant $\tau$ arise from distinct mechanisms. $T_d$ is dominated by neural conduction and synaptic transmission; $\tau$ is set by the mechanical properties of the iris musculature. The delay shifts the input in time; the lag governs the rate of approach to steady state.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1; max-width: 460px;">
+        <div class="plot">
+            <canvas id="anat-diagram"></canvas>
+            <div class="title">anatomy · input L(t) · output A(t)</div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 2 — TRANSFER FUNCTION =========================== -->
+<section class="scene" id="s2">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>transfer function</span></div>
+        <h2>Derivation via the Laplace transform.</h2>
+        <p class="lead">Apply the Laplace transform to both sides of the governing ODE under zero initial conditions, $a(0) = 0$. The derivative maps to multiplication by $s$, and the delayed input $L(t - T_d)$ maps to $e^{-T_d s}\,L(s)$ by the time-shift property.</p>
+
+        <details class="derivation" open>
+          <summary><span class="tag">show</span><span>derivation · 3 steps</span><span class="chev">&#x25B6;</span></summary>
+          <div class="body">
+
+        <h3 style="margin-top:0;">Step 1 · transform the ODE</h3>
+        <div class="eq-line">$$\tau\,s\,A(s) + A(s) = -K\,e^{-T_d s}\,L(s).$$</div>
+
+        <h3>Step 2 · factor $A(s)$</h3>
+        <div class="eq-line">$$A(s)\,(\tau s + 1) = -K\,e^{-T_d s}\,L(s).$$</div>
+
+        <h3>Step 3 · form the ratio</h3>
+        <p>Divide through to obtain the transfer function $G(s) = A(s)/L(s)$:</p>
+        <div class="eq-block">$$G(s) = \frac{A(s)}{L(s)} = \frac{-K\,e^{-T_d s}}{\tau s + 1}.$$</div>
+
+          </div>
+        </details>
+
+        <p>The expression separates into three factors: a static gain $-K$, a first-order lag $1/(\tau s + 1)$ with a single pole at $s = -1/\tau$, and a transport-delay term $e^{-T_d s}$. The delay term contributes no poles or zeros but adds a phase lag of $\omega T_d$ at each frequency.</p>
+        <div class="callout">
+            <strong>Irrational transfer function.</strong> Because $e^{-T_d s}$ is not a ratio of polynomials, $G(s)$ is not rational. The pole-zero diagram represents only the rational part; the delay is recorded separately as a phase term.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.95; max-width: 560px;">
+        <div class="plot" id="pz-host">
+            <canvas id="pz-plot"></canvas>
+            <div class="title">s-plane · rational part of G(s)</div>
+
+            <div class="pz-ov pz-region pz-stable" id="pz-stable">stable</div>
+            <div class="pz-ov pz-region pz-unstable" id="pz-unstable">unstable</div>
+            <div class="pz-ov pz-axis" id="pz-re">$\mathrm{Re}(s)$</div>
+            <div class="pz-ov pz-axis" id="pz-im">$\mathrm{Im}(s)$</div>
+            <div class="pz-ov pz-delay" id="pz-delay-eq">delay factor&nbsp; $e^{-T_d\,s}$ &nbsp;contributes phase only, no pole or zero</div>
+        </div>
+        <div class="legend" style="margin-top: 14px;">
+            <span><i style="background:var(--imag)"></i>× pole</span>
+            <span><i style="background:var(--real)"></i>stable half-plane</span>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 3 — STEP RESPONSE + ANIMATION =========================== -->
+<section class="scene wide" id="s3">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>time-domain response</span></div>
+        <h2>Response to step and periodic inputs.</h2>
+        <p class="lead">For an illuminance step of size $L_0$ applied at $t = 0$, the inverse Laplace transform gives</p>
+        <div class="eq-block">$$a(t) = \begin{cases} 0, & t < T_d, \\[4pt] -K L_0\bigl(1 - e^{-(t-T_d)/\tau}\bigr), & t \ge T_d. \end{cases}$$</div>
+        <p>The output remains zero for $t < T_d$, since the signal has not yet reached the iris. For $t \ge T_d$ the pupil area decays exponentially toward the steady-state value $A_\infty = A_0 - K L_0$, closing approximately $63\%$ of the remaining gap per time constant $\tau$. The pupil in the adjacent panel is driven by this model directly: the ring diameter is recomputed from $a(t)$ at each frame.</p>
+
+        <p>The preset row selects alternative input waveforms: square-wave flashing, sinusoidal modulation, a brief single pulse, and a linear ramp. For periodic inputs the steady-state output follows the frequency response $G(j\omega) = -K\,e^{-j\omega T_d}/(1 + j\omega\tau)$. Once the driving frequency exceeds $\omega_c = 1/\tau$, the lag attenuates each cycle and the pupil ceases to track the input faithfully.</p>
+
+        <div class="controls">
+            <div class="control-group" style="grid-template-columns: 110px 1fr; gap: 12px;">
+                <label>input waveform</label>
+                <div class="btn-row" style="margin-top: 0; gap: 6px;">
+                    <button class="pillbtn preset active" data-preset="step">step</button>
+                    <button class="pillbtn preset" data-preset="flash">flash</button>
+                    <button class="pillbtn preset" data-preset="sine">sine</button>
+                    <button class="pillbtn preset" data-preset="pulse">single pulse</button>
+                    <button class="pillbtn preset" data-preset="ramp">ramp</button>
+                </div>
+            </div>
+            <div class="control-group"><label>amplitude $L_0$</label><input type="range" id="L0" min="0" max="1" step="0.01" value="0.8"><span class="control-value" id="L0-val">0.80</span></div>
+            <div class="control-group" id="freq-row"><label>flash freq $f$</label><input type="range" id="freq" min="0.2" max="8" step="0.05" value="1.5"><span class="control-value" id="freq-val">1.50 Hz</span></div>
+            <div class="control-group"><label>delay $T_d$</label><input type="range" id="Td" min="0.05" max="0.5" step="0.01" value="0.20"><span class="control-value" id="Td-val">0.20 s</span></div>
+            <div class="control-group"><label>time constant $\tau$</label><input type="range" id="tau" min="0.05" max="0.8" step="0.01" value="0.25"><span class="control-value" id="tau-val">0.25 s</span></div>
+            <div class="control-group"><label>gain $K$</label><input type="range" id="K" min="0.2" max="1.0" step="0.01" value="0.6"><span class="control-value" id="K-val">0.60</span></div>
+            <div class="btn-row">
+                <button class="pillbtn" id="restart">restart</button>
+                <button class="pillbtn" id="toggle-light">blackout / restore</button>
+            </div>
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">illuminance $L$<span class="val accent" id="ro-L">—</span></div>
+            <div class="readout-item">area $A(t)/A_0$<span class="val green" id="ro-A">—</span></div>
+            <div class="readout-item">time<span class="val" id="ro-t">—</span></div>
+            <div class="readout-item">status<span class="val" id="ro-status">—</span></div>
+        </div>
+
+        <div class="callout ok">
+            <strong>Frequency response.</strong> At low flash frequencies the pupil tracks each edge with a first-order constriction transient. For $f$ above $1/(2\pi\tau)$ the amplitude of the tracked oscillation falls off at $-20\text{ dB/decade}$, following $|G(j\omega)| = K/\sqrt{1 + (\omega\tau)^2}$. The delay $T_d$ adds only phase lag $\omega T_d$ and does not affect magnitude.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1.25; max-width: 560px;">
+        <div class="plot">
+            <canvas id="sim-canvas"></canvas>
+            <div class="title">pupil · illuminance · area trace</div>
+            <div class="sub" id="sim-sub">first-order lag with transport delay</div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>Linear first-order model following Stark (1959). The transport delay is applied as an explicit time shift on the input signal.</p>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// Shared
+// ══════════════════════════════════════════════════════════════
+function colors() {
+    const cs = getComputedStyle(document.documentElement);
+    return {
+        text:  cs.getPropertyValue('--text').trim(),
+        dim:   cs.getPropertyValue('--text-dim').trim(),
+        muted: cs.getPropertyValue('--text-muted').trim(),
+        accent:cs.getPropertyValue('--accent').trim(),
+        blue:  cs.getPropertyValue('--blue').trim(),
+        red:   cs.getPropertyValue('--red').trim(),
+        green: cs.getPropertyValue('--green').trim(),
+        bg:    cs.getPropertyValue('--bg-2').trim(),
+        grid:  cs.getPropertyValue('--grid').trim(),
+        border:cs.getPropertyValue('--border').trim(),
+    };
+}
+
+function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const ctx = canvas.getContext('2d');
+    function resize() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    resize();
+    window.addEventListener('resize', resize);
+    return { ctx, dpr, get W(){ return canvas.getBoundingClientRect().width; }, get H(){ return canvas.getBoundingClientRect().height; } };
+}
+
+// ══════════════════════════════════════════════════════════════
+// Section 1 — eye anatomy diagram (animated pupil indicator)
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('anat-diagram');
+    const s = setupCanvas(canvas);
+    let t0 = performance.now();
+
+    function draw() {
+        const c = colors();
+        const W = s.W, H = s.H;
+        const ctx = s.ctx;
+        ctx.clearRect(0, 0, W, H);
+
+        // Shrink eye to leave margin for labels on both sides
+        const cx = W * 0.54;
+        const cy = H * 0.56;
+        const R = Math.min(W * 0.32, H * 0.34);
+
+        // Sclera
+        ctx.fillStyle = '#eef0f5';
+        ctx.beginPath();
+        ctx.arc(cx, cy, R, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Iris
+        const irisR = R * 0.62;
+        const grad = ctx.createRadialGradient(cx, cy, irisR * 0.3, cx, cy, irisR);
+        grad.addColorStop(0, '#d9a64a');
+        grad.addColorStop(0.75, '#7a5422');
+        grad.addColorStop(1, '#3a2610');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, irisR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Iris radial fibres
+        ctx.strokeStyle = 'rgba(40,22,8,0.45)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 64; i++) {
+            const ang = (i / 64) * Math.PI * 2;
+            const r0 = irisR * 0.25;
+            const r1 = irisR * (0.95 + 0.04 * Math.sin(i * 1.7));
+            ctx.beginPath();
+            ctx.moveTo(cx + r0 * Math.cos(ang), cy + r0 * Math.sin(ang));
+            ctx.lineTo(cx + r1 * Math.cos(ang), cy + r1 * Math.sin(ang));
+            ctx.stroke();
+        }
+
+        // Gentle pupil pulse to remind viewer it moves
+        const tNow = (performance.now() - t0) / 1000;
+        const pulse = 0.5 + 0.1 * Math.sin(tNow * 0.9);
+        const pupilR = irisR * (0.22 + 0.28 * (1 - pulse));
+
+        // Pupil
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(cx, cy, pupilR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Corneal highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.arc(cx - R * 0.28, cy - R * 0.28, R * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Incoming-light arrows (blue) from upper left
+        ctx.strokeStyle = c.blue;
+        ctx.lineWidth = 2;
+        const beamStartX = Math.max(10, cx - R * 1.55);
+        for (let k = 0; k < 3; k++) {
+            const y0 = cy - R * (0.95 - 0.16 * k);
+            const y1 = cy - R * (0.45 - 0.16 * k);
+            const x1 = cx - R * 0.78;
+            ctx.beginPath();
+            ctx.moveTo(beamStartX, y0);
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+            // arrowhead
+            ctx.fillStyle = c.blue;
+            const dx = x1 - beamStartX, dy = y1 - y0;
+            const len = Math.hypot(dx, dy);
+            const ux = dx / len, uy = dy / len;
+            const px = -uy, py = ux;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x1 - ux * 9 + px * 4, y1 - uy * 9 + py * 4);
+            ctx.lineTo(x1 - ux * 9 - px * 4, y1 - uy * 9 - py * 4);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // Input label for illuminance
+        ctx.font = '12px JetBrains Mono';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle = c.blue;
+        ctx.textAlign = 'left';
+        ctx.fillText('L(t)  illuminance', beamStartX - 2, cy - R * 1.12);
+
+        // Pupil-area output label with leader line from left of pupil
+        ctx.strokeStyle = c.red;
+        ctx.lineWidth = 1.2;
+        const leadX0 = cx - pupilR - 2;
+        const leadY0 = cy;
+        const leadX1 = cx - irisR - 18;
+        const leadY1 = cy + irisR * 0.95;
+        ctx.beginPath();
+        ctx.moveTo(leadX0, leadY0);
+        ctx.lineTo(leadX1 + 16, leadY0 + (leadY1 - leadY0) * 0.5);
+        ctx.lineTo(leadX1, leadY1);
+        ctx.stroke();
+        ctx.fillStyle = c.red;
+        ctx.textAlign = 'right';
+        ctx.fillText('A(t)  pupil area', leadX1, leadY1 + 12);
+        ctx.textAlign = 'left';
+
+        // Sphincter callout with leader pointing inward on the right side
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 1.2;
+        const sx0 = cx + irisR * 0.88;
+        const sy0 = cy - irisR * 0.35;
+        const sx1 = Math.min(W - 6, cx + irisR * 1.18);
+        const sy1 = cy - irisR * 0.95;
+        ctx.beginPath();
+        ctx.moveTo(sx0, sy0);
+        ctx.lineTo(sx1 - 4, sy1 + 6);
+        ctx.stroke();
+        ctx.fillStyle = c.accent;
+        ctx.textAlign = 'left';
+        const sphLabel1 = 'sphincter';
+        const sphLabel2 = '(constriction)';
+        const sphW = Math.max(ctx.measureText(sphLabel1).width, ctx.measureText(sphLabel2).width);
+        let sphX = sx1 - 6;
+        if (sphX + sphW > W - 6) sphX = W - 6 - sphW;
+        ctx.fillText(sphLabel1, sphX, sy1);
+        ctx.fillText(sphLabel2, sphX, sy1 + 14);
+
+        requestAnimationFrame(draw);
+    }
+    draw();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// Section 2 — s-plane pole plot
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('pz-plot');
+    const s = setupCanvas(canvas);
+
+    const TAU_VIS = 0.25;
+
+    // Cached references to overlays
+    const ov = {
+        stable:  document.getElementById('pz-stable'),
+        unstable:document.getElementById('pz-unstable'),
+        re:      document.getElementById('pz-re'),
+        im:      document.getElementById('pz-im'),
+        delay:   document.getElementById('pz-delay-eq'),
+    };
+    const setPos = (el, x, y, tx) => {
+        el.style.left = x + 'px';
+        el.style.top  = y + 'px';
+        el.style.transform = tx || '';
+    };
+
+    function draw() {
+        const c = colors();
+        const W = s.W, H = s.H;
+        const ctx = s.ctx;
+        ctx.clearRect(0, 0, W, H);
+
+        ctx.textBaseline = 'alphabetic';
+
+        // Reserve top strip for the .title label and the stable/unstable tags,
+        // bottom strip for the delay-factor annotation.
+        const padX = 36;
+        const topStrip = 78;
+        const botStrip = 44;
+        const plotTop = topStrip;
+        const plotBot = H - botStrip;
+        const cx = W / 2;
+        const cy = (plotTop + plotBot) / 2;
+        const half = Math.min(cx - padX, cy - plotTop) - 6;
+        const range = 8;
+        const scale = half / range;
+
+        // Stable / unstable shading
+        ctx.fillStyle = 'rgba(88,166,255,0.05)';
+        ctx.fillRect(padX, plotTop, cx - padX, plotBot - plotTop);
+        ctx.fillStyle = 'rgba(255,92,122,0.05)';
+        ctx.fillRect(cx, plotTop, W - padX - cx, plotBot - plotTop);
+
+        // Imaginary axis (dashed red)
+        ctx.strokeStyle = c.red;
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(cx, plotTop);
+        ctx.lineTo(cx, plotBot);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Real axis
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padX, cy);
+        ctx.lineTo(W - padX, cy);
+        ctx.stroke();
+
+        // Ticks. Skip the tick at the pole to prevent overlap with its label.
+        const poleVal = -1 / TAU_VIS;                 // −4
+        const skipTick = Math.round(poleVal / 2) * 2; // −4
+        ctx.strokeStyle = c.grid;
+        ctx.fillStyle = c.muted;
+        ctx.font = '10px JetBrains Mono';
+        ctx.textAlign = 'center';
+        for (let v = -8; v <= 8; v += 2) {
+            if (v === 0) continue;
+            const xx = cx + v * scale;
+            if (xx > padX && xx < W - padX) {
+                ctx.beginPath();
+                ctx.moveTo(xx, cy - 3);
+                ctx.lineTo(xx, cy + 3);
+                ctx.stroke();
+                if (v !== skipTick) ctx.fillText(String(v), xx, cy + 14);
+            }
+            const yy = cy - v * scale;
+            if (yy > plotTop && yy < plotBot) {
+                ctx.beginPath();
+                ctx.moveTo(cx - 3, yy);
+                ctx.lineTo(cx + 3, yy);
+                ctx.stroke();
+                ctx.textAlign = 'left';
+                ctx.fillText(String(v), cx + 6, yy + 3);
+                ctx.textAlign = 'center';
+            }
+        }
+
+        // Pole marker
+        const pRe = poleVal;
+        const px = cx + pRe * scale;
+        const py = cy;
+        ctx.strokeStyle = c.red;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(px - 7, py - 7); ctx.lineTo(px + 7, py + 7);
+        ctx.moveTo(px - 7, py + 7); ctx.lineTo(px + 7, py - 7);
+        ctx.stroke();
+
+        // ── Position KaTeX overlays ─────────────────────────────
+        // Region labels: top corners, just inside the plot area (well below .title)
+        setPos(ov.stable,   padX + 6,      plotTop + 8, 'translate(0, 0)');
+        setPos(ov.unstable, W - padX - 6,  plotTop + 8, 'translate(-100%, 0)');
+
+        // Axis labels:
+        //   Re(s) — at the right end of the real axis, just ABOVE the axis
+        //   Im(s) — at the top end of the imaginary axis, offset to the right
+        setPos(ov.re, W - padX - 6, cy - 4,        'translate(-100%, -100%)');
+        setPos(ov.im, cx + 14,      plotTop + 18,  'translate(0, 0)');
+
+        // Delay-factor annotation, centred in the bottom strip
+        setPos(ov.delay, cx, H - botStrip / 2, 'translate(-50%, -50%)');
+    }
+    draw();
+    window.addEventListener('resize', () => requestAnimationFrame(draw));
+})();
+
+// ══════════════════════════════════════════════════════════════
+// Section 3 — live step-response simulation with animated pupil
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('sim-canvas');
+    const s = setupCanvas(canvas);
+
+    // Parameters
+    let K  = 0.60;
+    let tau = 0.25;
+    let Td = 0.20;
+    let L0 = 0.80;
+    let freq = 1.5;                 // Hz — used by flash / sine
+    let preset = 'step';
+
+    // State
+    let tStart = performance.now(); // time when current step started
+    let lightOn = true;             // master on/off
+    const WINDOW = 4.0;             // seconds shown on trace
+    const history = [];             // {t, a, Lin}
+
+    // Input generator: L(t) with master gate lightOn
+    function inputL(t) {
+        if (!lightOn) return 0;
+        if (t < 0) return 0;
+        switch (preset) {
+            case 'step':  return L0;
+            case 'flash': return (Math.sin(2 * Math.PI * freq * t) >= 0) ? L0 : 0;
+            case 'sine':  return 0.5 * L0 * (1 - Math.cos(2 * Math.PI * freq * t)); // [0, L0]
+            case 'pulse': return (t < 0.15) ? L0 : 0;   // 150 ms flash at t=0
+            case 'ramp':  return Math.max(0, Math.min(L0, (t / 2.0) * L0));
+            default: return L0;
+        }
+    }
+
+    // Input history for delay handling (we drive the system with L(t - Td))
+    const Lhist = [];               // {t, val}
+
+    function pushL(tNow, val) {
+        Lhist.push({ t: tNow, val });
+        // trim older than needed
+        const oldest = tNow - (WINDOW + Td + 1);
+        while (Lhist.length > 2 && Lhist[0].t < oldest) Lhist.shift();
+    }
+
+    function sampleDelayedL(tNow) {
+        // Return L at time (tNow - Td), piecewise constant from history
+        const target = tNow - Td;
+        if (Lhist.length === 0) return 0;
+        // find last sample with t <= target
+        let lo = 0, hi = Lhist.length - 1;
+        if (Lhist[0].t > target) return 0;
+        if (Lhist[hi].t <= target) return Lhist[hi].val;
+        while (hi - lo > 1) {
+            const mid = (lo + hi) >> 1;
+            if (Lhist[mid].t <= target) lo = mid; else hi = mid;
+        }
+        return Lhist[lo].val;
+    }
+
+    // Integrate a(t) with first-order lag: tau*a' + a = -K * L(t - Td)
+    let aState = 0;
+    let lastT = null;
+
+    function reset() {
+        tStart = performance.now();
+        history.length = 0;
+        Lhist.length = 0;
+        aState = 0;
+        lastT = null;
+    }
+
+    // Bind controls
+    const ctrls = ['K','tau','Td','L0','freq'];
+    ctrls.forEach(id => {
+        const el = document.getElementById(id);
+        const lbl = document.getElementById(id + '-val');
+        el.addEventListener('input', () => {
+            const v = parseFloat(el.value);
+            if (id === 'K')    { K = v;    lbl.textContent = v.toFixed(2); }
+            if (id === 'tau')  { tau = v;  lbl.textContent = v.toFixed(2) + ' s'; }
+            if (id === 'Td')   { Td = v;   lbl.textContent = v.toFixed(2) + ' s'; }
+            if (id === 'L0')   { L0 = v;   lbl.textContent = v.toFixed(2); }
+            if (id === 'freq') { freq = v; lbl.textContent = v.toFixed(2) + ' Hz'; }
+        });
+    });
+    document.getElementById('restart').addEventListener('click', () => {
+        lightOn = true;
+        reset();
+    });
+    document.getElementById('toggle-light').addEventListener('click', () => {
+        lightOn = !lightOn;
+        // don't reset history — let the transient play out
+    });
+
+    // Preset buttons
+    const freqRow = document.getElementById('freq-row');
+    function updateFreqRow() {
+        const relevant = (preset === 'flash' || preset === 'sine');
+        freqRow.style.opacity = relevant ? '1' : '0.35';
+        freqRow.style.pointerEvents = relevant ? 'auto' : 'none';
+    }
+    document.querySelectorAll('.pillbtn.preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.pillbtn.preset').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            preset = btn.dataset.preset;
+            lightOn = true;
+            reset();
+            updateFreqRow();
+        });
+    });
+    updateFreqRow();
+
+    // Readouts
+    const roL = document.getElementById('ro-L');
+    const roA = document.getElementById('ro-A');
+    const roT = document.getElementById('ro-t');
+    const roStatus = document.getElementById('ro-status');
+
+    function drawPupil(ctx, cx, cy, eyeR, areaFrac, c) {
+        // areaFrac is A/A0 in [0.2, 1.0] roughly; treat it as area ratio, scale radius by sqrt
+        const af = Math.max(0.05, Math.min(1.2, areaFrac));
+
+        // Sclera
+        ctx.fillStyle = '#eef0f5';
+        ctx.beginPath();
+        ctx.arc(cx, cy, eyeR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Iris
+        const irisR = eyeR * 0.66;
+        const grad = ctx.createRadialGradient(cx, cy, irisR * 0.35, cx, cy, irisR);
+        grad.addColorStop(0, '#d9a64a');
+        grad.addColorStop(0.75, '#7a5422');
+        grad.addColorStop(1, '#3a2610');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, irisR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Fibres
+        ctx.strokeStyle = 'rgba(40,22,8,0.45)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 48; i++) {
+            const ang = (i / 48) * Math.PI * 2;
+            const r0 = irisR * 0.25;
+            const r1 = irisR * (0.95 + 0.04 * Math.sin(i * 2.1));
+            ctx.beginPath();
+            ctx.moveTo(cx + r0 * Math.cos(ang), cy + r0 * Math.sin(ang));
+            ctx.lineTo(cx + r1 * Math.cos(ang), cy + r1 * Math.sin(ang));
+            ctx.stroke();
+        }
+
+        // Pupil — radius proportional to sqrt(area ratio), scaled to max 0.55*irisR
+        const pupilR = irisR * 0.55 * Math.sqrt(af);
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(cx, cy, pupilR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.beginPath();
+        ctx.arc(cx - eyeR * 0.28, cy - eyeR * 0.28, eyeR * 0.07, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    function draw(now) {
+        const c = colors();
+        const W = s.W, H = s.H;
+        const ctx = s.ctx;
+        ctx.clearRect(0, 0, W, H);
+
+        const tSec = (now - tStart) / 1000;
+
+        // Current illuminance input from selected preset (gated by lightOn)
+        const Lnow = inputL(tSec);
+        pushL(tSec, Lnow);
+
+        // Integrate with RK-free small step (we rely on rAF ~ 16 ms; do a few substeps)
+        if (lastT === null) lastT = tSec;
+        const dtTotal = Math.max(0, tSec - lastT);
+        const nSub = Math.max(1, Math.ceil(dtTotal / 0.004));
+        const dt = dtTotal / nSub;
+        for (let i = 0; i < nSub; i++) {
+            const tMid = lastT + dt * (i + 0.5);
+            const Ldel = sampleDelayedL(tMid);
+            // tau*a' + a = -K * Ldel  ->  a' = (-K*Ldel - a) / tau
+            const deriv = (-K * Ldel - aState) / Math.max(0.02, tau);
+            aState += deriv * dt;
+        }
+        lastT = tSec;
+
+        // Record for trace — a is area deviation, A/A0 = 1 + a (a is dimensionless here since we treat A0 = 1)
+        const Aratio = 1 + aState;
+        history.push({ t: tSec, a: Aratio, L: Lnow });
+        while (history.length > 0 && history[0].t < tSec - WINDOW) history.shift();
+
+        // ──── Layout: pupil band | readout strip | trace band | axis strip ────
+        ctx.textBaseline = 'alphabetic';
+        ctx.textAlign = 'left';
+        const padL = 48, padR = 20, padT = 54, padB = 32;
+        const availH = H - padT - padB;
+
+        // Allocate vertical bands
+        const readoutH  = 22;                         // strip under the pupil for A(t)/A₀ readout
+        const legendH   = 18;                         // strip above the trace frame for legend
+        const pupilH    = Math.min(availH * 0.42, 240);
+        const traceH    = availH - pupilH - readoutH - legendH;
+
+        const pupilTop    = padT;
+        const pupilBot    = pupilTop + pupilH;
+        const readoutTop  = pupilBot;
+        const legendTop   = readoutTop + readoutH;
+        const trY0        = legendTop + legendH;
+        const trY1        = trY0 + traceH;
+        const trX0        = padL;
+        const trX1        = W - padR;
+
+        // Pupil
+        const eyeR  = Math.min(W * 0.22, pupilH * 0.42);
+        const eyeCx = W * 0.52;
+        const eyeCy = pupilTop + pupilH * 0.5;
+        drawPupil(ctx, eyeCx, eyeCy, eyeR, Aratio, c);
+
+        // Illuminance bar (left of pupil)
+        const barX = padL - 24;
+        const barY = pupilTop + 14;
+        const barW = 10;
+        const barH = pupilH - 28;
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fillRect(barX, barY, barW, barH);
+        const fillH = barH * Math.max(0, Math.min(1, Lnow));
+        const gradBar = ctx.createLinearGradient(0, barY, 0, barY + barH);
+        gradBar.addColorStop(0, '#ffcf5c');
+        gradBar.addColorStop(1, 'rgba(255,207,92,0.1)');
+        ctx.fillStyle = gradBar;
+        ctx.fillRect(barX, barY + (barH - fillH), barW, fillH);
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(barX, barY, barW, barH);
+        ctx.fillStyle = c.muted;
+        ctx.font = '9px JetBrains Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText('L(t)', barX + barW / 2, barY - 4);
+
+        // Pupil area readout in its dedicated strip (no overlap with trace frame)
+        ctx.fillStyle = c.green;
+        ctx.font = '11px JetBrains Mono';
+        ctx.textAlign = 'center';
+        ctx.fillText('A(t) / A\u2080 = ' + Aratio.toFixed(3), eyeCx, readoutTop + readoutH - 6);
+
+        // Frame for trace panel
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(trX0, trY0, trX1 - trX0, trY1 - trY0);
+
+        // Gridlines
+        ctx.strokeStyle = c.grid;
+        for (let k = 1; k < 4; k++) {
+            const yy = trY0 + (trY1 - trY0) * k / 4;
+            ctx.beginPath();
+            ctx.moveTo(trX0, yy); ctx.lineTo(trX1, yy);
+            ctx.stroke();
+        }
+
+        // Y-axis labels outside frame on the left
+        ctx.fillStyle = c.muted;
+        ctx.font = '10px JetBrains Mono';
+        ctx.textAlign = 'right';
+        ctx.fillText('1.0', trX0 - 6, trY0 + 4);
+        ctx.fillText('0.0', trX0 - 6, trY1);
+        // Rotated y-axis title
+        ctx.save();
+        ctx.translate(trX0 - 32, (trY0 + trY1) / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('L(t) ,  A(t)/A\u2080', 0, 0);
+        ctx.restore();
+
+        // X-axis label below frame
+        ctx.textAlign = 'center';
+        ctx.fillText('time  (s)', (trX0 + trX1) / 2, trY1 + 16);
+
+        // Map time window [tSec - WINDOW, tSec] to x range
+        function xOf(t) { return trX0 + ((t - (tSec - WINDOW)) / WINDOW) * (trX1 - trX0); }
+        function yOfA(a) {
+            const lo = 0, hi = 1.05;
+            return trY1 - ((a - lo) / (hi - lo)) * (trY1 - trY0);
+        }
+        function yOfL(l) {
+            const lo = 0, hi = 1.05;
+            return trY1 - ((l - lo) / (hi - lo)) * (trY1 - trY0);
+        }
+
+        // Illuminance trace (filled, yellow, muted)
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255,207,92,0.9)';
+        ctx.fillStyle = 'rgba(255,207,92,0.14)';
+        ctx.lineWidth = 1.4;
+        let started = false;
+        for (const p of history) {
+            const x = xOf(p.t), y = yOfL(p.L);
+            if (!started) { ctx.moveTo(x, y); started = true; }
+            else ctx.lineTo(x, y);
+        }
+        // close polygon to baseline
+        if (started) {
+            const last = history[history.length - 1];
+            const first = history[0];
+            ctx.lineTo(xOf(last.t), trY1);
+            ctx.lineTo(xOf(first.t), trY1);
+            ctx.closePath();
+            ctx.fill();
+            ctx.beginPath();
+            let st2 = false;
+            for (const p of history) {
+                const x = xOf(p.t), y = yOfL(p.L);
+                if (!st2) { ctx.moveTo(x, y); st2 = true; }
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+
+        // Area trace (green)
+        ctx.beginPath();
+        ctx.strokeStyle = c.green;
+        ctx.lineWidth = 2;
+        started = false;
+        for (const p of history) {
+            const x = xOf(p.t), y = yOfA(p.a);
+            if (!started) { ctx.moveTo(x, y); started = true; }
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Analytic-overlay prediction (only when a clean closed-form exists)
+        let overlayLabel = null;
+        if (lightOn && (preset === 'step' || preset === 'sine')) {
+            ctx.strokeStyle = 'rgba(123,224,137,0.45)';
+            ctx.setLineDash([4, 4]);
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            const tWin0 = tSec - WINDOW;
+            const N = 220;
+            let st3 = false;
+            // Pre-compute sine steady-state coefficients if needed
+            const w = 2 * Math.PI * freq;
+            const mag = K / Math.sqrt(1 + (w * tau) * (w * tau));
+            const phi = Math.atan(w * tau); // additional first-order lag phase
+            for (let i = 0; i <= N; i++) {
+                const t = tWin0 + WINDOW * i / N;
+                let aPred = 0;
+                if (preset === 'step') {
+                    if (t >= Td) aPred = -K * L0 * (1 - Math.exp(-(t - Td) / Math.max(0.02, tau)));
+                } else if (preset === 'sine') {
+                    // Input L(t) = 0.5 L0 (1 - cos(w(t-Td))); steady-state output
+                    // DC component: -K * 0.5 L0
+                    // AC component: +0.5 L0 * mag * cos(w(t - Td) - phi)  (sign from −K·(−cos))
+                    if (t >= Td) {
+                        aPred = -0.5 * K * L0
+                              + 0.5 * L0 * mag * Math.cos(w * (t - Td) - phi);
+                    }
+                }
+                const x = xOf(t), y = yOfA(1 + aPred);
+                if (!st3) { ctx.moveTo(x, y); st3 = true; } else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+            overlayLabel = (preset === 'step')
+                ? 'analytic step response'
+                : 'steady-state  |G(j\u03C9)|';
+        }
+
+        // Current-time cursor
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xOf(tSec), trY0); ctx.lineTo(xOf(tSec), trY1);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Legend sits in its own strip above the trace frame
+        ctx.font = '10px JetBrains Mono';
+        ctx.textAlign = 'left';
+        const legendY = legendTop + 12;
+        const legendItems = [
+            { color: 'rgba(255,207,92,0.9)',   label: 'L(t)  input' },
+            { color: c.green,                   label: 'A(t)/A\u2080  simulated' },
+        ];
+        if (overlayLabel) legendItems.push({ color: 'rgba(123,224,137,0.7)', label: overlayLabel });
+        let lx = trX0 + 4;
+        for (const item of legendItems) {
+            ctx.fillStyle = item.color;
+            // swatch
+            ctx.fillRect(lx, legendY - 7, 10, 2);
+            ctx.fillText(item.label, lx + 14, legendY);
+            lx += 14 + ctx.measureText(item.label).width + 18;
+        }
+
+        // Readouts
+        roL.textContent = Lnow.toFixed(2);
+        roA.textContent = Aratio.toFixed(3);
+        roT.textContent = tSec.toFixed(2) + ' s';
+        if (tSec < Td && lightOn) {
+            roStatus.textContent = 'latency (Td)';
+            roStatus.className = 'val red';
+        } else if (Math.abs(Aratio - (lightOn ? 1 - K * L0 : 1)) < 0.01) {
+            roStatus.textContent = 'settled';
+            roStatus.className = 'val green';
+        } else {
+            roStatus.textContent = 'responding';
+            roStatus.className = 'val accent';
+        }
+
+        requestAnimationFrame(draw);
+    }
+    reset();
+    requestAnimationFrame(draw);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// Progress rail
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const rail = document.getElementById('rail');
+    function update() {
+        const sc = document.documentElement.scrollTop || document.body.scrollTop;
+        const max = (document.documentElement.scrollHeight - window.innerHeight) || 1;
+        rail.style.width = Math.min(100, (sc / max) * 100) + '%';
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+})();
+</script>
+
+</body>
+</html>

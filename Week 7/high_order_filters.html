@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: High-Order Filters</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0a0a10;
+        --bg-2: #12131c;
+        --bg-panel: rgba(22,23,32,0.75);
+        --fg: #eef0f5;
+        --text: #eef0f5;
+        --text-dim: #d4d7e0;
+        --text-muted: #8b90a3;
+        --muted: #8b90a3;
+        --real: #58a6ff;
+        --imag: #ff5c7a;
+        --time: #7be089;
+        --accent: #ffcf5c;
+        --blue: #58a6ff;
+        --red: #ff5c7a;
+        --yellow: #ffcf5c;
+        --grid: rgba(255,255,255,0.06);
+        --border: rgba(255,255,255,0.09);
+        --border-hover: rgba(255,255,255,0.18);
+        /* per-filter palette */
+        --c-first: #8b90a3;
+        --c-butter: #58a6ff;
+        --c-cheby1: #ffcf5c;
+        --c-cheby2: #ff9a5c;
+        --c-ellip: #ff5c7a;
+        --body-size: 17px;
+        --math-size: 18px;
+        --hero-size: 64px;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: var(--body-size); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+      body { overflow-x: hidden; min-height: 100vh; }
+
+      .katex { font-size: var(--math-size) !important; }
+      .katex-display { margin: 0.6em 0 !important; }
+      .katex-display > .katex { font-size: calc(var(--math-size) * 1.1) !important; }
+
+      a { color: var(--accent); }
+
+      .rail { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 60; pointer-events: none; }
+      .rail-fill { height: 100%; background: linear-gradient(90deg, var(--butter, #58a6ff), var(--accent)); width: 0%; transition: width 0.15s; }
+
+      .brand { position: fixed; top: 20px; left: 24px; z-index: 40; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 10px; }
+      .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: conic-gradient(var(--c-butter), var(--c-cheby1), var(--c-cheby2), var(--c-ellip), var(--c-butter)); }
+
+      .back-btn { position: fixed; top: 18px; right: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(22,23,32,0.6); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; backdrop-filter: blur(8px); transition: all 0.15s; }
+      .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+      section.scene {
+        min-height: 100vh;
+        padding: 100px 56px 80px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: center;
+        position: relative;
+        border-bottom: 1px solid var(--border);
+      }
+      section.scene.wide { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
+      section.scene.full { grid-template-columns: 1fr; max-width: 1280px; margin: 0 auto; }
+      section.scene .copy { max-width: 640px; }
+      section.scene .canvas-wrap { position: relative; width: 100%; margin: 0 auto; }
+
+      .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+      .eyebrow .num { color: var(--accent); }
+      .eyebrow .bar { flex: 0 0 28px; height: 1px; background: var(--accent); }
+
+      h1.hero { font-size: var(--hero-size); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; margin: 0 0 24px; }
+      h1.hero em { font-style: normal; background: linear-gradient(135deg, var(--c-butter), var(--c-ellip)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      h2 { font-size: 38px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--fg); }
+      h2 em { font-style: normal; }
+      h3 { font-size: 18px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); letter-spacing: -0.01em; }
+      p { margin: 0 0 14px; color: #d4d7e0; }
+      p.lead { font-size: calc(var(--body-size) + 2px); color: var(--fg); }
+      p.dim { color: var(--muted); }
+      section.scene ul { padding-left: 20px; margin: 4px 0 14px; color: #d4d7e0; }
+      section.scene li { margin-bottom: 6px; line-height: 1.6; }
+      strong { color: var(--fg); font-weight: 600; }
+      em.real { font-style: normal; color: var(--real); }
+      em.imag { font-style: normal; color: var(--imag); }
+      em.time { font-style: normal; color: var(--time); }
+      em.acc  { font-style: normal; color: var(--accent); }
+      em.first { font-style: normal; color: var(--c-first); }
+      em.butter { font-style: normal; color: var(--c-butter); }
+      em.cheby1 { font-style: normal; color: var(--c-cheby1); }
+      em.cheby2 { font-style: normal; color: var(--c-cheby2); }
+      em.ellip { font-style: normal; color: var(--c-ellip); }
+
+      .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 18px 0 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+      .controls { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; padding: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; backdrop-filter: blur(8px); }
+      .control-group { display: grid; grid-template-columns: 150px 1fr 110px; align-items: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: transparent; border: 0; padding: 0; }
+      .control-group label { color: var(--muted); }
+      .control-group .control-value { color: var(--accent); text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 0; }
+      .control-group input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; height: auto; }
+      .control-group input[type=range]::-webkit-slider-runnable-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); margin-top: -5.5px; cursor: grab; border: 2px solid var(--bg); }
+      .control-group input[type=range]::-moz-range-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); cursor: grab; }
+
+      .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+      .pillbtn, .btn { background: transparent; border: 1px solid var(--border); color: var(--fg); padding: 8px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; cursor: pointer; transition: all 0.15s; }
+      .pillbtn:hover, .btn:hover { border-color: var(--accent); color: var(--accent); }
+      .pillbtn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,207,92,0.08); }
+
+      .filter-pills { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 4px; }
+      .filter-pills .pillbtn { border-color: currentColor; opacity: 0.55; }
+      .filter-pills .pillbtn.active { opacity: 1; background: rgba(255,255,255,0.04); }
+
+      .plot { position: absolute; inset: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+      .plot .title { position: absolute; top: 10px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .plot .sub { position: absolute; top: 26px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); z-index: 2; }
+      .plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+      .eq-block { display: block; margin: 16px 0; padding: 16px 20px; background: rgba(255,207,92,0.05); border: 1px solid rgba(255,207,92,0.18); border-radius: 10px; text-align: center; color: var(--fg); }
+      .eq-line { display: block; padding: 14px 18px; margin: 14px 0; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; text-align: center; color: var(--fg); }
+
+      .callout { margin-top: 18px; padding: 16px 20px; border-left: 2px solid var(--accent); background: rgba(255,207,92,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: #d4d7e0; line-height: 1.7; }
+      .callout strong { color: var(--fg); }
+      .callout.butter { border-left-color: var(--c-butter); background: rgba(88,166,255,0.06); }
+      .callout.cheby1 { border-left-color: var(--c-cheby1); background: rgba(255,207,92,0.05); }
+      .callout.cheby2 { border-left-color: var(--c-cheby2); background: rgba(255,154,92,0.05); }
+      .callout.ellip { border-left-color: var(--c-ellip); background: rgba(255,92,122,0.05); }
+
+      .readout-bar { display: flex; gap: 22px; flex-wrap: wrap; padding: 12px 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; backdrop-filter: blur(8px); font-family: 'JetBrains Mono', monospace; }
+      .readout-item { font-size: 10.5px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: inline-flex; align-items: baseline; gap: 8px; }
+      .readout-item .val { color: var(--fg); font-size: 13px; text-transform: none; letter-spacing: 0; }
+      .readout-item .val.accent { color: var(--accent); }
+
+      /* compact per-filter card grid */
+      .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 18px 0; }
+      .filter-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: rgba(22,23,32,0.5); }
+      .filter-card .name { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+      .filter-card p { font-size: 12.5px; color: var(--text-dim); line-height: 1.55; margin: 0; }
+
+      .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 18px 0; }
+      .stack .plot-box { position: relative; aspect-ratio: 1 / 1; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-2); overflow: hidden; }
+      .stack .plot-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .stack .plot-box .label { position: absolute; top: 10px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .stack .plot-box .label b { font-weight: 600; letter-spacing: 0.06em; }
+
+      /* Filter-scene layout: 2D s-plane + Bode side by side, then wide 3D below */
+      .plot-stack { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+      .plot-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .plot-stack .plot-box {
+        position: relative;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--bg-2);
+        overflow: hidden;
+        aspect-ratio: 1 / 1;
+      }
+      .plot-stack .plot-box.wide { aspect-ratio: 1.2 / 1; }
+      .plot-stack .plot-box canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .plot-stack .plot-box .label { position: absolute; top: 10px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .plot-stack .plot-box .label b { font-weight: 600; letter-spacing: 0.06em; }
+      @media (max-width: 640px) {
+        .plot-row { grid-template-columns: 1fr; }
+      }
+
+      .landing { min-height: 100vh; display: grid; place-items: center; padding: 120px 56px 80px; position: relative; text-align: center; }
+      .landing .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 32px; }
+      .landing h1 { max-width: 22ch; margin-left: auto; margin-right: auto; }
+      .landing .sub { color: var(--muted); font-size: 18px; max-width: 60ch; margin: 20px auto 0; line-height: 1.6; }
+      .landing .tags { margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .field-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; display: inline-block; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+      .scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .scroll-hint .line { width: 1px; height: 32px; background: linear-gradient(var(--muted), transparent); animation: pulse 2s infinite; }
+      @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+      footer { padding: 60px 56px 80px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+      @media (max-width: 900px) {
+        section.scene, section.scene.wide { grid-template-columns: 1fr; padding: 80px 24px 60px; }
+        .landing { padding: 100px 24px 60px; }
+        h1.hero { font-size: 44px; }
+        h2 { font-size: 28px; }
+        .back-btn { top: 14px; right: 16px; }
+        .brand { top: 16px; left: 16px; }
+        .control-group { grid-template-columns: 120px 1fr 80px; }
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+</head>
+<body>
+
+<div class="brand"><span class="mark"></span><span>BMEN90033 · Week 7</span></div>
+<a class="back-btn" href="../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
+<div class="rail"><div class="rail-fill" id="rail"></div></div>
+
+<!-- ================= LANDING ================= -->
+<section class="landing" id="s0">
+    <div>
+        <div class="meta">BMEN90033 · WEEK 7 · BIOINSTRUMENTATION</div>
+        <h1 class="hero">High-order <em>filters</em>.</h1>
+        <p class="sub">The first-order RC filter is a pedagogical starting point, not an engineering endpoint. Bioinstrumentation front-ends for electrocardiography, pulse oximetry, and electroencephalography routinely require approximations to the ideal low-pass response that are sharper in the transition band, flatter in the passband, or deeper in the stopband than a single pole can provide. In what follows we present a comparative study of five canonical analog low-pass designs, relating the distribution of poles and zeros in the $s$-plane to the resulting magnitude response and to the steady-state behaviour of each filter under a common input.</p>
+        <div class="tags">
+            <span class="field-tag">1st-order</span>
+            <span class="field-tag">Butterworth</span>
+            <span class="field-tag">Chebyshev I &amp; II</span>
+            <span class="field-tag">Elliptic</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+</section>
+
+<!-- ================= SECTION 1 — WHY HIGHER ORDER ================= -->
+<section class="scene" id="s1">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>why go beyond first order</span></div>
+        <h2>The limitations of the first-order response.</h2>
+        <p class="lead">The elementary single-pole low-pass filter, realised as a series resistor followed by a shunt capacitor, has the transfer function</p>
+        <div class="eq-block">$$H_1(s) = \frac{\omega_c}{s + \omega_c}.$$</div>
+        <p>It possesses a single <em class="imag">pole</em> at $s = -\omega_c$ and no finite zeros. Asymptotically, the magnitude response attenuates at <strong>$20$ dB per decade</strong> above the cutoff — a single order of magnitude reduction for each decade of frequency. This roll-off rate is often inadequate in practice. When an out-of-band interferer such as the $50$ Hz mains fundamental lies within a factor of two of the intended signal band, a first-order response provides negligible rejection.</p>
+        <p>Increasing the slope of the transition band requires additional poles: an $N^{\text{th}}$-order filter attenuates at $N \cdot 20$ dB per decade in the asymptotic stopband. However, the placement of $N$ poles in the left half-plane is not unique, and the resulting degrees of freedom admit a continuum of possible responses. The classical filter families — Butterworth, Chebyshev type I, Chebyshev type II, and elliptic — correspond to the optimal solutions of four distinct approximation problems, each minimising a different measure of deviation from the ideal brick-wall response.</p>
+        <div class="callout">
+            <strong>Four competing design objectives.</strong> Any higher-order approximation must balance passband flatness, stopband attenuation, transition-band steepness, and phase linearity. Improvement in any one criterion is purchased at the expense of at least one of the others, and the selection of a filter family is therefore equivalent to a declaration of which approximation error is tolerable for the application at hand.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.9; max-width: 620px;">
+        <div class="plot">
+            <canvas id="first-order-bode"></canvas>
+            <div class="title">first-order · bode magnitude</div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 2 — BUTTERWORTH ================= -->
+<section class="scene wide" id="s2">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the butterworth filter</span></div>
+        <h2>The <em class="butter">maximally flat</em> approximation.</h2>
+        <p class="lead">The Butterworth filter is defined by the requirement that the magnitude response be maximally flat at the origin: the first $2N-1$ derivatives of $|H(j\omega)|^2$ with respect to $\omega$ vanish at $\omega = 0$. The unique rational approximation satisfying this constraint places all $N$ poles on a semicircle of radius $\omega_c$ in the left half-plane, uniformly spaced by $\pi/N$ radians.</p>
+        <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + (\omega/\omega_c)^{2N}}$$</div>
+        <p>The transfer function contains no finite zeros and all poles are confined to the unit circle when $\omega_c = 1$. The magnitude response is strictly monotonically decreasing on $[0, \infty)$, passes through the half-power point ($-3$ dB) at $\omega = \omega_c$ for every order $N$, and exhibits an asymptotic stopband slope of $N \cdot 20$ dB per decade.</p>
+
+        <h3>Pole placement</h3>
+        <p>For normalised cutoff $\omega_c = 1$, the poles are located at</p>
+        <div class="eq-line">$$p_k = \exp\!\left(j\,\frac{\pi(2k + N - 1)}{2N}\right), \quad k = 1,\dots,N.$$</div>
+        <p>For $N = 4$ the poles occupy angular positions of $112.5^\circ, 157.5^\circ, 202.5^\circ$, and $247.5^\circ$, arranged symmetrically about the negative real axis and bounded away from the imaginary axis. This symmetry is a direct consequence of the flatness constraint.</p>
+
+        <div class="callout butter">
+            <strong>Applicability.</strong> The Butterworth response is the preferred choice when passband fidelity is paramount and no ripple can be tolerated. Typical applications include anti-aliasing prior to analog-to-digital conversion, pre-integration smoothing, and any signal chain in which subsequent processing is sensitive to amplitude distortion within the passband. The associated cost is a comparatively shallow transition band relative to Chebyshev and elliptic designs of equivalent order.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="max-width: 680px;">
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>butterworth</b></div><canvas data-plot="splane" data-filter="butter"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>butterworth vs 1st-order</b></div><canvas data-plot="bode" data-filter="butter" data-compare="first"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>butterworth</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="butter"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 3 — CHEBYSHEV I ================= -->
+<section class="scene wide" id="s3">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>chebyshev type i</span></div>
+        <h2>Equiripple approximation in the <em class="cheby1">passband</em>.</h2>
+        <p class="lead">If a bounded, known variation of the passband magnitude can be accepted, a substantially steeper transition band may be obtained for the same filter order. The Chebyshev type I design embodies this trade: it is the rational function of order $N$ that minimises the maximum passband error subject to a monotonically decreasing stopband response. The resulting poles lie on an <em>ellipse</em> in the left half-plane rather than a circle.</p>
+        <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2\, T_N^2(\omega/\omega_c)}$$</div>
+        <p>Here $T_N$ denotes the Chebyshev polynomial of the first kind of degree $N$, and $\varepsilon = \sqrt{10^{R_p/10} - 1}$ is chosen to yield a prescribed passband ripple $R_p$ in decibels. Because $T_N$ oscillates between $\pm 1$ on the interval $[-1, 1]$, the passband magnitude equi-ripples between unity and $1/\sqrt{1 + \varepsilon^2}$. Outside the passband $T_N(\omega/\omega_c)$ grows as $2^{N-1}(\omega/\omega_c)^N$, which accounts for the steeper roll-off relative to the Butterworth response.</p>
+
+        <h3>Pole placement</h3>
+        <p>Let $v_0 = N^{-1}\sinh^{-1}(1/\varepsilon)$. The poles of the type I design are given by</p>
+        <div class="eq-line">$$p_k = -\sinh(v_0)\sin\theta_k + j\cosh(v_0)\cos\theta_k, \quad \theta_k = \frac{(2k-1)\pi}{2N}.$$</div>
+        <p>The locus is an ellipse with semi-minor axis $\sinh v_0$ along the real direction and semi-major axis $\cosh v_0$ along the imaginary direction. Increasing the admissible ripple decreases $v_0$, flattens the ellipse, and translates the poles toward the imaginary axis, thereby sharpening the transition band at the cost of increased passband variation.</p>
+
+        <div class="callout cheby1">
+            <strong>Applicability.</strong> The Chebyshev type I response is appropriate where a specified, bounded passband ripple (typically fractions of a decibel to a few decibels) is acceptable but a gradual transition is not. It is commonly encountered in anti-aliasing stages whose sampling rate lies close to the signal band and in applications requiring efficient use of filter order.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="max-width: 680px;">
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>chebyshev i</b></div><canvas data-plot="splane" data-filter="cheby1"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>chebyshev i vs butterworth</b></div><canvas data-plot="bode" data-filter="cheby1" data-compare="butter"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>chebyshev i</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="cheby1"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 4 — CHEBYSHEV II ================= -->
+<section class="scene wide" id="s4">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>chebyshev type ii</span></div>
+        <h2>The introduction of <em class="cheby2">finite zeros</em>.</h2>
+        <p class="lead">The inverse approximation problem exchanges the roles of the two frequency bands: the passband is required to be monotonically smooth, while equi-ripple behaviour is admitted in the stopband. The resulting filter is the Chebyshev type II, also termed the inverse Chebyshev design. It is the first of the families considered here whose transfer function contains <em class="time">finite transmission zeros</em> — located on the imaginary axis — producing deep, localised notches in the stopband.</p>
+        <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + \left[\varepsilon^2\, T_N^2(\omega_s/\omega)\right]^{-1}}$$</div>
+        <p>Whereas the Chebyshev polynomial in the type I response oscillates over the passband, its argument in the type II formulation is inverted so that the oscillation is mapped onto the stopband. At each zero of $T_N(\omega_s/\omega)$ the magnitude vanishes exactly, producing the transmission zeros that are observed as sharp nulls in the magnitude response.</p>
+
+        <h3>Zero placement</h3>
+        <div class="eq-line">$$z_k = \pm \frac{j\,\omega_s}{\cos\theta_k}, \quad \theta_k = \frac{(2k-1)\pi}{2N}, \quad k = 1,\dots,\lfloor N/2\rfloor.$$</div>
+        <p>For $N = 4$ with stopband edge $\omega_s = 1.5\,\omega_c$, the zeros are located at approximately $\pm j\,1.62\,\omega_c$ and $\pm j\,3.92\,\omega_c$, situated within the stopband so as to maximise local attenuation.</p>
+
+        <div class="callout cheby2">
+            <strong>Applicability.</strong> The Chebyshev type II response is indicated when passband fidelity is required and specific narrow-band interferers must be attenuated. Typical examples include the rejection of mains harmonics at 50 or 60 Hz, suppression of switching-converter noise, and the removal of coherent carrier components. Placement of the transmission zeros permits targeted attenuation at frequencies of known interference.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="max-width: 680px;">
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>chebyshev ii</b></div><canvas data-plot="splane" data-filter="cheby2"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>chebyshev ii vs butterworth</b></div><canvas data-plot="bode" data-filter="cheby2" data-compare="butter"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>chebyshev ii</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="cheby2"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 5 — ELLIPTIC ================= -->
+<section class="scene wide" id="s5">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the elliptic filter</span></div>
+        <h2>Equiripple in <em class="ellip">both bands</em>.</h2>
+        <p class="lead">The elliptic, or Cauer, filter is the rational approximation obtained when equi-ripple behaviour is permitted in both the passband and the stopband simultaneously. For a given filter order, it achieves the steepest transition band of any rational transfer function, and is optimal in the minimax sense over both bands. Its poles lie on an ellipse, as in the Chebyshev type I design, while its zeros are distributed along the imaginary axis, as in the Chebyshev type II design. Both sets of singularities are determined by the Jacobian elliptic functions, from which the family derives its name.</p>
+        <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2\, R_N^2(\omega/\omega_c,\, L)}$$</div>
+        <p>Here $R_N(\cdot, L)$ denotes the elliptic rational function of degree $N$, parameterised by a selectivity factor $L$ that fixes the ratio of stopband to passband edge frequencies. For the design illustrated here ($N = 4$, $R_p = 1$ dB, $R_s = 40$ dB), the transition from passband to stopband is completed within approximately $1.1\,\omega_c$; a Butterworth filter of the same order requires a further $6$ dB of attenuation at this frequency to reach comparable stopband levels.</p>
+
+        <h3>Singularity structure</h3>
+        <ul>
+            <li>Four poles on an ellipse in close proximity to the imaginary axis, generating the passband ripple.</li>
+            <li>Two conjugate pairs of zeros on the imaginary axis, each within the stopband and responsible for local nulls that bound the stopband ripple.</li>
+            <li>The poles and zeros are related by a reciprocal symmetry across the passband edge, reflecting the self-dual construction of the elliptic approximation.</li>
+        </ul>
+
+        <div class="callout ellip">
+            <strong>Applicability.</strong> The elliptic family is the standard choice where a near-ideal brick-wall magnitude response is required: anti-aliasing stages ahead of delta-sigma converters, channel-selection filters in narrow-band radio-frequency receivers, and output reconstruction in Class-D audio amplifiers. The principal disadvantage is pronounced phase nonlinearity near the band edges, which can produce substantial group-delay distortion. Applications in which waveform morphology is diagnostic—for instance, clinical electrocardiography and oscilloscope front-ends—generally require a design with a more linear phase response.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="max-width: 680px;">
+        <div class="plot-stack">
+            <div class="plot-row">
+                <div class="plot-box"><div class="label">s-plane · <b>elliptic</b></div><canvas data-plot="splane" data-filter="ellip"></canvas></div>
+                <div class="plot-box"><div class="label">bode · <b>elliptic vs butterworth</b></div><canvas data-plot="bode" data-filter="ellip" data-compare="butter"></canvas></div>
+            </div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>elliptic</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="ellip"></canvas></div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 6 — SIDE BY SIDE ================= -->
+<section class="scene full" id="s6">
+    <div class="copy" style="max-width:900px; margin: 0 auto;">
+        <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>side by side</span></div>
+        <h2>Comparative response to a common input.</h2>
+        <p class="lead">The input applied to all five filters is the sum of a <em class="real">low-frequency component</em> situated within the passband and a <em class="imag">high-frequency component</em> situated beyond the cutoff. An ideal low-pass filter preserves the former and eliminates the latter; the deviation of each design from this ideal is evident in the five output panels below. All filters share a common normalised cutoff, and each output is computed from the steady-state sinusoidal response $y(t) = |H(j\omega)|\sin(\omega t + \arg H(j\omega))$ applied to each input component independently.</p>
+
+        <div class="controls" style="max-width:720px;">
+            <div class="control-group"><label>signal freq (low)</label><input type="range" id="fsig-slider" min="0.05" max="0.9" step="0.01" value="0.3"><span class="control-value" id="fsig-val">0.30 ω<sub>c</sub></span></div>
+            <div class="control-group"><label>interferer freq</label><input type="range" id="fnoise-slider" min="1.1" max="4.0" step="0.01" value="2.0"><span class="control-value" id="fnoise-val">2.00 ω<sub>c</sub></span></div>
+            <div class="control-group"><label>interferer amp</label><input type="range" id="anoise-slider" min="0" max="1.5" step="0.01" value="0.6"><span class="control-value" id="anoise-val">0.60</span></div>
+            <div class="control-group"><label>filter order N</label><input type="range" id="order-slider" min="2" max="8" step="1" value="4"><span class="control-value" id="order-val">4</span></div>
+            <div class="btn-row">
+                <button class="pillbtn" id="play-btn">▶ play</button>
+                <button class="pillbtn" id="reset-btn">reset</button>
+            </div>
+        </div>
+
+        <div class="legend" style="margin-top:22px;">
+            <span><i style="background:var(--real)"></i>low-frequency signal (pass)</span>
+            <span><i style="background:var(--imag)"></i>high-frequency interferer (reject)</span>
+            <span><i style="background:var(--fg)"></i>filter output</span>
+        </div>
+    </div>
+
+    <!-- Input signal panel -->
+    <div style="max-width:1100px; margin: 24px auto 0;">
+        <div style="position:relative; aspect-ratio: 4/1; border: 1px solid var(--border); border-radius:12px; background:var(--bg-2); overflow:hidden;">
+            <div style="position:absolute; top:10px; left:14px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); z-index:2;">input signal · <span style="color:var(--fg)">x(t) = sin(ω₁t) + A sin(ω₂t)</span></div>
+            <canvas id="signal-input" style="position:absolute; inset:0; width:100%; height:100%; display:block;"></canvas>
+        </div>
+
+        <!-- Output grid -->
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px,1fr)); gap:14px; margin-top:14px;">
+            <div style="position:relative; aspect-ratio:2/1; border:1px solid var(--border); border-radius:12px; background:var(--bg-2); overflow:hidden;">
+                <div style="position:absolute; top:10px; left:14px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--c-first); z-index:2;">1st-order</div>
+                <canvas data-out="first" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+            </div>
+            <div style="position:relative; aspect-ratio:2/1; border:1px solid var(--border); border-radius:12px; background:var(--bg-2); overflow:hidden;">
+                <div style="position:absolute; top:10px; left:14px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--c-butter); z-index:2;">butterworth</div>
+                <canvas data-out="butter" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+            </div>
+            <div style="position:relative; aspect-ratio:2/1; border:1px solid var(--border); border-radius:12px; background:var(--bg-2); overflow:hidden;">
+                <div style="position:absolute; top:10px; left:14px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--c-cheby1); z-index:2;">chebyshev i</div>
+                <canvas data-out="cheby1" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+            </div>
+            <div style="position:relative; aspect-ratio:2/1; border:1px solid var(--border); border-radius:12px; background:var(--bg-2); overflow:hidden;">
+                <div style="position:absolute; top:10px; left:14px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--c-cheby2); z-index:2;">chebyshev ii</div>
+                <canvas data-out="cheby2" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+            </div>
+            <div style="position:relative; aspect-ratio:2/1; border:1px solid var(--border); border-radius:12px; background:var(--bg-2); overflow:hidden;">
+                <div style="position:absolute; top:10px; left:14px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--c-ellip); z-index:2;">elliptic</div>
+                <canvas data-out="ellip" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+            </div>
+        </div>
+
+        <!-- Overlaid Bode -->
+        <div style="position:relative; aspect-ratio: 4/1.3; border:1px solid var(--border); border-radius:12px; background:var(--bg-2); overflow:hidden; margin-top:14px;">
+            <div style="position:absolute; top:10px; left:14px; font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--muted); z-index:2;">all five · bode magnitude overlay</div>
+            <canvas id="bode-overlay" style="position:absolute; inset:0; width:100%; height:100%; display:block;"></canvas>
+        </div>
+
+        <div class="callout" style="margin-top:22px;">
+            <strong>Interpretation of the traces.</strong> The faint blue envelope in each panel denotes the target low-frequency component. The elliptic and Chebyshev type II outputs exhibit the closest agreement with this reference, reflecting their superior stopband attenuation at the interferer frequency. The Chebyshev type I response attenuates the interferer comparably but introduces visible amplitude variation within the passband. The Butterworth output is free of passband distortion but retains a greater fraction of the interferer. The first-order response provides negligible rejection. The Bode magnitude overlay at the bottom of the figure relates these time-domain observations to the underlying frequency-domain characteristics.
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>Constructed with KaTeX and the HTML canvas element. The five responses illustrated above correspond to four classical approximation problems for the ideal low-pass characteristic.</p>
+</footer>
+
+<script>
+/* ============================================================
+   HIGH-ORDER FILTERS — SHARED CODE
+   ============================================================ */
+
+const COLORS = {
+    first:  'var(--c-first)',
+    butter: 'var(--c-butter)',
+    cheby1: 'var(--c-cheby1)',
+    cheby2: 'var(--c-cheby2)',
+    ellip:  'var(--c-ellip)',
+};
+
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function palette() {
+    return {
+        text: cssVar('--text'),
+        dim: cssVar('--text-dim'),
+        muted: cssVar('--text-muted'),
+        accent: cssVar('--accent'),
+        grid: cssVar('--grid'),
+        border: cssVar('--border'),
+        first: cssVar('--c-first'),
+        butter: cssVar('--c-butter'),
+        cheby1: cssVar('--c-cheby1'),
+        cheby2: cssVar('--c-cheby2'),
+        ellip: cssVar('--c-ellip'),
+        real: cssVar('--real'),
+        imag: cssVar('--imag'),
+        time: cssVar('--time'),
+    };
+}
+
+/* ----- Complex number helpers ----- */
+const Cx = {
+    make: (re, im) => ({ re, im }),
+    add: (a, b) => ({ re: a.re + b.re, im: a.im + b.im }),
+    sub: (a, b) => ({ re: a.re - b.re, im: a.im - b.im }),
+    mul: (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re }),
+    div: (a, b) => {
+        const d = b.re*b.re + b.im*b.im;
+        return { re: (a.re*b.re + a.im*b.im)/d, im: (a.im*b.re - a.re*b.im)/d };
+    },
+    abs: (a) => Math.sqrt(a.re*a.re + a.im*a.im),
+    arg: (a) => Math.atan2(a.im, a.re),
+};
+
+/* ----- Analog filter pole/zero design, all normalised to ωc = 1 ----- */
+function butterworthPoles(N) {
+    const poles = [];
+    for (let k = 1; k <= N; k++) {
+        const theta = Math.PI * (2*k + N - 1) / (2*N);
+        poles.push({ re: Math.cos(theta), im: Math.sin(theta) });
+    }
+    return poles;
+}
+function chebyshev1Poles(N, epsilon) {
+    const v0 = Math.asinh(1/epsilon) / N;
+    const sh = Math.sinh(v0), ch = Math.cosh(v0);
+    const poles = [];
+    for (let k = 1; k <= N; k++) {
+        const th = (2*k - 1) * Math.PI / (2*N);
+        poles.push({ re: -sh * Math.sin(th), im: ch * Math.cos(th) });
+    }
+    return poles;
+}
+function chebyshev2(N, ws, Rs) {
+    // ε for stopband: at ω = ωs attenuation is Rs dB
+    const epsilon = 1 / Math.sqrt(Math.pow(10, Rs/10) - 1);
+    const v0 = Math.asinh(1/epsilon) / N;
+    const sh = Math.sinh(v0), ch = Math.cosh(v0);
+
+    const poles = [];
+    const zeros = [];
+    for (let k = 1; k <= N; k++) {
+        const th = (2*k - 1) * Math.PI / (2*N);
+        // Type 1 pole (inside)
+        const p1 = { re: -sh * Math.sin(th), im: ch * Math.cos(th) };
+        // Type 2 pole is reciprocal of type 1, scaled to ωs
+        const inv = Cx.div({re:1, im:0}, p1);
+        poles.push({ re: ws * inv.re, im: ws * inv.im });
+
+        // Zeros: on jω axis at ωs / cos(theta), only for k where cos !== 0 and taken in conjugate pairs
+        if (Math.abs(Math.cos(th)) > 1e-6 && 2*k - 1 < N) {
+            const zmag = ws / Math.cos(th);
+            zeros.push({ re: 0, im:  zmag });
+            zeros.push({ re: 0, im: -zmag });
+        }
+    }
+    return { poles, zeros };
+}
+/* Elliptic (Cauer) — for the teaching page, use a tabulated design
+   (N=4, Rp=1 dB, Rs=40 dB, ωc=1). Values rounded from a standard table. */
+function ellipticDesign() {
+    return {
+        poles: [
+            { re: -0.1206, im:  1.0062 },
+            { re: -0.1206, im: -1.0062 },
+            { re: -0.3929, im:  0.6829 },
+            { re: -0.3929, im: -0.6829 },
+        ],
+        zeros: [
+            { re: 0, im:  1.2645 },
+            { re: 0, im: -1.2645 },
+            { re: 0, im:  2.3900 },
+            { re: 0, im: -2.3900 },
+        ],
+    };
+}
+
+/* ----- Filter definitions (mutable via order slider) ----- */
+function designFilters(N) {
+    const Rp = 1.0, Rs = 40.0;
+    const epsilon = Math.sqrt(Math.pow(10, Rp/10) - 1);
+    const ws = 1.5;   // stopband edge for Chebyshev II
+    const cheby2 = chebyshev2(N, ws, Rs);
+    // Elliptic: only tabulated for N=4. For other orders fall back to a scaled Chebyshev II look.
+    let ellip;
+    if (N === 4) {
+        ellip = ellipticDesign();
+    } else {
+        // Approximate elliptic shape for other orders: use Cheby II scaled more aggressively
+        const e = chebyshev2(N, 1.3, Rs);
+        ellip = { poles: e.poles, zeros: e.zeros };
+    }
+    return {
+        first:  { poles: [{re:-1, im:0}], zeros: [], order: 1, name: '1st-order' },
+        butter: { poles: butterworthPoles(N), zeros: [], order: N, name: 'Butterworth' },
+        cheby1: { poles: chebyshev1Poles(N, epsilon), zeros: [], order: N, name: 'Chebyshev I', epsilon },
+        cheby2: { poles: cheby2.poles, zeros: cheby2.zeros, order: N, name: 'Chebyshev II' },
+        ellip:  { poles: ellip.poles,  zeros: ellip.zeros,  order: N, name: 'Elliptic' },
+    };
+}
+let FILTERS = designFilters(4);
+
+/* ----- DC normalisation factor so |H(0)| = 1 (cached per filter) ----- */
+function dcNorm(filt) {
+    if (filt._dcNorm !== undefined) return filt._dcNorm;
+    const zero = { re: 0, im: 0 };
+    let numDC = { re: 1, im: 0 };
+    for (const z of filt.zeros) numDC = Cx.mul(numDC, Cx.sub(zero, z));
+    let denDC = { re: 1, im: 0 };
+    for (const p of filt.poles) denDC = Cx.mul(denDC, Cx.sub(zero, p));
+    const H0 = Cx.div(numDC, denDC);
+    const h0abs = Cx.abs(H0);
+    filt._dcNorm = h0abs > 1e-9 ? 1 / h0abs : 1;
+    return filt._dcNorm;
+}
+
+/* ----- Evaluate H(s) at an arbitrary complex s; returns complex H/|H(0)| ----- */
+function evalHAt(filt, s) {
+    let num = { re: 1, im: 0 };
+    for (const z of filt.zeros) num = Cx.mul(num, Cx.sub(s, z));
+    let den = { re: 1, im: 0 };
+    for (const p of filt.poles) den = Cx.mul(den, Cx.sub(s, p));
+    const H = Cx.div(num, den);
+    const k = dcNorm(filt);
+    return { re: H.re * k, im: H.im * k };
+}
+
+/* ----- Evaluate H(jω) ----- */
+function evalH(filt, w) {
+    return evalHAt(filt, { re: 0, im: w });
+}
+
+/* ============================================================
+   CANVAS HELPERS
+   ============================================================ */
+function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, W: rect.width, H: rect.height };
+}
+
+/* ============================================================
+   S-PLANE PLOT
+   ============================================================ */
+function drawSPlane(canvas, filterKey, opts = {}) {
+    const { ctx, W, H } = setupCanvas(canvas);
+    const c = palette();
+    const filt = FILTERS[filterKey];
+    const colour = c[filterKey] || c.accent;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const padL = 44, padR = 20, padT = 38, padB = 38;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const cx = padL + plotW / 2;
+    const cy = padT + plotH / 2;
+
+    // axis range depends on filter (zeros can be far out)
+    let maxExt = 1.6;
+    for (const p of filt.poles) maxExt = Math.max(maxExt, Math.abs(p.re) + 0.3, Math.abs(p.im) + 0.3);
+    for (const z of filt.zeros) maxExt = Math.max(maxExt, Math.abs(z.im) + 0.3);
+    maxExt = Math.min(maxExt, 3.2);
+
+    const scale = Math.min(plotW, plotH) / (2 * maxExt);
+    const xMap = (re) => cx + re * scale;
+    const yMap = (im) => cy - im * scale;
+
+    // grid
+    ctx.strokeStyle = c.grid;
+    ctx.lineWidth = 1;
+    const step = 0.5;
+    for (let v = -maxExt; v <= maxExt; v += step) {
+        if (Math.abs(v) < 1e-6) continue;
+        ctx.beginPath();
+        ctx.moveTo(xMap(v), padT);
+        ctx.lineTo(xMap(v), padT + plotH);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(padL, yMap(v));
+        ctx.lineTo(padL + plotW, yMap(v));
+        ctx.stroke();
+    }
+
+    // LHP shading
+    ctx.fillStyle = 'rgba(88,166,255,0.04)';
+    ctx.fillRect(padL, padT, (cx - padL), plotH);
+
+    // axes
+    ctx.strokeStyle = c.muted;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(padL, cy); ctx.lineTo(padL + plotW, cy);
+    ctx.moveTo(cx, padT); ctx.lineTo(cx, padT + plotH);
+    ctx.stroke();
+
+    // axis labels
+    ctx.fillStyle = c.muted;
+    ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('σ', padL + plotW - 4, cy - 10);
+    ctx.textAlign = 'left';
+    ctx.fillText('jω', cx + 6, padT + 10);
+
+    // unit circle at ωc = 1 (useful reference)
+    ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, scale, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // poles (×) and zeros (○)
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = colour;
+    for (const p of filt.poles) {
+        const x = xMap(p.re), y = yMap(p.im);
+        const r = 7;
+        ctx.beginPath();
+        ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y + r);
+        ctx.moveTo(x - r, y + r); ctx.lineTo(x + r, y - r);
+        ctx.stroke();
+    }
+    ctx.fillStyle = 'transparent';
+    for (const z of filt.zeros) {
+        const x = xMap(z.re), y = yMap(z.im);
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // footer count
+    ctx.fillStyle = c.muted;
+    ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(`${filt.poles.length} poles · ${filt.zeros.length} zeros`, padL, padT + plotH + 22);
+}
+
+/* ============================================================
+   3D S-PLANE MAGNITUDE SURFACE (wireframe) with highlighted jω trace
+   ============================================================ */
+function hexToRgb(hex) {
+    return {
+        r: parseInt(hex.slice(1, 3), 16),
+        g: parseInt(hex.slice(3, 5), 16),
+        b: parseInt(hex.slice(5, 7), 16),
+    };
+}
+
+const _splane3dState = new WeakMap();
+
+function attach3DDragHandlers(canvas) {
+    let dragging = false;
+    let lastX = 0, lastY = 0;
+    canvas.style.cursor = 'grab';
+    canvas.style.touchAction = 'none';
+
+    canvas.addEventListener('pointerdown', (e) => {
+        const state = _splane3dState.get(canvas);
+        if (!state) return;
+        dragging = true;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        canvas.style.cursor = 'grabbing';
+        canvas.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        const state = _splane3dState.get(canvas);
+        if (!state) return;
+        const dx = e.clientX - lastX;
+        const dy = e.clientY - lastY;
+        lastX = e.clientX;
+        lastY = e.clientY;
+        state.azim += dx * 0.008;
+        // Clamp elevation to (0, π/2) so the camera can never go below the base plane
+        // (looking up at the underside) or overshoot straight down (flipping the view).
+        const elevMin = 0.05;                 // ~3° above the base plane
+        const elevMax = Math.PI / 2 - 0.05;   // ~87°, just shy of top-down
+        state.elev = Math.max(elevMin, Math.min(elevMax, state.elev + dy * 0.008));
+        drawSPlane3D(canvas, state.filterKey);
+    });
+
+    const endDrag = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        canvas.style.cursor = 'grab';
+        if (e && e.pointerId !== undefined && canvas.hasPointerCapture && canvas.hasPointerCapture(e.pointerId)) {
+            canvas.releasePointerCapture(e.pointerId);
+        }
+    };
+    canvas.addEventListener('pointerup', endDrag);
+    canvas.addEventListener('pointercancel', endDrag);
+    canvas.addEventListener('pointerleave', endDrag);
+
+    // Double-click restores default view
+    canvas.addEventListener('dblclick', () => {
+        const state = _splane3dState.get(canvas);
+        if (!state) return;
+        state.azim = -Math.PI / 5;
+        state.elev = Math.PI * 0.18;
+        drawSPlane3D(canvas, state.filterKey);
+    });
+}
+
+function drawSPlane3D(canvas, filterKey) {
+    let state = _splane3dState.get(canvas);
+    if (!state) {
+        state = { azim: -Math.PI / 5, elev: Math.PI * 0.18, filterKey };
+        _splane3dState.set(canvas, state);
+        attach3DDragHandlers(canvas);
+    } else {
+        state.filterKey = filterKey;
+    }
+
+    const { ctx, W, H } = setupCanvas(canvas);
+    const c = palette();
+    const filt = FILTERS[filterKey];
+    const filterHex = c[filterKey] || c.accent;
+    const rgb = hexToRgb(filterHex);
+    const fRgb = (a) => `rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;
+
+    ctx.clearRect(0, 0, W, H);
+
+    // View parameters (right-handed: x = σ, y = ω, z = magnitude)
+    // Default azim places +σ upper-right, +ω lower-right; the jω axis runs diagonally.
+    // Both angles are mutated by drag to allow free rotation.
+    const azim = state.azim;
+    const elev = state.elev;
+    const cosA = Math.cos(azim), sinA = Math.sin(azim);
+    const cosE = Math.cos(elev), sinE = Math.sin(elev);
+
+    // Data range (wide enough to contain every singularity of every filter)
+    const sigmaMin = -1.8, sigmaMax = 0.4;
+    const omegaMin = -4.2, omegaMax = 4.2;
+    const dbMin = -50, dbMax = 25;
+    const sigmaMid = (sigmaMin + sigmaMax) / 2, sigmaHalf = (sigmaMax - sigmaMin) / 2;
+    const omegaMid = (omegaMin + omegaMax) / 2, omegaHalf = (omegaMax - omegaMin) / 2;
+    const dbMid = (dbMin + dbMax) / 2, dbHalf = (dbMax - dbMin) / 2;
+
+    const padL = 22, padR = 22, padT = 40, padB = 28;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    // IMPORTANT: use a SINGLE spatial scale for σ and ω so geometric relationships
+    // are preserved — a Butterworth pole circle stays circular, a Chebyshev pole
+    // ellipse stays elliptical, and pole placement matches the 2D s-plane view.
+    // The magnitude axis (dB) uses its own vertical scale.
+    const xyScale = Math.max(sigmaHalf, omegaHalf);
+
+    function projUnit(x, y, zn) {
+        // Rotate about vertical (magnitude) axis
+        const x1 = x * cosA - y * sinA;
+        const y1 = x * sinA + y * cosA;
+        // Tilt so positive magnitude comes toward viewer
+        const y2 = y1 * cosE + zn * sinE;
+        const z2 = -y1 * sinE + zn * cosE;
+        // Return unscaled screen-space coordinates (sxR, syR) and depth.
+        return { sxR: x1, syR: -z2, depth: y2 };
+    }
+
+    // Determine the projected bounding box over the 8 corners of the σ×ω×|H| box,
+    // then choose `scale` and (cx, cy) so that the box is centered and fits with a
+    // small margin — regardless of the current rotation.
+    const xLo = omegaMin / xyScale, xHi = omegaMax / xyScale;
+    const yLo = sigmaMin / xyScale, yHi = sigmaMax / xyScale;
+    let minSx = Infinity, maxSx = -Infinity, minSy = Infinity, maxSy = -Infinity;
+    for (const x of [xLo, xHi]) {
+        for (const y of [yLo, yHi]) {
+            for (const zn of [-1, 1]) {
+                const p = projUnit(x, y, zn);
+                if (p.sxR < minSx) minSx = p.sxR;
+                if (p.sxR > maxSx) maxSx = p.sxR;
+                if (p.syR < minSy) minSy = p.syR;
+                if (p.syR > maxSy) maxSy = p.syR;
+            }
+        }
+    }
+    const margin = 22;
+    const scale = Math.min(
+        (plotW - 2 * margin) / (maxSx - minSx),
+        (plotH - 2 * margin) / (maxSy - minSy)
+    );
+    const cx = padL + plotW / 2 - (minSx + maxSx) / 2 * scale;
+    const cy = padT + plotH / 2 - (minSy + maxSy) / 2 * scale;
+
+    function proj(sigma, omega, db) {
+        // σ and ω are normalised by the SAME factor so pole/zero geometry is accurate.
+        // Map ω → horizontal (x), σ → depth (y), |H| dB → vertical (z).
+        const x = omega / xyScale;
+        const y = sigma / xyScale;
+        const zn = Math.max(-1, Math.min(1, (db - dbMid) / dbHalf));
+        const p = projUnit(x, y, zn);
+        return { sx: cx + p.sxR * scale, sy: cy + p.syR * scale, depth: p.depth };
+    }
+    const projBase = (sigma, omega) => proj(sigma, omega, dbMin);
+
+    // Label offset helper — pushes a label radially outward from the data origin so
+    // it sits just outside the axis endpoint regardless of current rotation.
+    function labelOffset(p, px) {
+        const dx = p.sx - cx, dy = p.sy - cy;
+        const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+        return { sx: p.sx + dx / mag * px, sy: p.sy + dy / mag * px };
+    }
+
+    // Magnitude in dB at (σ, ω)
+    function magDb(sigma, omega) {
+        const Hs = evalHAt(filt, { re: sigma, im: omega });
+        const mag = Cx.abs(Hs);
+        return 20 * Math.log10(Math.max(mag, 1e-8));
+    }
+
+    // Build surface grid
+    const nS = 24, nO = 38;
+    const surf = [];
+    for (let i = 0; i <= nS; i++) {
+        const row = [];
+        const sigma = sigmaMin + (sigmaMax - sigmaMin) * i / nS;
+        for (let j = 0; j <= nO; j++) {
+            const omega = omegaMin + (omegaMax - omegaMin) * j / nO;
+            const dbClamped = Math.max(dbMin, Math.min(dbMax, magDb(sigma, omega)));
+            const p = proj(sigma, omega, dbClamped);
+            row.push({ sigma, omega, db: dbClamped, sx: p.sx, sy: p.sy, depth: p.depth });
+        }
+        surf.push(row);
+    }
+
+    // ---- Base plane: light grid ----
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 1;
+    const baseStrideS = 4, baseStrideO = 6;
+    for (let i = 0; i <= nS; i += baseStrideS) {
+        ctx.beginPath();
+        const sigma = sigmaMin + (sigmaMax - sigmaMin) * i / nS;
+        for (let j = 0; j <= nO; j++) {
+            const omega = omegaMin + (omegaMax - omegaMin) * j / nO;
+            const pp = projBase(sigma, omega);
+            if (j === 0) ctx.moveTo(pp.sx, pp.sy); else ctx.lineTo(pp.sx, pp.sy);
+        }
+        ctx.stroke();
+    }
+    for (let j = 0; j <= nO; j += baseStrideO) {
+        ctx.beginPath();
+        const omega = omegaMin + (omegaMax - omegaMin) * j / nO;
+        for (let i = 0; i <= nS; i++) {
+            const sigma = sigmaMin + (sigmaMax - sigmaMin) * i / nS;
+            const pp = projBase(sigma, omega);
+            if (i === 0) ctx.moveTo(pp.sx, pp.sy); else ctx.lineTo(pp.sx, pp.sy);
+        }
+        ctx.stroke();
+    }
+
+    // ---- Base axes: σ axis and jω axis ----
+    ctx.strokeStyle = c.muted;
+    ctx.lineWidth = 1.3;
+    {
+        const p1 = projBase(sigmaMin, 0), p2 = projBase(sigmaMax, 0);
+        ctx.beginPath(); ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.stroke();
+    }
+    {
+        const p1 = projBase(0, omegaMin), p2 = projBase(0, omegaMax);
+        ctx.beginPath(); ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.stroke();
+    }
+
+    // Axis labels on base plane — radial offset so they stay outside the cube
+    ctx.font = "500 11px 'JetBrains Mono', monospace";
+    ctx.fillStyle = c.muted;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    {
+        const endP = projBase(sigmaMax, 0);
+        const lab = labelOffset(endP, 14);
+        ctx.fillText('+σ', lab.sx, lab.sy);
+        const endN = projBase(sigmaMin, 0);
+        const labN = labelOffset(endN, 14);
+        ctx.fillText('−σ', labN.sx, labN.sy);
+    }
+    {
+        const endP = projBase(0, omegaMax);
+        const lab = labelOffset(endP, 14);
+        ctx.fillText('+jω', lab.sx, lab.sy);
+        const endN = projBase(0, omegaMin);
+        const labN = labelOffset(endN, 14);
+        ctx.fillText('−jω', labN.sx, labN.sy);
+    }
+
+    // ---- Pole / zero markers on base plane ----
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = filterHex;
+    for (const pole of filt.poles) {
+        const bp = projBase(pole.re, pole.im);
+        const r = 5;
+        ctx.beginPath();
+        ctx.moveTo(bp.sx - r, bp.sy - r); ctx.lineTo(bp.sx + r, bp.sy + r);
+        ctx.moveTo(bp.sx - r, bp.sy + r); ctx.lineTo(bp.sx + r, bp.sy - r);
+        ctx.stroke();
+
+        // Dashed vertical "spike" going up toward the clipped maximum — hints at the singularity
+        const topP = proj(pole.re, pole.im, dbMax);
+        ctx.save();
+        ctx.setLineDash([2, 3]);
+        ctx.strokeStyle = fRgb(0.7);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(bp.sx, bp.sy); ctx.lineTo(topP.sx, topP.sy); ctx.stroke();
+        ctx.restore();
+    }
+    for (const z of filt.zeros) {
+        const bp = projBase(z.re, z.im);
+        ctx.strokeStyle = c.time;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(bp.sx, bp.sy, 5, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+
+    // ---- Surface wireframe (painter's algorithm on lines) ----
+    const lines = [];
+    const strideS = 2;
+    for (let i = 0; i <= nS; i += strideS) {
+        const pts = surf[i];
+        let sum = 0;
+        for (const p of pts) sum += p.depth;
+        lines.push({ pts, avg: sum / pts.length, kind: 's' });
+    }
+    const strideO = 3;
+    for (let j = 0; j <= nO; j += strideO) {
+        const pts = [];
+        for (let i = 0; i <= nS; i++) pts.push(surf[i][j]);
+        let sum = 0;
+        for (const p of pts) sum += p.depth;
+        lines.push({ pts, avg: sum / pts.length, kind: 'o' });
+    }
+    // Back-to-front
+    lines.sort((a, b) => b.avg - a.avg);
+
+    for (const line of lines) {
+        // Segment-wise stroke so colour tracks local magnitude
+        for (let k = 0; k < line.pts.length - 1; k++) {
+            const p0 = line.pts[k], p1 = line.pts[k + 1];
+            const avgDb = (p0.db + p1.db) / 2;
+            const t = Math.max(0, Math.min(1, (avgDb - dbMin) / (dbMax - dbMin)));
+            const alpha = 0.18 + t * 0.65;
+            ctx.strokeStyle = fRgb(alpha);
+            ctx.lineWidth = line.kind === 's' ? 1.2 : 1;
+            ctx.beginPath();
+            ctx.moveTo(p0.sx, p0.sy);
+            ctx.lineTo(p1.sx, p1.sy);
+            ctx.stroke();
+        }
+    }
+
+    // ---- Highlighted jω axis trace = the Bode curve on the surface ----
+    const bodeSteps = 160;
+    const bodePts = [];
+    for (let k = 0; k <= bodeSteps; k++) {
+        const t = k / bodeSteps;
+        const omega = omegaMin + (omegaMax - omegaMin) * t;
+        const db = Math.max(dbMin, Math.min(dbMax, magDb(0, omega)));
+        bodePts.push(proj(0, omega, db));
+    }
+
+    // Glow pass
+    ctx.save();
+    ctx.strokeStyle = fRgb(0.35);
+    ctx.lineWidth = 6;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(bodePts[0].sx, bodePts[0].sy);
+    for (let k = 1; k < bodePts.length; k++) ctx.lineTo(bodePts[k].sx, bodePts[k].sy);
+    ctx.stroke();
+    // Bright core
+    ctx.strokeStyle = filterHex;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(bodePts[0].sx, bodePts[0].sy);
+    for (let k = 1; k < bodePts.length; k++) ctx.lineTo(bodePts[k].sx, bodePts[k].sy);
+    ctx.stroke();
+    ctx.restore();
+
+    // Projection of the Bode trace onto the base plane (to emphasise it lives on σ=0)
+    ctx.save();
+    ctx.setLineDash([2, 3]);
+    ctx.strokeStyle = fRgb(0.5);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let k = 0; k <= bodeSteps; k += 2) {
+        const t = k / bodeSteps;
+        const omega = omegaMin + (omegaMax - omegaMin) * t;
+        const pb = projBase(0, omega);
+        if (k === 0) ctx.moveTo(pb.sx, pb.sy); else ctx.lineTo(pb.sx, pb.sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // Cutoff tick on the positive jω axis (ω = +1): base mark, vertical riser, and on-surface marker.
+    {
+        const baseP = projBase(0, 1);
+        const db1 = Math.max(dbMin, Math.min(dbMax, magDb(0, 1)));
+        const topP = proj(0, 1, db1);
+
+        // Dashed riser from base to surface at ω = +1
+        ctx.save();
+        ctx.setLineDash([2, 3]);
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(baseP.sx, baseP.sy);
+        ctx.lineTo(topP.sx, topP.sy);
+        ctx.stroke();
+        ctx.restore();
+
+        // Base tick
+        ctx.fillStyle = c.text;
+        ctx.beginPath();
+        ctx.arc(baseP.sx, baseP.sy, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // On-surface marker
+        ctx.fillStyle = c.text;
+        ctx.strokeStyle = filterHex;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(topP.sx, topP.sy, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Label
+        ctx.font = "500 10px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = c.text;
+        ctx.fillText('ωc = +1', topP.sx + 7, topP.sy - 2);
+    }
+
+    // ---- Legend ----
+    ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const lx = padL + 4, ly0 = padT + 4;
+    // highlighted jω trace
+    ctx.strokeStyle = filterHex;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(lx, ly0 + 6); ctx.lineTo(lx + 20, ly0 + 6); ctx.stroke();
+    ctx.fillStyle = c.dim;
+    ctx.fillText('|H(jω)| trace', lx + 26, ly0 + 6);
+    // pole symbol
+    ctx.strokeStyle = filterHex;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(lx + 4, ly0 + 22 - 4); ctx.lineTo(lx + 12, ly0 + 22 + 4);
+    ctx.moveTo(lx + 4, ly0 + 22 + 4); ctx.lineTo(lx + 12, ly0 + 22 - 4);
+    ctx.stroke();
+    ctx.fillStyle = c.dim;
+    ctx.fillText(`${filt.poles.length} poles`, lx + 26, ly0 + 22);
+    // zero symbol
+    if (filt.zeros.length) {
+        ctx.strokeStyle = c.time;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(lx + 8, ly0 + 38, 4, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = c.dim;
+        ctx.fillText(`${filt.zeros.length} zeros`, lx + 26, ly0 + 38);
+    }
+}
+
+/* ============================================================
+   BODE MAGNITUDE PLOT (dB vs log ω)
+   ============================================================ */
+function drawBode(canvas, filterKey, compareKey) {
+    const { ctx, W, H } = setupCanvas(canvas);
+    const c = palette();
+    ctx.clearRect(0, 0, W, H);
+
+    const padL = 48, padR = 20, padT = 36, padB = 34;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    const wMin = 0.05, wMax = 10;
+    const dbMin = -70, dbMax = 8;
+
+    const xMap = (w) => padL + (Math.log10(w) - Math.log10(wMin)) / (Math.log10(wMax) - Math.log10(wMin)) * plotW;
+    const yMap = (db) => padT + (1 - (db - dbMin) / (dbMax - dbMin)) * plotH;
+
+    // grid (decades + dB gridlines)
+    ctx.strokeStyle = c.grid;
+    ctx.lineWidth = 1;
+    for (let dec = -2; dec <= 1; dec++) {
+        for (let m = 1; m <= 9; m++) {
+            const w = m * Math.pow(10, dec);
+            if (w < wMin || w > wMax) continue;
+            ctx.globalAlpha = (m === 1) ? 0.7 : 0.25;
+            ctx.beginPath();
+            ctx.moveTo(xMap(w), padT); ctx.lineTo(xMap(w), padT + plotH);
+            ctx.stroke();
+        }
+    }
+    ctx.globalAlpha = 1;
+    for (let db = dbMin; db <= dbMax; db += 10) {
+        ctx.globalAlpha = (db === 0) ? 0.6 : 0.3;
+        ctx.beginPath();
+        ctx.moveTo(padL, yMap(db));
+        ctx.lineTo(padL + plotW, yMap(db));
+        ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // axes labels
+    ctx.fillStyle = c.muted;
+    ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'center';
+    for (let dec = -1; dec <= 1; dec++) {
+        const w = Math.pow(10, dec);
+        ctx.fillText(w < 1 ? w.toFixed(1) : String(w), xMap(w), padT + plotH + 14);
+    }
+    ctx.fillText('ω / ωc', padL + plotW/2, padT + plotH + 28);
+
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    for (let db = dbMin; db <= dbMax; db += 20) {
+        ctx.fillText(String(db), padL - 6, yMap(db));
+    }
+    ctx.save();
+    ctx.translate(padL - 32, padT + plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('|H| (dB)', 0, 0);
+    ctx.restore();
+
+    // cutoff marker
+    ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xMap(1), padT); ctx.lineTo(xMap(1), padT + plotH);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // plot helper
+    function plotCurve(key, lineWidth, alpha) {
+        const filt = FILTERS[key];
+        const col = c[key] || c.accent;
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = alpha;
+        ctx.lineWidth = lineWidth;
+        ctx.beginPath();
+        let started = false;
+        const steps = 600;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const w = Math.pow(10, Math.log10(wMin) + t * (Math.log10(wMax) - Math.log10(wMin)));
+            const H = evalH(filt, w);
+            const mag = Cx.abs(H);
+            let db = 20 * Math.log10(Math.max(mag, 1e-7));
+            if (db < dbMin) db = dbMin;
+            const x = xMap(w), y = yMap(db);
+            if (!started) { ctx.moveTo(x, y); started = true; }
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+    }
+
+    if (compareKey) plotCurve(compareKey, 1.5, 0.45);
+    plotCurve(filterKey, 2.2, 1.0);
+
+    // legend
+    ctx.font = "500 10px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    let ly = padT + 14;
+    const drawLegend = (key, x) => {
+        ctx.strokeStyle = c[key];
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x, ly); ctx.lineTo(x + 18, ly);
+        ctx.stroke();
+        ctx.fillStyle = c.dim;
+        ctx.fillText(FILTERS[key].name, x + 24, ly);
+    };
+    if (compareKey) {
+        drawLegend(compareKey, padL + plotW - 180);
+        ly += 16;
+    }
+    drawLegend(filterKey, padL + plotW - 180);
+}
+
+/* ============================================================
+   FIRST-ORDER HERO BODE + ROLL-OFF
+   ============================================================ */
+(function() {
+    const canvas = document.getElementById('first-order-bode');
+    if (!canvas) return;
+
+    function draw() {
+        const { ctx, W, H } = setupCanvas(canvas);
+        const c = palette();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 56, padR = 24, padT = 48, padB = 44;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+
+        const wMin = 0.05, wMax = 20;
+        const dbMin = -80, dbMax = 8;
+        const xMap = (w) => padL + (Math.log10(w) - Math.log10(wMin)) / (Math.log10(wMax) - Math.log10(wMin)) * plotW;
+        const yMap = (db) => padT + (1 - (db - dbMin) / (dbMax - dbMin)) * plotH;
+
+        // grid
+        ctx.strokeStyle = c.grid;
+        ctx.lineWidth = 1;
+        for (let dec = -1; dec <= 1; dec++) {
+            for (let m = 1; m <= 9; m++) {
+                const w = m * Math.pow(10, dec);
+                if (w < wMin || w > wMax) continue;
+                ctx.globalAlpha = (m === 1) ? 0.7 : 0.2;
+                ctx.beginPath();
+                ctx.moveTo(xMap(w), padT); ctx.lineTo(xMap(w), padT + plotH);
+                ctx.stroke();
+            }
+        }
+        ctx.globalAlpha = 1;
+        for (let db = dbMin; db <= dbMax; db += 20) {
+            ctx.globalAlpha = (db === 0) ? 0.6 : 0.3;
+            ctx.beginPath();
+            ctx.moveTo(padL, yMap(db)); ctx.lineTo(padL + plotW, yMap(db));
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        // axis labels
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        for (let dec = -1; dec <= 1; dec++) {
+            const w = Math.pow(10, dec);
+            ctx.fillText(w < 1 ? w.toFixed(1) : String(w), xMap(w), padT + plotH + 16);
+        }
+        ctx.fillText('ω / ωc', padL + plotW / 2, padT + plotH + 32);
+
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let db = dbMin; db <= dbMax; db += 20) {
+            ctx.fillText(String(db), padL - 8, yMap(db));
+        }
+        ctx.save();
+        ctx.translate(padL - 38, padT + plotH / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.textAlign = 'center';
+        ctx.fillText('|H| (dB)', 0, 0);
+        ctx.restore();
+
+        // cutoff line
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xMap(1), padT); ctx.lineTo(xMap(1), padT + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = c.muted;
+        ctx.textAlign = 'center';
+        ctx.fillText('ωc', xMap(1), padT - 8);
+
+        // asymptote
+        ctx.strokeStyle = 'rgba(255,207,92,0.3)';
+        ctx.setLineDash([4, 5]);
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(xMap(0.1), yMap(0));
+        ctx.lineTo(xMap(1), yMap(0));
+        ctx.lineTo(xMap(10), yMap(-20));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(255,207,92,0.65)';
+        ctx.font = "500 10px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('−20 dB / decade', xMap(2), yMap(-14));
+
+        // actual curve: H(s) = 1/(s+1)
+        ctx.strokeStyle = c.first;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        let started = false;
+        const steps = 600;
+        for (let i = 0; i <= steps; i++) {
+            const t = i / steps;
+            const w = Math.pow(10, Math.log10(wMin) + t * (Math.log10(wMax) - Math.log10(wMin)));
+            const mag = 1 / Math.sqrt(1 + w * w);
+            const db = 20 * Math.log10(mag);
+            const x = xMap(w), y = yMap(Math.max(db, dbMin));
+            if (!started) { ctx.moveTo(x, y); started = true; }
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // −3 dB marker at cutoff
+        ctx.fillStyle = c.first;
+        ctx.beginPath();
+        ctx.arc(xMap(1), yMap(-3.01), 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.font = "500 10px 'JetBrains Mono', monospace";
+        ctx.fillStyle = c.dim;
+        ctx.textAlign = 'left';
+        ctx.fillText('−3 dB at ωc', xMap(1.2), yMap(-3.01) + 4);
+
+        // title
+        ctx.fillStyle = c.text;
+        ctx.font = "600 13px 'Inter', sans-serif";
+        ctx.textAlign = 'left';
+        ctx.fillText('H(s) = 1 / (s + ωc)', padL, 28);
+    }
+
+    draw();
+    window.addEventListener('resize', draw);
+})();
+
+/* ============================================================
+   RENDER S-PLANE / BODE PANELS IN SCENES 2..5
+   ============================================================ */
+function renderComparisonPanels() {
+    document.querySelectorAll('canvas[data-plot="splane3d"]').forEach(cv => {
+        drawSPlane3D(cv, cv.dataset.filter);
+    });
+    document.querySelectorAll('canvas[data-plot="splane"]').forEach(cv => {
+        drawSPlane(cv, cv.dataset.filter);
+    });
+    document.querySelectorAll('canvas[data-plot="bode"]').forEach(cv => {
+        drawBode(cv, cv.dataset.filter, cv.dataset.compare);
+    });
+}
+renderComparisonPanels();
+window.addEventListener('resize', renderComparisonPanels);
+
+/* ============================================================
+   SECTION 6 — SIGNAL FILTERING + BODE OVERLAY
+   ============================================================ */
+(function() {
+    const fsigS   = document.getElementById('fsig-slider');
+    const fnoiseS = document.getElementById('fnoise-slider');
+    const anoiseS = document.getElementById('anoise-slider');
+    const orderS  = document.getElementById('order-slider');
+    const fsigV   = document.getElementById('fsig-val');
+    const fnoiseV = document.getElementById('fnoise-val');
+    const anoiseV = document.getElementById('anoise-val');
+    const orderV  = document.getElementById('order-val');
+    const playBtn = document.getElementById('play-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const inputCanvas = document.getElementById('signal-input');
+    const bodeCanvas  = document.getElementById('bode-overlay');
+    const outputCanvases = {};
+    document.querySelectorAll('canvas[data-out]').forEach(cv => {
+        outputCanvases[cv.dataset.out] = cv;
+    });
+
+    let t0 = performance.now() / 1000;
+    let running = true;
+    let phase = 0;
+    let lastT = performance.now();
+
+    function params() {
+        return {
+            fsig:   parseFloat(fsigS.value),
+            fnoise: parseFloat(fnoiseS.value),
+            anoise: parseFloat(anoiseS.value),
+            N:      parseInt(orderS.value, 10),
+        };
+    }
+    function updateLabels() {
+        const p = params();
+        fsigV.textContent   = p.fsig.toFixed(2) + ' ωc';
+        fnoiseV.textContent = p.fnoise.toFixed(2) + ' ωc';
+        anoiseV.textContent = p.anoise.toFixed(2);
+        orderV.textContent  = String(p.N);
+    }
+
+    function redesign() {
+        FILTERS = designFilters(parseInt(orderS.value, 10));
+        renderComparisonPanels();   // keep the cards in sync with order slider
+    }
+
+    [fsigS, fnoiseS, anoiseS].forEach(s => s.addEventListener('input', () => { updateLabels(); }));
+    orderS.addEventListener('input', () => { updateLabels(); redesign(); });
+
+    playBtn.addEventListener('click', () => {
+        running = !running;
+        playBtn.textContent = running ? '❚❚ pause' : '▶ play';
+        if (running) lastT = performance.now();
+    });
+    resetBtn.addEventListener('click', () => {
+        phase = 0; t0 = performance.now() / 1000;
+    });
+
+    /* At the given input (ω1,ω2, A), filter output in steady state is
+       y(t) = |H(jω1)|·sin(ω1 t + φ1) + A·|H(jω2)|·sin(ω2 t + φ2)
+       where φi = arg H(jωi). Pure linear-time-invariant steady-state prediction. */
+    function drawInput() {
+        const { ctx, W, H } = setupCanvas(inputCanvas);
+        const c = palette();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 40, padR = 20, padT = 30, padB = 22;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+        const midY = padT + plotH / 2;
+
+        // frame
+        ctx.strokeStyle = c.grid;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, midY); ctx.lineTo(padL + plotW, midY);
+        ctx.stroke();
+
+        const p = params();
+        const tSpan = 20; // seconds shown
+        const steps = 800;
+
+        function drawWave(color, lw, alpha, fn) {
+            ctx.strokeStyle = color;
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = lw;
+            ctx.beginPath();
+            for (let i = 0; i <= steps; i++) {
+                const tt = (i / steps) * tSpan;
+                const y = fn(tt);
+                const x = padL + (i / steps) * plotW;
+                const yy = midY - y * plotH * 0.35;
+                if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
+
+        // components
+        drawWave(c.real, 1.6, 0.7, (tt) => Math.sin(p.fsig * tt + phase));
+        drawWave(c.imag, 1.4, 0.55, (tt) => p.anoise * Math.sin(p.fnoise * tt + phase * 1.3));
+        // combined
+        drawWave(c.text, 2.0, 0.95, (tt) => Math.sin(p.fsig * tt + phase) + p.anoise * Math.sin(p.fnoise * tt + phase * 1.3));
+    }
+
+    function drawOutput(canvas, filterKey) {
+        const { ctx, W, H } = setupCanvas(canvas);
+        const c = palette();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 30, padR = 14, padT = 30, padB = 18;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+        const midY = padT + plotH / 2;
+        const col = c[filterKey];
+
+        // frame
+        ctx.strokeStyle = c.grid;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padL, midY); ctx.lineTo(padL + plotW, midY);
+        ctx.stroke();
+
+        const p = params();
+        const filt = FILTERS[filterKey];
+        const H1 = evalH(filt, p.fsig);
+        const H2 = evalH(filt, p.fnoise);
+        const mag1 = Cx.abs(H1), arg1 = Cx.arg(H1);
+        const mag2 = Cx.abs(H2), arg2 = Cx.arg(H2);
+
+        // ghost of input
+        ctx.strokeStyle = c.real;
+        ctx.globalAlpha = 0.22;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const steps = 400;
+        const tSpan = 20;
+        for (let i = 0; i <= steps; i++) {
+            const tt = (i / steps) * tSpan;
+            const y = Math.sin(p.fsig * tt + phase);
+            const x = padL + (i / steps) * plotW;
+            const yy = midY - y * plotH * 0.38;
+            if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+
+        // filter output
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i <= steps; i++) {
+            const tt = (i / steps) * tSpan;
+            const y = mag1 * Math.sin(p.fsig * tt + phase + arg1)
+                    + p.anoise * mag2 * Math.sin(p.fnoise * tt + phase * 1.3 + arg2);
+            const x = padL + (i / steps) * plotW;
+            const yy = midY - y * plotH * 0.38;
+            if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+        }
+        ctx.stroke();
+
+        // readout: residual interferer amplitude
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 9.5px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'right';
+        const residual = (p.anoise * mag2).toFixed(3);
+        const passed = mag1.toFixed(3);
+        ctx.fillText(`pass ${passed} · reject ${residual}`, padL + plotW - 6, padT + plotH - 4);
+    }
+
+    function drawBodeOverlay() {
+        const { ctx, W, H } = setupCanvas(bodeCanvas);
+        const c = palette();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 60, padR = 180, padT = 36, padB = 40;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+
+        const wMin = 0.05, wMax = 10;
+        const dbMin = -80, dbMax = 8;
+        const xMap = (w) => padL + (Math.log10(w) - Math.log10(wMin)) / (Math.log10(wMax) - Math.log10(wMin)) * plotW;
+        const yMap = (db) => padT + (1 - (db - dbMin) / (dbMax - dbMin)) * plotH;
+
+        // grid
+        ctx.strokeStyle = c.grid;
+        ctx.lineWidth = 1;
+        for (let dec = -1; dec <= 1; dec++) {
+            for (let m = 1; m <= 9; m++) {
+                const w = m * Math.pow(10, dec);
+                if (w < wMin || w > wMax) continue;
+                ctx.globalAlpha = (m === 1) ? 0.6 : 0.2;
+                ctx.beginPath();
+                ctx.moveTo(xMap(w), padT); ctx.lineTo(xMap(w), padT + plotH);
+                ctx.stroke();
+            }
+        }
+        ctx.globalAlpha = 1;
+        for (let db = dbMin; db <= dbMax; db += 20) {
+            ctx.globalAlpha = (db === 0) ? 0.5 : 0.25;
+            ctx.beginPath();
+            ctx.moveTo(padL, yMap(db)); ctx.lineTo(padL + plotW, yMap(db));
+            ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+
+        // axis labels
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 10px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        for (let dec = -1; dec <= 1; dec++) {
+            const w = Math.pow(10, dec);
+            ctx.fillText(w < 1 ? w.toFixed(1) : String(w), xMap(w), padT + plotH + 14);
+        }
+        ctx.fillText('ω / ωc', padL + plotW / 2, padT + plotH + 28);
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let db = dbMin; db <= dbMax; db += 20) {
+            ctx.fillText(String(db), padL - 6, yMap(db));
+        }
+
+        // cutoff
+        ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath();
+        ctx.moveTo(xMap(1), padT); ctx.lineTo(xMap(1), padT + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        const p = params();
+        // vertical markers for signal and noise frequencies
+        ctx.strokeStyle = c.real;
+        ctx.globalAlpha = 0.4;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(xMap(p.fsig), padT); ctx.lineTo(xMap(p.fsig), padT + plotH);
+        ctx.stroke();
+        ctx.strokeStyle = c.imag;
+        ctx.beginPath();
+        ctx.moveTo(xMap(p.fnoise), padT); ctx.lineTo(xMap(p.fnoise), padT + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+
+        const keys = ['first', 'butter', 'cheby1', 'cheby2', 'ellip'];
+        const steps = 600;
+        keys.forEach(k => {
+            const filt = FILTERS[k];
+            ctx.strokeStyle = c[k];
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            let started = false;
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const w = Math.pow(10, Math.log10(wMin) + t * (Math.log10(wMax) - Math.log10(wMin)));
+                const H = evalH(filt, w);
+                const mag = Cx.abs(H);
+                let db = 20 * Math.log10(Math.max(mag, 1e-8));
+                if (db < dbMin) db = dbMin;
+                const x = xMap(w), y = yMap(db);
+                if (!started) { ctx.moveTo(x, y); started = true; }
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        });
+
+        // legend on the right
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        let ly = padT + 10;
+        const lx = padL + plotW + 20;
+        keys.forEach(k => {
+            ctx.strokeStyle = c[k];
+            ctx.lineWidth = 2.4;
+            ctx.beginPath();
+            ctx.moveTo(lx, ly); ctx.lineTo(lx + 18, ly);
+            ctx.stroke();
+            ctx.fillStyle = c.dim;
+            ctx.fillText(FILTERS[k].name, lx + 24, ly);
+            ly += 20;
+        });
+        // Annotate markers
+        ctx.fillStyle = c.real;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'alphabetic';
+        ctx.font = "500 9.5px 'JetBrains Mono', monospace";
+        ctx.fillText('sig', xMap(p.fsig), padT - 4);
+        ctx.fillStyle = c.imag;
+        ctx.fillText('noise', xMap(p.fnoise), padT - 4);
+    }
+
+    function tick() {
+        const now = performance.now();
+        if (running) {
+            phase += (now - lastT) / 1000 * 1.2; // advance scroll
+        }
+        lastT = now;
+
+        drawInput();
+        Object.keys(outputCanvases).forEach(k => drawOutput(outputCanvases[k], k));
+        drawBodeOverlay();
+        requestAnimationFrame(tick);
+    }
+    tick();
+
+    window.addEventListener('resize', () => {
+        drawInput();
+        Object.keys(outputCanvases).forEach(k => drawOutput(outputCanvases[k], k));
+        drawBodeOverlay();
+    });
+
+    updateLabels();
+})();
+
+/* ============================================================
+   PROGRESS RAIL
+   ============================================================ */
+(function() {
+    const rail = document.getElementById('rail');
+    if (!rail) return;
+    function update() {
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - doc.clientHeight;
+        const pct = Math.max(0, Math.min(1, window.scrollY / Math.max(1, max)));
+        rail.style.width = (pct * 100).toFixed(1) + '%';
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+})();
+</script>
+
+</body>
+</html>

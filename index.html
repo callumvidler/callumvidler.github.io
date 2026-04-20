@@ -7,153 +7,330 @@
     <title>BMEN90033: Bioinstrumentation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #1a1a1e;
-            --surface: #222226;
-            --border: rgba(255, 255, 255, 0.08);
+            --bg: #0a0a10;
+            --bg-2: #12131c;
+            --bg-panel: rgba(22, 23, 32, 0.75);
+            --fg: #eef0f5;
+            --text: #eef0f5;
+            --text-dim: #d4d7e0;
+            --muted: #8b90a3;
+            --real: #58a6ff;
+            --imag: #ff5c7a;
+            --time: #7be089;
+            --accent: #ffcf5c;
+            --border: rgba(255, 255, 255, 0.09);
             --border-hover: rgba(255, 255, 255, 0.18);
-            --accent: #6aaa8e;
-            --text: #ffffff;
-            --text-secondary: #a0a0a0;
-            --text-tertiary: #707070;
         }
 
         [data-theme="light"] {
-            --bg: #f5f5f7;
-            --surface: #ffffff;
-            --border: rgba(0, 0, 0, 0.1);
-            --border-hover: rgba(0, 0, 0, 0.2);
-            --accent: #3d8b6e;
-            --text: #1a1a1e;
-            --text-secondary: #555555;
-            --text-tertiary: #888888;
+            --bg: #f7f7fa;
+            --bg-2: #ffffff;
+            --bg-panel: rgba(255, 255, 255, 0.85);
+            --fg: #14151c;
+            --text: #14151c;
+            --text-dim: #2b2d38;
+            --muted: #6b6f80;
+            --accent: #b88200;
+            --border: rgba(0, 0, 0, 0.09);
+            --border-hover: rgba(0, 0, 0, 0.22);
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 17px;
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
         }
 
         body {
-            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
             min-height: 100vh;
-            padding: 56px 24px 80px;
+            overflow-x: hidden;
+            padding: 100px 56px 120px;
+        }
+
+        /* Brand (top-left) */
+        .brand {
+            position: fixed;
+            top: 20px;
+            left: 24px;
+            z-index: 40;
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand .mark {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: conic-gradient(var(--real), var(--imag), var(--time), var(--accent), var(--real));
         }
 
         .container {
-            max-width: 640px;
+            max-width: 920px;
             margin: 0 auto;
         }
 
-        .header {
-            margin-bottom: 56px;
+        /* Hero */
+        .hero-block {
+            margin-bottom: 88px;
+            max-width: 760px;
         }
 
-        .header h1 {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-
-        .header p {
-            font-size: 13px;
-            color: var(--text-tertiary);
-            font-weight: 400;
-        }
-
-        .header .note {
-            margin-top: 12px;
-            font-size: 12px;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        .week {
-            margin-bottom: 40px;
-        }
-
-        .week-label {
+        .meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 28px;
             display: flex;
-            align-items: baseline;
-            gap: 8px;
-            margin-bottom: 12px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid var(--border);
+            align-items: center;
+            gap: 12px;
         }
 
-        .week-label h2 {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 13px;
-            font-weight: 500;
+        .meta .bar {
+            flex: 0 0 28px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .meta .num {
             color: var(--accent);
         }
 
-        .week-label span {
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-weight: 400;
+        h1.hero {
+            font-size: 64px;
+            line-height: 1.02;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+            margin: 0 0 24px;
         }
 
-        .topics {
+        h1.hero em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--real), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        p.sub {
+            color: var(--muted);
+            font-size: 18px;
+            max-width: 60ch;
+            line-height: 1.6;
+        }
+
+        .tags {
+            margin-top: 32px;
             display: flex;
-            flex-direction: column;
-            gap: 1px;
-            background: var(--border);
-            border: 1px solid var(--border);
-            border-radius: 3px;
-            overflow: hidden;
+            gap: 12px;
+            flex-wrap: wrap;
         }
 
-        .topic {
+        .field-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            display: inline-block;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        /* Week blocks */
+        .week {
+            margin-bottom: 72px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border);
+        }
+
+        .week:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--fg);
+            margin-bottom: 22px;
             display: flex;
             align-items: center;
-            padding: 10px 14px;
-            background: var(--surface);
-            color: var(--text);
-            text-decoration: none;
-            transition: background 0.15s ease;
-        }
-
-        .topic.disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-
-        .topic:hover {
-            background: #2a2a2f;
-        }
-
-        [data-theme="light"] .topic:hover {
-            background: #eeeef0;
-        }
-
-        .topic-number {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 12px;
-            color: var(--text-tertiary);
-            width: 28px;
-            flex-shrink: 0;
-        }
-
-        .topic-title {
-            font-size: 13px;
+            gap: 12px;
             font-weight: 500;
         }
 
-        .topic-desc {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-left: auto;
-            padding-left: 16px;
+        .eyebrow .num {
+            color: var(--accent);
+        }
+
+        .eyebrow .bar {
+            flex: 0 0 28px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        .eyebrow.subsection {
+            color: var(--muted);
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            margin-top: 28px;
+            margin-bottom: 14px;
+            font-weight: 400;
+        }
+
+        .eyebrow.subsection .bar {
+            background: var(--border-hover);
+            flex: 0 0 18px;
+        }
+
+        .subsection-label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
             white-space: nowrap;
+        }
+
+        .subsection-sublabel {
+            display: block;
+            opacity: 0.75;
+        }
+
+        .subsection-group {
+            padding-left: 32px;
+            border-left: 1px solid var(--border);
+            margin-top: 8px;
+        }
+
+        .topics-sub {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media (min-width: 1440px) {
+            .week-split {
+                position: relative;
+            }
+            .week-split > .subsection-group {
+                position: absolute;
+                left: 100%;
+                top: 0;
+                margin-left: 32px;
+                margin-top: 0;
+                width: 220px;
+                padding-left: 20px;
+            }
+            .week-split .eyebrow.subsection {
+                margin-top: 0;
+            }
+        }
+
+        .topics-sub .topic {
+            padding: 12px 14px;
+            border-radius: 8px;
+        }
+
+        .topics-sub .topic-number {
+            font-size: 10px;
+            min-width: 20px;
+        }
+
+        .topics-sub .topic-title {
+            font-size: 13px;
+        }
+
+        .topics-sub .topic-arrow {
+            font-size: 13px;
+        }
+
+        .week h2 {
+            font-size: 30px;
+            line-height: 1.1;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0 0 22px;
+            color: var(--fg);
+        }
+
+        .topics {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;
+        }
+
+        .topic {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--fg);
+            text-decoration: none;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+        }
+
+        .topic:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+        }
+
+        .topic:hover .topic-arrow {
+            color: var(--accent);
+            transform: translateX(2px);
+        }
+
+        .topic.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .topic-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            min-width: 24px;
+        }
+
+        .topic-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--fg);
+            flex: 1;
+        }
+
+        .topic-arrow {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--muted);
+            font-size: 14px;
+            transition: color 0.15s ease, transform 0.15s ease;
         }
 
         /* Extras side tab */
@@ -161,16 +338,16 @@
             position: fixed;
             left: 0;
             top: 50%;
-            transform: translateY(-50%);
             writing-mode: vertical-lr;
             transform: translateY(-50%) rotate(180deg);
             background: var(--accent);
-            color: #fff;
+            color: #0a0a10;
             padding: 14px 8px;
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
             font-weight: 600;
-            letter-spacing: 1px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
             cursor: pointer;
             border-radius: 6px 0 0 6px;
             z-index: 1000;
@@ -179,20 +356,21 @@
         }
 
         .extras-tab:hover {
-            background: var(--text);
+            background: var(--fg);
+            color: var(--bg);
         }
 
         .extras-panel {
             position: fixed;
             top: 0;
-            left: -320px;
-            width: 320px;
+            left: -340px;
+            width: 340px;
             height: 100vh;
-            background: var(--surface);
+            background: var(--bg-2);
             border-right: 1px solid var(--border);
             z-index: 999;
             transition: left 0.3s ease;
-            padding: 24px;
+            padding: 28px 24px;
             overflow-y: auto;
         }
 
@@ -201,41 +379,64 @@
         }
 
         .extras-panel h3 {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 14px;
-            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
             color: var(--accent);
-            margin-bottom: 16px;
-        }
-
-        .extras-panel p {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.6;
+            margin-bottom: 20px;
         }
 
         .extras-close {
             position: absolute;
-            top: 12px;
-            right: 12px;
-            left: auto;
+            top: 16px;
+            right: 16px;
             background: none;
             border: none;
-            color: var(--text-secondary);
+            color: var(--muted);
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
             line-height: 1;
             padding: 4px;
         }
 
         .extras-close:hover {
-            color: var(--text);
+            color: var(--accent);
+        }
+
+        .extras-link {
+            display: block;
+            padding: 14px 16px;
+            margin: 8px 0;
+            border-radius: 10px;
+            background: rgba(255, 207, 92, 0.06);
+            border: 1px solid rgba(255, 207, 92, 0.22);
+            color: var(--fg);
+            text-decoration: none;
+            transition: border-color 0.15s;
+        }
+
+        .extras-link:hover {
+            border-color: var(--accent);
+        }
+
+        .extras-link strong {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--fg);
+        }
+
+        .extras-link p {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 6px;
+            line-height: 1.5;
         }
 
         .extras-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 998;
             opacity: 0;
             pointer-events: none;
@@ -247,17 +448,41 @@
             pointer-events: auto;
         }
 
-        @media (max-width: 560px) {
+        footer {
+            margin-top: 80px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 900px) {
             body {
-                padding: 40px 16px 60px;
+                padding: 80px 24px 80px;
             }
 
-            .header {
-                margin-bottom: 40px;
+            h1.hero {
+                font-size: 42px;
             }
 
-            .topic-desc {
-                display: none;
+            .week h2 {
+                font-size: 24px;
+            }
+
+            .hero-block {
+                margin-bottom: 56px;
+            }
+
+            .topics {
+                grid-template-columns: 1fr;
+            }
+
+            .brand {
+                top: 16px;
+                left: 16px;
             }
         }
     </style>
@@ -266,143 +491,214 @@
 </head>
 
 <body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Bioinstrumentation</span></div>
+
     <div class="container">
-        <div class="header">
-            <h1>BMEN90033: Bioinstrumentation</h1>
-            <p>Semester 1, 2026</p>
-            <p class="note">Interactive examples for BMEN90033 Bioinstrumentation, built with JavaScript and HTML by Dr. Callum Vidler.</p>
-        </div>
+        <section class="hero-block">
+            <div class="meta"><span class="bar"></span><span class="num">S1</span><span>Semester 1, 2026</span></div>
+            <h1 class="hero">Interactive <em>Bioinstrumentation</em>.</h1>
+            <p class="sub">A growing set of interactive demonstrations for BMEN90033 — built in JavaScript and HTML by Dr. Callum Vidler to make the ideas behind biomedical circuits visible, tunable, and intuitive.</p>
+            <div class="tags">
+                <span class="field-tag">biopotentials</span>
+                <span class="field-tag">semiconductors</span>
+                <span class="field-tag">amplifiers</span>
+                <span class="field-tag">transfer functions</span>
+            </div>
+        </section>
 
         <div class="week">
-            <div class="week-label">
-                <h2>Week 2</h2>
-                <span>Biopotentials</span>
-            </div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>week 2 · biopotentials</span></div>
             <div class="topics">
                 <a href="Week 2/myelination.html" class="topic">
-                    <span class="topic-number">1</span>
+                    <span class="topic-number">01</span>
                     <span class="topic-title">Myelination</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 2/action_potential_dipole.html" class="topic">
-                    <span class="topic-number">2</span>
+                    <span class="topic-number">02</span>
                     <span class="topic-title">Action Potential Dipole</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 2/volume_conductor.html" class="topic">
-                    <span class="topic-number">3</span>
+                    <span class="topic-number">03</span>
                     <span class="topic-title">Volume Conductor</span>
+                    <span class="topic-arrow">→</span>
                 </a>
             </div>
         </div>
 
         <div class="week">
-            <div class="week-label">
-                <h2>Week 3</h2>
-                <span>Diodes</span>
-            </div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>week 3 · diodes</span></div>
             <div class="topics">
                 <a href="Week 3/electron_orbitals.html" class="topic">
-                    <span class="topic-number" style="width:auto;margin-right:8px">Preface</span>
+                    <span class="topic-number">00</span>
                     <span class="topic-title">Electron Cloud Model</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 3/semiconductor_bands.html" class="topic">
-                    <span class="topic-number">1</span>
+                    <span class="topic-number">01</span>
                     <span class="topic-title">Semiconductor Bands</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 3/semiconductor_doping.html" class="topic">
-                    <span class="topic-number">2</span>
+                    <span class="topic-number">02</span>
                     <span class="topic-title">Semiconductor Doping</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 3/pn_junction.html" class="topic">
-                    <span class="topic-number">3</span>
+                    <span class="topic-number">03</span>
                     <span class="topic-title">P-N Junction</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 3/led.html" class="topic">
-                    <span class="topic-number">4</span>
+                    <span class="topic-number">04</span>
                     <span class="topic-title">Light Emitting Diode</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 3/laser_diode.html" class="topic">
-                    <span class="topic-number">5</span>
+                    <span class="topic-number">05</span>
                     <span class="topic-title">Laser Diode</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 3/cochlear_implant.html" class="topic">
-                    <span class="topic-number">6</span>
+                    <span class="topic-number">06</span>
                     <span class="topic-title">Cochlear Implant</span>
+                    <span class="topic-arrow">→</span>
                 </a>
             </div>
         </div>
 
         <div class="week">
-            <div class="week-label">
-                <h2>Week 4</h2>
-                <span>Transistors</span>
-            </div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>week 4 · transistors</span></div>
             <div class="topics">
                 <a href="Week 4/bjt_semiconductors.html" class="topic">
-                    <span class="topic-number">1</span>
+                    <span class="topic-number">01</span>
                     <span class="topic-title">BJT Semiconductors</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 4/bjt_switch.html" class="topic">
-                    <span class="topic-number">2</span>
+                    <span class="topic-number">02</span>
                     <span class="topic-title">BJT as a Switch</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 4/bjt_amplifier.html" class="topic">
-                    <span class="topic-number">3</span>
+                    <span class="topic-number">03</span>
                     <span class="topic-title">NPN BJT as an Amplifier</span>
+                    <span class="topic-arrow">→</span>
                 </a>
             </div>
         </div>
 
         <div class="week">
-            <div class="week-label">
-                <h2>Week 5</h2>
-                <span>Amplifiers</span>
-            </div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>week 5 · amplifiers</span></div>
             <div class="topics">
                 <a href="Week 5/amplifier_classes.html" class="topic">
-                    <span class="topic-number">1</span>
+                    <span class="topic-number">01</span>
                     <span class="topic-title">Amplifier Classes</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 5/total_harmonic_distortion.html" class="topic">
-                    <span class="topic-number">2</span>
+                    <span class="topic-number">02</span>
                     <span class="topic-title">Total Harmonic Distortion</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 5/class_d_amplifier.html" class="topic">
-                    <span class="topic-number">3</span>
+                    <span class="topic-number">03</span>
                     <span class="topic-title">Class D Amplifier</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 5/amplifier_bandwidth.html" class="topic">
-                    <span class="topic-number">4</span>
+                    <span class="topic-number">04</span>
                     <span class="topic-title">Amplifier Bandwidth</span>
+                    <span class="topic-arrow">→</span>
                 </a>
                 <a href="Week 5/lab_circuit_analysis.html" class="topic">
-                    <span class="topic-number">5</span>
-                    <span class="topic-title">Week 5 Lab: Interactive Walkthrough</span>
+                    <span class="topic-number">05</span>
+                    <span class="topic-title">Lab · Interactive Walkthrough</span>
+                    <span class="topic-arrow">→</span>
                 </a>
             </div>
         </div>
 
         <div class="week">
-            <div class="week-label">
-                <h2>Week 6</h2>
-                <span>Operational Amplifiers</span>
-            </div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>week 6 · operational amplifiers</span></div>
             <div class="topics">
                 <a href="Week 6/Slides/index.html" class="topic">
-                    <span class="topic-number">1</span>
+                    <span class="topic-number">01</span>
                     <span class="topic-title">Op-Amp Slides</span>
+                    <span class="topic-arrow">→</span>
                 </a>
             </div>
         </div>
+
+        <div class="week week-split">
+            <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>week 7 · transfer functions</span></div>
+            <div class="topics">
+                <a href="Week 7/Week 7 Laplace/index.html" class="topic">
+                    <span class="topic-number">01</span>
+                    <span class="topic-title">Laplace Transform</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+                <a href="Week 7/modeling_filters.html" class="topic">
+                    <span class="topic-number">02</span>
+                    <span class="topic-title">Modeling Filters</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+                <a href="Week 7/high_order_filters.html" class="topic">
+                    <span class="topic-number">03</span>
+                    <span class="topic-title">High-Order Filters</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+                <a href="Week 7/removing_powerline_noise.html" class="topic">
+                    <span class="topic-number">04</span>
+                    <span class="topic-title">Removing Powerline Noise</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+            </div>
+            <div class="subsection-group">
+                <div class="eyebrow subsection"><span class="bar"></span><span class="subsection-label">extras<span class="subsection-sublabel">(transfer functions)</span></span></div>
+                <div class="topics topics-sub">
+                    <a href="Week 7/intro_to_transfer_functions.html" class="topic">
+                        <span class="topic-number">01</span>
+                        <span class="topic-title">Intro to Transfer Functions</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+                <a href="Week 7/inverted_pendulum.html" class="topic">
+                    <span class="topic-number">02</span>
+                    <span class="topic-title">The Inverted Pendulum</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+                <a href="Week 7/pupillary_light_reflex.html" class="topic">
+                    <span class="topic-number">03</span>
+                    <span class="topic-title">Pupillary Light Reflex</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+                <a href="Week 7/op_amp_transfer_function.html" class="topic">
+                    <span class="topic-number">04</span>
+                    <span class="topic-title">Op-Amp Transfer Function</span>
+                    <span class="topic-arrow">→</span>
+                </a>
+                </div>
+            </div>
+        </div>
+
+        <footer>BMEN90033 · The University of Melbourne</footer>
     </div>
 
-    <div class="extras-tab" onclick="document.querySelector('.extras-panel').classList.add('open'); document.querySelector('.extras-overlay').classList.add('open');">Extras</div>
-    <div class="extras-overlay" onclick="document.querySelector('.extras-panel').classList.remove('open'); this.classList.remove('open');"></div>
+    <div class="extras-tab"
+        onclick="document.querySelector('.extras-panel').classList.add('open'); document.querySelector('.extras-overlay').classList.add('open');">
+        Extras</div>
+    <div class="extras-overlay"
+        onclick="document.querySelector('.extras-panel').classList.remove('open'); this.classList.remove('open');">
+    </div>
     <div class="extras-panel">
-        <button class="extras-close" onclick="this.parentElement.classList.remove('open'); document.querySelector('.extras-overlay').classList.remove('open');">&times;</button>
-        <h3>Extras</h3>
-        <a href="Extras/nodal_analysis.html" style="display:block;padding:10px 14px;margin:8px 0;border-radius:6px;background:rgba(106,170,142,0.08);border:1px solid rgba(106,170,142,0.2);color:var(--text);text-decoration:none;transition:all 0.15s;">
-            <strong style="font-family:'IBM Plex Mono',monospace;font-size:13px;">Nodal Analysis Tool</strong>
-            <p style="font-size:12px;color:var(--text-dim);margin-top:4px;line-height:1.4;">Build circuits and see step-by-step nodal analysis solutions.</p>
+        <button class="extras-close"
+            onclick="this.parentElement.classList.remove('open'); document.querySelector('.extras-overlay').classList.remove('open');">&times;</button>
+        <h3>// Extras</h3>
+        <a href="Extras/nodal_analysis.html" class="extras-link">
+            <strong>Nodal Analysis Tool</strong>
+            <p>Build circuits and step through nodal-analysis solutions.</p>
         </a>
     </div>
 </body>

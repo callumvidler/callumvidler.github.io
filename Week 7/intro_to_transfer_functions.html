@@ -1,0 +1,2621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Intro to Transfer Functions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0a0a10;
+        --bg-2: #12131c;
+        --bg-panel: rgba(22,23,32,0.75);
+        --fg: #eef0f5;
+        /* JS reads these — keep names stable */
+        --text: #eef0f5;
+        --text-dim: #d4d7e0;
+        --text-muted: #8b90a3;
+        --muted: #8b90a3;
+        --real: #58a6ff;
+        --imag: #ff5c7a;
+        --time: #7be089;
+        --accent: #ffcf5c;
+        --blue: #58a6ff;
+        --red: #ff5c7a;
+        --yellow: #ffcf5c;
+        --grid: rgba(255,255,255,0.06);
+        --border: rgba(255,255,255,0.09);
+        --border-hover: rgba(255,255,255,0.18);
+        --body-size: 17px;
+        --math-size: 18px;
+        --hero-size: 64px;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: var(--body-size); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+      body { overflow-x: hidden; min-height: 100vh; }
+
+      .katex { font-size: var(--math-size) !important; }
+      .katex-display { margin: 0.6em 0 !important; }
+      .katex-display > .katex { font-size: calc(var(--math-size) * 1.1) !important; }
+
+      a { color: var(--accent); }
+
+      /* Progress rail */
+      .rail { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 60; pointer-events: none; }
+      .rail-fill { height: 100%; background: linear-gradient(90deg, var(--real), var(--accent)); width: 0%; transition: width 0.15s; }
+
+      /* Brand (top-left) */
+      .brand { position: fixed; top: 20px; left: 24px; z-index: 40; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 10px; }
+      .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: conic-gradient(var(--real), var(--imag), var(--time), var(--real)); }
+
+      /* Back button (top-right) */
+      .back-btn { position: fixed; top: 18px; right: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(22,23,32,0.6); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; backdrop-filter: blur(8px); transition: all 0.15s; }
+      .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+      /* Sections */
+      section.scene {
+        min-height: 100vh;
+        padding: 100px 56px 80px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: center;
+        position: relative;
+        border-bottom: 1px solid var(--border);
+      }
+      section.scene.wide { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+      section.scene .copy { max-width: 680px; }
+      section.scene.wide .copy { max-width: 660px; }
+      section.scene .canvas-wrap { position: relative; width: 100%; max-width: 720px; margin: 0 auto; }
+
+      .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+      .eyebrow .num { color: var(--accent); }
+      .eyebrow .bar { flex: 0 0 28px; height: 1px; background: var(--accent); }
+
+      h1.hero { font-size: var(--hero-size); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; margin: 0 0 24px; }
+      h1.hero em { font-style: normal; background: linear-gradient(135deg, var(--real), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      h2 { font-size: 38px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--fg); }
+      h3 { font-size: 18px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); letter-spacing: -0.01em; }
+      p { margin: 0 0 14px; color: #d4d7e0; }
+      p.lead { font-size: calc(var(--body-size) + 2px); color: var(--fg); }
+      p.dim { color: var(--muted); }
+      section.scene ul { padding-left: 20px; margin: 4px 0 14px; color: #d4d7e0; }
+      section.scene li { margin-bottom: 6px; line-height: 1.6; }
+      strong { color: var(--fg); font-weight: 600; }
+      em.real { font-style: normal; color: var(--real); }
+      em.imag { font-style: normal; color: var(--imag); }
+      em.time { font-style: normal; color: var(--time); }
+      em.acc  { font-style: normal; color: var(--accent); }
+      em.yellow { font-style: normal; color: var(--yellow); }
+
+      .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 18px 0 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+      /* Controls — keep .control-group + .control-value class hooks for JS */
+      .controls { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; padding: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; backdrop-filter: blur(8px); }
+      .control-group { display: grid; grid-template-columns: 150px 1fr 90px; align-items: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: transparent; border: 0; padding: 0; }
+      .control-group label { color: var(--muted); }
+      .control-group .control-value { color: var(--accent); text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; min-width: 0; }
+      .control-group input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; height: auto; }
+      .control-group input[type=range]::-webkit-slider-runnable-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); margin-top: -5.5px; cursor: grab; border: 2px solid var(--bg); }
+      .control-group input[type=range]::-moz-range-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); cursor: grab; }
+
+      .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+      .pillbtn, .btn { background: transparent; border: 1px solid var(--border); color: var(--fg); padding: 8px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; cursor: pointer; transition: all 0.15s; }
+      .pillbtn:hover, .btn:hover { border-color: var(--accent); color: var(--accent); }
+      .btn.secondary { color: var(--muted); }
+      .btn.secondary:hover { color: var(--accent); }
+
+      /* Plot box */
+      .plot { position: absolute; inset: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+      .plot .title { position: absolute; top: 10px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .plot .sub { position: absolute; top: 26px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--accent); z-index: 2; }
+      .plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .plot .view-toggle { position: absolute; top: 10px; right: 10px; z-index: 3; display: flex; gap: 4px; }
+      .plot .view-toggle .btn { padding: 5px 10px; font-size: 10px; text-transform: none; letter-spacing: 0.02em; background: rgba(22,23,32,0.8); backdrop-filter: blur(6px); }
+
+      /* Equation display */
+      .eq-block { display: block; margin: 16px 0; padding: 16px 20px; background: rgba(255,207,92,0.05); border: 1px solid rgba(255,207,92,0.18); border-radius: 10px; text-align: center; color: var(--fg); }
+      .eq-line { display: block; padding: 14px 18px; margin: 14px 0; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; text-align: center; color: var(--fg); }
+
+      /* Callout */
+      .callout { margin-top: 18px; padding: 16px 20px; border-left: 2px solid var(--accent); background: rgba(255,207,92,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: #d4d7e0; line-height: 1.7; }
+      .callout strong { color: var(--fg); }
+
+      /* Readout bar */
+      .readout-bar { display: flex; gap: 22px; flex-wrap: wrap; padding: 12px 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; backdrop-filter: blur(8px); font-family: 'JetBrains Mono', monospace; }
+      .readout-item { font-size: 10.5px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: inline-flex; align-items: baseline; gap: 8px; }
+      .readout-item .val { color: var(--fg); font-size: 13px; text-transform: none; letter-spacing: 0; }
+      .readout-item .val.accent { color: var(--accent); }
+      .readout-item .val.yellow { color: var(--yellow); }
+
+      /* Block diagram */
+      .block-diagram { display: flex; align-items: center; justify-content: center; gap: 18px; flex-wrap: wrap; padding: 56px 28px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 14px; }
+      .block { padding: 26px 32px; border: 1px solid var(--border-hover); border-radius: 10px; background: rgba(22,23,32,0.9); text-align: center; min-width: 170px; }
+      .block .lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 10px; }
+      .block .sym { font-family: 'JetBrains Mono', monospace; font-size: 24px; color: var(--fg); font-weight: 500; }
+      .block.system { border-color: rgba(255,207,92,0.45); background: rgba(255,207,92,0.08); box-shadow: 0 0 0 3px rgba(255,207,92,0.06); }
+      .block.system .sym { color: var(--accent); }
+      .arrow { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-size: 28px; font-weight: 600; }
+
+      /* Collapsible derivation */
+      details.derivation { margin: 18px 0 8px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.02); overflow: hidden; }
+      details.derivation > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px 18px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); transition: color 0.15s, background 0.15s; }
+      details.derivation > summary::-webkit-details-marker { display: none; }
+      details.derivation > summary:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+      details.derivation > summary .tag { color: var(--accent); }
+      details.derivation > summary .chev { margin-left: auto; font-size: 14px; color: var(--muted); transition: transform 0.2s; line-height: 1; }
+      details.derivation[open] > summary { border-bottom: 1px solid var(--border); color: var(--fg); }
+      details.derivation[open] > summary .chev { transform: rotate(90deg); color: var(--accent); }
+      details.derivation .body { padding: 18px 22px 22px; }
+      details.derivation .body > :first-child { margin-top: 0; }
+
+      /* Landing */
+      .landing { min-height: 100vh; display: grid; place-items: center; padding: 120px 56px 80px; position: relative; text-align: center; }
+      .landing .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 32px; }
+      .landing h1 { max-width: 22ch; margin-left: auto; margin-right: auto; }
+      .landing .sub { color: var(--muted); font-size: 18px; max-width: 56ch; margin: 20px auto 0; line-height: 1.6; }
+      .landing .tags { margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .field-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; display: inline-block; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+      .scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .scroll-hint .line { width: 1px; height: 32px; background: linear-gradient(var(--muted), transparent); animation: pulse 2s infinite; }
+      @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+      footer { padding: 60px 56px 80px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+      @media (max-width: 900px) {
+        section.scene,
+        section.scene.wide { grid-template-columns: 1fr; padding: 80px 24px 60px; }
+        .landing { padding: 100px 24px 60px; }
+        h1.hero { font-size: 44px; }
+        h2 { font-size: 28px; }
+        .back-btn { top: 14px; right: 16px; }
+        .brand { top: 16px; left: 16px; }
+        .control-group { grid-template-columns: 120px 1fr 80px; }
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+</head>
+<body>
+
+<div class="brand"><span class="mark"></span><span>BMEN90033 · Week 7</span></div>
+<a class="back-btn" href="../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
+<div class="rail"><div class="rail-fill" id="rail"></div></div>
+
+<!-- =========================== LANDING =========================== -->
+<section class="landing" id="s0">
+    <div>
+        <div class="meta">BMEN90033 · WEEK 7 · BIOINSTRUMENTATION</div>
+        <h1 class="hero">Intro to <em>Transfer Functions</em>.</h1>
+        <p class="sub">A transfer function expresses the input–output relationship of a linear time-invariant system in the frequency domain as a compact rational function. The exposition here adopts a canonical second-order system — a gravity pendulum — as its illustrative vehicle.</p>
+        <div class="tags">
+            <span class="field-tag">linear systems</span>
+            <span class="field-tag">Laplace domain</span>
+            <span class="field-tag">poles &amp; zeros</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+</section>
+
+<!-- =========================== SECTION 1 — THE IDEA =========================== -->
+<section class="scene" id="s1">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the idea</span></div>
+        <h2>Input → System → Output.</h2>
+        <p class="lead">Physical systems encountered in bioinstrumentation uniformly map an input signal to an output through an intervening transformation: a transducer converts acoustic pressure to voltage; an amplifier scales a voltage; a muscle fibre converts neural excitation to mechanical contraction.</p>
+        <p>Provided the system is <strong>linear</strong> — the response scaling proportionally with the input — and <strong>time-invariant</strong>, its dynamics are fully specified by a single complex-valued function of frequency, the <em class="acc">transfer function</em> $H(s)$.</p>
+        <div class="eq-block">$$Y(s) = H(s)\,X(s)$$</div>
+        <p>All constitutive parameters — inertial, elastic, dissipative, and biological — are encoded within $H(s)$. Once determined, it permits the response to arbitrary inputs to be evaluated algebraically, obviating repeated integration of the governing differential equation.</p>
+        <div class="callout">
+            <strong>The variable $s$.</strong> The complex variable $s = \sigma + j\omega$ represents a generalised frequency. Steady-state sinusoidal response at a real frequency $\omega$ is recovered by the substitution $s = j\omega$, from which the magnitude (gain) and phase (delay) of the output follow directly.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="max-width: 680px;">
+        <div class="block-diagram">
+            <div class="block"><div class="lbl">Input</div><div class="sym">X(s)</div></div>
+            <div class="arrow">&rarr;</div>
+            <div class="block system"><div class="lbl">System</div><div class="sym">H(s)</div></div>
+            <div class="arrow">&rarr;</div>
+            <div class="block"><div class="lbl">Output</div><div class="sym">Y(s)</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 2 — MODELLING THE SWING =========================== -->
+<section class="scene" id="s2">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the model</span></div>
+        <h2>A child on a swing.</h2>
+        <p class="lead">Consider a pendulum of rope length $L$ and bob mass $m$, subject to linear viscous damping and gravitational restoration, driven by a periodic external force. The objective is to determine the steady-state amplitude as a function of the forcing frequency.</p>
+
+        <details class="derivation">
+          <summary><span class="tag">show</span><span>full derivation · 5 steps</span><span class="chev">&#x25B6;</span></summary>
+          <div class="body">
+
+        <h3 style="margin-top:0;">Step 1 · choose a coordinate</h3>
+        <p>Let $\theta(t)$ denote the angular displacement from vertical, taken positive in the direction of forcing. The corresponding arc-length kinematics are</p>
+        <div class="eq-line">$$s = L\theta, \qquad \dot{s} = L\dot{\theta}, \qquad \ddot{s} = L\ddot{\theta}.$$</div>
+
+        <h3>Step 2 · sum the torques about the pivot</h3>
+        <p>Newton's second law for rotation gives $I\ddot{\theta} = \sum \tau$, with $I = mL^2$ the moment of inertia of a point mass at radius $L$. Three torques act about the pivot:</p>
+        <ul>
+            <li><strong>Gravity</strong> acts vertically with magnitude $mg$; its moment arm about the pivot is $L\sin\theta$, yielding a restoring torque $\tau_g = -mgL\sin\theta$.</li>
+            <li><strong>Viscous dissipation</strong> (aerodynamic drag and pivot friction) is, to leading order, linear in angular velocity: $\tau_d = -b\,\dot{\theta}$.</li>
+            <li><strong>External forcing</strong> $F(t)$ applied tangentially at radius $L$ contributes $\tau_p = F(t)\,L$.</li>
+        </ul>
+        <p>Combining these contributions:</p>
+        <div class="eq-line">$$mL^2\,\ddot{\theta} = -mgL\sin\theta - b\,\dot{\theta} + F(t)\,L.$$</div>
+
+        <h3>Step 3 · small-angle approximation</h3>
+        <p>For modest displacements the Taylor expansion $\sin\theta = \theta - \theta^3/6 + \ldots$ is truncated at first order, an approximation accurate to within $2\%$ for $\theta \le 20^\circ$. The governing equation thereby becomes linear:</p>
+        <div class="eq-line">$$mL^2\,\ddot{\theta} + b\,\dot{\theta} + mgL\,\theta = F(t)\,L.$$</div>
+        <p>Each term admits a direct physical interpretation:</p>
+        <div class="eq-line">$$\underbrace{mL^2\,\ddot{\theta}}_{\text{inertia}} + \underbrace{b\,\dot{\theta}}_{\text{damping}} + \underbrace{mgL\,\theta}_{\text{gravity restoring}} = \underbrace{F(t)\,L}_{\text{forcing}}.$$</div>
+
+        <h3>Step 4 · normalise to canonical form</h3>
+        <p>Normalising by $mL^2$ so that the coefficient of $\ddot{\theta}$ is unity:</p>
+        <div class="eq-line">$$\ddot{\theta} + \frac{b}{mL^2}\,\dot{\theta} + \frac{g}{L}\,\theta = \frac{F(t)}{mL}.$$</div>
+        <p>Comparison with the canonical second-order form $\ddot{\theta} + 2\zeta\omega_0\,\dot{\theta} + \omega_0^2\,\theta = u(t)$ identifies:</p>
+        <div class="eq-line">$$\omega_0^2 = \frac{g}{L} \;\Rightarrow\; \omega_0 = \sqrt{\tfrac{g}{L}}, \qquad 2\zeta\omega_0 = \frac{b}{mL^2} \;\Rightarrow\; \zeta = \frac{b}{2mL^2\omega_0} = \frac{b}{2mL\sqrt{gL}}.$$</div>
+        <p>with forcing $u(t) = F(t)/(mL)$, yielding the canonical form:</p>
+        <div class="eq-block">$$\ddot{\theta} + 2\zeta\omega_0\,\dot{\theta} + \omega_0^2\,\theta = u(t).$$</div>
+        <ul>
+            <li><strong>Natural frequency</strong> $\omega_0 = \sqrt{g/L}$ — the undamped oscillation frequency, determined by rope length alone. For $L = 2.45\text{ m}$, $\omega_0 \approx 2.0\text{ rad/s}$ (period $\approx 3.1\text{ s}$).</li>
+            <li><strong>Damping ratio</strong> $\zeta$ — a dimensionless measure of dissipation. Typical playground swings exhibit $\zeta \approx 0.02$–$0.05$, corresponding to light damping.</li>
+        </ul>
+
+        <h3>Step 5 · Laplace transform</h3>
+        <p>The Laplace transform maps differentiation to multiplication by $s$. Under quiescent initial conditions $\theta(0) = \dot{\theta}(0) = 0$, each term transforms as:</p>
+        <div class="eq-line">$$\mathcal{L}\{\ddot{\theta}\} = s^2\,\Theta(s), \qquad \mathcal{L}\{\dot{\theta}\} = s\,\Theta(s), \qquad \mathcal{L}\{\theta\} = \Theta(s), \qquad \mathcal{L}\{u(t)\} = U(s).$$</div>
+        <p>Substitution into the canonical equation gives:</p>
+        <div class="eq-line">$$s^2\,\Theta(s) + 2\zeta\omega_0\, s\,\Theta(s) + \omega_0^2\,\Theta(s) = U(s).$$</div>
+        <p>Factoring $\Theta(s)$:</p>
+        <div class="eq-line">$$(s^2 + 2\zeta\omega_0\, s + \omega_0^2)\,\Theta(s) = U(s).$$</div>
+        <p>The ratio of output to input defines the <em class="acc">transfer function</em>, stated below.</p>
+
+          </div>
+        </details>
+
+        <p style="margin-top:18px;">The ratio $\Theta(s)/U(s)$ yields the <em class="acc">transfer function</em> of the pendulum:</p>
+        <div class="eq-block">$$H(s) = \frac{\Theta(s)}{U(s)} = \frac{1}{s^2 + 2\zeta\omega_0\, s + \omega_0^2}.$$</div>
+        <p class="dim" style="font-size:14px;">This is the canonical second-order low-pass. RLC circuits, seismometers, and analog ECG filter stages share this structure; only the physical interpretation of $\omega_0$ and $\zeta$ differs.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 4/5; max-width: 520px;">
+        <div class="plot">
+            <canvas id="swing-diagram"></canvas>
+            <div class="title">swing · geometry</div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 3 — RESONANCE =========================== -->
+<section class="scene wide" id="s3">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>resonance</span></div>
+        <h2>Push at the right rhythm.</h2>
+        <p class="lead">Forcing is in practice impulsive rather than continuously sinusoidal: a brief push delivered once per cycle constitutes an impulse train at rate $\omega$, whose fundamental Fourier component is situated at $\omega$. The transfer function determines the steady-state amplitude of this component:</p>
+        <div class="eq-block">$$|H(j\omega)| = \frac{1}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\zeta\omega_0\omega)^2}}$$</div>
+        <p>Maximum amplitude is attained at $\omega = \omega_0$, where the forcing remains <em class="acc">in phase</em> with the motion; at other frequencies the phase relationship is incoherent and amplification is suppressed. This phase dependence is precisely what $|H(j\omega)|$ captures.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>push freq $\omega$</label><input type="range" id="w-slider" data-param="w" min="0.1" max="4.0" step="0.01" value="1.0"><span class="control-value" id="w-val">1.00 rad/s</span></div>
+            <div class="control-group"><label>rope length $L$</label><input type="range" id="L-slider" data-param="L" min="0.5" max="4.0" step="0.01" value="2.45"><span class="control-value" id="L-val">2.45 m</span></div>
+            <div class="control-group"><label>damping $\zeta$</label><input type="range" id="z-slider" data-param="zeta" min="0" max="0.4" step="0.005" value="0.05"><span class="control-value" id="z-val">0.050</span></div>
+            <div class="control-group"><label>push strength</label><input type="range" id="a-slider" data-param="a" min="0.1" max="2.0" step="0.01" value="1.0"><span class="control-value" id="a-val">1.00</span></div>
+            <div class="btn-row">
+                <button class="pillbtn" id="match-btn">match ω = ω₀</button>
+                <button class="pillbtn" id="reset-btn">reset swing</button>
+            </div>
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">ω₀<span class="val accent" id="w0-readout">—</span></div>
+            <div class="readout-item">ω / ω₀<span class="val" id="ratio-readout">—</span></div>
+            <div class="readout-item">|H(jω)|<span class="val yellow" id="mag-readout">—</span></div>
+            <div class="readout-item">peak angle<span class="val" id="peak-readout">—</span></div>
+        </div>
+
+        <div class="callout">
+            <strong>Observe.</strong> For $\omega \ll \omega_0$ or $\omega \gg \omega_0$ the response is negligible. At $\omega = \omega_0$ the amplitude attains $1/(2\zeta)$, here approximately tenfold the input &mdash; the defining feature of resonance.
+        </div>
+        <p>The peak of the Bode magnitude defines the quality factor $Q \approx 1/(2\zeta)$. Lightly-damped systems exhibit tall, narrow peaks; heavily-damped systems exhibit broad, flat responses. Increasing $\zeta$ progressively flattens the peak.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1.05; max-width: 640px;">
+        <div class="plot">
+            <canvas id="swing-sim"></canvas>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 4 — POLES AND ZEROS =========================== -->
+<section class="scene wide" id="s4">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the s-plane</span></div>
+        <h2>Poles. Zeros. A fingerprint.</h2>
+        <p class="lead">The transfer function carries information beyond its values on the real-frequency axis. Treating $s$ as a complex variable, one identifies the loci at which $H(s)$ <em class="imag">diverges</em> and at which it <em class="time">vanishes</em>. These points, termed <em class="imag">poles</em> and <em class="time">zeros</em> respectively, together fully characterise the system.</p>
+        <p>Equating the denominator of $H(s)$ to zero and solving the resulting quadratic:</p>
+        <div class="eq-line">$$s = -\zeta\omega_0 \pm j\,\omega_0\sqrt{1-\zeta^2}$$</div>
+        <p>The pendulum possesses two poles and no finite zeros. Writing $\omega_d = \omega_0\sqrt{1-\zeta^2}$, the poles are located at $-\zeta\omega_0 \pm j\omega_d$.</p>
+
+        <h3>Interpretation of the s-plane</h3>
+        <ul>
+            <li><strong>Real part</strong> $\sigma = -\zeta\omega_0$ governs the <em>decay rate</em>; greater magnitude corresponds to faster decay. Both poles in the <em class="real">left half-plane</em> ensure stability.</li>
+            <li><strong>Imaginary part</strong> $\pm\omega_d$ is the <em>damped oscillation frequency</em>; for light damping $\omega_d \approx \omega_0$.</li>
+            <li><strong>Distance from the origin</strong> equals $\omega_0$, independent of damping. Varying $L$ translates the poles along an arc of radius $\omega_0$.</li>
+            <li><strong>Angular displacement</strong> $\phi$ from the negative real axis satisfies $\sin\phi = \zeta$.</li>
+        </ul>
+
+        <div class="controls">
+            <div class="control-group"><label>rope length $L$</label><input type="range" id="L-slider-2" data-param="L" min="0.5" max="4.0" step="0.01" value="2.45"><span class="control-value" id="L-val-2">2.45 m</span></div>
+            <div class="control-group"><label>damping $\zeta$</label><input type="range" id="z-slider-2" data-param="zeta" min="0" max="0.4" step="0.005" value="0.05"><span class="control-value" id="z-val-2">0.050</span></div>
+        </div>
+
+        <div class="legend">
+            <span><i style="background:var(--imag)"></i>× poles</span>
+            <span><i style="background:var(--real)"></i>left half-plane · stable</span>
+            <span><i style="background:var(--accent)"></i>impulse response</span>
+        </div>
+
+        <div class="callout">
+            <strong>Observe.</strong> For vanishingly light damping the poles approach the imaginary axis and the impulse response persists indefinitely. Increasing $\zeta$ migrates the poles inward along the $\omega_0$ arc, accelerating decay. At $\zeta = 1$ the poles coalesce on the real axis and oscillation is superseded by pure exponential decay.
+        </div>
+        <p class="dim" style="font-size:14px;">Pole positions encode the principal qualitative features of the system: stability (left half-plane), oscillation frequency (imaginary part), decay rate (real part), and resonance sharpness (proximity to the imaginary axis).</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.95; max-width: 680px;">
+        <div class="plot">
+            <canvas id="pole-zero"></canvas>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 5 — THE DOUBLE PENDULUM =========================== -->
+<section class="scene wide" id="s5">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>where zeros come from</span></div>
+        <h2>A weight tied halfway down.</h2>
+        <p class="lead">The simple pendulum's transfer function contains poles alone. <em class="time">Zeros</em> — frequencies at which transmission is suppressed — require a second dynamical mode capable of opposing the first through the same input channel.</p>
+        <p>The minimal modification introduces an intermediate mass $m_1$ at a joint along the rope, with the bob $m_2$ suspended below. Horizontal forcing is applied to $m_2$. The resulting system constitutes a <strong>double pendulum</strong>.</p>
+
+        <h3>Equations of motion</h3>
+        <p>Let $\theta_1,\theta_2$ denote the two segment angles. In the small-angle limit the bob's horizontal position is $x_2 = L_1\theta_1 + L_2\theta_2$. A Lagrangian formulation with gravity as the sole restoring force yields a coupled $2\times 2$ system. The off-diagonal inertia term $m_2 L_1 L_2$ mediates modal coupling — displacement of one angle excites the other. This coupling, in conjunction with the intermediate mass, generates a transmission zero.</p>
+
+        <h3>The zero</h3>
+        <div class="eq-block">$$\omega_z^2 = \frac{g\bigl[L_1 m_2 + L_2(m_1+m_2)\bigr]}{m_1 L_1 L_2}$$</div>
+        <p>At $\omega = \omega_z$ the intermediate mass oscillates with precisely the amplitude and phase required to cancel the forcing transmitted to the bob; the bob remains nearly stationary while the intermediate mass absorbs the input. In the time trace — green denoting the bob's horizontal displacement and blue the intermediate mass — the bob response collapses as $\omega \to \omega_z$.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>push freq $\omega$</label><input type="range" id="w-slider-p5a" data-param="w" min="0.1" max="4.0" step="0.01" value="1.0"><span class="control-value">1.00 rad/s</span></div>
+            <div class="control-group"><label>push amp</label><input type="range" id="a-slider-p5a" data-param="a" min="0.1" max="2.0" step="0.01" value="1.0"><span class="control-value">1.00</span></div>
+            <div class="control-group"><label>rope length $L$</label><input type="range" id="L-slider-p5a" data-param="L" min="0.5" max="4.0" step="0.01" value="2.45"><span class="control-value">2.45 m</span></div>
+            <div class="control-group"><label>damping $\zeta$</label><input type="range" id="z-slider-p5a" data-param="zeta" min="0" max="0.4" step="0.005" value="0.05"><span class="control-value">0.050</span></div>
+            <div class="control-group"><label>joint mass $\mu$</label><input type="range" id="mu-slider-p5a" data-param="mu" min="0.05" max="2.0" step="0.01" value="0.6"><span class="control-value">0.60</span></div>
+            <div class="control-group"><label>split $\alpha$</label><input type="range" id="alpha-slider-p5a" data-param="alpha" min="0.15" max="0.85" step="0.01" value="0.5"><span class="control-value">0.50</span></div>
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1.1; max-width: 620px;">
+        <div class="plot">
+            <canvas id="spring-sim"></canvas>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 6 — BODE TRACE =========================== -->
+<section class="scene wide" id="s6">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>walking up the jω axis</span></div>
+        <h2>The notch, made visible.</h2>
+        <p class="lead">A real forcing frequency $\omega$ corresponds to the single point $s = j\omega$ on the positive imaginary axis. Traversing $\omega$ advances a marker along this axis, at each position of which the transfer function evaluates to</p>
+        <div class="eq-block">$$|H(j\omega)| = \frac{\prod_i |j\omega - z_i|}{\prod_k |j\omega - p_k|}$$</div>
+        <p>— the ratio of the product of distances from the marker to each <em class="time">zero</em> to the product of distances to each <em class="imag">pole</em>. Proximity to a pole produces a resonance peak as the denominator contracts; coincidence with a zero produces a transmission notch as the numerator vanishes. The Bode magnitude is the trace of $|H(j\omega)|$ so obtained.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>push freq $\omega$</label><input type="range" id="w-slider-p5b" data-param="w" min="0.1" max="4.0" step="0.01" value="1.0"><span class="control-value">1.00 rad/s</span></div>
+            <div class="control-group"><label>rope length $L$</label><input type="range" id="L-slider-p5b" data-param="L" min="0.5" max="4.0" step="0.01" value="2.45"><span class="control-value">2.45 m</span></div>
+            <div class="control-group"><label>damping $\zeta$</label><input type="range" id="z-slider-p5b" data-param="zeta" min="0" max="0.4" step="0.005" value="0.05"><span class="control-value">0.050</span></div>
+            <div class="control-group"><label>joint mass $\mu$</label><input type="range" id="mu-slider" data-param="mu" min="0.05" max="2.0" step="0.01" value="0.6"><span class="control-value" id="mu-val">0.60</span></div>
+            <div class="control-group"><label>split $\alpha$</label><input type="range" id="alpha-slider" data-param="alpha" min="0.15" max="0.85" step="0.01" value="0.5"><span class="control-value" id="alpha-val">0.50</span></div>
+        </div>
+
+        <div class="legend">
+            <span><i style="background:var(--imag)"></i>× poles</span>
+            <span><i style="background:var(--time)"></i>○ zeros</span>
+            <span><i style="background:var(--real)"></i>jω marker</span>
+            <span><i style="background:var(--accent)"></i>|H(jω)|</span>
+        </div>
+
+        <p><strong>Observe.</strong> As $\mu \to 0$ the intermediate mass vanishes, the zero recedes to infinity, and the transfer function reduces to that of the simple pendulum. Increasing $\mu$ deepens the notch. Displacing $\alpha$ from $0.5$ shifts $\omega_z$: higher placement of the intermediate mass along the rope raises the notch frequency.</p>
+
+        <div class="callout">
+            <strong>Taipei 101.</strong> The 660-tonne tuned mass damper suspended within the upper storeys of Taipei 101 is an instance of this mechanism. The tower serves as the primary mass and the pendulum as the intermediate mass along an effective compliance of stiffness and gravity. Its parameters are tuned such that $\omega_z$ coincides with the wind-driven resonance, notching out the sway that would otherwise be excited.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.95; max-width: 680px;">
+        <div class="plot">
+            <canvas id="spring-plot"></canvas>
+            <div class="view-toggle">
+                <button class="btn secondary" id="view-splane-btn">s-plane</button>
+                <button class="btn secondary" id="view-nyquist-btn">Nyquist</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>Rendered with KaTeX and HTML canvas under the small-angle approximation.</p>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// SHARED DRAWING HELPERS
+// ══════════════════════════════════════════════════════════════
+const _SUPMAP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function toSup(n) { return String(n).split('').map(c => _SUPMAP[c] || c).join(''); }
+
+function drawChain(ctx, x0, y0, x1, y1) {
+    const dx = x1 - x0, dy = y1 - y0;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    if (len < 1) return;
+    const ux = dx/len, uy = dy/len;
+    const px = -uy, py = ux;
+    const amp = 1.8;
+    const linkLen = 5;
+    const n = Math.max(2, Math.floor(len / linkLen));
+    ctx.beginPath();
+    for (let i=0; i<=n; i++) {
+        const t = i/n;
+        const side = (i%2===0) ? 1 : -1;
+        const x = x0 + dx*t + px*amp*side;
+        const y = y0 + dy*t + py*amp*side;
+        if (i===0) ctx.moveTo(x, y);
+        else       ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+}
+
+// Draws a swing in SIDE PROFILE: single chain, seat seen end-on,
+// stick-figure child facing to the right (+x). Everything rotates by theta
+// about (pivotX, pivotY). cableStyle can be 'chain' (default) or 'spring'.
+// Returns geometry for annotations/pushes.
+function drawSwingWithChild(ctx, pivotX, pivotY, L_px, theta, c, childColor, cableStyle) {
+    // Unit vectors in the rotated frame
+    const dX = Math.sin(theta), dY = Math.cos(theta);   // along chain, pivot → seat
+    const fX = Math.cos(theta), fY = -Math.sin(theta);  // "forward" = direction child faces
+    const uX = -dX, uY = -dY;                           // along chain, seat → pivot
+
+    // Seat centre
+    const seatCx = pivotX + L_px * dX;
+    const seatCy = pivotY + L_px * dY;
+
+    // Cable — chain by default, coil spring if requested
+    ctx.strokeStyle = c.dim;
+    ctx.lineWidth = 1.4;
+    if (cableStyle === 'spring') {
+        const cdx = seatCx - pivotX, cdy = seatCy - pivotY;
+        const clen = Math.sqrt(cdx*cdx + cdy*cdy);
+        const ux = cdx / clen, uy = cdy / clen;
+        const pxn = -uy, pyn = ux;
+        const straight = 0.08;                 // straight stub at each end
+        const coils = Math.max(7, Math.round(L_px / 16));
+        const N = coils * 2;
+        const amp = 5;
+        ctx.beginPath();
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(pivotX + cdx * straight, pivotY + cdy * straight);
+        for (let i = 1; i <= N; i++) {
+            const t = straight + (1 - 2*straight) * (i / N);
+            const side = (i % 2 === 0) ? 1 : -1;
+            ctx.lineTo(pivotX + cdx * t + pxn * amp * side,
+                       pivotY + cdy * t + pyn * amp * side);
+        }
+        ctx.lineTo(pivotX + cdx * (1 - straight), pivotY + cdy * (1 - straight));
+        ctx.lineTo(seatCx, seatCy);
+        ctx.stroke();
+    } else {
+        drawChain(ctx, pivotX, pivotY, seatCx, seatCy);
+    }
+
+    // Seat — short plank in the forward axis
+    const seatHalf = 10;
+    const seatBx = seatCx - fX * seatHalf;       // back edge (behind child)
+    const seatBy = seatCy - fY * seatHalf;
+    const seatFx = seatCx + fX * seatHalf;       // front edge (under knees)
+    const seatFy = seatCy + fY * seatHalf;
+    ctx.strokeStyle = c.text;
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(seatBx, seatBy);
+    ctx.lineTo(seatFx, seatFy);
+    ctx.stroke();
+
+    // ── Child (profile, facing +forward) ──
+    const col = childColor || c.accent;
+
+    // Hip sits a touch behind seat centre so torso leans forward naturally
+    const hipX = seatCx - fX * 1.5 + uX * 3;
+    const hipY = seatCy - fY * 1.5 + uY * 3;
+    const shX = hipX + uX * 20 + fX * 3;
+    const shY = hipY + uY * 20 + fY * 3;
+    const headR = 9;
+    const headX = shX + uX * (headR + 2) + fX * 1.5;
+    const headY = shY + uY * (headR + 2) + fY * 1.5;
+
+    // Torso
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(hipX, hipY);
+    ctx.lineTo(shX, shY);
+    ctx.stroke();
+
+    // Head
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.arc(headX, headY, headR, 0, Math.PI*2);
+    ctx.fill();
+
+    // Little nose bump pointing forward (so it's obvious which way the child faces)
+    ctx.beginPath();
+    const nBaseX = headX + fX * (headR - 1);
+    const nBaseY = headY + fY * (headR - 1);
+    const nTipX  = headX + fX * (headR + 4);
+    const nTipY  = headY + fY * (headR + 4);
+    ctx.moveTo(nBaseX + uX * 2.5, nBaseY + uY * 2.5);
+    ctx.lineTo(nTipX, nTipY);
+    ctx.lineTo(nBaseX - uX * 2.5, nBaseY - uY * 2.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Arm reaches up and slightly forward to grip the chain
+    const gripT = 0.55;  // 0 = seat, 1 = pivot
+    const gripX = seatCx + (pivotX - seatCx) * gripT;
+    const gripY = seatCy + (pivotY - seatCy) * gripT;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(shX + fX * 1.5, shY + fY * 1.5);
+    ctx.lineTo(gripX, gripY);
+    ctx.stroke();
+
+    // Legs — upper leg forward from hip, lower leg bends down
+    const kneeX = seatCx + fX * 18 + uX * 1;
+    const kneeY = seatCy + fY * 18 + uY * 1;
+    const footX = kneeX + fX * 5 + dX * 18;
+    const footY = kneeY + fY * 5 + dY * 18;
+    ctx.beginPath();
+    ctx.moveTo(hipX, hipY);
+    ctx.lineTo(kneeX, kneeY);
+    ctx.lineTo(footX, footY);
+    ctx.stroke();
+
+    ctx.lineCap = 'butt';
+
+    return { seatCx, seatCy, seatBx, seatBy, seatFx, seatFy, headX, headY, fX, fY };
+}
+
+// Stick-figure parent at (feetX, feetY). When `pushing` is true the forward
+// arm reaches toward (reachX, reachY) but is clipped to a fixed `armLen`
+// (no stretching). Returns the hand position when pushing, else null.
+function drawParent(ctx, feetX, feetY, pushing, reachX, reachY, c, armLen) {
+    armLen = armLen || 24;
+    const headR = 7;
+    const hipY = feetY - 22;
+    const shY  = hipY - 26;
+    const headY = shY - headR - 3;
+    const bodyX = feetX;
+
+    ctx.lineCap = 'round';
+    // Legs
+    ctx.strokeStyle = c.dim;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(bodyX - 4, feetY);
+    ctx.lineTo(bodyX, hipY);
+    ctx.lineTo(bodyX + 4, feetY);
+    ctx.stroke();
+    // Torso
+    ctx.beginPath();
+    ctx.moveTo(bodyX, hipY);
+    ctx.lineTo(bodyX, shY);
+    ctx.stroke();
+    // Head
+    ctx.fillStyle = c.dim;
+    ctx.beginPath();
+    ctx.arc(bodyX, headY, headR, 0, Math.PI*2);
+    ctx.fill();
+
+    let hand = null;
+    if (pushing && reachX !== undefined) {
+        const shX = bodyX, shYp = shY + 4;
+        const dx = reachX - shX, dy = reachY - shYp;
+        const d = Math.max(0.001, Math.sqrt(dx*dx + dy*dy));
+        const t = Math.min(1, armLen / d);
+        const handX = shX + dx * t;
+        const handY = shYp + dy * t;
+        // Slight perpendicular bend for an elbow
+        const px = -dy/d, py = dx/d;
+        const elbowX = (shX + handX)/2 + px * 2;
+        const elbowY = (shYp + handY)/2 + py * 2;
+        ctx.strokeStyle = c.blue;
+        ctx.lineWidth = 2.6;
+        ctx.beginPath();
+        ctx.moveTo(shX, shYp);
+        ctx.lineTo(elbowX, elbowY);
+        ctx.lineTo(handX, handY);
+        ctx.stroke();
+        hand = { x: handX, y: handY };
+    } else {
+        ctx.strokeStyle = c.dim;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bodyX - 1, shY + 4);
+        ctx.lineTo(bodyX - 5, shY + 22);
+        ctx.moveTo(bodyX + 1, shY + 4);
+        ctx.lineTo(bodyX + 5, shY + 22);
+        ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+    return hand;
+}
+
+// ══════════════════════════════════════════════════════════════
+// SWING DIAGRAM (static, with labels)
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('swing-diagram');
+    const ctx = canvas.getContext('2d');
+    let W, H, dpr;
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        W = rect.width; H = rect.height;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+        draw();
+    }
+
+    function getColors() {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+            text: cs.getPropertyValue('--text').trim(),
+            dim:  cs.getPropertyValue('--text-dim').trim(),
+            muted:cs.getPropertyValue('--text-muted').trim(),
+            accent: cs.getPropertyValue('--accent').trim(),
+            yellow: cs.getPropertyValue('--yellow').trim(),
+            blue: cs.getPropertyValue('--blue').trim(),
+        };
+    }
+
+    let t0 = performance.now();
+    function draw() {
+        const c = getColors();
+        ctx.clearRect(0,0,W,H);
+
+        const pivotX = W/2 + 30, pivotY = 48;
+        const L_px = Math.min(H - 150, 240);
+        // Animate only positive swing (swing moves right from rest) so pusher stays on left
+        const tNow = (performance.now() - t0) / 1000;
+        const phase = Math.sin(tNow * 1.3);
+        const theta = 0.28 * Math.max(0, phase) + 0.05;  // biased to the right side
+
+        // Support beam
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pivotX - 110, pivotY - 8);
+        ctx.lineTo(pivotX + 110, pivotY - 8);
+        ctx.stroke();
+        for (let x = -100; x <= 100; x += 14) {
+            ctx.beginPath();
+            ctx.moveTo(pivotX + x, pivotY - 8);
+            ctx.lineTo(pivotX + x - 8, pivotY - 18);
+            ctx.stroke();
+        }
+
+        // Vertical reference
+        ctx.strokeStyle = c.muted;
+        ctx.setLineDash([4,6]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(pivotX, pivotY + L_px + 40);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Swing + child
+        const geom = drawSwingWithChild(ctx, pivotX, pivotY, L_px, theta, c, c.accent);
+
+        // Ground line
+        const groundY = pivotY + L_px + 44;
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pivotX - 180, groundY);
+        ctx.lineTo(pivotX + 140, groundY);
+        ctx.stroke();
+
+        // Parent tracks the seat: they stand directly behind the seat's
+        // current position and push straight onto its back.
+        const armLen = 26;
+        const parentX = Math.max(pivotX - 180, geom.seatBx - (armLen - 2));
+        const hand = drawParent(ctx, parentX, groundY, true, geom.seatBx, geom.seatBy, c, armLen);
+
+        // Push arrow — short, in the swing's forward direction, starting at hand
+        if (hand) {
+            const arrLen = 14;
+            const arrStartX = hand.x;
+            const arrStartY = hand.y;
+            const arrEndX = arrStartX + geom.fX * arrLen;
+            const arrEndY = arrStartY + geom.fY * arrLen;
+            const px = -geom.fY, py = geom.fX;
+            ctx.strokeStyle = c.blue;
+            ctx.fillStyle = c.blue;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(arrStartX, arrStartY);
+            ctx.lineTo(arrEndX, arrEndY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(arrEndX, arrEndY);
+            ctx.lineTo(arrEndX - geom.fX*6 + px*4, arrEndY - geom.fY*6 + py*4);
+            ctx.lineTo(arrEndX - geom.fX*6 - px*4, arrEndY - geom.fY*6 - py*4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+            ctx.textAlign = 'left';
+            ctx.fillStyle = c.blue;
+            ctx.fillText('F(t)', arrEndX + 6, arrEndY + 4);
+        }
+
+        // Angle arc at pivot
+        ctx.strokeStyle = c.yellow;
+        ctx.lineWidth = 1.5;
+        const arcR = 46;
+        ctx.beginPath();
+        ctx.arc(pivotX, pivotY, arcR, Math.PI/2, Math.PI/2 + theta);
+        ctx.stroke();
+        ctx.fillStyle = c.yellow;
+        ctx.font = "500 13px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('θ', pivotX + 10, pivotY + arcR + 10);
+
+        // L label along the chain (right side of chain midpoint)
+        ctx.fillStyle = c.text;
+        const midX = pivotX + 0.5 * L_px * Math.sin(theta);
+        const midY = pivotY + 0.5 * L_px * Math.cos(theta);
+        ctx.fillText('L', midX + 28, midY + 4);
+
+        // Gravity arrow on child
+        ctx.strokeStyle = c.muted;
+        ctx.fillStyle = c.muted;
+        ctx.lineWidth = 1.5;
+        const gX = geom.seatCx;
+        const gY = geom.seatCy + 56;
+        ctx.beginPath();
+        ctx.moveTo(gX, gY);
+        ctx.lineTo(gX, gY + 24);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(gX, gY + 24);
+        ctx.lineTo(gX - 5, gY + 18);
+        ctx.lineTo(gX + 5, gY + 18);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'left';
+        ctx.fillText('mg', gX + 8, gY + 20);
+
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// INTERACTIVE SWING SIMULATION + BODE PLOT
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('swing-sim');
+    const ctx = canvas.getContext('2d');
+    let W, H, dpr;
+
+    const wSlider = document.getElementById('w-slider');
+    const LSlider = document.getElementById('L-slider');
+    const zSlider = document.getElementById('z-slider');
+    const aSlider = document.getElementById('a-slider');
+    const wVal = document.getElementById('w-val');
+    const LVal = document.getElementById('L-val');
+    const zVal = document.getElementById('z-val');
+    const aVal = document.getElementById('a-val');
+    const w0Read = document.getElementById('w0-readout');
+    const ratioRead = document.getElementById('ratio-readout');
+    const magRead = document.getElementById('mag-readout');
+    const peakRead = document.getElementById('peak-readout');
+    const matchBtn = document.getElementById('match-btn');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const g = 9.81;
+    let theta = 0, thetaDot = 0;
+    let peakAngle = 0, peakDecay = 0;
+    let lastT = performance.now();
+    let simT = 0;
+    let inPulse = false;      // true during the brief push impulse
+    let lastPulseEndT = -1;
+
+    function params() {
+        const w  = parseFloat(wSlider.value);
+        const L  = parseFloat(LSlider.value);
+        const z  = parseFloat(zSlider.value);
+        const a  = parseFloat(aSlider.value);
+        const w0 = Math.sqrt(g/L);
+        return { w, L, z, a, w0 };
+    }
+
+    function updateReadouts() {
+        const { w, L, z, a, w0 } = params();
+        wVal.textContent = w.toFixed(2) + ' rad/s';
+        LVal.textContent = L.toFixed(2) + ' m';
+        zVal.textContent = z.toFixed(3);
+        aVal.textContent = a.toFixed(2);
+        w0Read.textContent = w0.toFixed(2) + ' rad/s';
+        ratioRead.textContent = (w/w0).toFixed(2);
+        const mag = 1 / Math.sqrt(Math.pow(w0*w0 - w*w, 2) + Math.pow(2*z*w0*w, 2));
+        magRead.textContent = mag.toFixed(2);
+        peakRead.textContent = (peakAngle*180/Math.PI).toFixed(1) + '°';
+    }
+
+    [wSlider, LSlider, zSlider, aSlider].forEach(s => s.addEventListener('input', updateReadouts));
+    matchBtn.addEventListener('click', () => {
+        const { w0 } = params();
+        wSlider.value = Math.min(4.0, Math.max(0.1, w0));
+        updateReadouts();
+    });
+    resetBtn.addEventListener('click', () => {
+        theta = 0; thetaDot = 0; peakAngle = 0; simT = 0;
+    });
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        W = rect.width; H = rect.height;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+
+    function getColors() {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+            text: cs.getPropertyValue('--text').trim(),
+            dim:  cs.getPropertyValue('--text-dim').trim(),
+            muted:cs.getPropertyValue('--text-muted').trim(),
+            border: cs.getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)',
+            accent: cs.getPropertyValue('--accent').trim(),
+            yellow: cs.getPropertyValue('--yellow').trim(),
+            red:   cs.getPropertyValue('--red').trim(),
+            blue:  cs.getPropertyValue('--blue').trim(),
+        };
+    }
+
+    function step(dt) {
+        const { w: wPush, L, z, a, w0 } = params();
+
+        // One brief impulse per period T = 2π/ω — the parent's single push.
+        const period = 2 * Math.PI / wPush;
+        const pulseWidth = Math.max(0.10, Math.min(0.25, period * 0.12));
+        const phaseInPeriod = simT - Math.floor(simT / period) * period;
+        const wasInPulse = inPulse;
+        inPulse = phaseInPeriod < pulseWidth;
+        if (wasInPulse && !inPulse) lastPulseEndT = simT;
+
+        // Impulse height: tuned so resonance gives a visually clear swing
+        // without driving the pendulum past small-angle linearity.
+        const u = inPulse ? (a * 3) : 0;
+
+        const thetaDDot = -2*z*w0*thetaDot - w0*w0*Math.sin(theta) + u;
+        thetaDot += thetaDDot * dt;
+        theta   += thetaDot   * dt;
+        simT    += dt;
+
+        const absT = Math.abs(theta);
+        if (absT > peakAngle) peakAngle = absT;
+        peakDecay += dt;
+        if (peakDecay > 2.0) {
+            peakAngle *= 0.995;
+            peakDecay = 0;
+        }
+    }
+
+    function drawSwing(x0, y0, w, h, c) {
+        const { L, w: wPush, w0, a } = params();
+        // Pivot biased right so there's room for the parent on the left
+        const pivotX = x0 + w * 0.60;
+        const pivotY = y0 + 32;
+        // Chain length scales with L (in metres)
+        const lenPx = Math.min(h - 110, 60 + (h - 130) * (L / 4.0));
+
+        // Support beam
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pivotX - 70, pivotY - 8);
+        ctx.lineTo(pivotX + 70, pivotY - 8);
+        ctx.stroke();
+        for (let xh = -60; xh <= 60; xh += 14) {
+            ctx.beginPath();
+            ctx.moveTo(pivotX + xh, pivotY - 8);
+            ctx.lineTo(pivotX + xh - 8, pivotY - 18);
+            ctx.stroke();
+        }
+
+        // Vertical reference
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([3,5]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(pivotX, pivotY + lenPx + 40);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Resonance highlight colour
+        const atResonance = Math.abs(wPush - w0) / w0 < 0.08;
+        const childCol = atResonance ? c.yellow : c.accent;
+
+        // Swing + child
+        const geom = drawSwingWithChild(ctx, pivotX, pivotY, lenPx, theta, c, childCol);
+
+        // Pivot dots
+        ctx.fillStyle = c.text;
+        ctx.beginPath();
+        ctx.arc(pivotX, pivotY, 3, 0, Math.PI*2);
+        ctx.fill();
+
+        // Ground line
+        const groundY = pivotY + lenPx + 44;
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(x0 + 10, groundY);
+        ctx.lineTo(pivotX + 90, groundY);
+        ctx.stroke();
+
+        // Parent has a rest spot on the left. They slide in just before the
+        // push, push directly on the seat's current position, then slide
+        // back to rest. Arm length is fixed.
+        const period = 2 * Math.PI / wPush;
+        const pulseWidth = Math.max(0.10, Math.min(0.25, period * 0.12));
+        const phaseInPeriod = simT - Math.floor(simT / period) * period;
+        const tApproach = Math.min(0.5, period * 0.18);
+        const tRetreat  = Math.min(0.5, period * 0.18);
+
+        let slide = 0;
+        const tUntilNext = period - phaseInPeriod;
+        if (phaseInPeriod < pulseWidth) {
+            slide = 1;                                                   // pushing
+        } else if (phaseInPeriod < pulseWidth + tRetreat) {
+            slide = 1 - (phaseInPeriod - pulseWidth) / tRetreat;         // retreating
+        } else if (tUntilNext < tApproach) {
+            slide = 1 - tUntilNext / tApproach;                          // approaching
+        }
+        slide = slide * slide * (3 - 2*slide);                           // smoothstep
+
+        // Parent stays close behind the seat at all times — a short stride
+        // back at rest, stepping forward onto the seat's current position
+        // for the push. No further retreat than needed to avoid collision.
+        const armLen = 24;
+        const stride = 16;
+        const pushX = Math.max(x0 + 24, geom.seatBx - (armLen - 2));
+        const restX = Math.max(x0 + 24, pushX - stride);
+        const parentX = restX + (pushX - restX) * slide;
+
+        const hand = drawParent(
+            ctx, parentX, groundY, inPulse,
+            geom.seatBx, geom.seatBy,
+            c, armLen
+        );
+
+        // Push arrow appears during the impulse, pointing in the forward
+        // direction of the swing (the direction the force is applied)
+        if (hand) {
+            const arrLen = 14;
+            const arrStartX = hand.x;
+            const arrStartY = hand.y;
+            const arrEndX = arrStartX + geom.fX * arrLen;
+            const arrEndY = arrStartY + geom.fY * arrLen;
+            const px = -geom.fY, py = geom.fX;
+            ctx.strokeStyle = c.blue;
+            ctx.fillStyle = c.blue;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(arrStartX, arrStartY);
+            ctx.lineTo(arrEndX, arrEndY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(arrEndX, arrEndY);
+            ctx.lineTo(arrEndX - geom.fX*6 + px*4, arrEndY - geom.fY*6 + py*4);
+            ctx.lineTo(arrEndX - geom.fX*6 - px*4, arrEndY - geom.fY*6 - py*4);
+            ctx.closePath();
+            ctx.fill();
+
+            // Contact spark at seat back
+            ctx.fillStyle = c.yellow;
+            ctx.beginPath();
+            ctx.arc(geom.seatBx, geom.seatBy, 5, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        // Title
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('swing · θ(t)', x0 + 12, y0 + 18);
+        ctx.fillStyle = c.text;
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.fillText('θ = ' + (theta*180/Math.PI).toFixed(1) + '°', x0 + 12, y0 + h - 14);
+        if (atResonance) {
+            ctx.fillStyle = c.yellow;
+            ctx.font = "600 12px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'right';
+            ctx.fillText('RESONANCE', x0 + w - 12, y0 + 18);
+        }
+    }
+
+    function drawBode(x0, y0, w, h, c) {
+        const { w: wNow, L, z, a, w0 } = params();
+        const padL = 54, padR = 14, padT = 26, padB = 38;
+        const plotX = x0 + padL;
+        const plotY = y0 + padT;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        // Frame
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        // Title
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('Bode magnitude · |H(jω)|', x0 + 12, y0 + 18);
+
+        // Frequency range: 0.1 .. 10 rad/s on log axis
+        const wMin = 0.1, wMax = 10;
+        const xFromW = (ww) => plotX + plotW * (Math.log10(ww) - Math.log10(wMin)) / (Math.log10(wMax) - Math.log10(wMin));
+        // Magnitude range: choose adaptive based on peak
+        const magAt = (ww) => 1 / Math.sqrt(Math.pow(w0*w0 - ww*ww, 2) + Math.pow(2*z*w0*ww, 2));
+        const peakMag = magAt(w0);
+        const magMin = 0.001, magMax = Math.max(peakMag * 1.3, 1.2);
+        const yFromMag = (m) => {
+            const lm = Math.log10(Math.max(m, magMin));
+            return plotY + plotH * (1 - (lm - Math.log10(magMin)) / (Math.log10(magMax) - Math.log10(magMin)));
+        };
+
+        // Gridlines (decades on x, decades on y)
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2,3]);
+        ctx.lineWidth = 1;
+        for (let k=-1; k<=1; k++) {
+            const x = xFromW(Math.pow(10,k));
+            ctx.beginPath();
+            ctx.moveTo(x, plotY);
+            ctx.lineTo(x, plotY+plotH);
+            ctx.stroke();
+            ctx.fillStyle = c.muted;
+            ctx.font = "500 11px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'center';
+            ctx.fillText('10' + toSup(k), x, plotY + plotH + 14);
+        }
+        for (let k=-3; k<=1; k++) {
+            const m = Math.pow(10, k);
+            if (m < magMin || m > magMax) continue;
+            const y = yFromMag(m);
+            ctx.beginPath();
+            ctx.moveTo(plotX, y);
+            ctx.lineTo(plotX+plotW, y);
+            ctx.stroke();
+            ctx.fillStyle = c.muted;
+            ctx.textAlign = 'right';
+            ctx.fillText('10' + toSup(k), plotX - 6, y+3);
+        }
+        ctx.setLineDash([]);
+
+        // Axis labels
+        ctx.fillStyle = c.dim;
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('ω  (rad/s)', plotX + plotW/2, y0 + h - 8);
+
+        // Plot magnitude curve
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const N = 220;
+        for (let i=0; i<=N; i++) {
+            const frac = i/N;
+            const ww = Math.pow(10, Math.log10(wMin) + frac*(Math.log10(wMax)-Math.log10(wMin)));
+            const m  = magAt(ww);
+            const xp = xFromW(ww);
+            const yp = yFromMag(m);
+            if (i===0) ctx.moveTo(xp, yp);
+            else       ctx.lineTo(xp, yp);
+        }
+        ctx.stroke();
+
+        // ω0 marker (vertical line)
+        const xW0 = xFromW(w0);
+        ctx.strokeStyle = c.muted;
+        ctx.setLineDash([4,4]);
+        ctx.beginPath();
+        ctx.moveTo(xW0, plotY);
+        ctx.lineTo(xW0, plotY + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = c.muted;
+        ctx.textAlign = 'center';
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.fillText('ω₀', xW0, plotY - 6);
+
+        // Current push frequency marker (dot on curve)
+        const xNow = xFromW(wNow);
+        const magNow = magAt(wNow);
+        const yNow = yFromMag(magNow);
+        // Vertical drop line
+        ctx.strokeStyle = c.yellow;
+        ctx.setLineDash([3,4]);
+        ctx.beginPath();
+        ctx.moveTo(xNow, plotY);
+        ctx.lineTo(xNow, plotY + plotH);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Dot
+        ctx.fillStyle = c.yellow;
+        ctx.beginPath();
+        ctx.arc(xNow, yNow, 6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = c.yellow;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = xNow > plotX + plotW - 70 ? 'right' : 'left';
+        const lx = xNow + (xNow > plotX + plotW - 70 ? -8 : 8);
+        ctx.fillText('|H| = ' + magNow.toFixed(2), lx, yNow - 8);
+    }
+
+    function loop() {
+        const now = performance.now();
+        let dt = (now - lastT) / 1000;
+        lastT = now;
+        if (dt > 0.05) dt = 0.05;
+
+        // Substep for stability
+        const sub = 4;
+        for (let i=0; i<sub; i++) step(dt/sub);
+
+        const c = getColors();
+        ctx.clearRect(0,0,W,H);
+
+        // Split canvas: swing on left (40%), bode on right (60%)
+        const splitX = Math.min(360, W * 0.42);
+        drawSwing(0, 0, splitX, H, c);
+
+        // Separator
+        ctx.strokeStyle = c.border;
+        ctx.beginPath();
+        ctx.moveTo(splitX, 12);
+        ctx.lineTo(splitX, H - 12);
+        ctx.stroke();
+
+        drawBode(splitX, 0, W - splitX, H, c);
+
+        updateReadouts();
+        requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    updateReadouts();
+    requestAnimationFrame(loop);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// POLE-ZERO DIAGRAM  +  IMPULSE RESPONSE
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('pole-zero');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, dpr;
+
+    const LSlider = document.getElementById('L-slider');
+    const zSlider = document.getElementById('z-slider');
+    const g = 9.81;
+
+    function params() {
+        const L = parseFloat(LSlider.value);
+        const z = parseFloat(zSlider.value);
+        const w0 = Math.sqrt(g / L);
+        return { L, z, w0 };
+    }
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        W = rect.width; H = rect.height;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function getColors() {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+            text:   cs.getPropertyValue('--text').trim(),
+            dim:    cs.getPropertyValue('--text-dim').trim(),
+            muted:  cs.getPropertyValue('--text-muted').trim(),
+            border: cs.getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)',
+            accent: cs.getPropertyValue('--accent').trim(),
+            yellow: cs.getPropertyValue('--yellow').trim(),
+            red:    cs.getPropertyValue('--red').trim(),
+            blue:   cs.getPropertyValue('--blue').trim(),
+        };
+    }
+
+    function computePoles(z, w0) {
+        if (z < 1) {
+            const wd = w0 * Math.sqrt(1 - z*z);
+            return [
+                { re: -z*w0, im:  wd },
+                { re: -z*w0, im: -wd },
+            ];
+        }
+        const disc = w0 * Math.sqrt(z*z - 1);
+        return [
+            { re: -z*w0 + disc, im: 0 },
+            { re: -z*w0 - disc, im: 0 },
+        ];
+    }
+
+    function drawSPlane(x0, y0, w, h, c) {
+        const { z, w0 } = params();
+        const padL = 46, padR = 14, padT = 28, padB = 36;
+        const plotX = x0 + padL;
+        const plotY = y0 + padT;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        // Fixed axis range so the poles move visibly as L (and ω₀) change.
+        // Covers the full slider range: L∈[0.5, 4] → ω₀∈[1.57, 4.43].
+        const realMin = -5.5;
+        const realMax =  1.0;
+        const imagMax =  5.0;
+        const imagMin = -imagMax;
+
+        const xFromReal = r => plotX + plotW * (r - realMin) / (realMax - realMin);
+        const yFromImag = i => plotY + plotH * (1 - (i - imagMin) / (imagMax - imagMin));
+
+        // Frame
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        // Title
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('s-plane · poles of H(s)', x0 + 12, y0 + 18);
+
+        // Unstable region shading (right half-plane)
+        const xZero = xFromReal(0);
+        ctx.fillStyle = 'rgba(224,96,80,0.07)';
+        ctx.fillRect(xZero, plotY, plotX + plotW - xZero, plotH);
+        ctx.fillStyle = c.red;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('unstable', xZero + 6, plotY + plotH - 8);
+
+        // Gridlines — fixed 1 rad/s spacing
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2, 3]);
+        const step = 1.0;
+        for (let r = Math.ceil(realMin / step) * step; r <= realMax; r += step) {
+            const x = xFromReal(r);
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY + plotH); ctx.stroke();
+        }
+        for (let i = Math.ceil(imagMin / step) * step; i <= imagMax; i += step) {
+            const y = yFromImag(i);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Axes
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 1.2;
+        const yZero = yFromImag(0);
+        ctx.beginPath(); ctx.moveTo(plotX, yZero); ctx.lineTo(plotX + plotW, yZero); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xZero, plotY); ctx.lineTo(xZero, plotY + plotH); ctx.stroke();
+
+        // Natural frequency circle |s| = ω₀
+        ctx.strokeStyle = c.muted;
+        ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1;
+        const rCircle = Math.abs(xFromReal(w0) - xZero);
+        ctx.beginPath();
+        ctx.arc(xZero, yZero, rCircle, 0, Math.PI*2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('|s| = ω₀', xFromReal(-w0) + 6, yZero - 6);
+
+        // Axis labels
+        ctx.fillStyle = c.dim;
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'right';
+        ctx.fillText('Re(s) = σ', plotX + plotW - 4, yZero - 6);
+        ctx.save();
+        ctx.translate(xZero + 6, plotY + 12);
+        ctx.textAlign = 'left';
+        ctx.fillText('Im(s) = jω', 0, 0);
+        ctx.restore();
+
+        // Poles — draw as ×
+        const poles = computePoles(z, w0);
+        ctx.strokeStyle = c.yellow;
+        ctx.lineWidth = 2.6;
+        for (const p of poles) {
+            const cx = xFromReal(p.re);
+            const cy = yFromImag(p.im);
+            const r = 8;
+            ctx.beginPath();
+            ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy + r);
+            ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx - r, cy + r);
+            ctx.stroke();
+        }
+
+        // Guide lines from origin to upper pole (show angle = arcsin ζ)
+        if (z < 1) {
+            const upper = poles[0];
+            const pxU = xFromReal(upper.re);
+            const pyU = yFromImag(upper.im);
+            ctx.strokeStyle = c.accent;
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(xZero, yZero);
+            ctx.lineTo(pxU, pyU);
+            ctx.stroke();
+            // Vertical from pole down to real axis (shows ω_d)
+            ctx.beginPath();
+            ctx.moveTo(pxU, pyU);
+            ctx.lineTo(pxU, yZero);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Small angle arc at origin
+            ctx.strokeStyle = c.accent;
+            ctx.beginPath();
+            const arcR = Math.min(28, rCircle * 0.35);
+            const ang = Math.atan2(upper.im, -upper.re);  // measured from -Re axis
+            // Canvas angle convention: 0 at +x; we want arc from π (facing left) going counter-clockwise by ang
+            ctx.arc(xZero, yZero, arcR, Math.PI, Math.PI - ang, true);
+            ctx.stroke();
+            // Label φ
+            ctx.fillStyle = c.accent;
+            ctx.font = "500 12px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'left';
+            ctx.fillText('φ', xZero - arcR - 18, yZero - 4);
+
+            // Labels near pole
+            ctx.fillStyle = c.yellow;
+            ctx.font = "500 12px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'left';
+            ctx.fillText('−ζω₀ + jω_d', pxU + 12, pyU - 4);
+            const lower = poles[1];
+            ctx.fillText('−ζω₀ − jω_d', xFromReal(lower.re) + 12, yFromImag(lower.im) + 12);
+        } else {
+            ctx.fillStyle = c.yellow;
+            ctx.font = "500 12px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'left';
+            ctx.fillText('real poles (overdamped)', xFromReal(poles[0].re) + 12, yFromImag(0) - 10);
+        }
+
+        // Readout line
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        const wd = z < 1 ? w0 * Math.sqrt(1 - z*z) : 0;
+        const ln = `ω₀ = ${w0.toFixed(2)}   ζ = ${z.toFixed(3)}   ω_d = ${wd.toFixed(2)}`;
+        ctx.fillText(ln, x0 + 12, y0 + h - 10);
+    }
+
+    function drawTimeResponse(x0, y0, w, h, c) {
+        const { z, w0 } = params();
+        const padL = 40, padR = 14, padT = 28, padB = 36;
+        const plotX = x0 + padL;
+        const plotY = y0 + padT;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        // Frame
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('impulse response · h(t)', x0 + 12, y0 + 18);
+
+        // Time axis: enough to see full decay
+        const tau = (z > 0.001) ? 1 / (z * w0) : 10 / w0;   // decay time constant
+        const tMax = Math.max(4 * 2 * Math.PI / w0, 5 * tau);
+
+        const xFromT = t => plotX + plotW * t / tMax;
+        // Compute response samples
+        const N = 320;
+        const samples = new Array(N + 1);
+        let hMax = 0;
+        for (let i = 0; i <= N; i++) {
+            const t = (i / N) * tMax;
+            let hv;
+            if (z < 1) {
+                const wd = w0 * Math.sqrt(1 - z*z);
+                hv = (1 / wd) * Math.exp(-z * w0 * t) * Math.sin(wd * t);
+            } else if (Math.abs(z - 1) < 1e-4) {
+                hv = t * Math.exp(-w0 * t);
+            } else {
+                const r = w0 * Math.sqrt(z*z - 1);
+                hv = (1 / (2 * r)) * (Math.exp((-z*w0 + r) * t) - Math.exp((-z*w0 - r) * t));
+            }
+            samples[i] = hv;
+            if (Math.abs(hv) > hMax) hMax = Math.abs(hv);
+        }
+        hMax = Math.max(hMax, 0.01);
+        const yFromH = v => plotY + plotH / 2 - (v / hMax) * (plotH / 2 * 0.85);
+
+        // Zero line
+        ctx.strokeStyle = c.muted;
+        ctx.setLineDash([3, 4]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(plotX, plotY + plotH / 2);
+        ctx.lineTo(plotX + plotW, plotY + plotH / 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Decay envelope ±exp(-ζω₀t)/ω_d for underdamped case
+        if (z < 1) {
+            const wd = w0 * Math.sqrt(1 - z*z);
+            ctx.strokeStyle = c.muted;
+            ctx.setLineDash([2, 4]);
+            ctx.lineWidth = 1;
+            for (const sign of [1, -1]) {
+                ctx.beginPath();
+                for (let i = 0; i <= N; i++) {
+                    const t = (i / N) * tMax;
+                    const env = sign * Math.exp(-z * w0 * t) / wd;
+                    const x = xFromT(t);
+                    const y = yFromH(env);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            ctx.fillStyle = c.muted;
+            ctx.font = "500 11px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'right';
+            ctx.fillText('e^(σt)', plotX + plotW - 6, yFromH(Math.exp(-z*w0*tMax*0.6)/wd) - 4);
+        }
+
+        // Response curve
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i <= N; i++) {
+            const t = (i / N) * tMax;
+            const x = xFromT(t);
+            const y = yFromH(samples[i]);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Axis label
+        ctx.fillStyle = c.dim;
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.fillText('t  →', plotX + plotW / 2, plotY + plotH + 24);
+        // Time marker (one period)
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        const Tnat = 2 * Math.PI / w0;
+        if (Tnat < tMax) {
+            const xT = xFromT(Tnat);
+            ctx.strokeStyle = c.muted;
+            ctx.setLineDash([2, 3]);
+            ctx.beginPath();
+            ctx.moveTo(xT, plotY);
+            ctx.lineTo(xT, plotY + plotH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.textAlign = 'center';
+            ctx.fillText('T', xT, plotY + 14);
+        }
+    }
+
+    function loop() {
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const splitX = Math.round(W * 0.5);
+        drawSPlane(0, 0, splitX, H, c);
+        ctx.strokeStyle = c.border;
+        ctx.beginPath();
+        ctx.moveTo(splitX, 12);
+        ctx.lineTo(splitX, H - 12);
+        ctx.stroke();
+        drawTimeResponse(splitX, 0, W - splitX, H, c);
+
+        requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(loop);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// PART 05: DOUBLE PENDULUM  (s-plane + Bode with notch)
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('spring-plot');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, dpr;
+
+    const LSlider  = document.getElementById('L-slider');
+    const zSlider  = document.getElementById('z-slider');
+    const muSlider = document.getElementById('mu-slider');
+    const alSlider = document.getElementById('alpha-slider');
+    const muVal = document.getElementById('mu-val');
+    const alVal = document.getElementById('alpha-val');
+
+    const g = 9.81;
+
+    const wSliderEl = document.getElementById('w-slider');
+    function params() {
+        const L  = parseFloat(LSlider.value);
+        const zp = parseFloat(zSlider.value);
+        const mu = parseFloat(muSlider.value);
+        const al = parseFloat(alSlider.value);
+        const wPush = wSliderEl ? parseFloat(wSliderEl.value) : 1.0;
+        const m2 = 1;
+        const m1 = mu * m2;
+        const L1 = al * L;
+        const L2 = (1 - al) * L;
+        return { L, zp, mu, al, m1, m2, L1, L2, wPush };
+    }
+
+    function updateReadouts() {
+        const { mu, al } = params();
+        muVal.textContent = mu.toFixed(2);
+        alVal.textContent = al.toFixed(2);
+    }
+    [muSlider, alSlider].forEach(s => s.addEventListener('input', updateReadouts));
+    updateReadouts();
+
+    // ── Complex arithmetic ──
+    const C = {
+        add: (a, b) => ({ re: a.re + b.re, im: a.im + b.im }),
+        sub: (a, b) => ({ re: a.re - b.re, im: a.im - b.im }),
+        mul: (a, b) => ({ re: a.re*b.re - a.im*b.im, im: a.re*b.im + a.im*b.re }),
+        div: (a, b) => {
+            const d = b.re*b.re + b.im*b.im;
+            return { re: (a.re*b.re + a.im*b.im)/d, im: (a.im*b.re - a.re*b.im)/d };
+        },
+        abs: a => Math.sqrt(a.re*a.re + a.im*a.im),
+    };
+
+    // Evaluate polynomial (leading-coefficient-first) at complex z
+    function polyEval(coeffs, z) {
+        let r = { re: coeffs[0], im: 0 };
+        for (let i = 1; i < coeffs.length; i++) {
+            r = C.add(C.mul(r, z), { re: coeffs[i], im: 0 });
+        }
+        return r;
+    }
+
+    // Durand–Kerner for general n, closed form for n=2
+    function findRoots(coeffs) {
+        const n = coeffs.length - 1;
+        if (n === 2) {
+            const [a, b, c] = coeffs;
+            const disc = b*b - 4*a*c;
+            if (disc >= 0) {
+                const s = Math.sqrt(disc);
+                return [
+                    { re: (-b + s)/(2*a), im: 0 },
+                    { re: (-b - s)/(2*a), im: 0 },
+                ];
+            }
+            const s = Math.sqrt(-disc);
+            return [
+                { re: -b/(2*a), im:  s/(2*a) },
+                { re: -b/(2*a), im: -s/(2*a) },
+            ];
+        }
+        const leading = coeffs[0];
+        const constTerm = coeffs[coeffs.length - 1];
+        const r0 = Math.max(0.5, Math.pow(Math.abs(constTerm / leading), 1/n) || 1);
+        const roots = [];
+        for (let i = 0; i < n; i++) {
+            const angle = 2 * Math.PI * i / n + 0.4;
+            roots.push({ re: r0 * Math.cos(angle), im: r0 * Math.sin(angle) });
+        }
+        for (let iter = 0; iter < 120; iter++) {
+            let maxDelta = 0;
+            for (let i = 0; i < n; i++) {
+                let denom = { re: 1, im: 0 };
+                for (let j = 0; j < n; j++) {
+                    if (i === j) continue;
+                    denom = C.mul(denom, C.sub(roots[i], roots[j]));
+                }
+                const num = polyEval(coeffs, roots[i]);
+                const d = C.div(num, denom);
+                roots[i] = C.sub(roots[i], d);
+                const m = C.abs(d);
+                if (m > maxDelta) maxDelta = m;
+            }
+            if (maxDelta < 1e-10) break;
+        }
+        return roots;
+    }
+
+    // Polynomial coefficients for the double-pendulum transfer function
+    // X₂(s)/F(s) with horizontal force on the lower mass. Damping modelled as
+    // a small viscous torque εθ̇ on each angle (keeps poles slightly off axis).
+    function getCoeffs() {
+        const { L, zp, m1, m2, L1, L2 } = params();
+        const ep = 2 * zp * Math.sqrt(g * L) * (m1 + m2) * L * 0.5;
+        const ep1 = ep, ep2 = ep;
+        const A = (m1 + m2) * L1 * L1;
+        const Cv = (m1 + m2) * g * L1;
+        const D = m2 * L2 * L2;
+        const Fv = m2 * g * L2;
+        const G = m2 * L1 * L2;
+        // Numerator = L1²(Ds²+ε₂s+F_) − 2L1L2·G s² + L2²(As²+ε₁s+C_v)
+        const numer = [
+            L1*L1*D - 2*L1*L2*G + L2*L2*A,
+            L1*L1*ep2 + L2*L2*ep1,
+            L1*L1*Fv + L2*L2*Cv,
+        ];
+        // Denominator = det(M(s)) with damping
+        const denom = [
+            A*D - G*G,
+            A*ep2 + ep1*D,
+            A*Fv + ep1*ep2 + Cv*D,
+            ep1*Fv + Cv*ep2,
+            Cv*Fv,
+        ];
+        const wp = Math.sqrt(g / L);
+        const wz = Math.sqrt(g * (L1*m2 + L2*(m1+m2)) / (m1*L1*L2));
+        return { numer, denom, wp, wz, L1, L2, m1, m2 };
+    }
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        W = rect.width; H = rect.height;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function getColors() {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+            text:   cs.getPropertyValue('--text').trim(),
+            dim:    cs.getPropertyValue('--text-dim').trim(),
+            muted:  cs.getPropertyValue('--text-muted').trim(),
+            border: cs.getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)',
+            accent: cs.getPropertyValue('--accent').trim(),
+            yellow: cs.getPropertyValue('--yellow').trim(),
+            red:    cs.getPropertyValue('--red').trim(),
+            blue:   cs.getPropertyValue('--blue').trim(),
+        };
+    }
+
+    function drawSPlane(x0, y0, w, h, c) {
+        const { numer, denom, wp, wz } = getCoeffs();
+        const { wPush } = params();
+        const poles = findRoots(denom);
+        const zeros = findRoots(numer);
+
+        const padL = 46, padR = 14, padT = 28, padB = 36;
+        const plotX = x0 + padL;
+        const plotY = y0 + padT;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        const realMin = -5.5, realMax = 1.0;
+        const imagMax = 5.5, imagMin = -imagMax;
+        const xFromReal = r => plotX + plotW * (r - realMin) / (realMax - realMin);
+        const yFromImag = i => plotY + plotH * (1 - (i - imagMin) / (imagMax - imagMin));
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('s-plane · poles, zeros, jω marker', x0 + 12, y0 + 18);
+
+        const xZero = xFromReal(0);
+        ctx.fillStyle = 'rgba(224,96,80,0.07)';
+        ctx.fillRect(xZero, plotY, plotX + plotW - xZero, plotH);
+
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2, 3]);
+        for (let r = Math.ceil(realMin); r <= realMax; r += 1) {
+            const x = xFromReal(r);
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY + plotH); ctx.stroke();
+        }
+        for (let i = Math.ceil(imagMin); i <= imagMax; i += 1) {
+            const y = yFromImag(i);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 1.1;
+        const yZero = yFromImag(0);
+        ctx.beginPath(); ctx.moveTo(plotX, yZero); ctx.lineTo(plotX + plotW, yZero); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xZero, plotY); ctx.lineTo(xZero, plotY + plotH); ctx.stroke();
+
+        // Poles as ×
+        ctx.strokeStyle = c.yellow;
+        ctx.lineWidth = 2.4;
+        for (const p of poles) {
+            const cx = xFromReal(p.re);
+            const cy = yFromImag(p.im);
+            if (cx < plotX-4 || cx > plotX+plotW+4 || cy < plotY-4 || cy > plotY+plotH+4) continue;
+            const r = 7;
+            ctx.beginPath();
+            ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy + r);
+            ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx - r, cy + r);
+            ctx.stroke();
+        }
+        // Zeros as ○
+        ctx.strokeStyle = c.blue;
+        ctx.lineWidth = 2.4;
+        for (const z of zeros) {
+            const cx = xFromReal(z.re);
+            const cy = yFromImag(z.im);
+            if (cx < plotX-4 || cx > plotX+plotW+4 || cy < plotY-4 || cy > plotY+plotH+4) continue;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 6.5, 0, Math.PI*2);
+            ctx.stroke();
+        }
+
+        // ── Frequency sweep: s = jω traces the imaginary axis ──
+        // Highlight the jω axis so it's clear this is where H(jω) lives.
+        ctx.save();
+        ctx.strokeStyle = c.blue;
+        ctx.globalAlpha = 0.55;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        ctx.moveTo(xZero, plotY + 4);
+        ctx.lineTo(xZero, plotY + plotH - 4);
+        ctx.stroke();
+        ctx.globalAlpha = 1.0;
+        ctx.restore();
+
+        // Sweep arrow at the top of the jω axis
+        ctx.fillStyle = c.blue;
+        ctx.beginPath();
+        ctx.moveTo(xZero, plotY + 2);
+        ctx.lineTo(xZero - 4, plotY + 10);
+        ctx.lineTo(xZero + 4, plotY + 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('s = jω', xZero + 6, plotY + 12);
+
+        // Marker at jω_push — the current point being evaluated
+        const markerY = yFromImag(Math.min(wPush, imagMax - 0.1));
+        // Thin segments from marker to each pole and zero (these lengths
+        // are the factors multiplied/divided to form |H(jω)|).
+        ctx.save();
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        ctx.globalAlpha = 0.65;
+        ctx.strokeStyle = c.yellow;
+        for (const p of poles) {
+            ctx.beginPath();
+            ctx.moveTo(xZero, markerY);
+            ctx.lineTo(xFromReal(p.re), yFromImag(p.im));
+            ctx.stroke();
+        }
+        ctx.strokeStyle = c.blue;
+        for (const z of zeros) {
+            ctx.beginPath();
+            ctx.moveTo(xZero, markerY);
+            ctx.lineTo(xFromReal(z.re), yFromImag(z.im));
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // Marker dot
+        ctx.fillStyle = c.blue;
+        ctx.strokeStyle = c.text;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(xZero, markerY, 5.5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = c.blue;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText(`jω = j${wPush.toFixed(2)}`, xZero + 10, markerY + 4);
+
+        // Compute |H(jω)| via product-of-distances for the readout
+        const mark = { re: 0, im: wPush };
+        let prodZ = 1, prodP = 1;
+        for (const z of zeros) prodZ *= Math.hypot(mark.re - z.re, mark.im - z.im);
+        for (const p of poles) prodP *= Math.hypot(mark.re - p.re, mark.im - p.im);
+        // Gain factor: leading(num)/leading(den)
+        const gain = numer[0] / denom[0];
+        const magHere = Math.abs(gain) * prodZ / (prodP || 1e-12);
+
+        // Legend
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillStyle = c.yellow;
+        ctx.fillText('×  poles', x0 + 12, y0 + h - 40);
+        ctx.fillStyle = c.blue;
+        ctx.fillText('○  zeros', x0 + 12, y0 + h - 26);
+        ctx.fillStyle = c.blue;
+        ctx.fillText('●  s = jω', x0 + 12, y0 + h - 12);
+
+        // Readout
+        ctx.fillStyle = c.muted;
+        ctx.textAlign = 'right';
+        ctx.fillText(`ω₀=${wp.toFixed(2)}  ω_z=${wz.toFixed(2)}`, x0 + w - 12, y0 + h - 26);
+        ctx.fillStyle = c.text;
+        ctx.fillText(`|H(jω)| = ${magHere.toExponential(2)}`, x0 + w - 12, y0 + h - 12);
+    }
+
+    function drawBode(x0, y0, w, h, c) {
+        const { numer, denom, wp, wz } = getCoeffs();
+        const { wPush } = params();
+
+        const padL = 46, padR = 14, padT = 28, padB = 36;
+        const plotX = x0 + padL;
+        const plotY = y0 + padT;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('Bode magnitude · |H(jω)|', x0 + 12, y0 + 18);
+
+        const wMin = 0.1, wMax = 20;
+        const xFromW = ww => plotX + plotW * (Math.log10(ww) - Math.log10(wMin)) / (Math.log10(wMax) - Math.log10(wMin));
+
+        const N = 260;
+        const pts = [];
+        let mMax = 0;
+        for (let i = 0; i <= N; i++) {
+            const ww = Math.pow(10, Math.log10(wMin) + (i/N) * (Math.log10(wMax) - Math.log10(wMin)));
+            const Hj = C.div(polyEval(numer, { re:0, im:ww }), polyEval(denom, { re:0, im:ww }));
+            const mag = C.abs(Hj);
+            pts.push({ w: ww, mag });
+            if (mag > mMax) mMax = mag;
+        }
+        const magHi = mMax * 1.4;
+        const magLo = magHi * 1e-4;
+        const yFromMag = m => plotY + plotH * (1 - (Math.log10(Math.max(m, magLo)) - Math.log10(magLo)) / (Math.log10(magHi) - Math.log10(magLo)));
+
+        // Decade gridlines
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2, 3]);
+        for (let k = -1; k <= 1; k++) {
+            const x = xFromW(Math.pow(10, k));
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY + plotH); ctx.stroke();
+            ctx.fillStyle = c.muted;
+            ctx.font = "500 11px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'center';
+            ctx.fillText('10' + toSup(k), x, plotY + plotH + 14);
+        }
+        const decLo = Math.floor(Math.log10(magLo));
+        const decHi = Math.ceil(Math.log10(magHi));
+        for (let k = decLo; k <= decHi; k++) {
+            const m = Math.pow(10, k);
+            if (m < magLo || m > magHi) continue;
+            const y = yFromMag(m);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
+            ctx.fillStyle = c.muted;
+            ctx.textAlign = 'right';
+            ctx.fillText('10' + toSup(k), plotX - 6, y + 3);
+        }
+        ctx.setLineDash([]);
+
+        // Mark ω_p and ω_z
+        ctx.strokeStyle = c.muted;
+        ctx.setLineDash([3, 4]);
+        for (const [wMark, lbl, col] of [[wp, 'ω₀', c.accent], [wz, 'ω_z', c.blue]]) {
+            if (wMark < wMin || wMark > wMax) continue;
+            const x = xFromW(wMark);
+            ctx.strokeStyle = col;
+            ctx.beginPath();
+            ctx.moveTo(x, plotY);
+            ctx.lineTo(x, plotY + plotH);
+            ctx.stroke();
+            ctx.fillStyle = col;
+            ctx.textAlign = 'center';
+            ctx.font = "500 11px 'JetBrains Mono', monospace";
+            ctx.fillText(lbl, x, plotY - 4);
+        }
+        ctx.setLineDash([]);
+
+        // Magnitude curve
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i <= N; i++) {
+            const x = xFromW(pts[i].w);
+            const y = yFromMag(pts[i].mag);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Current push-frequency marker — same ω as the s-plane blue dot
+        if (wPush >= wMin && wPush <= wMax) {
+            const Hnow = C.div(polyEval(numer, { re:0, im:wPush }), polyEval(denom, { re:0, im:wPush }));
+            const magNow = C.abs(Hnow);
+            const xNow = xFromW(wPush);
+            const yNow = yFromMag(magNow);
+            ctx.strokeStyle = c.blue;
+            ctx.setLineDash([3, 4]);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(xNow, plotY);
+            ctx.lineTo(xNow, plotY + plotH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = c.blue;
+            ctx.strokeStyle = c.text;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(xNow, yNow, 5.5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle = c.blue;
+            ctx.font = "500 11px 'JetBrains Mono', monospace";
+            ctx.textAlign = xNow > plotX + plotW - 80 ? 'right' : 'left';
+            const lx = xNow + (xNow > plotX + plotW - 80 ? -8 : 8);
+            ctx.fillText(`ω = ${wPush.toFixed(2)}`, lx, yNow - 8);
+        }
+
+        ctx.fillStyle = c.dim;
+        ctx.textAlign = 'center';
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.fillText('ω (rad/s)', plotX + plotW/2, plotY + plotH + 28);
+    }
+
+    let viewMode = 'splane';
+    const btnSPlane  = document.getElementById('view-splane-btn');
+    const btnNyquist = document.getElementById('view-nyquist-btn');
+    function setView(mode) {
+        viewMode = mode;
+        if (btnSPlane)  btnSPlane.style.background  = mode === 'splane'  ? 'rgba(106,170,142,0.22)' : '';
+        if (btnNyquist) btnNyquist.style.background = mode === 'nyquist' ? 'rgba(106,170,142,0.22)' : '';
+    }
+    if (btnSPlane)  btnSPlane.addEventListener('click',  () => setView('splane'));
+    if (btnNyquist) btnNyquist.addEventListener('click', () => setView('nyquist'));
+    setView('splane');
+
+    function drawNyquist(x0, y0, w, h, c) {
+        const { numer, denom } = getCoeffs();
+        const { wPush } = params();
+
+        const padL = 46, padR = 14, padT = 28, padB = 36;
+        const plotX = x0 + padL;
+        const plotY = y0 + padT;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('NYQUIST  H(jω)', x0 + 12, y0 + 18);
+
+        // Sweep ω from -wMax to +wMax through the imaginary axis
+        const wMax = 20;
+        const N = 600;
+        const locus = [];
+        let absMax = 0;
+        for (let i = 0; i <= N; i++) {
+            const ww = -wMax + (2 * wMax) * (i / N);
+            const Hj = C.div(polyEval(numer, { re:0, im:ww }), polyEval(denom, { re:0, im:ww }));
+            locus.push({ w: ww, re: Hj.re, im: Hj.im });
+            const a = Math.hypot(Hj.re, Hj.im);
+            if (a > absMax) absMax = a;
+        }
+        // Auto-scaled symmetric bounds with a margin; clamp to something sensible
+        const bound = Math.max(absMax * 1.15, 1e-3);
+        const xFromRe = r => plotX + plotW * (r + bound) / (2 * bound);
+        const yFromIm = i => plotY + plotH * (1 - (i + bound) / (2 * bound));
+
+        // Gridlines (4 per axis)
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2, 3]);
+        for (let k = -4; k <= 4; k++) {
+            const v = k * bound / 4;
+            const xg = xFromRe(v);
+            const yg = yFromIm(v);
+            ctx.beginPath(); ctx.moveTo(xg, plotY); ctx.lineTo(xg, plotY + plotH); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(plotX, yg); ctx.lineTo(plotX + plotW, yg); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Axes through origin
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 1.1;
+        const xOrig = xFromRe(0), yOrig = yFromIm(0);
+        ctx.beginPath(); ctx.moveTo(plotX, yOrig); ctx.lineTo(plotX + plotW, yOrig); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xOrig, plotY); ctx.lineTo(xOrig, plotY + plotH); ctx.stroke();
+
+        // Axis labels
+        ctx.fillStyle = c.dim;
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'right';
+        ctx.fillText('Re H', plotX + plotW - 4, yOrig - 6);
+        ctx.save();
+        ctx.translate(xOrig + 6, plotY + 12);
+        ctx.textAlign = 'left';
+        ctx.fillText('Im H', 0, 0);
+        ctx.restore();
+
+        // Locus
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        for (let i = 0; i < locus.length; i++) {
+            const x = xFromRe(locus[i].re);
+            const y = yFromIm(locus[i].im);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Arrow heads showing sweep direction along the ω > 0 branch
+        function drawArrowAt(idx) {
+            if (idx < 2 || idx >= locus.length - 1) return;
+            const a = locus[idx - 1], b = locus[idx + 1];
+            const ax = xFromRe(a.re), ay = yFromIm(a.im);
+            const bx = xFromRe(b.re), by = yFromIm(b.im);
+            const dx = bx - ax, dy = by - ay;
+            const d = Math.hypot(dx, dy) || 1;
+            const ux = dx / d, uy = dy / d;
+            const px = xFromRe(locus[idx].re), py = yFromIm(locus[idx].im);
+            const s = 7;
+            ctx.fillStyle = c.accent;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - ux*s - uy*s*0.5, py - uy*s + ux*s*0.5);
+            ctx.lineTo(px - ux*s + uy*s*0.5, py - uy*s - ux*s*0.5);
+            ctx.closePath();
+            ctx.fill();
+        }
+        drawArrowAt(Math.round(N * 0.75));
+        drawArrowAt(Math.round(N * 0.30));
+
+        // Current H(jω) point and vector from origin
+        if (Math.abs(wPush) < wMax) {
+            const Hnow = C.div(polyEval(numer, { re:0, im:wPush }), polyEval(denom, { re:0, im:wPush }));
+            const xh = xFromRe(Hnow.re), yh = yFromIm(Hnow.im);
+            ctx.strokeStyle = c.blue;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(xOrig, yOrig);
+            ctx.lineTo(xh, yh);
+            ctx.stroke();
+            // Arrow head on the resultant vector
+            const vdx = xh - xOrig, vdy = yh - yOrig;
+            const vd = Math.hypot(vdx, vdy) || 1;
+            const vux = vdx/vd, vuy = vdy/vd;
+            ctx.fillStyle = c.blue;
+            ctx.beginPath();
+            ctx.moveTo(xh, yh);
+            ctx.lineTo(xh - vux*10 - vuy*5, yh - vuy*10 + vux*5);
+            ctx.lineTo(xh - vux*10 + vuy*5, yh - vuy*10 - vux*5);
+            ctx.closePath();
+            ctx.fill();
+            // Dot at endpoint
+            ctx.fillStyle = c.blue;
+            ctx.strokeStyle = c.text;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(xh, yh, 4.5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+            // Label
+            ctx.fillStyle = c.blue;
+            ctx.font = "500 11px 'JetBrains Mono', monospace";
+            ctx.textAlign = 'left';
+            ctx.fillText(`H(j${wPush.toFixed(2)})`, xh + 8, yh - 6);
+
+            // Readout
+            const mag = Math.hypot(Hnow.re, Hnow.im);
+            const ang = Math.atan2(Hnow.im, Hnow.re) * 180 / Math.PI;
+            ctx.fillStyle = c.text;
+            ctx.textAlign = 'right';
+            ctx.font = "500 12px 'JetBrains Mono', monospace";
+            ctx.fillText(`|H| = ${mag.toExponential(2)}   ∠H = ${ang.toFixed(1)}°`,
+                         x0 + w - 12, y0 + h - 12);
+        }
+
+        // Legend
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillStyle = c.accent;
+        ctx.fillText('— locus H(jω), −∞ < ω < ∞', x0 + 12, y0 + h - 26);
+        ctx.fillStyle = c.blue;
+        ctx.fillText('→  resultant at current ω', x0 + 12, y0 + h - 12);
+    }
+
+    function loop() {
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+        const splitX = Math.round(W * 0.5);
+        if (viewMode === 'nyquist') {
+            drawNyquist(0, 0, splitX, H, c);
+        } else {
+            drawSPlane(0, 0, splitX, H, c);
+        }
+        ctx.strokeStyle = c.border;
+        ctx.beginPath();
+        ctx.moveTo(splitX, 12);
+        ctx.lineTo(splitX, H - 12);
+        ctx.stroke();
+        drawBode(splitX, 0, W - splitX, H, c);
+        requestAnimationFrame(loop);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(loop);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// PART 05: ANIMATED DOUBLE PENDULUM  (zeros via mass at midpoint)
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('spring-sim');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let W, H, dpr;
+
+    const wSlider  = document.getElementById('w-slider');
+    const aSlider  = document.getElementById('a-slider');
+    const LSlider  = document.getElementById('L-slider');
+    const zSlider  = document.getElementById('z-slider');
+    const muSlider = document.getElementById('mu-slider');
+    const alSlider = document.getElementById('alpha-slider');
+
+    const g = 9.81;
+
+    function params() {
+        const L  = parseFloat(LSlider.value);
+        const zp = parseFloat(zSlider.value);
+        const mu = parseFloat(muSlider.value);
+        const al = parseFloat(alSlider.value);
+        const wPush = parseFloat(wSlider.value);
+        const a = parseFloat(aSlider.value);
+        const m2 = 1;
+        const m1 = mu * m2;
+        const L1 = al * L;
+        const L2 = (1 - al) * L;
+        const wp = Math.sqrt(g / L);
+        const wz = Math.sqrt(g * (L1*m2 + L2*(m1+m2)) / (m1*L1*L2));
+        return { L, zp, mu, al, m1, m2, L1, L2, wp, wz, wPush, a };
+    }
+
+    // State: small-angle linear double pendulum
+    let th1 = 0, th1Dot = 0;
+    let th2 = 0, th2Dot = 0;
+    let simT = 0;
+    let inPulse = false;
+    let lastT = performance.now();
+
+    const traceMax = 240;
+    const traceKid   = [];  // x₂ = L₁θ₁ + L₂θ₂
+    const traceJoint = [];  // x₁ = L₁θ₁
+
+    function step(dt) {
+        const { L, zp, m1, m2, L1, L2, wPush, a, wp } = params();
+
+        const period = 2 * Math.PI / wPush;
+        const pulseWidth = Math.max(0.10, Math.min(0.25, period * 0.12));
+        const phase = simT - Math.floor(simT / period) * period;
+        inPulse = phase < pulseWidth;
+        const F = inPulse ? a * 2.5 : 0;
+
+        const A = (m1 + m2) * L1 * L1;
+        const Gc = m2 * L1 * L2;
+        const D = m2 * L2 * L2;
+        const K1 = (m1 + m2) * g * L1;
+        const K2 = m2 * g * L2;
+        const ep = 2 * zp * wp * (m1 + m2) * L * 0.5;
+
+        const rhs1 = L1 * F - K1 * th1 - ep * th1Dot;
+        const rhs2 = L2 * F - K2 * th2 - ep * th2Dot;
+        const det = A * D - Gc * Gc;
+        const t1DD = ( D * rhs1 - Gc * rhs2) / det;
+        const t2DD = (-Gc * rhs1 + A * rhs2) / det;
+
+        th1Dot += t1DD * dt;
+        th2Dot += t2DD * dt;
+        th1    += th1Dot * dt;
+        th2    += th2Dot * dt;
+        simT   += dt;
+    }
+
+    function resize() {
+        dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        W = rect.width; H = rect.height;
+        canvas.width = W * dpr;
+        canvas.height = H * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    function getColors() {
+        const cs = getComputedStyle(document.documentElement);
+        return {
+            text:   cs.getPropertyValue('--text').trim(),
+            dim:    cs.getPropertyValue('--text-dim').trim(),
+            muted:  cs.getPropertyValue('--text-muted').trim(),
+            border: cs.getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)',
+            accent: cs.getPropertyValue('--accent').trim(),
+            yellow: cs.getPropertyValue('--yellow').trim(),
+            blue:   cs.getPropertyValue('--blue').trim(),
+            red:    cs.getPropertyValue('--red').trim(),
+        };
+    }
+
+    function drawTrace(x0, y0, w, h, c) {
+        const padL = 40, padR = 10, padT = 26, padB = 24;
+        const plotX = x0 + padL;
+        const plotY = y0 + padT;
+        const plotW = w - padL - padR;
+        const plotH = h - padT - padB;
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('x₂ (kid)  /  x₁ (joint)', x0 + 12, y0 + 18);
+
+        const yMid = plotY + plotH/2;
+        ctx.strokeStyle = c.muted;
+        ctx.setLineDash([2, 4]);
+        ctx.beginPath();
+        ctx.moveTo(plotX, yMid); ctx.lineTo(plotX + plotW, yMid);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        if (traceKid.length < 2) return;
+
+        let maxV = 0;
+        for (const v of traceKid)   if (Math.abs(v) > maxV) maxV = Math.abs(v);
+        for (const v of traceJoint) if (Math.abs(v) > maxV) maxV = Math.abs(v);
+        maxV = Math.max(maxV, 0.05);
+        const yScale = (plotH/2) * 0.9 / maxV;
+
+        function plot(arr, color) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            for (let i = 0; i < arr.length; i++) {
+                const x = plotX + (i / (traceMax - 1)) * plotW;
+                const y = yMid - arr[i] * yScale;
+                if (i === 0) ctx.moveTo(x, y);
+                else         ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        plot(traceKid,   c.accent);
+        plot(traceJoint, c.blue);
+
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'right';
+        ctx.fillText('±' + maxV.toFixed(2) + ' m', plotX - 4, plotY + 10);
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = c.accent;
+        ctx.fillText('— x₂', plotX + 6, plotY + plotH - 18);
+        ctx.fillStyle = c.blue;
+        ctx.fillText('— x₁', plotX + 6, plotY + plotH - 6);
+    }
+
+    function draw() {
+        const now = performance.now();
+        let dt = (now - lastT) / 1000;
+        lastT = now;
+        if (dt > 0.05) dt = 0.05;
+        const sub = 8;
+        for (let i = 0; i < sub; i++) step(dt/sub);
+
+        const c = getColors();
+        const { L, L1, L2, m1, m2, wPush, wp, wz } = params();
+
+        const xKid   = L1 * th1 + L2 * th2;
+        const xJoint = L1 * th1;
+        traceKid.push(xKid);
+        traceJoint.push(xJoint);
+        if (traceKid.length   > traceMax) traceKid.shift();
+        if (traceJoint.length > traceMax) traceJoint.shift();
+
+        ctx.clearRect(0, 0, W, H);
+
+        const splitX = Math.round(W * 0.65);
+
+        // ── LEFT: double pendulum ──
+        const pivotX = splitX * 0.50;
+        const pivotY = 40;
+        const totalLenPx = Math.min(H - 140, 70 + (H - 160) * (L / 4.0));
+        const scale = totalLenPx / L;
+        const groundY = pivotY + totalLenPx + 50;
+
+        // Beam
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(pivotX - 80, pivotY - 8);
+        ctx.lineTo(pivotX + 80, pivotY - 8);
+        ctx.stroke();
+        for (let xh = -70; xh <= 70; xh += 14) {
+            ctx.beginPath();
+            ctx.moveTo(pivotX + xh, pivotY - 8);
+            ctx.lineTo(pivotX + xh - 8, pivotY - 18);
+            ctx.stroke();
+        }
+
+        // Ground
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(12, groundY);
+        ctx.lineTo(splitX - 12, groundY);
+        ctx.stroke();
+
+        // Vertical reference through pivot
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([3,5]);
+        ctx.beginPath();
+        ctx.moveTo(pivotX, pivotY);
+        ctx.lineTo(pivotX, pivotY + totalLenPx + 46);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Joint position (upper segment tip)
+        const L1px = L1 * scale;
+        const L2px = L2 * scale;
+        const jointX = pivotX + L1px * Math.sin(th1);
+        const jointY = pivotY + L1px * Math.cos(th1);
+
+        // Upper chain: pivot → joint
+        drawChain(ctx, pivotX, pivotY, jointX, jointY);
+
+        // Lower segment + kid (uses joint as pivot)
+        const geom = drawSwingWithChild(ctx, jointX, jointY, L2px, th2, c, c.accent);
+
+        // Joint mass (ball) — radius grows with μ
+        const jointR = Math.max(7, Math.min(20, 6 + 10 * Math.cbrt(m1 / m2)));
+        ctx.fillStyle = c.blue;
+        ctx.beginPath();
+        ctx.arc(jointX, jointY, jointR, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = c.text;
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
+
+        // Pivot dot
+        ctx.fillStyle = c.text;
+        ctx.beginPath();
+        ctx.arc(pivotX, pivotY, 3, 0, Math.PI*2);
+        ctx.fill();
+
+        // Parent slide-in (pushes the kid's seat)
+        const period = 2 * Math.PI / wPush;
+        const pulseWidth = Math.max(0.10, Math.min(0.25, period * 0.12));
+        const phase = simT - Math.floor(simT / period) * period;
+        const tApproach = Math.min(0.5, period * 0.18);
+        const tRetreat  = Math.min(0.5, period * 0.18);
+        let slide = 0;
+        const tUntilNext = period - phase;
+        if (phase < pulseWidth)                       slide = 1;
+        else if (phase < pulseWidth + tRetreat)       slide = 1 - (phase - pulseWidth) / tRetreat;
+        else if (tUntilNext < tApproach)              slide = 1 - tUntilNext / tApproach;
+        slide = slide * slide * (3 - 2*slide);
+
+        const armLen = 24;
+        const stride = 16;
+        const pushX = Math.max(12, geom.seatBx - (armLen - 2));
+        const restX = Math.max(12, pushX - stride);
+        const parentX = restX + (pushX - restX) * slide;
+        const hand = drawParent(ctx, parentX, groundY, inPulse, geom.seatBx, geom.seatBy, c, armLen);
+
+        if (hand) {
+            const arrLen = 14;
+            const asx = hand.x, asy = hand.y;
+            const aex = asx + geom.fX * arrLen;
+            const aey = asy + geom.fY * arrLen;
+            const pxn = -geom.fY, pyn = geom.fX;
+            ctx.strokeStyle = c.blue;
+            ctx.fillStyle = c.blue;
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.moveTo(asx, asy); ctx.lineTo(aex, aey); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(aex, aey);
+            ctx.lineTo(aex - geom.fX*6 + pxn*4, aey - geom.fY*6 + pyn*4);
+            ctx.lineTo(aex - geom.fX*6 - pxn*4, aey - geom.fY*6 - pyn*4);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = c.yellow;
+            ctx.beginPath();
+            ctx.arc(geom.seatBx, geom.seatBy, 4.5, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        // Labels
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.fillText('double pendulum · x₂(t)', 12, 18);
+
+        ctx.fillStyle = c.text;
+        ctx.font = "500 12px 'Inter', system-ui, sans-serif";
+        ctx.fillText(`x₂ = ${xKid.toFixed(2)} m`, 12, H - 28);
+        ctx.fillStyle = c.blue;
+        ctx.fillText(`x₁ = ${xJoint.toFixed(2)} m`, 12, H - 12);
+
+        // Highlight which special frequency the push is near
+        ctx.font = "600 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'right';
+        if (Math.abs(wPush - wz) / wz < 0.05) {
+            ctx.fillStyle = c.blue;
+            ctx.fillText('ω ≈ ω_z  (kid cancelled)', splitX - 10, 18);
+        } else if (Math.abs(wPush - wp) / wp < 0.08) {
+            ctx.fillStyle = c.accent;
+            ctx.fillText('ω ≈ ω₀', splitX - 10, 18);
+        }
+
+        // Separator
+        ctx.strokeStyle = c.border;
+        ctx.beginPath();
+        ctx.moveTo(splitX, 12);
+        ctx.lineTo(splitX, H - 12);
+        ctx.stroke();
+
+        // ── RIGHT: time trace ──
+        drawTrace(splitX, 0, W - splitX, H, c);
+
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    requestAnimationFrame(draw);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// SYNC: every slider with a matching data-param stays in lockstep
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const fmts = {
+        L:     v => v.toFixed(2) + ' m',
+        zeta:  v => v.toFixed(3),
+        mu:    v => v.toFixed(2),
+        alpha: v => v.toFixed(2),
+        w:     v => v.toFixed(2) + ' rad/s',
+        a:     v => v.toFixed(2),
+    };
+    const groups = {};
+    document.querySelectorAll('input[type=range][data-param]').forEach(inp => {
+        const p = inp.dataset.param;
+        (groups[p] = groups[p] || []).push(inp);
+    });
+    for (const p in groups) {
+        const group = groups[p];
+        const fmt = fmts[p] || (v => v.toFixed(2));
+        // Seed every slider and its readout from the first in the group
+        const seed = group[0].value;
+        for (const inp of group) {
+            inp.value = seed;
+            const readout = inp.parentElement.querySelector('.control-value');
+            if (readout) readout.textContent = fmt(parseFloat(seed));
+        }
+        let syncing = false;
+        for (const inp of group) {
+            inp.addEventListener('input', () => {
+                if (syncing) return;
+                const v = inp.value;
+                const fv = fmt(parseFloat(v));
+                for (const other of group) {
+                    const readout = other.parentElement.querySelector('.control-value');
+                    if (readout) readout.textContent = fv;
+                }
+                syncing = true;
+                for (const other of group) {
+                    if (other !== inp && other.value !== v) {
+                        other.value = v;
+                        other.dispatchEvent(new Event('input'));
+                    }
+                }
+                syncing = false;
+            });
+        }
+    }
+})();
+
+// Progress rail — fill based on scroll position
+(function(){
+    const rail = document.getElementById('rail');
+    if (!rail) return;
+    function update() {
+        const h = document.documentElement;
+        const max = h.scrollHeight - h.clientHeight;
+        const pct = max > 0 ? (h.scrollTop / max) * 100 : 0;
+        rail.style.width = pct + '%';
+    }
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    update();
+})();
+</script>
+
+</body>
+</html>

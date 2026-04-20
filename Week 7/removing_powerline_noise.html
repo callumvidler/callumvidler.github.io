@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Removing Powerline Noise</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0a0a10;
+        --bg-2: #12131c;
+        --bg-panel: rgba(22,23,32,0.75);
+        --fg: #eef0f5;
+        --text: #eef0f5;
+        --text-dim: #d4d7e0;
+        --text-muted: #8b90a3;
+        --muted: #8b90a3;
+        --real: #58a6ff;
+        --imag: #ff5c7a;
+        --time: #7be089;
+        --accent: #ffcf5c;
+        --blue: #58a6ff;
+        --red: #ff5c7a;
+        --yellow: #ffcf5c;
+        --grid: rgba(255,255,255,0.06);
+        --border: rgba(255,255,255,0.09);
+        --border-hover: rgba(255,255,255,0.18);
+        --c-bulk:   #58a6ff;
+        --c-cer:    #ffcf5c;
+        --c-par:    #7be089;
+        --c-ideal:  #8b90a3;
+        --body-size: 17px;
+        --math-size: 18px;
+        --hero-size: 64px;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: var(--body-size); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+      body { overflow-x: hidden; min-height: 100vh; }
+
+      .katex { font-size: var(--math-size) !important; }
+      .katex-display { margin: 0.6em 0 !important; }
+      .katex-display > .katex { font-size: calc(var(--math-size) * 1.1) !important; }
+
+      a { color: var(--accent); }
+
+      .rail { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 60; pointer-events: none; }
+      .rail-fill { height: 100%; background: linear-gradient(90deg, var(--c-bulk), var(--accent)); width: 0%; transition: width 0.15s; }
+
+      .brand { position: fixed; top: 20px; left: 24px; z-index: 40; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 10px; }
+      .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: conic-gradient(var(--c-bulk), var(--c-cer), var(--c-par), var(--c-bulk)); }
+
+      .back-btn { position: fixed; top: 18px; right: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(22,23,32,0.6); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; backdrop-filter: blur(8px); transition: all 0.15s; }
+      .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+      section.scene {
+        min-height: 100vh;
+        padding: 100px 56px 80px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: center;
+        position: relative;
+        border-bottom: 1px solid var(--border);
+      }
+      section.scene.wide { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); }
+      section.scene.full { grid-template-columns: 1fr; max-width: 1280px; margin: 0 auto; }
+      section.scene .copy { max-width: 640px; }
+      section.scene .canvas-wrap { position: relative; width: 100%; margin: 0 auto; }
+
+      .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+      .eyebrow .num { color: var(--accent); }
+      .eyebrow .bar { flex: 0 0 28px; height: 1px; background: var(--accent); }
+
+      h1.hero { font-size: var(--hero-size); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; margin: 0 0 24px; }
+      h1.hero em { font-style: normal; background: linear-gradient(135deg, var(--c-bulk), var(--c-cer)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      h2 { font-size: 38px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--fg); }
+      h2 em { font-style: normal; }
+      h3 { font-size: 18px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); letter-spacing: -0.01em; }
+      p { margin: 0 0 14px; color: #d4d7e0; }
+      p.lead { font-size: calc(var(--body-size) + 2px); color: var(--fg); }
+      p.dim { color: var(--muted); }
+      section.scene ul { padding-left: 20px; margin: 4px 0 14px; color: #d4d7e0; }
+      section.scene li { margin-bottom: 6px; line-height: 1.6; }
+      strong { color: var(--fg); font-weight: 600; }
+      em.bulk  { font-style: normal; color: var(--c-bulk); }
+      em.cer   { font-style: normal; color: var(--c-cer); }
+      em.par   { font-style: normal; color: var(--c-par); }
+      em.acc   { font-style: normal; color: var(--accent); }
+
+      .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 14px 0 8px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend i { width: 12px; height: 3px; border-radius: 2px; display: inline-block; }
+
+      .controls { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; padding: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; backdrop-filter: blur(8px); }
+      .control-group { display: grid; grid-template-columns: 170px 1fr 120px; align-items: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .control-group label { color: var(--muted); }
+      .control-group .control-value { color: var(--accent); text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .control-group input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; }
+      .control-group input[type=range]::-webkit-slider-runnable-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); margin-top: -5.5px; cursor: grab; border: 2px solid var(--bg); }
+      .control-group input[type=range]::-moz-range-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); cursor: grab; }
+
+      .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+      .pillbtn { background: transparent; border: 1px solid var(--border); color: var(--fg); padding: 8px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; cursor: pointer; transition: all 0.15s; }
+      .pillbtn:hover { border-color: var(--accent); color: var(--accent); }
+      .pillbtn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,207,92,0.08); }
+
+      .plot { position: absolute; inset: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+      .plot .title { position: absolute; top: 10px; left: 14px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+      .eq-block { display: block; margin: 16px 0; padding: 16px 20px; background: rgba(255,207,92,0.05); border: 1px solid rgba(255,207,92,0.18); border-radius: 10px; text-align: center; color: var(--fg); max-width: 100%; }
+      .eq-line  { display: block; margin: 14px 0; padding: 14px 18px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);             border-radius: 8px;  text-align: center; color: var(--fg); max-width: 100%; }
+      .eq-block .katex-display, .eq-line .katex-display { margin: 0 !important; overflow: visible !important; }
+
+      /* Equivalent-circuit diagram */
+      .circuit-diagram { margin: 16px 0 18px; padding: 18px 22px 14px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; }
+      .circuit-diagram .circuit-title { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); text-align: center; margin-bottom: 10px; }
+      .circuit-svg { width: 100%; max-width: 520px; height: auto; display: block; margin: 0 auto; overflow: visible; }
+      .circuit-svg .wire { stroke: var(--fg); stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .circuit-svg .nodes { fill: var(--fg); stroke: none; }
+      .circuit-svg .label text { font-family: 'JetBrains Mono', monospace; font-size: 13px; fill: var(--accent); font-weight: 500; }
+      .circuit-svg .port text { font-family: 'JetBrains Mono', monospace; font-size: 11px; fill: var(--muted); font-style: italic; }
+      .circuit-diagram .circuit-note { margin: 10px 6px 0; font-size: 13px; color: var(--muted); text-align: center; line-height: 1.55; }
+
+      .callout { margin-top: 18px; padding: 16px 20px; border-left: 2px solid var(--accent); background: rgba(255,207,92,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: #d4d7e0; line-height: 1.7; }
+      .callout strong { color: var(--fg); }
+      .callout.bulk { border-left-color: var(--c-bulk); background: rgba(88,166,255,0.06); }
+      .callout.cer  { border-left-color: var(--c-cer); background: rgba(255,207,92,0.05); }
+      .callout.par  { border-left-color: var(--c-par); background: rgba(123,224,137,0.06); }
+
+      .readout-bar { display: flex; gap: 22px; flex-wrap: wrap; padding: 12px 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; backdrop-filter: blur(8px); font-family: 'JetBrains Mono', monospace; }
+      .readout-item { font-size: 10.5px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: inline-flex; align-items: baseline; gap: 8px; }
+      .readout-item .val { color: var(--fg); font-size: 13px; text-transform: none; letter-spacing: 0; }
+      .readout-item .val.accent { color: var(--accent); }
+      .readout-item .val.bulk { color: var(--c-bulk); }
+      .readout-item .val.cer { color: var(--c-cer); }
+      .readout-item .val.par { color: var(--c-par); }
+
+      .landing { min-height: 100vh; display: grid; place-items: center; padding: 120px 56px 80px; position: relative; text-align: center; }
+      .landing .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 32px; }
+      .landing h1 { max-width: 22ch; margin-left: auto; margin-right: auto; }
+      .landing .sub { color: var(--muted); font-size: 18px; max-width: 60ch; margin: 20px auto 0; line-height: 1.6; }
+      .landing .tags { margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .field-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; display: inline-block; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+      .scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .scroll-hint .line { width: 1px; height: 32px; background: linear-gradient(var(--muted), transparent); animation: pulse 2s infinite; }
+      @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+      footer { padding: 60px 56px 80px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+      @media (max-width: 900px) {
+        section.scene, section.scene.wide { grid-template-columns: 1fr; padding: 80px 24px 60px; }
+        .landing { padding: 100px 24px 60px; }
+        h1.hero { font-size: 44px; }
+        h2 { font-size: 28px; }
+        .back-btn { top: 14px; right: 16px; }
+        .brand { top: 16px; left: 16px; }
+        .control-group { grid-template-columns: 130px 1fr 90px; }
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        }); fitEquationsToBoxes();"></script>
+    <script>
+    // Shrink any KaTeX equation wider than its .eq-block / .eq-line box
+    // so that the rendered math fits inside the coloured box.
+    // We measure .katex-html (the inline-block that holds the glyphs) rather
+    // than .katex itself, because in display mode .katex spans the full
+    // container width regardless of content width.
+    function fitEquationsToBoxes() {
+        document.querySelectorAll('.eq-block, .eq-line').forEach(box => {
+            const katexEls = box.querySelectorAll('.katex');
+            if (!katexEls.length) return;
+            // Reset previous overrides so each pass measures the natural size
+            katexEls.forEach(k => k.style.removeProperty('font-size'));
+
+            const htmlEls = box.querySelectorAll('.katex .katex-html');
+            let natural = 0;
+            htmlEls.forEach(el => {
+                const w = el.getBoundingClientRect().width;
+                if (w > natural) natural = w;
+            });
+            if (natural === 0) return;
+
+            const cs = getComputedStyle(box);
+            const avail = box.clientWidth
+                        - parseFloat(cs.paddingLeft)
+                        - parseFloat(cs.paddingRight);
+            if (natural > avail) {
+                const ratio = avail / natural;
+                katexEls.forEach(k => {
+                    const base = parseFloat(getComputedStyle(k).fontSize);
+                    k.style.setProperty('font-size', (base * ratio) + 'px', 'important');
+                });
+            }
+        });
+    }
+    window.addEventListener('resize', () => { fitEquationsToBoxes(); });
+    // Safety nets: run again after full load and once KaTeX webfonts are ready,
+    // because glyph widths change when the KaTeX fonts swap in.
+    window.addEventListener('load', () => setTimeout(fitEquationsToBoxes, 0));
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(() => fitEquationsToBoxes());
+    }
+    </script>
+</head>
+<body>
+
+<div class="brand"><span class="mark"></span><span>BMEN90033 · Week 7</span></div>
+<a class="back-btn" href="../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
+<div class="rail"><div class="rail-fill" id="rail"></div></div>
+
+<!-- ================= LANDING ================= -->
+<section class="landing" id="s0">
+    <div>
+        <div class="meta">BMEN90033 · WEEK 7 · BIOINSTRUMENTATION</div>
+        <h1 class="hero">Removing <em>powerline noise</em>.</h1>
+        <p class="sub">The canonical decoupling network for an operational amplifier consists of a bulk capacitor, commonly $10\,\mu\mathrm{F}$, placed in parallel with a small ceramic, commonly $0.1\,\mu\mathrm{F}$, at each supply terminal. Under the ideal capacitor model, the aggregate capacitance is $10.1\,\mu\mathrm{F}$ and the small device contributes negligibly. Yet omission of the small capacitor is observed to degrade the power-supply rejection of precision analog front-ends and, in extreme cases, to precipitate instability. The apparent paradox is resolved by recognising that physical capacitors exhibit parasitic inductance and resistance, and that the two components in the standard pair occupy disjoint regions of the frequency axis.</p>
+        <div class="tags">
+            <span class="field-tag">bypass caps</span>
+            <span class="field-tag">ESL &amp; ESR</span>
+            <span class="field-tag">self-resonance</span>
+            <span class="field-tag">PSRR</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+</section>
+
+<!-- ================= SECTION 1 — THE PROBLEM ================= -->
+<section class="scene" id="s1">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>why op-amps need clean rails</span></div>
+        <h2>The supply terminal as an <em class="acc">input</em>.</h2>
+        <p class="lead">The output voltage of an operational amplifier is synthesised from charge drawn from its positive and negative supply rails. Because the transistors of the output stage exhibit finite transconductance and finite output conductance, any perturbation of the rail potential is transferred to the output with a non-zero, frequency-dependent coupling coefficient.</p>
+        <p>This coupling is quantified by the <strong>power-supply rejection ratio</strong> (PSRR), defined as the ratio of a perturbation at the supply to the resulting perturbation at the output, referred to the input. Precision devices typically exhibit a low-frequency PSRR on the order of $100\,\mathrm{dB}$. Above a break frequency of a few hundred hertz, however, the rejection falls at approximately $20\,\mathrm{dB}$ per decade, reaching $20\,\mathrm{dB}$ in the vicinity of $1\,\mathrm{MHz}$ and vanishing, for practical purposes, above $10\,\mathrm{MHz}$. In the high-frequency band the amplifier therefore provides little attenuation between supply perturbations and the output signal.</p>
+        <p>The sources of such perturbations are intrinsic to the system. Switch-mode regulators inject a fundamental at the switching frequency, commonly $500\,\mathrm{kHz}$ to several megahertz, together with its harmonics. Digital logic elsewhere on the printed circuit board draws pulsed currents through the distributed inductance of the supply network, producing wideband transient voltages. The output stage of the amplifier itself demands transient current which the upstream regulator, whose control loop typically has a bandwidth of a few kilohertz, cannot supply within the relevant time scale.</p>
+        <div class="callout">
+            <strong>The function of the bypass capacitor</strong> is to establish a low-impedance path between the supply terminal and the reference potential across the frequency range over which the amplifier is susceptible to supply-borne disturbance. A sufficiently low impedance ensures that rail-borne noise currents develop only a small voltage at the supply terminal and that transient load currents are sourced locally, rather than conducted along the inductive path to the upstream regulator.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.85; max-width: 560px;">
+        <div class="plot">
+            <canvas id="psrr-plot"></canvas>
+            <div class="title">typical op-amp PSRR vs frequency</div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 2 — THE IDEAL STORY ================= -->
+<section class="scene" id="s2">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the textbook capacitor</span></div>
+        <h2>Under the <em class="acc">ideal</em> model, a single capacitor would suffice.</h2>
+        <p class="lead">The impedance of the ideal capacitor is</p>
+        <div class="eq-block">$$Z_C(j\omega) = \frac{1}{j\omega C}, \qquad |Z_C| = \frac{1}{2\pi f C}.$$</div>
+        <p>On logarithmic axes the magnitude response is a straight line of slope $-20\,\mathrm{dB}$ per decade, so that each decade of frequency yields a corresponding decade of impedance reduction. Under this model a $10\,\mu\mathrm{F}$ capacitor presents $1.6\,\Omega$ at $10\,\mathrm{kHz}$, $160\,\mathrm{m}\Omega$ at $100\,\mathrm{kHz}$, and $16\,\mathrm{m}\Omega$ at $1\,\mathrm{MHz}$. It would follow that a single large capacitor provides the lowest attainable bypass impedance at every frequency, and that augmenting it with a $0.1\,\mu\mathrm{F}$ capacitor in parallel, whose ideal impedance exceeds that of the bulk device by two orders of magnitude at all frequencies, can provide only a marginal improvement.</p>
+        <p>Were the ideal model exact, the aggregate capacitance would indeed be $10.1\,\mu\mathrm{F}$, the combination would present the impedance of a slightly enlarged single capacitor, and the smaller device would serve no identifiable purpose. Measured impedance spectra of physical capacitors demonstrate otherwise.</p>
+        <div class="eq-line">$$Z_{\text{parallel}}(j\omega) = \frac{1}{j\omega(C_1 + C_2)} \quad {\scriptsize\text{(ideal model; valid only in the low-frequency limit).}}$$</div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.85; max-width: 560px;">
+        <div class="plot">
+            <canvas id="ideal-plot"></canvas>
+            <div class="title">|Z(f)| · ideal capacitors</div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 3 — REAL CAPACITORS ================= -->
+<section class="scene wide" id="s3">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>the real component</span></div>
+        <h2>The physical capacitor is also an <em class="imag">inductor</em>.</h2>
+        <p class="lead">A physical capacitor departs from the ideal model in two systematic respects. Its terminals, internal electrodes, and interconnect contribute a non-zero loop area through which the charging and discharging currents must flow, and this loop possesses a finite self-inductance. Dissipative mechanisms in the dielectric, the electrodes, and the terminations contribute a non-zero series resistance. The component is accordingly represented by the lumped series connection of the nominal capacitance $C$, an equivalent series inductance $\mathrm{ESL}$, and an equivalent series resistance $\mathrm{ESR}$:</p>
+
+        <div class="circuit-diagram">
+            <div class="circuit-title">equivalent circuit of a real capacitor</div>
+            <svg viewBox="0 0 560 170" xmlns="http://www.w3.org/2000/svg" class="circuit-svg" aria-hidden="true">
+                <g class="wire">
+                    <!-- terminal a → ESR -->
+                    <line x1="20" y1="70" x2="60" y2="70"/>
+                    <!-- ESR (IEC rectangle) -->
+                    <rect x="60" y="60" width="80" height="20"/>
+                    <!-- ESR → ESL -->
+                    <line x1="140" y1="70" x2="180" y2="70"/>
+                    <!-- ESL (5 upward bumps) -->
+                    <path d="M180,70 Q190,50 200,70 Q210,50 220,70 Q230,50 240,70 Q250,50 260,70 Q270,50 280,70"/>
+                    <!-- ESL → left junction -->
+                    <line x1="280" y1="70" x2="310" y2="70"/>
+
+                    <!-- Top branch: ideal capacitance C -->
+                    <line x1="310" y1="70" x2="370" y2="70"/>
+                    <line x1="370" y1="52" x2="370" y2="88"/>
+                    <line x1="386" y1="52" x2="386" y2="88"/>
+                    <line x1="386" y1="70" x2="430" y2="70"/>
+
+                    <!-- Bottom branch: leakage resistance R_p -->
+                    <line x1="310" y1="70"  x2="310" y2="115"/>
+                    <line x1="310" y1="115" x2="350" y2="115"/>
+                    <rect x="350" y="105" width="60" height="20"/>
+                    <line x1="410" y1="115" x2="430" y2="115"/>
+                    <line x1="430" y1="115" x2="430" y2="70"/>
+
+                    <!-- right junction → terminal b -->
+                    <line x1="430" y1="70" x2="540" y2="70"/>
+                </g>
+                <g class="nodes">
+                    <circle cx="20"  cy="70" r="3.5"/>
+                    <circle cx="540" cy="70" r="3.5"/>
+                    <!-- parallel-branch junctions -->
+                    <circle cx="310" cy="70" r="2.5"/>
+                    <circle cx="430" cy="70" r="2.5"/>
+                </g>
+                <g class="label">
+                    <text x="100" y="46" text-anchor="middle">ESR</text>
+                    <text x="230" y="40" text-anchor="middle">ESL</text>
+                    <text x="378" y="40" text-anchor="middle">C</text>
+                    <text x="380" y="146" text-anchor="middle">R<tspan font-size="10" dy="2">p</tspan></text>
+                </g>
+                <g class="port">
+                    <text x="20"  y="58" text-anchor="middle">a</text>
+                    <text x="540" y="58" text-anchor="middle">b</text>
+                </g>
+            </svg>
+            <p class="circuit-note">$R_p$ is the dielectric leakage resistance, typically $\mathrm{M\Omega}$ to $\mathrm{T\Omega}$. At bypass frequencies its admittance is negligible compared to $j\omega C$, so it is omitted from the $Z(j\omega)$ expression below.</p>
+        </div>
+
+        <div class="eq-block">$$Z(j\omega) = \mathrm{ESR} + j\omega\,\mathrm{ESL} + \frac{1}{j\omega C}.$$</div>
+        <p>The corresponding magnitude response exhibits a V-shaped profile on logarithmic axes. At sufficiently low frequencies the term $1/(\omega C)$ is dominant and the impedance decreases at $-20\,\mathrm{dB}$ per decade, in accordance with the ideal model. At sufficiently high frequencies the term $\omega\,\mathrm{ESL}$ is dominant, the impedance increases at $+20\,\mathrm{dB}$ per decade, and the component behaves as a series inductor. The transition between these two regimes occurs at the <strong>self-resonant frequency</strong>,</p>
+        <div class="eq-line">$$f_{\text{SRF}} = \frac{1}{2\pi\sqrt{\mathrm{ESL}\cdot C}},$$</div>
+        <p>at which the inductive and capacitive reactances cancel exactly, and the impedance attains a minimum equal to the $\mathrm{ESR}$.</p>
+
+        <h3>Scaling of self-resonance with capacitance</h3>
+        <p>The quantity of central interest is the dependence of $f_{\text{SRF}}$ on $C$ when the device geometry is varied accordingly. An electrolytic or tantalum capacitor of $10\,\mu\mathrm{F}$ typically occupies a comparatively large case, possesses an extended internal current path, and exhibits an $\mathrm{ESL}$ of order $5$ to $10\,\mathrm{nH}$. The corresponding self-resonant frequency is</p>
+        <div class="eq-line">$$f_{\text{SRF,bulk}} \approx \frac{1}{2\pi\sqrt{(5\,\mathrm{nH})(10\,\mu\mathrm{F})}} \approx 710\,\mathrm{kHz}.$$</div>
+        <p>Above this frequency the device no longer behaves capacitively, and its impedance increases with frequency. A ceramic capacitor of $0.1\,\mu\mathrm{F}$ in an 0603 or 0402 surface-mount package presents a short internal current path and an $\mathrm{ESL}$ of approximately $0.5$ to $1\,\mathrm{nH}$. Its self-resonant frequency is therefore</p>
+        <div class="eq-line">$$f_{\text{SRF,cer}} \approx \frac{1}{2\pi\sqrt{(1\,\mathrm{nH})(0.1\,\mu\mathrm{F})}} \approx 16\,\mathrm{MHz}.$$</div>
+        <p>The ceramic, notwithstanding its two-order-of-magnitude smaller capacitance, is self-resonant at a frequency more than twenty times higher than the electrolytic. This follows from the dependence of $f_{\text{SRF}}$ on the geometric mean of $\mathrm{ESL}$ and $C$: the reduction in capacitance by a factor of one hundred is partially offset by a concurrent reduction in parasitic inductance by a factor of approximately five.</p>
+
+        <div class="callout">
+            <strong>The two components serve distinct functions.</strong> Within the frequency range in which it remains capacitive, the $10\,\mu\mathrm{F}$ device provides the lower impedance of the pair and is effective from the audio band to the low radio-frequency range. Above its self-resonance, where it behaves inductively, bypassing is provided by the $0.1\,\mu\mathrm{F}$ ceramic, which remains capacitive into the VHF range. The two capacitors therefore occupy disjoint and complementary frequency intervals rather than replicating one another.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.9; max-width: 620px;">
+        <div class="plot">
+            <canvas id="single-plot"></canvas>
+            <div class="title">|Z(f)| · real capacitors with ESR + ESL</div>
+        </div>
+    </div>
+</section>
+
+<!-- ================= SECTION 4 — WHY PARALLEL WORKS ================= -->
+<section class="scene full" id="s4">
+    <div class="copy" style="max-width:900px; margin: 0 auto;">
+        <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the parallel combination</span></div>
+        <h2>The pair $10\,\mu\mathrm{F} \parallel 0.1\,\mu\mathrm{F}$ does <em class="par">not</em> present $10.1\,\mu\mathrm{F}$.</h2>
+        <p class="lead">The parallel connection of the two devices yields an admittance equal to the sum of the individual admittances, from which the composite impedance follows:</p>
+        <div class="eq-block">$$Y_{\text{tot}}(j\omega) = Y_{\text{bulk}}(j\omega) + Y_{\text{cer}}(j\omega), \qquad Z_{\text{tot}}(j\omega) = \frac{1}{Y_{\text{tot}}(j\omega)}.$$</div>
+        <p>At any given frequency, the current distributes between the two branches in inverse proportion to their impedances, so that the composite response is governed by the branch of lower impedance. Below the self-resonance of the bulk device, the $10\,\mu\mathrm{F}$ dominates, since its capacitive reactance is substantially smaller than that of the $0.1\,\mu\mathrm{F}$. Above the bulk self-resonance, the impedance of the $10\,\mu\mathrm{F}$ device increases with frequency while that of the $0.1\,\mu\mathrm{F}$ continues to decrease toward its own self-resonance; at the frequency at which the two impedances are equal, the ceramic assumes the role of principal conductor for high-frequency noise currents. The composite impedance therefore follows the lower envelope of the two individual curves at every frequency, producing an extended interval of low impedance that neither component is capable of providing in isolation.</p>
+        <p>The composite does not behave as a $10.1\,\mu\mathrm{F}$ capacitor. The effective bypass capacitance at any frequency is determined by whichever component presents the lower impedance at that frequency, not by the arithmetic sum of the nominal values. The additive rule is valid exclusively in the low-frequency limit, in which both components are well described by the ideal model and the contribution of the smaller capacitor is demonstrably negligible. Above a few hundred kilohertz the bulk component contributes no useful bypass admittance, and the composite behaves as a $0.1\,\mu\mathrm{F}$ capacitor with $\mathrm{ESL} \approx 1\,\mathrm{nH}$ rather than as a $10.1\,\mu\mathrm{F}$ capacitor with any meaningful effective inductance.</p>
+
+        <div class="controls" style="max-width:720px;">
+            <div class="control-group"><label>C<sub>bulk</sub></label><input type="range" id="cb-slider" min="-7" max="-4" step="0.05" value="-5"><span class="control-value" id="cb-val">10 µF</span></div>
+            <div class="control-group"><label>ESL<sub>bulk</sub></label><input type="range" id="lb-slider" min="-10" max="-7" step="0.05" value="-8.3"><span class="control-value" id="lb-val">5 nH</span></div>
+            <div class="control-group"><label>ESR<sub>bulk</sub></label><input type="range" id="rb-slider" min="-3" max="0" step="0.05" value="-1.3"><span class="control-value" id="rb-val">50 mΩ</span></div>
+            <div class="control-group"><label>C<sub>ceramic</sub></label><input type="range" id="cc-slider" min="-9" max="-6" step="0.05" value="-7"><span class="control-value" id="cc-val">100 nF</span></div>
+            <div class="control-group"><label>ESL<sub>ceramic</sub></label><input type="range" id="lc-slider" min="-10" max="-8" step="0.05" value="-9"><span class="control-value" id="lc-val">1 nH</span></div>
+            <div class="control-group"><label>ESR<sub>ceramic</sub></label><input type="range" id="rc-slider" min="-3" max="0" step="0.05" value="-1.7"><span class="control-value" id="rc-val">20 mΩ</span></div>
+            <div class="btn-row">
+                <button class="pillbtn" id="reset-btn">reset</button>
+                <button class="pillbtn" id="toggle-ideal">toggle ideal sum</button>
+            </div>
+        </div>
+
+        <div class="readout-bar" id="readout">
+            <span class="readout-item">f<sub>SRF,bulk</sub> <span class="val bulk" id="rb-srf">710 kHz</span></span>
+            <span class="readout-item">f<sub>SRF,cer</sub> <span class="val cer" id="rc-srf">16 MHz</span></span>
+            <span class="readout-item">crossover <span class="val par" id="r-cross">≈ 3 MHz</span></span>
+            <span class="readout-item">min |Z<sub>tot</sub>| <span class="val accent" id="r-zmin">18 mΩ</span></span>
+        </div>
+
+        <div class="legend" style="margin-top:12px;">
+            <span><i style="background:var(--c-bulk)"></i>10 µF bulk (real)</span>
+            <span><i style="background:var(--c-cer)"></i>0.1 µF ceramic (real)</span>
+            <span><i style="background:var(--c-par)"></i>parallel combination</span>
+            <span><i style="background:var(--c-ideal); opacity:0.8"></i>ideal 10.1 µF (for comparison)</span>
+        </div>
+    </div>
+
+    <div class="canvas-wrap" style="max-width: 1080px; aspect-ratio: 1/0.5; margin-top: 18px;">
+        <div class="plot">
+            <canvas id="parallel-plot"></canvas>
+            <div class="title">|Z(f)| · parallel combination vs individual components</div>
+        </div>
+    </div>
+
+    <div class="copy" style="max-width:900px; margin: 24px auto 0;">
+        <div class="callout par">
+            <strong>Consequences for amplifier operation.</strong> The output stage of the operational amplifier draws transient currents whose spectral content extends well beyond the self-resonant frequency of the bulk capacitor. In the absence of a complementary ceramic, these transients are conducted through the rising inductive impedance of the bulk device, producing voltage deviations on the supply rail which the amplifier transfers to its output in proportion to its diminished high-frequency power-supply rejection. In circuits with insufficient parasitic isolation, the resulting rail coupling may additionally close a positive-feedback path capable of destabilising the amplifier. The ceramic capacitor, located in close proximity to the supply terminal, supplies the high-frequency component of the transient current at an impedance of order one milliohm; the bulk capacitor subsequently restores the charge displaced from the ceramic on a longer time scale, at frequencies at which the ceramic alone lacks adequate charge storage. The roles of the two components are therefore complementary rather than redundant.
+        </div>
+
+        <h3>Implications for printed circuit board layout</h3>
+        <ul>
+            <li>The ceramic capacitor must be placed in immediate proximity to the supply terminal of the amplifier. Any interconnecting trace introduces additional loop inductance in series with the intrinsic $\mathrm{ESL}$ of the component, which depresses the self-resonant frequency and raises the minimum attainable bypass impedance across its useful bandwidth.</li>
+            <li>The positional constraint on the bulk capacitor is less stringent, as it governs mid-frequency decoupling rather than the critical high-frequency regime. Trace lengths of several centimetres are typically tolerable.</li>
+            <li>The parallel connection of multiple ceramic capacitors of a given value reduces the aggregate $\mathrm{ESL}$ in inverse proportion to the number of devices. The mechanism is identical to that of the bulk–ceramic pair, applied within a single decade of capacitance.</li>
+            <li>The effective capacitance of class-2 ceramic dielectrics, including X7R and Y5V, is a strong function of the applied DC bias and of temperature. Devices intended to provide a specified high-frequency impedance should be selected with a voltage rating of at least twice the nominal supply potential, and the derated capacitance should be verified against the manufacturer's bias characteristic.</li>
+        </ul>
+
+        <p class="dim" style="font-size:14px; margin-top: 20px;">A concluding remark is warranted. The nominal distinction between "$10\,\mu\mathrm{F}$" and "$0.1\,\mu\mathrm{F}$" corresponds, in practice, to a distinction between two classes of physical construction: a high-capacitance electrolytic or tantalum device of relatively large volume and long internal current path, and a low-capacitance ceramic device of small volume and short current path. Were it technologically feasible to realise a $10\,\mu\mathrm{F}$ capacitor in an 0402 ceramic package with an $\mathrm{ESL}$ of order $1\,\mathrm{nH}$, a single such component would satisfy the bypass requirements of the amplifier, and the classical bulk–ceramic combination would be rendered superfluous. Contemporary high-density ceramic technologies approach this regime, and correspondingly, a number of recent design practices dispense with the bulk component in favour of two or three ceramic capacitors of comparable value.</p>
+    </div>
+</section>
+
+<!-- ================= SECTION 5 — TRANSFER FUNCTION ================= -->
+<section class="scene wide" id="s5">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>transfer function representation</span></div>
+        <h2>Confirmation by the composite <em class="par">transfer function</em>.</h2>
+        <p class="lead">The qualitative argument of the preceding section admits a formal confirmation through the transfer function representation of the bypass network. Treated as a linear time-invariant two-terminal element, each capacitor branch is characterised by an impedance expressible as a rational function of the Laplace variable $s$.</p>
+
+        <h3>Branch impedance</h3>
+        <p>The series connection of $\mathrm{ESR}_k$, $\mathrm{ESL}_k$, and $C_k$ yields, for the $k$-th branch,</p>
+        <div class="eq-block">$$\begin{aligned}
+Z_k(s) &= \mathrm{ESR}_k + s\,\mathrm{ESL}_k + \frac{1}{sC_k} = \frac{D_k(s)}{sC_k}, \\[14pt]
+\text{where}\quad D_k(s) &\equiv s^2\,\mathrm{ESL}_k C_k + s\,\mathrm{ESR}_k C_k + 1.
+\end{aligned}$$</div>
+        <p>The branch admittance $Y_k(s) = sC_k / D_k(s)$ therefore possesses a simple zero at the origin and a pair of poles at the roots of $D_k(s)$. Under the low-damping condition $\mathrm{ESR}_k^2 < 4\,\mathrm{ESL}_k/C_k$, these roots form a complex-conjugate pair situated in the left half-plane with natural frequency $\omega_{0,k} = 1/\sqrt{\mathrm{ESL}_k C_k}$, precisely the self-resonant frequency of the branch.</p>
+
+        <h3>Composite impedance</h3>
+        <p>Since admittances are additive in parallel, the composite admittance is</p>
+        <div class="eq-line">$$Y_{\text{tot}}(s) = Y_1(s) + Y_2(s) = \frac{s\,\bigl[C_1 D_2(s) + C_2 D_1(s)\bigr]}{D_1(s)\,D_2(s)},$$</div>
+        <p>and the composite impedance is therefore the rational function</p>
+        <div class="eq-block">$$Z_{\text{tot}}(s) = \frac{D_1(s)\,D_2(s)}{s\,\bigl[C_1 D_2(s) + C_2 D_1(s)\bigr]}.$$</div>
+        <p>The numerator is of degree four and the denominator of degree three; $Z_{\text{tot}}(s)$ is accordingly a proper rational function possessing four zeros and three poles, whose configuration in the $s$-plane admits the following interpretation.</p>
+
+        <h3>Zero structure</h3>
+        <p>The zeros of $Z_{\text{tot}}(s)$ are the roots of $D_1(s)$ and $D_2(s)$, coinciding with the self-resonant frequencies of the two individual branches. Each conjugate pair lies close to the imaginary axis at a distance $\alpha_k = \mathrm{ESR}_k / (2\,\mathrm{ESL}_k)$ determined by the dissipation of the corresponding branch. On the imaginary axis, these zeros manifest as the two local minima of $|Z_{\text{tot}}(j\omega)|$ observed in the plot of the preceding section.</p>
+
+        <h3>Pole structure and anti-resonance</h3>
+        <p>The denominator factorises into a trivial pole at $s = 0$, corresponding to the open-circuit behaviour of capacitors at DC, and the roots of the quadratic</p>
+        <div class="eq-line">$$C_1 C_2 (\mathrm{ESL}_1 + \mathrm{ESL}_2)\,s^2 + C_1 C_2 (\mathrm{ESR}_1 + \mathrm{ESR}_2)\,s + (C_1 + C_2) = 0.$$</div>
+        <p>In the underdamped regime these roots constitute a complex-conjugate pair with natural frequency</p>
+        <div class="eq-block">$$\small \omega_{\text{AR}} = \sqrt{\frac{C_1 + C_2}{C_1 C_2\,(\mathrm{ESL}_1 + \mathrm{ESL}_2)}} \;\approx\; \frac{1}{\sqrt{\mathrm{ESL}_1\,C_2}} \quad \bigl(C_1 \gg C_2,\; \mathrm{ESL}_1 \gg \mathrm{ESL}_2\bigr).$$</div>
+        <p>The approximation is instructive: the resonance of the composite network is governed by the equivalent series inductance of the bulk device and the capacitance of the ceramic device. Physically, this is the frequency at which the post-resonance inductive reactance of the bulk capacitor and the pre-resonance capacitive reactance of the ceramic capacitor combine to form a parallel LC tank. For the nominal parameters of the present analysis this yields $f_{\text{AR}} \approx 6.5\,\mathrm{MHz}$, situated between the two self-resonances.</p>
+        <p>A conjugate pole pair of small real part produces a local maximum of $|Z_{\text{tot}}(j\omega)|$ at $\omega \approx \omega_{\text{AR}}$. The composite impedance is therefore not monotonic between the two self-resonant minima: a residual peak — the anti-resonance — is an unavoidable feature of any parallel arrangement of capacitors of dissimilar self-resonant frequency. The amplitude of the peak is bounded by $\mathrm{ESR}_1 + \mathrm{ESR}_2$, which supplies the dissipation that damps the parallel tank.</p>
+
+        <div class="callout par">
+            <strong>Agreement with the measured behaviour.</strong> The transfer function analysis reproduces the two qualitative features identified in Section 04: the composite impedance traces the lower envelope of the two individual curves away from the anti-resonance (a consequence of the zeros of $Z_{\text{tot}}$ being inherited from the individual branches), and the effective capacitance of the pair at any frequency is dictated by the branch presenting the lower impedance, not by the arithmetic sum $C_1 + C_2$. The additive rule $C_{\text{eff}} = C_1 + C_2$ is recovered only in the limit $s \to 0$, where both $D_k(s) \to 1$ and $Z_{\text{tot}}(s) \to 1/[s(C_1 + C_2)]$.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1; max-width: 560px;">
+        <div class="plot">
+            <canvas id="tf-pz-plot"></canvas>
+            <div class="title">pole-zero map · Z<sub>tot</sub>(s)</div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>Physical capacitors are constrained by their parasitic elements. The useful bandwidth of any bypass component is bounded above by the frequency at which the equivalent series inductance displaces the capacitive reactance as the dominant contribution to the terminal impedance.</p>
+</footer>
+
+<script>
+/* ============================================================
+   REMOVING POWERLINE NOISE — plots
+   ============================================================ */
+
+function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function palette() {
+    return {
+        text: cssVar('--text'),
+        dim: cssVar('--text-dim'),
+        muted: cssVar('--text-muted'),
+        accent: cssVar('--accent'),
+        grid: cssVar('--grid'),
+        border: cssVar('--border'),
+        bulk: cssVar('--c-bulk'),
+        cer: cssVar('--c-cer'),
+        par: cssVar('--c-par'),
+        ideal: cssVar('--c-ideal'),
+    };
+}
+
+/* ----- DPI-aware canvas sizing ----- */
+function fitCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.floor(rect.width  * dpr));
+    const h = Math.max(1, Math.floor(rect.height * dpr));
+    if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: rect.width, h: rect.height };
+}
+
+/* ----- log-log axes helpers ----- */
+function logAxes(ctx, w, h, fmin, fmax, zmin, zmax, opts = {}) {
+    const p = palette();
+    const pad = { l: 64, r: 18, t: 44, b: 40 };
+    ctx.clearRect(0, 0, w, h);
+
+    const lf0 = Math.log10(fmin), lf1 = Math.log10(fmax);
+    const lz0 = Math.log10(zmin), lz1 = Math.log10(zmax);
+
+    const xOf = f => pad.l + (Math.log10(f) - lf0) / (lf1 - lf0) * (w - pad.l - pad.r);
+    const yOf = z => pad.t + (1 - (Math.log10(z) - lz0) / (lz1 - lz0)) * (h - pad.t - pad.b);
+
+    // grid: decade lines
+    ctx.strokeStyle = p.grid;
+    ctx.lineWidth = 1;
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.fillStyle = p.muted;
+
+    // vertical decade lines
+    for (let d = Math.ceil(lf0); d <= Math.floor(lf1); d++) {
+        const x = xOf(Math.pow(10, d));
+        ctx.beginPath();
+        ctx.moveTo(x, pad.t);
+        ctx.lineTo(x, h - pad.b);
+        ctx.stroke();
+        // minor ticks
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        let label;
+        if (d >= 9) label = (Math.pow(10, d-9)) + 'G';
+        else if (d >= 6) label = (Math.pow(10, d-6)) + 'M';
+        else if (d >= 3) label = (Math.pow(10, d-3)) + 'k';
+        else label = Math.pow(10, d).toString();
+        ctx.fillText(label + 'Hz', x, h - pad.b + 6);
+    }
+    // minor vertical lines (2-9 per decade)
+    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    for (let d = Math.floor(lf0); d < lf1; d++) {
+        for (let k = 2; k < 10; k++) {
+            const f = k * Math.pow(10, d);
+            if (f < fmin || f > fmax) continue;
+            const x = xOf(f);
+            ctx.beginPath();
+            ctx.moveTo(x, pad.t);
+            ctx.lineTo(x, h - pad.b);
+            ctx.stroke();
+        }
+    }
+
+    // horizontal decade lines
+    ctx.strokeStyle = p.grid;
+    for (let d = Math.ceil(lz0); d <= Math.floor(lz1); d++) {
+        const y = yOf(Math.pow(10, d));
+        ctx.beginPath();
+        ctx.moveTo(pad.l, y);
+        ctx.lineTo(w - pad.r, y);
+        ctx.stroke();
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        let label;
+        const v = Math.pow(10, d);
+        if (v >= 1) label = v + 'Ω';
+        else if (v >= 1e-3) label = (v*1e3) + 'mΩ';
+        else label = (v*1e6) + 'µΩ';
+        ctx.fillText(label, pad.l - 8, y);
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.025)';
+    for (let d = Math.floor(lz0); d < lz1; d++) {
+        for (let k = 2; k < 10; k++) {
+            const z = k * Math.pow(10, d);
+            if (z < zmin || z > zmax) continue;
+            const y = yOf(z);
+            ctx.beginPath();
+            ctx.moveTo(pad.l, y);
+            ctx.lineTo(w - pad.r, y);
+            ctx.stroke();
+        }
+    }
+
+    // frame
+    ctx.strokeStyle = p.border;
+    ctx.strokeRect(pad.l, pad.t, w - pad.l - pad.r, h - pad.t - pad.b);
+
+    // axis titles
+    ctx.fillStyle = p.muted;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('frequency', (pad.l + w - pad.r)/2, h - 4);
+    ctx.save();
+    ctx.translate(14, (pad.t + h - pad.b)/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('|Z|', 0, 0);
+    ctx.restore();
+
+    if (opts.title) {
+        ctx.fillStyle = p.dim;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.font = "11px 'JetBrains Mono', monospace";
+        ctx.fillText(opts.title, pad.l, pad.t - 20);
+    }
+
+    return { xOf, yOf, pad, fmin, fmax, zmin, zmax };
+}
+
+function drawCurve(ctx, ax, fs, zs, color, width = 2, dashed = false) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    if (dashed) ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < fs.length; i++) {
+        const f = fs[i], z = zs[i];
+        if (!isFinite(z) || z <= 0) continue;
+        const zc = Math.max(ax.zmin * 1.001, Math.min(ax.zmax * 0.999, z));
+        const x = ax.xOf(f), y = ax.yOf(zc);
+        if (!started) { ctx.moveTo(x, y); started = true; }
+        else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+}
+
+function logspace(a, b, n) {
+    const out = new Array(n);
+    const la = Math.log10(a), lb = Math.log10(b);
+    for (let i = 0; i < n; i++) out[i] = Math.pow(10, la + (lb - la) * i / (n - 1));
+    return out;
+}
+
+/* capacitor impedance with ESR + ESL */
+function zCap(f, C, ESL, ESR) {
+    const w = 2 * Math.PI * f;
+    const xL = w * ESL;
+    const xC = -1 / (w * C);
+    const re = ESR;
+    const im = xL + xC;
+    return Math.sqrt(re*re + im*im);
+}
+/* parallel: combine admittances */
+function zParallel(f, c1, c2) {
+    const w = 2 * Math.PI * f;
+    const y1_re = c1.ESR / (c1.ESR*c1.ESR + Math.pow(w*c1.ESL - 1/(w*c1.C), 2));
+    const y1_im = -(w*c1.ESL - 1/(w*c1.C)) / (c1.ESR*c1.ESR + Math.pow(w*c1.ESL - 1/(w*c1.C), 2));
+    const y2_re = c2.ESR / (c2.ESR*c2.ESR + Math.pow(w*c2.ESL - 1/(w*c2.C), 2));
+    const y2_im = -(w*c2.ESL - 1/(w*c2.C)) / (c2.ESR*c2.ESR + Math.pow(w*c2.ESL - 1/(w*c2.C), 2));
+    const Yr = y1_re + y2_re, Yi = y1_im + y2_im;
+    const Ym = Math.sqrt(Yr*Yr + Yi*Yi);
+    return 1 / Ym;
+}
+
+/* ========== PLOT 1: typical PSRR ========== */
+function drawPSRR() {
+    const canvas = document.getElementById('psrr-plot');
+    if (!canvas) return;
+    const { ctx, w, h } = fitCanvas(canvas);
+    const p = palette();
+    const pad = { l: 56, r: 18, t: 44, b: 40 };
+    ctx.clearRect(0, 0, w, h);
+
+    const fmin = 1, fmax = 1e8;
+    const ymin = -20, ymax = 120;
+    const lf0 = Math.log10(fmin), lf1 = Math.log10(fmax);
+    const xOf = f => pad.l + (Math.log10(f)-lf0)/(lf1-lf0) * (w-pad.l-pad.r);
+    const yOf = y => pad.t + (1-(y-ymin)/(ymax-ymin)) * (h-pad.t-pad.b);
+
+    ctx.strokeStyle = p.grid;
+    ctx.lineWidth = 1;
+    ctx.fillStyle = p.muted;
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    for (let d = 0; d <= 8; d++) {
+        const x = xOf(Math.pow(10, d));
+        ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, h-pad.b); ctx.stroke();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        let lab;
+        if (d >= 6) lab = Math.pow(10, d-6)+'M';
+        else if (d >= 3) lab = Math.pow(10, d-3)+'k';
+        else lab = Math.pow(10, d);
+        ctx.fillText(lab + 'Hz', x, h-pad.b+6);
+    }
+    for (let y = 0; y <= 120; y += 20) {
+        const yy = yOf(y);
+        ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(w-pad.r, yy); ctx.stroke();
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(y+' dB', pad.l-8, yy);
+    }
+    ctx.strokeStyle = p.border;
+    ctx.strokeRect(pad.l, pad.t, w-pad.l-pad.r, h-pad.t-pad.b);
+
+    // PSRR curve: 100 dB plateau to ~100Hz, then -20 dB/dec
+    ctx.strokeStyle = p.accent;
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    const fBreak = 200;
+    for (let i = 0; i <= 200; i++) {
+        const f = Math.pow(10, lf0 + (lf1 - lf0) * i / 200);
+        let y;
+        if (f <= fBreak) y = 100;
+        else y = 100 - 20 * Math.log10(f / fBreak);
+        const x = xOf(f), yy = yOf(Math.max(ymin, y));
+        if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = p.accent;
+    ctx.font = "11px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.fillText('PSRR(f)', xOf(5), yOf(95));
+    ctx.fillStyle = p.muted;
+    ctx.fillText('–20 dB/decade above ≈ 200 Hz', xOf(1e4), yOf(55));
+
+    ctx.fillStyle = p.dim;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = "11px 'JetBrains Mono', monospace";
+    ctx.fillText('power-supply rejection (dB)', pad.l, pad.t - 20);
+}
+
+/* ========== PLOT 2: ideal capacitors ========== */
+function drawIdeal() {
+    const canvas = document.getElementById('ideal-plot');
+    if (!canvas) return;
+    const { ctx, w, h } = fitCanvas(canvas);
+    const p = palette();
+    const fs = logspace(10, 1e9, 400);
+    const zBulk = fs.map(f => 1/(2*Math.PI*f*10e-6));
+    const zCer  = fs.map(f => 1/(2*Math.PI*f*0.1e-6));
+    const zSum  = fs.map(f => 1/(2*Math.PI*f*10.1e-6));
+
+    const ax = logAxes(ctx, w, h, 10, 1e9, 1e-4, 1e4, { title: '|Z(f)| · ideal' });
+    drawCurve(ctx, ax, fs, zBulk, p.bulk, 2);
+    drawCurve(ctx, ax, fs, zCer,  p.cer,  2);
+    drawCurve(ctx, ax, fs, zSum,  p.par,  2, true);
+
+    // legend overlay
+    ctx.font = "11px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const legX = w - 200, legY = 56;
+    const items = [
+        ['10 µF (ideal)', p.bulk, false],
+        ['0.1 µF (ideal)', p.cer, false],
+        ['10.1 µF sum', p.par, true],
+    ];
+    items.forEach((it, i) => {
+        const y = legY + i*16;
+        ctx.strokeStyle = it[1]; ctx.lineWidth = 2;
+        if (it[2]) ctx.setLineDash([4,4]); else ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(legX, y); ctx.lineTo(legX+22, y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = p.dim; ctx.fillText(it[0], legX+28, y);
+    });
+}
+
+/* ========== PLOT 3: single real caps ========== */
+function drawSingles() {
+    const canvas = document.getElementById('single-plot');
+    if (!canvas) return;
+    const { ctx, w, h } = fitCanvas(canvas);
+    const p = palette();
+    const bulk = { C: 10e-6, ESL: 5e-9, ESR: 0.05 };
+    const cer  = { C: 0.1e-6, ESL: 1e-9, ESR: 0.02 };
+    const fs = logspace(10, 1e9, 600);
+    const zB = fs.map(f => zCap(f, bulk.C, bulk.ESL, bulk.ESR));
+    const zC = fs.map(f => zCap(f, cer.C, cer.ESL, cer.ESR));
+
+    const ax = logAxes(ctx, w, h, 10, 1e9, 1e-3, 1e4, { title: '|Z(f)| · real parts' });
+    drawCurve(ctx, ax, fs, zB, p.bulk, 2.2);
+    drawCurve(ctx, ax, fs, zC, p.cer,  2.2);
+
+    // mark SRFs
+    const srfB = 1/(2*Math.PI*Math.sqrt(bulk.C*bulk.ESL));
+    const srfC = 1/(2*Math.PI*Math.sqrt(cer.C*cer.ESL));
+    function mark(f, z, color, label) {
+        const x = ax.xOf(f), y = ax.yOf(z);
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = color;
+        ctx.font = "10px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText(label, x+6, y-4);
+    }
+    mark(srfB, bulk.ESR, p.bulk, 'f_SRF ≈ '+fmtHz(srfB));
+    mark(srfC, cer.ESR,  p.cer,  'f_SRF ≈ '+fmtHz(srfC));
+
+    // legend
+    ctx.font = "11px 'JetBrains Mono', monospace";
+    const legX = w - 240, legY = 56;
+    const items = [
+        ['10 µF · ESL=5nH · ESR=50mΩ', p.bulk],
+        ['0.1 µF · ESL=1nH · ESR=20mΩ', p.cer],
+    ];
+    items.forEach((it, i) => {
+        const y = legY + i*16;
+        ctx.strokeStyle = it[1]; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(legX, y); ctx.lineTo(legX+22, y); ctx.stroke();
+        ctx.fillStyle = p.dim; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(it[0], legX+28, y);
+    });
+}
+
+/* ========== PLOT 4: interactive parallel ========== */
+const defaults = {
+    cb: -5,   // log10(C) -> 10 µF
+    lb: -8.3, // log10(ESL) -> ~5 nH
+    rb: -1.3, // log10(ESR) -> ~50 mΩ
+    cc: -7,   // log10(C) -> 100 nF
+    lc: -9,   // log10(ESL) -> 1 nH
+    rc: -1.7, // log10(ESR) -> ~20 mΩ
+};
+let showIdeal = true;
+
+function fmtF(v) {
+    if (v >= 1e-3) return (v*1e3).toFixed(2)+' mF';
+    if (v >= 1e-6) return (v*1e6).toFixed(v>=1e-5?1:2)+' µF';
+    if (v >= 1e-9) return (v*1e9).toFixed(v>=1e-8?0:1)+' nF';
+    return (v*1e12).toFixed(0)+' pF';
+}
+function fmtL(v) {
+    if (v >= 1e-6) return (v*1e6).toFixed(2)+' µH';
+    if (v >= 1e-9) return (v*1e9).toFixed(v>=1e-8?1:2)+' nH';
+    return (v*1e12).toFixed(0)+' pH';
+}
+function fmtR(v) {
+    if (v >= 1)     return v.toFixed(2)+' Ω';
+    if (v >= 1e-3)  return (v*1e3).toFixed(v>=1e-2?0:1)+' mΩ';
+    return (v*1e6).toFixed(0)+' µΩ';
+}
+function fmtHz(f) {
+    if (f >= 1e9) return (f/1e9).toFixed(2)+' GHz';
+    if (f >= 1e6) return (f/1e6).toFixed(f>=1e7?1:2)+' MHz';
+    if (f >= 1e3) return (f/1e3).toFixed(f>=1e4?0:1)+' kHz';
+    return f.toFixed(0)+' Hz';
+}
+function fmtZ(v) {
+    if (v >= 1)    return v.toFixed(2)+' Ω';
+    if (v >= 1e-3) return (v*1e3).toFixed(v>=1e-2?0:1)+' mΩ';
+    return (v*1e6).toFixed(0)+' µΩ';
+}
+
+function readParams() {
+    const get = id => parseFloat(document.getElementById(id).value);
+    return {
+        bulk: { C: Math.pow(10, get('cb-slider')), ESL: Math.pow(10, get('lb-slider')), ESR: Math.pow(10, get('rb-slider')) },
+        cer:  { C: Math.pow(10, get('cc-slider')), ESL: Math.pow(10, get('lc-slider')), ESR: Math.pow(10, get('rc-slider')) },
+    };
+}
+
+function drawParallel() {
+    const canvas = document.getElementById('parallel-plot');
+    if (!canvas) return;
+    const { ctx, w, h } = fitCanvas(canvas);
+    const p = palette();
+    const { bulk, cer } = readParams();
+
+    const fs = logspace(10, 1e9, 800);
+    const zB = fs.map(f => zCap(f, bulk.C, bulk.ESL, bulk.ESR));
+    const zC = fs.map(f => zCap(f, cer.C, cer.ESL, cer.ESR));
+    const zP = fs.map(f => zParallel(f, bulk, cer));
+    const zS = fs.map(f => 1 / (2 * Math.PI * f * (bulk.C + cer.C)));
+
+    const ax = logAxes(ctx, w, h, 10, 1e9, 1e-3, 1e4, { title: 'drag sliders → watch the combined curve follow the lower envelope' });
+
+    if (showIdeal) drawCurve(ctx, ax, fs, zS, p.ideal, 1.6, true);
+    drawCurve(ctx, ax, fs, zB, p.bulk, 1.8);
+    drawCurve(ctx, ax, fs, zC, p.cer, 1.8);
+    drawCurve(ctx, ax, fs, zP, p.par, 2.8);
+
+    // mark self-resonances
+    const srfB = 1/(2*Math.PI*Math.sqrt(bulk.C*bulk.ESL));
+    const srfC = 1/(2*Math.PI*Math.sqrt(cer.C*cer.ESL));
+    function mark(f, z, color) {
+        const x = ax.xOf(f), y = ax.yOf(Math.max(ax.zmin*1.01, Math.min(ax.zmax*0.99, z)));
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI*2); ctx.fill();
+    }
+    mark(srfB, bulk.ESR, p.bulk);
+    mark(srfC, cer.ESR, p.cer);
+
+    // find min of combined
+    let zMin = Infinity, fAtMin = fs[0];
+    for (let i = 0; i < fs.length; i++) {
+        if (zP[i] < zMin) { zMin = zP[i]; fAtMin = fs[i]; }
+    }
+    // find crossover: where zB == zC (first crossing above srfB)
+    let fCross = NaN;
+    for (let i = 1; i < fs.length; i++) {
+        if ((zB[i-1] - zC[i-1]) * (zB[i] - zC[i]) < 0 && fs[i] > srfB*0.5) {
+            fCross = fs[i]; break;
+        }
+    }
+
+    // update readouts
+    document.getElementById('cb-val').textContent = fmtF(bulk.C);
+    document.getElementById('lb-val').textContent = fmtL(bulk.ESL);
+    document.getElementById('rb-val').textContent = fmtR(bulk.ESR);
+    document.getElementById('cc-val').textContent = fmtF(cer.C);
+    document.getElementById('lc-val').textContent = fmtL(cer.ESL);
+    document.getElementById('rc-val').textContent = fmtR(cer.ESR);
+    document.getElementById('rb-srf').textContent = fmtHz(srfB);
+    document.getElementById('rc-srf').textContent = fmtHz(srfC);
+    document.getElementById('r-cross').textContent = isFinite(fCross) ? fmtHz(fCross) : '—';
+    document.getElementById('r-zmin').textContent = fmtZ(zMin);
+
+    // inline legend
+    ctx.font = "11px 'JetBrains Mono', monospace";
+    const legX = w - 260, legY = 56;
+    const items = [
+        ['bulk (C_b, ESL_b, ESR_b)', p.bulk, false],
+        ['ceramic (C_c, ESL_c, ESR_c)', p.cer, false],
+        ['parallel', p.par, false],
+    ];
+    if (showIdeal) items.push(['ideal sum (C_b + C_c)', p.ideal, true]);
+    items.forEach((it, i) => {
+        const y = legY + i*16;
+        ctx.strokeStyle = it[1]; ctx.lineWidth = 2;
+        if (it[2]) ctx.setLineDash([4,4]); else ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(legX, y); ctx.lineTo(legX+22, y); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = p.dim; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(it[0], legX+28, y);
+    });
+
+    // the pole-zero map shares parameters with this plot
+    drawPoleZero();
+}
+
+/* ========== PLOT 5: pole-zero map of Z_tot(s) ========== */
+function quadraticRoots(a, b, c) {
+    const disc = b*b - 4*a*c;
+    if (disc >= 0) {
+        const r = Math.sqrt(disc);
+        return [{re: (-b + r)/(2*a), im: 0}, {re: (-b - r)/(2*a), im: 0}];
+    }
+    const r = Math.sqrt(-disc);
+    return [{re: -b/(2*a), im: r/(2*a)}, {re: -b/(2*a), im: -r/(2*a)}];
+}
+
+function computePZ(b, c) {
+    // branch denominators D_k(s) = s^2 ESL_k C_k + s ESR_k C_k + 1
+    const zBulk = quadraticRoots(b.ESL*b.C, b.ESR*b.C, 1);
+    const zCer  = quadraticRoots(c.ESL*c.C, c.ESR*c.C, 1);
+    // anti-resonance quadratic: C_1 C_2 (ESL_1+ESL_2) s^2 + C_1 C_2 (ESR_1+ESR_2) s + (C_1+C_2) = 0
+    const A = b.C * c.C * (b.ESL + c.ESL);
+    const B = b.C * c.C * (b.ESR + c.ESR);
+    const K = b.C + c.C;
+    const pAR = quadraticRoots(A, B, K);
+    return { zerosBulk: zBulk, zerosCer: zCer, poleOrigin: {re: 0, im: 0}, polesAR: pAR };
+}
+
+function drawPoleZero() {
+    const canvas = document.getElementById('tf-pz-plot');
+    if (!canvas) return;
+    const { ctx, w, h } = fitCanvas(canvas);
+    const p = palette();
+    const { bulk, cer } = readParams();
+    const pz = computePZ(bulk, cer);
+    const twoPi = 2 * Math.PI;
+
+    // determine axis extents from computed singularities
+    const allPts = [...pz.zerosBulk, ...pz.zerosCer, ...pz.polesAR, pz.poleOrigin];
+    const maxIm = Math.max(1e7, ...allPts.map(z => Math.abs(z.im))) * 1.15;
+    const minRe = Math.min(-1e6, ...allPts.map(z => z.re)) * 1.25;
+    const reSpan = Math.abs(minRe);
+    const reMax = reSpan * 0.18;
+
+    const pad = { l: 64, r: 22, t: 46, b: 44 };
+    const xOf = re => pad.l + (re - minRe)/(reMax - minRe) * (w - pad.l - pad.r);
+    const yOf = im => pad.t + (1 - (im + maxIm)/(2*maxIm)) * (h - pad.t - pad.b);
+
+    ctx.clearRect(0, 0, w, h);
+
+    // frame + axes
+    ctx.strokeStyle = p.border;
+    ctx.strokeRect(pad.l, pad.t, w - pad.l - pad.r, h - pad.t - pad.b);
+
+    const x0 = xOf(0), y0 = yOf(0);
+    ctx.strokeStyle = p.grid;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 4]);
+    ctx.beginPath(); ctx.moveTo(x0, pad.t); ctx.lineTo(x0, h - pad.b); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(pad.l, y0); ctx.lineTo(w - pad.r, y0); ctx.stroke();
+
+    // tick labels in MHz (frequency, not angular)
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.fillStyle = p.muted;
+    const imMHzMax = maxIm / (twoPi * 1e6);
+    const imStepMHz = imMHzMax > 40 ? 10 : imMHzMax > 20 ? 5 : imMHzMax > 8 ? 2 : 1;
+    for (let m = -Math.floor(imMHzMax / imStepMHz) * imStepMHz; m <= imMHzMax; m += imStepMHz) {
+        if (m === 0) continue;
+        const im = m * twoPi * 1e6;
+        const y = yOf(im);
+        ctx.strokeStyle = p.grid;
+        ctx.beginPath(); ctx.moveTo(x0 - 4, y); ctx.lineTo(x0 + 4, y); ctx.stroke();
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(`${m}`, x0 - 7, y);
+    }
+    const reMHzMin = minRe / (twoPi * 1e6);
+    const reStepMHz = Math.abs(reMHzMin) > 8 ? 2 : 1;
+    for (let m = Math.ceil(reMHzMin / reStepMHz) * reStepMHz; m <= reMax/(twoPi*1e6); m += reStepMHz) {
+        if (m === 0) continue;
+        const re = m * twoPi * 1e6;
+        const x = xOf(re);
+        ctx.strokeStyle = p.grid;
+        ctx.beginPath(); ctx.moveTo(x, y0 - 4); ctx.lineTo(x, y0 + 4); ctx.stroke();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText(`${m}`, x, y0 + 6);
+    }
+
+    // axis labels
+    ctx.fillStyle = p.muted;
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('Im(s)/2π  [MHz]', x0 + 6, pad.t + 2);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText('Re(s)/2π  [MHz]', w - pad.r - 4, y0 - 5);
+
+    // title
+    ctx.fillStyle = p.dim;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.font = "11px 'JetBrains Mono', monospace";
+    ctx.fillText('zeros at SRFs · conjugate pole pair at anti-resonance', pad.l, pad.t - 22);
+
+    // draw zeros (open circles) and poles (crosses)
+    function sym(z, color, kind) {
+        const x = xOf(z.re), y = yOf(z.im);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        if (kind === 'o') {
+            ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(x-6, y-6); ctx.lineTo(x+6, y+6);
+            ctx.moveTo(x-6, y+6); ctx.lineTo(x+6, y-6);
+            ctx.stroke();
+        }
+    }
+    pz.zerosBulk.forEach(z => sym(z, p.bulk, 'o'));
+    pz.zerosCer.forEach(z => sym(z, p.cer, 'o'));
+    pz.polesAR.forEach(z => sym(z, p.par, 'x'));
+    sym(pz.poleOrigin, p.accent, 'x');
+
+    // legend
+    const legend = [
+        ['zeros · bulk D_1(s)', p.bulk, 'o'],
+        ['zeros · ceramic D_2(s)', p.cer, 'o'],
+        ['poles · anti-resonance', p.par, 'x'],
+        ['pole · s = 0 (DC)', p.accent, 'x'],
+    ];
+    ctx.font = "10px 'JetBrains Mono', monospace";
+    const legX = pad.l + 10;
+    const legY = h - pad.b - 72;
+    // faint panel behind legend for readability
+    ctx.fillStyle = 'rgba(10,10,16,0.65)';
+    ctx.fillRect(legX - 6, legY - 10, 170, 72);
+    ctx.strokeStyle = p.border;
+    ctx.strokeRect(legX - 6, legY - 10, 170, 72);
+    legend.forEach((it, i) => {
+        const y = legY + i * 15;
+        const cx = legX + 6, cy = y;
+        ctx.strokeStyle = it[1]; ctx.lineWidth = 1.6;
+        if (it[2] === 'o') {
+            ctx.beginPath(); ctx.arc(cx, cy, 4, 0, Math.PI*2); ctx.stroke();
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(cx-4, cy-4); ctx.lineTo(cx+4, cy+4);
+            ctx.moveTo(cx-4, cy+4); ctx.lineTo(cx+4, cy-4);
+            ctx.stroke();
+        }
+        ctx.fillStyle = p.dim;
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText(it[0], legX + 16, y);
+    });
+}
+
+function bindInteractive() {
+    const ids = ['cb-slider','lb-slider','rb-slider','cc-slider','lc-slider','rc-slider'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', drawParallel);
+    });
+    document.getElementById('reset-btn').addEventListener('click', () => {
+        document.getElementById('cb-slider').value = defaults.cb;
+        document.getElementById('lb-slider').value = defaults.lb;
+        document.getElementById('rb-slider').value = defaults.rb;
+        document.getElementById('cc-slider').value = defaults.cc;
+        document.getElementById('lc-slider').value = defaults.lc;
+        document.getElementById('rc-slider').value = defaults.rc;
+        drawParallel();
+    });
+    document.getElementById('toggle-ideal').addEventListener('click', (e) => {
+        showIdeal = !showIdeal;
+        e.currentTarget.classList.toggle('active', !showIdeal);
+        drawParallel();
+    });
+}
+
+/* progress rail */
+function updateRail() {
+    const scrolled = window.scrollY;
+    const total = document.body.scrollHeight - window.innerHeight;
+    const pct = total > 0 ? (scrolled / total) * 100 : 0;
+    const rail = document.getElementById('rail');
+    if (rail) rail.style.width = pct + '%';
+}
+
+function redrawAll() {
+    drawPSRR();
+    drawIdeal();
+    drawSingles();
+    drawParallel();
+    drawPoleZero();
+}
+
+window.addEventListener('load', () => {
+    redrawAll();
+    bindInteractive();
+    updateRail();
+});
+window.addEventListener('resize', redrawAll);
+window.addEventListener('scroll', updateRail, { passive: true });
+</script>
+</body>
+</html>

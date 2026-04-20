@@ -1,0 +1,1703 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Fourier vs Laplace, visually</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\\\(',right:'\\\\)',display:false},{left:'\\\\[',right:'\\\\]',display:true}]});"></script>
+
+  <script>
+    // Tweakable defaults — persisted by the host when Tweaks panel writes.
+    window.TWEAKS = /*EDITMODE-BEGIN*/{
+      "colorReal": "#58a6ff",
+      "colorImag": "#ff5c7a",
+      "colorTime": "#7be089",
+      "colorAccent": "#ffcf5c",
+      "colorBg": "#0a0a10",
+      "colorFg": "#eef0f5",
+      "colorMuted": "#8b90a3",
+      "fontBody": 16,
+      "fontMath": 17,
+      "fontHero": 76,
+      "canvasOffset": -60,
+      "textOffset": -40
+    }/*EDITMODE-END*/;
+  </script>
+
+  <style>
+    :root {
+      --bg: #0a0a10;
+      --bg-2: #12131c;
+      --fg: #eef0f5;
+      --muted: #8b90a3;
+      --real: #58a6ff;
+      --imag: #ff5c7a;
+      --time: #7be089;
+      --accent: #ffcf5c;
+      --grid: rgba(255, 255, 255, 0.06);
+      --grid-strong: rgba(255, 255, 255, 0.14);
+      --panel: rgba(22, 23, 32, 0.75);
+      --border: rgba(255, 255, 255, 0.09);
+      --body-size: 17px;
+      --math-size: 18px;
+      --hero-size: 64px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-size: var(--body-size);
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    .katex {
+      font-size: var(--math-size) !important;
+    }
+
+    .katex-display {
+      margin: 0.6em 0 !important;
+    }
+
+    .katex-display>.katex {
+      font-size: calc(var(--math-size) * 1.15) !important;
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    /* Progress rail */
+    .rail {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: transparent;
+      z-index: 60;
+      pointer-events: none;
+    }
+
+    .rail-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--real), var(--accent));
+      width: 0%;
+      transition: width 0.15s;
+    }
+
+    /* Section nav dots */
+    .dots {
+      position: fixed;
+      right: 22px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 0;
+      padding: 0;
+      position: relative;
+    }
+
+    .dot:hover {
+      background: rgba(255, 255, 255, 0.5);
+      transform: scale(1.3);
+    }
+
+    .dot.active {
+      background: var(--accent);
+      transform: scale(1.4);
+    }
+
+    .dot .lbl {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      font-size: 11px;
+      color: var(--muted);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .dot:hover .lbl {
+      opacity: 1;
+    }
+
+    /* Top brand */
+    .brand {
+      position: fixed;
+      top: 20px;
+      left: 24px;
+      z-index: 40;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand .mark {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: conic-gradient(var(--real), var(--imag), var(--time), var(--real));
+    }
+
+    /* Back button (top-right) */
+    .back-btn {
+      position: fixed;
+      top: 18px;
+      right: 24px;
+      z-index: 40;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(22, 23, 32, 0.6);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      text-decoration: none;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      backdrop-filter: blur(8px);
+      transition: all 0.15s;
+    }
+
+    .back-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    @media (max-width: 900px) {
+      .back-btn {
+        top: 14px;
+        right: 16px;
+      }
+    }
+
+    /* Sections */
+    section.scene {
+      min-height: 100vh;
+      padding: 100px 56px 80px;
+      display: grid;
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr);
+      gap: 28px;
+      align-items: center;
+      position: relative;
+      scroll-snap-align: start;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section.scene.full {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+
+    section.scene .copy {
+      max-width: 520px;
+      transform: translateY(var(--text-offset, 0px));
+    }
+
+    section.scene .canvas-wrap {
+      position: relative;
+      aspect-ratio: 4/3;
+      width: 100%;
+      margin: 0;
+      transform: translate(var(--canvas-offset, 0px), 0);
+    }
+
+    section.scene.wide .canvas-wrap {
+      aspect-ratio: 4/3;
+    }
+
+    html {
+      scroll-snap-type: y proximity;
+      scroll-behavior: smooth;
+    }
+
+    .eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .eyebrow .num {
+      color: var(--accent);
+    }
+
+    .eyebrow .bar {
+      flex: 0 0 28px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    h1.hero {
+      font-size: var(--hero-size);
+      line-height: 1.02;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      margin: 0 0 24px;
+    }
+
+    h1.hero em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--real), var(--imag));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    h2 {
+      font-size: 38px;
+      line-height: 1.1;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin: 0 0 18px;
+    }
+
+    h3 {
+      font-size: 20px;
+      font-weight: 600;
+      margin: 20px 0 8px;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: #d4d7e0;
+    }
+
+    p.lead {
+      font-size: calc(var(--body-size) + 2px);
+      color: var(--fg);
+    }
+
+    p.dim {
+      color: var(--muted);
+    }
+
+    em.real {
+      font-style: normal;
+      color: var(--real);
+    }
+
+    em.imag {
+      font-style: normal;
+      color: var(--imag);
+    }
+
+    em.time {
+      font-style: normal;
+      color: var(--time);
+    }
+
+    em.acc {
+      font-style: normal;
+      color: var(--accent);
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 18px 0 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend i {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      display: inline-block;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      backdrop-filter: blur(8px);
+    }
+
+    .ctrl {
+      display: grid;
+      grid-template-columns: 120px 1fr 56px;
+      align-items: center;
+      gap: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .ctrl label {
+      color: var(--muted);
+    }
+
+    .ctrl output {
+      color: var(--accent);
+      text-align: right;
+    }
+
+    .ctrl input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: transparent;
+      width: 100%;
+    }
+
+    .ctrl input[type=range]::-webkit-slider-runnable-track {
+      height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+    }
+
+    .ctrl input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      margin-top: -5.5px;
+      cursor: grab;
+      border: 2px solid var(--bg);
+    }
+
+    .ctrl input[type=range]::-moz-range-track {
+      height: 3px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+    }
+
+    .ctrl input[type=range]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--bg);
+      cursor: grab;
+    }
+
+    .seg.iconic {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      background: transparent;
+      border: 0;
+      border-radius: 10px;
+      overflow: visible;
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .seg.iconic button {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      padding: 10px 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+
+    .seg.iconic button:hover {
+      color: var(--fg);
+      border-color: rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .seg.iconic button.on {
+      color: var(--fg);
+      background: rgba(255, 207, 92, 0.08);
+      border-color: rgba(255, 207, 92, 0.4);
+    }
+
+    .seg.iconic button.on .ico {
+      color: var(--accent);
+    }
+
+    .seg.iconic .ico {
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      transition: color 0.15s;
+    }
+
+    .seg.iconic button:hover .ico {
+      color: var(--fg);
+    }
+
+    .seg {
+      display: inline-flex;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .seg button {
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      padding: 7px 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .seg button.on {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--fg);
+    }
+
+    .seg button:hover {
+      color: var(--fg);
+    }
+
+    .pillbtn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--fg);
+      padding: 8px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .pillbtn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Canvas boxes */
+    .plot {
+      position: absolute;
+      inset: 0;
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .plot .title {
+      position: absolute;
+      top: 10px;
+      left: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      z-index: 2;
+    }
+
+    .plot .sub {
+      position: absolute;
+      top: 26px;
+      left: 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--accent);
+      z-index: 2;
+    }
+
+    .plot canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Caption block rendered above a plot in the page's body font. */
+    .plot-caption {
+      margin-bottom: 14px;
+    }
+
+    .plot-caption .ttl {
+      font-size: 19px;
+      font-weight: 500;
+      color: var(--fg);
+      letter-spacing: -0.01em;
+      margin: 0 0 4px;
+    }
+
+    .plot-caption .sub {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0;
+    }
+
+    .plot-caption .sub.ok {
+      color: var(--time);
+    }
+
+    .plot-caption .sub.warn {
+      color: var(--accent);
+    }
+
+    .plot-caption .sub.bad {
+      color: var(--imag);
+    }
+
+    /* dual / triple panels */
+    .dual {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      aspect-ratio: 16/8;
+    }
+
+    .triple {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      aspect-ratio: 18/7;
+    }
+
+    .dual .plot,
+    .triple .plot {
+      position: relative;
+    }
+
+    /* Tweaks panel */
+    .tweaks {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      width: 300px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+      display: none;
+      font-size: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s;
+    }
+
+    .tweaks.show {
+      display: block;
+    }
+
+    .tweaks.min {
+      width: auto;
+      padding: 10px 14px;
+    }
+
+    .tweaks.min .body {
+      display: none;
+    }
+
+    .tweaks.min h4 {
+      margin: 0;
+    }
+
+    .tweaks h4 {
+      margin: 0 0 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .tweaks h4 .btns {
+      display: inline-flex;
+      gap: 6px;
+    }
+
+    .tweaks h4 button {
+      background: transparent;
+      border: 0;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 3px;
+      transition: all 0.15s;
+    }
+
+    .tweaks h4 button:hover {
+      color: var(--fg);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .tweaks .row {
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .tweaks input[type=color] {
+      width: 100%;
+      height: 24px;
+      border: 1px solid var(--border);
+      background: transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .tweaks input[type=range] {
+      width: 100%;
+    }
+
+    .tweaks .swatches {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .tweaks .sw {
+      flex: 1;
+      height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 9px;
+      color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.05em;
+    }
+
+    /* scene 1 specific */
+    .pothole-scene {
+      width: 100%;
+      position: relative;
+    }
+
+    .question-card {
+      margin-top: 22px;
+      padding: 18px 20px;
+      border-left: 2px solid var(--accent);
+      background: rgba(255, 207, 92, 0.05);
+      border-radius: 0 8px 8px 0;
+    }
+
+    .question-card p {
+      color: var(--fg);
+      margin: 0;
+    }
+
+    /* Scene 6/7 placeholder style */
+    .placeholder {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16/10;
+      background:
+        repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.02) 0 14px, transparent 14px 28px),
+        var(--bg-2);
+      border: 1px dashed rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .placeholder .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 4px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+
+    .placeholder .ttl {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--fg);
+      max-width: 80%;
+      text-align: center;
+    }
+
+    /* Hook landing */
+    .landing {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 120px 56px 80px;
+      position: relative;
+      text-align: center;
+    }
+
+    .landing .meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    .landing h1 {
+      max-width: 25ch;
+    }
+
+    .landing .sub {
+      color: var(--muted);
+      font-size: 19px;
+      max-width: 48ch;
+      margin: 20px auto 0;
+    }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .scroll-hint .line {
+      width: 1px;
+      height: 32px;
+      background: linear-gradient(var(--muted), transparent);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 0.3;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .field-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      display: inline-block;
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      margin-right: 8px;
+    }
+
+    footer {
+      padding: 60px 56px 80px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Section 07 — transfer function block diagram */
+    .tf-block {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 40px 14px 26px;
+    }
+
+    .tf-node {
+      text-align: center;
+      flex: 0 0 auto;
+      min-width: 0;
+    }
+
+    .tf-node .tf-sub {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 8px;
+    }
+
+    .tf-node.tf-in .tf-math .katex {
+      color: var(--real) !important;
+    }
+
+    .tf-node.tf-out .tf-math .katex {
+      color: var(--imag) !important;
+    }
+
+    .tf-node .tf-math .katex {
+      font-size: 14px !important;
+      white-space: nowrap;
+    }
+
+    .tf-box {
+      border: 2px solid var(--accent);
+      background: rgba(88, 166, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px 26px;
+      min-width: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 22px rgba(88, 166, 255, 0.12) inset;
+    }
+
+    .tf-box .tf-math .katex {
+      color: var(--accent) !important;
+      font-size: 19px !important;
+    }
+
+    .tf-arrow {
+      flex: 0 0 48px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.35);
+      position: relative;
+    }
+
+    .tf-arrow::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-left: 9px solid rgba(255, 255, 255, 0.55);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .tf-node.tf-in+.tf-arrow {
+      background: linear-gradient(to right, var(--real), rgba(255, 255, 255, 0.35));
+    }
+
+    .tf-box+.tf-arrow {
+      background: linear-gradient(to right, rgba(255, 255, 255, 0.35), var(--imag));
+    }
+
+    .tf-box+.tf-arrow::after {
+      border-left-color: var(--imag);
+    }
+
+    /* Equation bar above the wrap plot — stage-aware greying */
+    .eq-bar {
+      width: 100%;
+      padding: 22px 24px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      backdrop-filter: blur(8px);
+      font-size: 28px;
+    }
+
+    .eq-bar .katex {
+      font-size: 1.6em !important;
+    }
+
+    .eq-piece {
+      transition: opacity 0.35s ease, color 0.35s ease;
+      opacity: 0.55;
+      color: #cdcfd7;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .eq-piece.hl {
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    .eq-piece.hl .katex {
+      color: var(--accent);
+    }
+
+    .eq-piece .katex {
+      color: inherit;
+    }
+
+    /* Section 2.5 — equation lives between the copy and the plots */
+    section#s25 {
+      grid-template-columns: minmax(0, 1fr) minmax(360px, 0.5fr) minmax(0, 1.45fr);
+      gap: 40px;
+    }
+
+    section#s25 .eq-bar-vert {
+      margin-bottom: 0;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 18px 16px;
+      gap: 3px;
+      font-size: 18px;
+      white-space: nowrap;
+      width: fit-content;
+      max-width: 100%;
+      justify-self: start;
+      overflow: hidden;
+    }
+
+    section#s25 .eq-bar-vert .eq-piece {
+      padding: 0 2px;
+    }
+
+    section#s25 .eq-bar-vert .katex {
+      font-size: 0.95em !important;
+    }
+
+    @media (max-width: 900px) {
+      section.scene {
+        grid-template-columns: 1fr;
+        padding: 80px 24px 60px;
+      }
+
+      section#s25 {
+        grid-template-columns: 1fr;
+      }
+
+      section#s25 .eq-bar-vert {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .dots {
+        display: none;
+      }
+
+      h1.hero {
+        font-size: 40px;
+      }
+
+      h2 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="brand"><span class="mark"></span><span>Week 7 · Laplace</span></div>
+  <a class="back-btn" href="../../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+  </a>
+  <div class="rail">
+    <div class="rail-fill" id="rail"></div>
+  </div>
+
+  <nav class="dots" id="dots"></nav>
+
+  <!-- =========================== LANDING =========================== -->
+  <section class="landing" id="s0" data-label="00 Landing">
+    <div>
+      <div class="meta">WEEK 7: BIOINSTRUMENTATION</div>
+      <h1 class="hero">From Fourier to Laplace, understanding <em> Transfer Functions</em>.</h1>
+      <p class="sub">A breif introduction to transfer functions. Here we'll start off by looking at the fourier &
+        laplace transform,
+        and how they can be used to understand dynamical systems.
+      </p>
+      <div style="margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
+        <span class="field-tag">signals &amp; systems</span>
+        <span class="field-tag">complex analysis</span>
+        <span class="field-tag">control theory</span>
+      </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+  </section>
+
+  <!-- =========================== SECTION 1 — HOOK =========================== -->
+  <section class="scene wide" id="s1" data-label="01 Hook">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>Practical Example</span></div>
+      <h2>Car Suspension</h2>
+      <p class="lead">Imagine a car driving over a bump, the chassis lifts, and then it
+        oscillates until it settles. A good
+        suspension settles very quickly, a bad one keeps oscillating for a while, and a really bad one never settles
+        at all.</p>
+      <p>Watch the chassis's vertical position $y(t)$ after the bump. Flip between the three designs.</p>
+
+      <div class="controls">
+        <div class="seg iconic" id="carSeg">
+          <button data-v="good" class="on">
+            <span class="ico"><svg viewBox="0 0 24 20" width="22" height="18" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 10 L3 10 Q4 10 5 2 Q7 2 9 10 Q10 10 11 13 Q12 13 13 10 L23 10" />
+              </svg></span>
+            <span>good design</span>
+          </button>
+          <button data-v="ring">
+            <span class="ico"><svg viewBox="0 0 24 20" width="22" height="18" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M1 10 Q2 10 3 2 Q4 2 5 18 Q6 18 7 5 Q8 5 9 15 Q10 15 11 7 Q12 7 13 13 Q14 13 15 9 Q16 9 17 11 L23 10" />
+              </svg></span>
+            <span>ringing</span>
+          </button>
+          <button data-v="bad">
+            <span class="ico"><svg viewBox="0 0 24 20" width="22" height="18" fill="none" stroke="currentColor"
+                stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M1 10 Q2 10 3 9 Q4 9 5 12 Q6 12 7 7 Q8 7 9 14 Q10 14 11 4 Q12 4 13 17 Q14 17 15 1 Q16 1 17 19 Q18 19 19 0 L20 20" />
+              </svg></span>
+            <span>unstable</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="question-card">
+        <p>Many of you are familiar with the fourier transform, but can it tell us which design is stable? Can it even
+          describe the moment of impact?</p>
+        <p class="dim" style="margin-top:8px;font-size:14px;">The Fourier transform is great for describing steady
+          oscillations, but cannot describe transient events. For example, it cannot describe the blow-up of an unstable
+          system, what happens at the moment of impact or how the system responds after this event.</p>
+      </div>
+    </div>
+
+    <div class="canvas-wrap" style="aspect-ratio: auto;">
+      <div class="plot-caption">
+        <h3 class="ttl">Quarter-car suspension · chassis displacement z(t)</h3>
+        <p class="sub ok" id="carSub">good design · critically damped</p>
+      </div>
+      <div class="plot" style="position: relative; aspect-ratio: 3/2;">
+        <canvas id="carCanvas"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 2 — PHASOR =========================== -->
+  <section class="scene" id="s2" data-label="02 Phasor">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>The complex exponential</span>
+      </div>
+      <h2>How do we encode rotation and magnitude?</h2>
+      <p class="lead">Before any transform, just sit with this: $e^{j\omega t}$ is a single point racing around a
+        circle. Its <em class="real">real shadow</em> traces out cosine, its <em class="imag">imaginary shadow</em>
+        traces out sine.</p>
+      <p>How fast it spins is the frequency, the radius is the amplitude, and where it starts on the circle is the
+        phase. Pretty much everything that follows in this lecture is just variations on this one object.</p>
+      <p class="dim" style="font-size: 14px;">Worth knowing: complex exponentials are the <em
+          class="acc">eigenfunctions</em> of linear time invariant systems. Push one through a filter and the same
+        exponential comes out the other side, just rescaled. That is the whole reason these transforms work.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>frequency $\omega$</label><input type="range" id="phasorW" min="0.3" max="3"
+            step="0.01" value="1.2" /><output id="phasorWO">1.20</output></div>
+        <div class="ctrl"><label>amplitude</label><input type="range" id="phasorA" min="0.3" max="1" step="0.01"
+            value="0.85" /><output id="phasorAO">0.85</output></div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--real)"></i>real · cos</span>
+        <span><i style="background:var(--imag)"></i>imaginary · sin</span>
+        <span><i style="background:var(--accent)"></i>phasor tip</span>
+      </div>
+    </div>
+    <div class="canvas-wrap">
+      <div class="plot"><canvas id="phasorCanvas"></canvas>
+        <div class="title">Complex plane</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 2B — S-PLANE GRID =========================== -->
+  <section class="scene wide" id="s2b" data-label="03 s-plane grid">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>the s-plane, visualised</span>
+      </div>
+      <h2>Every point in the plane is a different exponential.</h2>
+      <p class="lead">Section 02 kept us on the unit circle, where $e^{j\omega t}$ spins forever at a constant radius.
+        Step off that circle to a general $s = \sigma + j\omega$, and $e^{st}$ gains a growth rate as well as a
+        frequency.</p>
+      <p>Each tile on the left plots the real part $\mathrm{Re}\{e^{st}\} = e^{\sigma t}\cos(\omega t)$ for the $s$ at
+        the centre of that tile. <em class="acc">Click any tile</em> to see the full complex trajectory of $e^{st}$ on
+        the right.</p>
+      <ul style="padding-left: 18px; color: #d4d7e0; margin: 0 0 14px;">
+        <li><em class="real">Horizontal · $\sigma$ (real)</em> controls growth: left half ($\sigma&lt;0$) decays, right
+          half ($\sigma&gt;0$) grows without bound.</li>
+        <li><em class="imag">Vertical · $\omega$ (imaginary)</em> controls how fast the signal oscillates.</li>
+        <li><em class="imag">Imaginary axis</em> ($\sigma = 0$) is the Fourier kernel $e^{j\omega t}$: a pure circle.
+        </li>
+        <li><em class="real">Real axis</em> ($\omega = 0$) is a pure exponential $e^{\sigma t}$: no rotation at all.</li>
+      </ul>
+      <p class="dim" style="font-size: 14px;">This is the intuition behind pole locations later on: every pole of a
+        transfer function picks out a single tile of this grid, and the mode it contributes to the response looks
+        exactly like the curve in that tile.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: auto;">
+      <div class="eq-bar"
+        style="font-size: 19px; padding: 14px 18px; gap: 4px; margin-bottom: 12px; flex-wrap: nowrap; overflow-x: auto;">
+        <span class="eq-piece" style="opacity: 1; color: var(--fg);">$e^{st}$</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--fg);">$=$</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--fg);">$e^{(\sigma + j\omega)\,t}$</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--fg);">$=$</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--real);">$e^{\sigma t}$</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--muted); font-size: 11px; letter-spacing: 0.06em;">envelope</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--fg);">$\cdot$</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--imag);">$e^{j\omega t}$</span>
+        <span class="eq-piece" style="opacity: 1; color: var(--muted); font-size: 11px; letter-spacing: 0.06em;">oscillation</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;aspect-ratio: 2/1;">
+        <div class="plot" style="position:relative;"><canvas id="splaneGridCanvas"></canvas>
+          <div class="title">s-plane · Re{e^{st}} · click a tile</div>
+        </div>
+        <div class="plot" style="position:relative;"><canvas id="splaneDetailCanvas"></canvas>
+          <div class="title" id="splaneDetailTitle">e^{st} · complex trajectory</div>
+          <div class="sub" id="splaneDetailSub"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 2.5 — WRAP INTRO =========================== -->
+  <section class="scene wide" id="s25" data-label="04 Wrap intro">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>Understanding the Fourier
+          Transform</span></div>
+      <h2>How to think about the Fourier Transform</h2>
+      <p class="lead">Before understanding the intergral, lets first look at the two functions inside of it.</p>
+      <p><em class="acc">1.</em> As we showed above, the complex exponential $e^{-j2\pi f t}$ is just a point walking
+        around the <em class="acc">unit circle</em>. Whose radius is 1 and whose angle is given by $-2\pi f t$. </p>
+      <p><em class="acc">2.</em> If we multiply that circle by a real number $g$, you will get a circle whos radius is
+        scaled by $g$. However, if $g$ varies as a function of time, e.g. $g(t)$, you now have a circle whose radius
+        changes with time. The radius of the circle <em class="acc">scales in
+          and out</em> as a function of time.</p>
+      <p><em class="acc">3.</em> Let time actually advance. The point traces a spiral around the origin, its radius
+        driven by $g(t)$ and its angle driven by the exponential. That spiral is the signal, <em class="acc">wrapped
+          around the complex plane</em>.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>winding $f$</label><input type="range" id="wrapF" min="0.2" max="2.5" step="0.005"
+            value="1" /><output id="wrapFO">1.00</output></div>
+        <div class="ctrl"><label>stage</label>
+          <div class="seg" id="wrapStage" style="grid-column: 2 / span 2;">
+            <button data-v="0" class="on">1 · signal</button>
+            <button data-v="1">2 ·$e^{-j2\pi f t}$</button>
+            <button data-v="2">3 · scale by $g(t)$</button>
+            <button data-v="3">4 · wrap over $t$</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="pillbtn" id="wrapPlay">play sequence</button>
+          <button class="pillbtn" id="wrapReset">reset</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--time)"></i>signal $g(t)$</span>
+        <span><i style="background:var(--accent)"></i>wound path</span>
+        <span><i style="background:var(--muted)"></i>time axis → angle</span>
+      </div>
+    </div>
+    <div class="eq-bar eq-bar-vert" id="wrapEq" data-stage="0">
+      <span class="eq-piece e-lhs">$F(f) = \displaystyle\int_{-\infty}^{\infty}$</span><span
+        class="eq-piece e-g hl">$g(t)$</span><span class="eq-piece e-dot">$\cdot$</span><span class="eq-piece e-exp">$e^{-j
+        2\pi f t}$</span><span class="eq-piece e-dt">$\,dt$</span>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: auto;">
+      <div class="plot" style="position: relative; aspect-ratio: 16/10;"><canvas id="wrapCanvas"></canvas>
+        <div class="title">straight line of time · bent into a disc</div>
+        <div class="sub" id="wrapSub">stage 1 · drawing the signal</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 3 — WINDING MACHINE =========================== -->
+  <section class="scene wide" id="s3" data-label="05 Fourier winding">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the winding machine</span></div>
+      <h2>Fourier is a winding machine.</h2>
+      <p class="lead">Multiplying a signal $g(t)$ by $e^{-2\pi j f t}$ winds it around the origin of the complex plane
+        at frequency $f$.</p>
+      <p>Consider the centroid of the resulting curve. For most values of $f$, the curve loops around the origin with
+        approximate symmetry, so positive and negative contributions cancel and the centroid remains close to zero. If
+        $f$ coincides with a frequency component of $g(t)$, this symmetry is broken: contributions accumulate on one
+        side of the plane and the centroid is displaced.</p>
+      <p>This displacement is, up to normalisation, the Fourier transform itself. The integral $\int g(t)\, e^{-2\pi j f
+        t}\, dt$ is the (unnormalised) centroid of the wound curve, and peaks in $|F(f)|$ correspond to winding
+        frequencies at which the displacement is maximal.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>winding $f$</label><input type="range" id="windF" min="0" max="4" step="0.005"
+            value="0.4" /><output id="windFO">0.40</output></div>
+        <div class="ctrl"><label>signal</label>
+          <div class="seg" id="windSig" style="grid-column: 2 / span 2;">
+            <button data-v="tone1" class="on">1 Hz tone</button>
+            <button data-v="chord">1 + 2 Hz chord</button>
+            <button data-v="square">square wave</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;"><button class="pillbtn" id="sweepBtn">sweep f</button></div>
+      </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 16/11;">
+      <div class="triple"
+        style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:0.55fr 1.45fr;width:100%;height:100%;gap:12px;">
+        <div class="plot" style="grid-column:1 / span 2;"><canvas id="w_sig"></canvas>
+          <div class="title">signal $g(t)$</div>
+        </div>
+        <div class="plot"><canvas id="w_wound"></canvas>
+          <div class="title">wound · $g(t)\,e^{-2\pi j f t}$</div>
+          <div class="sub" id="w_sub">f = 0.40 Hz</div>
+        </div>
+        <div class="plot"><canvas id="w_spec"></canvas>
+          <div class="title">|F(f)| · center of mass path</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 4 — FOURIER BREAKS =========================== -->
+  <section class="scene wide" id="s4" data-label="06 Fourier breaks">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>the wall</span></div>
+      <h2>The Fourier transform fails on unbounded signals.</h2>
+      <p class="lead">Now consider the signal $e^{0.3 t}\cos(\omega_0 t)$. The wound curve spirals outward without
+        bound, its centroid fails to converge, and the defining integral diverges.</p>
+      <p>The Fourier transform is defined only for signals that remain integrable over all time, i.e. those in $L^1$ or
+        $L^2(\mathbb{R})$. Transients, the responses of unstable systems, and causal signals switched on at a finite
+        time generally fall outside this class.</p>
+      <p>This motivates a natural modification: attenuate the signal prior to winding, so as to restore
+        integrability.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>growth rate $a$</label><input type="range" id="growA" min="-0.2" max="0.6" step="0.005"
+            value="0.3" /><output id="growAO">0.30</output></div>
+        <div class="ctrl"><label>winding $f$</label><input type="range" id="growF" min="0.05" max="2" step="0.005"
+            value="0.6" /><output id="growFO">0.60</output></div>
+      </div>
+      <p class="dim" style="font-size:13px;margin-top:14px;">For $a < 0$, the signal decays and the wound curve
+        spirals inward; the transform is well-defined. For $a > 0$, the wound curve is unbounded and the integral
+        fails to converge.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 16/11;">
+      <div class="dual" style="aspect-ratio: 16/9;">
+        <div class="plot"><canvas id="g_sig"></canvas>
+          <div class="title">signal $e^{a t}\cos(\omega_0 t)$</div>
+        </div>
+        <div class="plot"><canvas id="g_wound"></canvas>
+          <div class="title">wound shape</div>
+          <div class="sub" id="g_sub">diverges</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 5 — LAPLACE =========================== -->
+  <section class="scene wide" id="s5" data-label="07 Laplace">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>the fix</span></div>
+      <h2>The Laplace transform generalises Fourier via a complex frequency.</h2>
+      <p class="lead">Replace the Fourier kernel $e^{-j\omega t}$ with $e^{-st}$, where $s = \sigma + j\omega \in
+        \mathbb{C}$. The kernel factorises as $e^{-st} = e^{-\sigma t}\,e^{-j\omega t}$.</p>
+      <p>The second factor is the familiar Fourier winder; the first is a real exponential weighting that attenuates
+        the signal for $\sigma > 0$ and amplifies it for $\sigma < 0$. Setting $\sigma = 0$ recovers the Fourier
+        transform exactly.</p>
+      <p>Applied to the divergent signal of the previous section, the transform converges whenever $\sigma$ exceeds the
+        signal's growth rate. The set of $s \in \mathbb{C}$ for which the integral converges is termed the <em
+          class="acc">region of convergence</em> (ROC), and is an intrinsic part of the transform's specification.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>damping $\sigma$</label><input type="range" id="lapS" min="-0.3" max="0.8" step="0.005"
+            value="0" /><output id="lapSO">0.00</output></div>
+        <div class="ctrl"><label>winding $\omega$</label><input type="range" id="lapW" min="0.1" max="3" step="0.01"
+            value="1" /><output id="lapWO">1.00</output></div>
+        <div class="ctrl"><label>signal growth $a$</label><input type="range" id="lapA" min="-0.1" max="0.5"
+            step="0.005" value="0.3" /><output id="lapAO">0.30</output></div>
+        <div style="display:flex;gap:10px;"><button class="pillbtn" id="lapMatch">match growth</button></div>
+      </div>
+      <p class="dim" style="font-size:13px;margin-top:14px;">For this signal the ROC is the half-plane $\sigma > a$.
+        The s-plane panel indicates convergence in green.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 16/10;">
+      <div
+        style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;width:100%;height:100%;">
+        <div class="plot" style="position:relative;"><canvas id="l_sig"></canvas>
+          <div class="title">$g(t)$ · tamed by $e^{-\sigma t}$</div>
+        </div>
+        <div class="plot" style="position:relative;"><canvas id="l_wound"></canvas>
+          <div class="title">wound shape</div>
+          <div class="sub" id="l_sub">bounded · ROC ok</div>
+        </div>
+        <div class="plot" style="position:relative;grid-column:1/span 2;"><canvas id="l_splane"></canvas>
+          <div class="title">s-plane · (σ, ω)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 5b — TRANSFER FUNCTIONS =========================== -->
+  <section class="scene wide" id="s5b" data-label="08 Block">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">08</span><span>transfer functions</span></div>
+      <h2>Poles and zeros characterise the transfer function.</h2>
+      <p class="lead">For a linear time-invariant system with input $x(t)$ and output $y(t)$, the ratio of their Laplace
+        transforms defines the <em class="acc">transfer function</em>, $H(s) = Y(s)/X(s)$.</p>
+      <p>For the systems considered here, $H(s)$ is a rational function of $s$, and therefore admits the factored form
+      </p>
+      <p style="text-align:center;">$$H(s) \;=\; k \, \frac{(s - z_1)(s - z_2)\cdots}{(s - p_1)(s - p_2)\cdots}.$$</p>
+      <p>The roots of the numerator are the <em class="time">zeros</em> $\{z_i\}$; the roots of the denominator are the
+        <em class="imag">poles</em> $\{p_i\}$. Together with the scalar gain $k$, these two sets of complex numbers
+        determine $H(s)$ completely.</p>
+      <p>At $s = z_i$ the numerator vanishes, so $H(z_i) = 0$ and the system <em class="time">annihilates</em> that
+        mode. At $s = p_i$ the denominator vanishes, so $|H(p_i)| \to \infty$ and the response is <em
+          class="imag">unbounded</em>. The frequency response, resonant behaviour, and stability of the system are
+        consequently all determined by the location of its poles and zeros in the $s$-plane.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>example</label>
+          <div class="seg" id="tfSeg" style="grid-column: 2 / span 2;">
+            <button data-v="lowpass" class="on">low-pass</button>
+            <button data-v="resonator">resonator</button>
+            <button data-v="notch">notch</button>
+            <button data-v="integrator">integrator</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 4/3;">
+      <div style="display:grid;grid-template-rows:1.15fr 1.35fr;gap:12px;width:100%;height:100%;">
+        <div class="plot" style="position:relative;">
+          <div class="tf-block">
+            <div class="tf-node tf-in">
+              <div class="tf-math" id="tfInEqn">$X(s)$</div>
+              <div class="tf-sub">input</div>
+            </div>
+            <div class="tf-arrow"></div>
+            <div class="tf-box">
+              <div class="tf-math" id="tfEqn">$H(s)$</div>
+            </div>
+            <div class="tf-arrow"></div>
+            <div class="tf-node tf-out">
+              <div class="tf-math" id="tfOutEqn">$Y(s)$</div>
+              <div class="tf-sub">output</div>
+            </div>
+          </div>
+          <div class="title">block diagram · $Y(s) = H(s)\,X(s)$</div>
+          <div class="sub" id="tfSub">low-pass · single pole</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1.25fr;gap:12px;min-height:0;">
+          <div class="plot" style="position:relative;"><canvas id="tfPZ"></canvas>
+            <div class="title">s-plane · poles × · zeros ○</div>
+          </div>
+          <div class="plot" style="position:relative;"><canvas id="tfInOut"></canvas>
+            <div class="title">input $x(t)$ → output $y(t)$</div>
+            <div class="sub" id="tfInOutSub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 6 — LAPLACE SURFACE =========================== -->
+  <section class="scene wide" id="s6" data-label="09 Link">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">09</span><span>connecting the two</span></div>
+      <h2>The Fourier transform is a restriction of the Laplace transform.</h2>
+      <p class="lead">Varying both $\sigma$ and $\omega$ simultaneously, the magnitude $|F(s)|$ defines a surface over
+        the complex plane. Poles appear as singularities at which the surface diverges; zeros appear as points at
+        which it vanishes.</p>
+      <p>The Fourier transform is the restriction of this surface to the imaginary axis $\sigma = 0$. This slice
+        represents the system's steady-state response to pure sinusoidal inputs $e^{j\omega t}$: the magnitude of
+        $F(j\omega)$ gives the gain and its argument gives the phase at frequency $\omega$. Evaluating $F(s)$ on any
+        other vertical line $\sigma = \sigma_0$ yields a parallel cross-section, which represents the response to
+        exponentially modulated sinusoids $e^{\sigma_0 t}\,e^{j\omega t}$, i.e. signals whose envelope decays for
+        $\sigma_0 < 0$ or grows for $\sigma_0 > 0$.</p>
+      <p>This viewpoint also clarifies the role of <em class="time">zeros</em>. A zero located on the imaginary axis
+        produces an exact null in the Fourier response at the corresponding frequency, since the surface meets the
+        plane $|F(s)| = 0$ at that point.</p>
+      <p class="dim" style="font-size:14px;">Rotate the surface by dragging, and adjust $\sigma$ to translate the
+        slice. The <em class="real">blue ridge</em> denotes the Fourier cross-section; <em class="imag">pink ×</em>
+        mark poles and <em class="time">green ○</em> mark zeros.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>system</label>
+          <div class="seg" id="surfSysSeg" style="grid-column: 2 / span 2;">
+            <button data-v="stable" class="on">stable · 2nd order</button>
+            <button data-v="ring">lightly damped</button>
+            <button data-v="unstable">unstable</button>
+          </div>
+        </div>
+        <div class="ctrl"><label>slice $\sigma$</label><input type="range" id="surfSigma" min="-1.5" max="1.5"
+            step="0.01" value="0" /><output id="surfSigmaO">0.00</output></div>
+        <div class="ctrl"><label>mesh density</label><input type="range" id="surfMesh" min="24" max="160" step="4"
+            value="84" /><output id="surfMeshO">84</output></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="pillbtn" id="surfFourier">snap to σ = 0</button>
+          <button class="pillbtn" id="surfTopView">top view</button>
+          <button class="pillbtn" id="surfSpin">auto rotate</button>
+          <button class="pillbtn" id="surfBode">bode plot mode</button>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--real)"></i>jω ridge · Fourier</span>
+        <span><i style="background:var(--accent)"></i>slice at current σ</span>
+        <span><i style="background:var(--imag)"></i>× poles · spikes</span>
+        <span><i style="background:var(--time)"></i>○ zeros · valleys</span>
+      </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 4/3;">
+      <div
+        style="display:grid;grid-template-columns:2.1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;width:100%;height:100%;">
+        <div class="plot" style="position:relative;grid-row:1 / span 2;">
+          <canvas id="surfCanvas"></canvas>
+          <div class="title">|F(s)| · surface over the s-plane</div>
+          <div class="sub" id="surfSub">drag to rotate</div>
+        </div>
+        <div class="plot" style="position:relative;">
+          <canvas id="surfSlice"></canvas>
+          <div class="title" id="surfSliceTitle">slice at σ = 0.00 · |F(σ + jω)|</div>
+        </div>
+        <div class="plot" style="position:relative;">
+          <canvas id="surfTop"></canvas>
+          <div class="title">top view · poles · σ slice line</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 7 — PLACEHOLDER =========================== -->
+  <section class="scene wide" id="s7" data-label="10 Poles">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">10</span><span>stability and pole location</span>
+      </div>
+      <h2>Pole location determines the qualitative behaviour of the system.</h2>
+      <p class="lead">For an LTI system, $H(s)$ is the Laplace transform of the impulse response $h(t)$. The location
+        of each pole $p_i = \sigma_i + j\omega_i$ in the complex plane determines the contribution of the corresponding
+        mode $e^{p_i t}$ to $h(t)$.</p>
+      <ul style="padding-left: 18px; color: #d4d7e0;">
+        <li>Poles with $\sigma_i < 0$ (<em class="real">left half-plane</em>): the mode decays exponentially, and the
+          system is asymptotically stable.</li>
+        <li>Poles with $\sigma_i = 0$ (on the imaginary axis): the mode is a pure sinusoid of constant amplitude; the
+          system is marginally stable.</li>
+        <li>Poles with $\sigma_i > 0$ (<em class="imag">right half-plane</em>): the mode grows without bound, rendering
+          the system unstable.</li>
+        <li>For a complex-conjugate pole pair, proximity to the $j\omega$ axis corresponds to a small damping ratio and
+          a lightly damped, oscillatory response.</li>
+      </ul>
+      <p>The green pole may be translated in the $s$-plane to observe the resulting change in the impulse response
+        $h(t)$.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 16/10;">
+      <div class="dual" style="aspect-ratio: 16/8;">
+        <div class="plot" style="position:relative;"><canvas id="p_splane"></canvas>
+          <div class="title">s-plane · drag the pole</div>
+        </div>
+        <div class="plot" style="position:relative;"><canvas id="p_time"></canvas>
+          <div class="title">impulse response $h(t)$</div>
+          <div class="sub" id="p_sub">stable</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================== SECTION 8 — SANDBOX =========================== -->
+  <section class="scene wide" id="s8" data-label="11 Sandbox">
+    <div class="copy">
+      <div class="eyebrow"><span class="bar"></span><span class="num">11</span><span>your turn</span></div>
+      <h2>Pick an input, build a system, see what falls out.</h2>
+      <p class="lead">Start by choosing an input $x(t)$ on the left. The poles and zeros that come along for the ride
+        (the ones forced on you by the input itself) show up on the s-plane in <em class="acc">yellow</em>.</p>
+      <p>Then go build your own $H(s)$. Click the s-plane to drop poles (<em class="imag">×</em>) and zeros (<em
+          class="time">○</em>), drag to move them around, shift-click to delete. The output $y(t)$ is the inverse
+        Laplace of $X(s)\,H(s)$, computed live by integrating the underlying ODE on every frame.</p>
+
+      <div class="controls">
+        <div class="ctrl"><label>input $x(t)$</label>
+          <div class="seg" id="sbInput"
+            style="grid-column: 2 / span 2; display:grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: transparent; border: 0; overflow:visible;">
+            <button data-v="impulse" class="on">δ(t)</button>
+            <button data-v="step">step u(t)</button>
+            <button data-v="ramp">ramp t</button>
+            <button data-v="exp">e<sup>−at</sup></button>
+            <button data-v="sin">sin ωt</button>
+            <button data-v="cos">cos ωt</button>
+          </div>
+        </div>
+        <div class="ctrl" id="sbParamRow"><label id="sbParamLbl">parameter</label><input type="range" id="sbParam"
+            min="0.2" max="3" step="0.05" value="1" /><output id="sbParamO">1.00</output></div>
+        <div class="ctrl"><label>click adds</label>
+          <div class="seg" id="sbMode" style="grid-column: 2 / span 2;">
+            <button data-v="pole" class="on">pole ×</button>
+            <button data-v="zero">zero ○</button>
+          </div>
+        </div>
+        <div class="ctrl"><label>gain $k$</label><input type="range" id="sbGain" min="0.1" max="5" step="0.05"
+            value="1" /><output id="sbGainO">1.00</output></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="pillbtn" id="sbReset">reset H(s)</button>
+          <button class="pillbtn" id="sbClear">clear all</button>
+        </div>
+      </div>
+      <p class="dim" style="font-size:13px;margin-top:14px;">Click empty space to drop a pole or zero. Drag to move,
+        shift-click (or right-click) to delete. Anything you drop above the σ axis gets mirrored below it, since a real
+        system's poles and zeros come in complex-conjugate pairs.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 16/10;">
+      <div style="display:grid;grid-template-columns:1fr 1.15fr;gap:12px;width:100%;height:100%;">
+        <div class="plot" style="position:relative;"><canvas id="sb_splane"></canvas>
+          <div class="title">s-plane · build H(s) · input × ○ in yellow</div>
+          <div class="sub" id="sb_hsub">H(s) · 0 zeros · 1 pole</div>
+        </div>
+        <div class="plot" style="position:relative;"><canvas id="sb_io"></canvas>
+          <div class="title">x(t) input → y(t) output</div>
+          <div class="sub" id="sb_iosub">stable response</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>Built with KaTeX, HTML canvas, and a lot of center-of-mass arithmetic.</p>
+  </footer>
+
+  <!-- Tweaks panel -->
+  <div class="tweaks" id="tweaks">
+    <h4><span>Tweaks</span><span class="btns"><button id="tweaksMin" title="Minimise">–</button><button id="tweaksX"
+          title="Close">×</button></span></h4>
+    <div class="body">
+      <div class="row"><span>bg</span><input type="color" data-tk="colorBg" /></div>
+      <div class="row"><span>text</span><input type="color" data-tk="colorFg" /></div>
+      <div class="row"><span>real</span><input type="color" data-tk="colorReal" /></div>
+      <div class="row"><span>imag</span><input type="color" data-tk="colorImag" /></div>
+      <div class="row"><span>time</span><input type="color" data-tk="colorTime" /></div>
+      <div class="row"><span>accent</span><input type="color" data-tk="colorAccent" /></div>
+      <div class="swatches">
+        <button class="sw" data-preset="math" style="background:#0a0a10;color:#fff;">MATH</button>
+        <button class="sw" data-preset="cream" style="background:#f3eee3;">CREAM</button>
+        <button class="sw" data-preset="navy" style="background:#0d1b2a;color:#fff;">NAVY</button>
+      </div>
+      <div class="row" style="margin-top:14px;"><span>body pt</span><input type="range" data-tk="fontBody" min="13"
+          max="22" step="1" /></div>
+      <div class="row"><span>math pt</span><input type="range" data-tk="fontMath" min="13" max="26" step="1" /></div>
+      <div class="row"><span>hero pt</span><input type="range" data-tk="fontHero" min="40" max="92" step="1" /></div>
+      <div class="row"><span>canvas x</span><input type="range" data-tk="canvasOffset" min="-60" max="60" step="1" />
+      </div>
+      <div class="row"><span>text x</span><input type="range" data-tk="textOffset" min="-40" max="40" step="1" /></div>
+    </div>
+  </div>
+
+  <script src="js/tweaks.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/scene1_car.js"></script>
+  <script src="js/scene2_phasor.js"></script>
+  <script src="js/scene2c_splane_grid.js"></script>
+  <script src="js/scene2b_wrap.js"></script>
+  <script src="js/scene3_wind.js"></script>
+  <script src="js/scene4_grow.js"></script>
+  <script src="js/scene5_laplace.js"></script>
+  <script src="js/scene5b_transfer.js"></script>
+  <script src="js/scene6_surface.js"></script>
+  <script src="js/scene7_poles.js"></script>
+  <script src="js/scene8_sandbox.js"></script>
+  <script src="js/nav.js"></script>
+
+</body>
+
+</html>

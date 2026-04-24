@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Simulate ECG Data</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../theme.css">
+    <script src="../theme.js"></script>
+    <style>
+        :root {
+            --bg: #0a0a10;
+            --bg-2: #12131c;
+            --bg-panel: rgba(22, 23, 32, 0.75);
+            --fg: #eef0f5;
+            --text: #eef0f5;
+            --text-dim: #d4d7e0;
+            --muted: #8b90a3;
+            --accent: #ffcf5c;
+            --trace: #7be089;
+            --clean: #58a6ff;
+            --border: rgba(255, 255, 255, 0.09);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            --grid: rgba(255, 255, 255, 0.05);
+            --grid-strong: rgba(255, 255, 255, 0.1);
+        }
+
+        [data-theme="light"] {
+            --bg: #f7f7fa;
+            --bg-2: #ffffff;
+            --bg-panel: rgba(255, 255, 255, 0.9);
+            --fg: #14151c;
+            --text: #14151c;
+            --text-dim: #2b2d38;
+            --muted: #6b6f80;
+            --accent: #b88200;
+            --trace: #2a8a3a;
+            --clean: #2466c9;
+            --border: rgba(0, 0, 0, 0.09);
+            --border-hover: rgba(0, 0, 0, 0.22);
+            --grid: rgba(0, 0, 0, 0.05);
+            --grid-strong: rgba(0, 0, 0, 0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 16px;
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+        body { min-height: 100vh; overflow-x: hidden; padding: 80px 40px 80px; }
+
+        .brand {
+            position: fixed; top: 20px; left: 24px; z-index: 40;
+            font-size: 12px; color: var(--muted);
+            letter-spacing: 0.08em; text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .brand .mark {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: conic-gradient(var(--clean), var(--trace), var(--accent), var(--clean));
+        }
+
+        .back-btn {
+            position: fixed; top: 18px; right: 24px; z-index: 40;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 7px 14px; border-radius: 999px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--fg); text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+            backdrop-filter: blur(8px); transition: all 0.15s;
+        }
+        .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        .eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 18px;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .eyebrow .bar { flex: 0 0 28px; height: 1px; background: var(--accent); }
+        .eyebrow .num { color: var(--accent); }
+
+        h1 {
+            font-size: 42px; line-height: 1.05; font-weight: 600;
+            letter-spacing: -0.02em; margin: 0 0 16px;
+        }
+        h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--clean), var(--accent));
+            -webkit-background-clip: text; background-clip: text; color: transparent;
+        }
+
+        p.sub {
+            color: var(--muted); font-size: 16px; max-width: 70ch;
+            line-height: 1.6; margin-bottom: 36px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 340px;
+            gap: 28px;
+            align-items: start;
+        }
+
+        @media (max-width: 960px) {
+            .layout { grid-template-columns: 1fr; }
+            body { padding: 72px 20px 60px; }
+            h1 { font-size: 32px; }
+        }
+
+        .plot-wrap {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 12px; overflow: hidden;
+            position: relative;
+        }
+        .plot-title {
+            padding: 12px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px;
+        }
+        .plot-title .legend { display: flex; gap: 16px; flex-wrap: wrap; }
+        .plot-title .legend span { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0.04em; font-size: 11px; }
+        .plot-title .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+        .plot-title .legend i.clean { background: var(--clean); }
+        .plot-title .legend i.noisy { background: var(--trace); }
+
+        canvas.ecg {
+            display: block; width: 100%; height: 420px; background: var(--bg-2);
+        }
+
+        .readout-bar {
+            display: flex; gap: 22px; flex-wrap: wrap;
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .readout-item {
+            font-size: 10px; color: var(--muted);
+            letter-spacing: 0.1em; text-transform: uppercase;
+            display: inline-flex; align-items: baseline; gap: 8px;
+        }
+        .readout-item .val { color: var(--fg); font-size: 12.5px; letter-spacing: 0; text-transform: none; }
+        .readout-item .val.accent { color: var(--accent); }
+
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 18px 20px;
+            backdrop-filter: blur(8px);
+        }
+        .panel + .panel { margin-top: 16px; }
+        .panel h3 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--accent); margin-bottom: 14px; font-weight: 500;
+        }
+
+        .ctrl {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            column-gap: 10px; row-gap: 4px;
+            align-items: center;
+            margin-bottom: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+        }
+        .ctrl:last-child { margin-bottom: 0; }
+        .ctrl label { color: var(--text-dim); }
+        .ctrl .val {
+            color: var(--accent); text-align: right;
+            font-size: 11.5px; min-width: 62px;
+        }
+        .ctrl input[type=range] {
+            grid-column: 1 / span 2;
+            -webkit-appearance: none; appearance: none;
+            background: transparent; width: 100%;
+        }
+        .ctrl input[type=range]::-webkit-slider-runnable-track {
+            height: 3px; background: rgba(255, 255, 255, 0.14); border-radius: 2px;
+        }
+        [data-theme="light"] .ctrl input[type=range]::-webkit-slider-runnable-track {
+            background: rgba(0, 0, 0, 0.14);
+        }
+        .ctrl input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px; height: 14px; border-radius: 50%;
+            background: var(--accent);
+            margin-top: -5.5px; cursor: grab;
+            border: 2px solid var(--bg);
+        }
+        .ctrl input[type=range]::-moz-range-track {
+            height: 3px; background: rgba(255, 255, 255, 0.14); border-radius: 2px;
+        }
+        .ctrl input[type=range]::-moz-range-thumb {
+            width: 14px; height: 14px; border-radius: 50%;
+            background: var(--accent); border: 2px solid var(--bg); cursor: grab;
+        }
+
+        .seg {
+            display: inline-flex;
+            border: 1px solid var(--border);
+            border-radius: 6px; overflow: hidden;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .seg button {
+            background: transparent; border: none; color: var(--muted);
+            padding: 5px 12px; font-size: 11px; cursor: pointer;
+            font-family: inherit; letter-spacing: 0.06em;
+        }
+        .seg button.active {
+            background: rgba(255, 207, 92, 0.12);
+            color: var(--accent);
+        }
+        [data-theme="light"] .seg button.active {
+            background: rgba(184, 130, 0, 0.12);
+        }
+
+        .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+        .pillbtn {
+            flex: 1 1 auto;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--fg);
+            padding: 10px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+            border-radius: 8px; cursor: pointer;
+            transition: all 0.15s;
+            text-align: center;
+        }
+        .pillbtn:hover { border-color: var(--accent); color: var(--accent); }
+        .pillbtn.primary {
+            border-color: var(--accent);
+            background: rgba(255, 207, 92, 0.1);
+            color: var(--accent);
+        }
+        .pillbtn.primary:hover { background: rgba(255, 207, 92, 0.18); }
+
+        .ctrl-toggle {
+            display: inline-flex; align-items: center; gap: 8px;
+            cursor: pointer; user-select: none;
+            color: var(--text-dim);
+        }
+        .ctrl-toggle input { accent-color: var(--accent); }
+
+        .muted-note {
+            font-size: 11px; color: var(--muted);
+            margin-top: 8px; line-height: 1.5;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .preset-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            padding: 8px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            line-height: 1.3;
+            transition: all 0.15s;
+        }
+        .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .preset-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(255, 207, 92, 0.08);
+        }
+        .preset-btn .pt-name { display: block; font-weight: 500; }
+        .preset-btn .pt-sub {
+            display: block;
+            font-size: 9.5px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .preset-btn.active .pt-sub { color: var(--accent); opacity: 0.8; }
+
+        footer {
+            margin-top: 60px; padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--muted); font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Bioinstrumentation</span></div>
+    <a href="../index.html" class="back-btn">← Back</a>
+
+    <div class="container">
+        <div class="eyebrow"><span class="bar"></span><span class="num">EX</span><span>extras · synthetic biosignals</span></div>
+        <h1>Simulate <em>ECG Data</em>.</h1>
+        <p class="sub">This simulator synthesises a single-lead electrocardiogram from a PQRST Gaussian-sum model, with additive noise sources representative of surface acquisition: low-frequency baseline wander attributable to respiration and electrode motion, broadband electromyographic interference, narrowband powerline coupling with its odd harmonics, transient electrode artefacts, and Gaussian thermal noise.</p>
+        <p class="sub">The resulting waveforms can be exported as CSV or TXT for use in MATLAB, Excel, or NI Multisim, supporting end-to-end simulation of your device. In Multisim, the TXT file is typically loaded into a piecewise-linear voltage source, which then drives the analog front-end during transient analysis.</p>
+
+        <div class="layout">
+            <div>
+                <div class="plot-wrap">
+                    <div class="plot-title">
+                        <span>ECG trace · lead II model</span>
+                        <span class="legend">
+                            <span><i class="clean"></i>clean</span>
+                            <span><i class="noisy"></i>noisy</span>
+                        </span>
+                    </div>
+                    <canvas class="ecg" id="ecgCanvas"></canvas>
+                    <div class="readout-bar">
+                        <div class="readout-item">HR <span class="val accent" id="roHR">72 bpm</span></div>
+                        <div class="readout-item">Duration <span class="val" id="roDur">10.0 s</span></div>
+                        <div class="readout-item">fs <span class="val" id="roFs">500 Hz</span></div>
+                        <div class="readout-item">Samples <span class="val" id="roN">5000</span></div>
+                        <div class="readout-item">SNR <span class="val" id="roSNR">—</span></div>
+                    </div>
+                </div>
+                <p class="muted-note">The clean reference is constructed as a superposition of Gaussians parameterised to reproduce the P, Q, R, S, and T deflections, repeated at the prescribed heart rate with physiologically plausible beat-to-beat interval variability. Each noise component is generated independently and additively superimposed on the clean waveform.</p>
+            </div>
+
+            <div>
+                <div class="panel">
+                    <h3>// Presets</h3>
+                    <div class="preset-grid" id="presetGrid"></div>
+                </div>
+
+                <div class="panel">
+                    <h3>// Signal</h3>
+                    <div class="ctrl">
+                        <label>Heart rate</label><span class="val" id="vHR">72 bpm</span>
+                        <input type="range" id="hr" min="30" max="180" step="1" value="72">
+                    </div>
+                    <div class="ctrl">
+                        <label>Duration</label><span class="val" id="vDur">10.0 s</span>
+                        <input type="range" id="dur" min="2" max="30" step="0.5" value="10">
+                    </div>
+                    <div class="ctrl">
+                        <label>Sampling rate</label><span class="val" id="vFs">500 Hz</span>
+                        <input type="range" id="fs" min="125" max="2000" step="25" value="500">
+                    </div>
+                    <div class="ctrl">
+                        <label>R-peak amplitude</label><span class="val" id="vAmp">1.20 mV</span>
+                        <input type="range" id="amp" min="0.2" max="3" step="0.05" value="1.2">
+                    </div>
+                    <div class="ctrl">
+                        <label>HR variability</label><span class="val" id="vHrv">5 %</span>
+                        <input type="range" id="hrv" min="0" max="25" step="1" value="5">
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>// Noise</h3>
+
+                    <div class="ctrl">
+                        <label>Baseline wander (motion)</label><span class="val" id="vBw">0.20 mV</span>
+                        <input type="range" id="bw" min="0" max="1" step="0.01" value="0.2">
+                    </div>
+                    <div class="ctrl">
+                        <label>Wander frequency</label><span class="val" id="vBwf">0.30 Hz</span>
+                        <input type="range" id="bwf" min="0.05" max="1.5" step="0.05" value="0.3">
+                    </div>
+
+                    <div class="ctrl">
+                        <label>Muscle tremor (EMG)</label><span class="val" id="vEmg">0.04 mV</span>
+                        <input type="range" id="emg" min="0" max="0.5" step="0.01" value="0.04">
+                    </div>
+
+                    <div class="ctrl" style="grid-template-columns: 1fr auto; row-gap: 8px;">
+                        <label>Powerline noise</label>
+                        <div class="seg" id="plFreq">
+                            <button type="button" data-f="50" class="active">50 Hz</button>
+                            <button type="button" data-f="60">60 Hz</button>
+                        </div>
+                    </div>
+                    <div class="ctrl">
+                        <label>Powerline amplitude</label><span class="val" id="vPl">0.05 mV</span>
+                        <input type="range" id="pl" min="0" max="0.5" step="0.005" value="0.05">
+                    </div>
+                    <div class="ctrl">
+                        <label>Harmonic content</label><span class="val" id="vPlh">0.30</span>
+                        <input type="range" id="plh" min="0" max="1" step="0.05" value="0.3">
+                    </div>
+
+                    <div class="ctrl">
+                        <label>Electrode pops</label><span class="val" id="vPop">0.10 /s</span>
+                        <input type="range" id="pop" min="0" max="2" step="0.05" value="0.1">
+                    </div>
+
+                    <div class="ctrl">
+                        <label>White (thermal) noise</label><span class="val" id="vWht">0.02 mV</span>
+                        <input type="range" id="wht" min="0" max="0.2" step="0.005" value="0.02">
+                    </div>
+
+                    <label class="ctrl-toggle" style="margin-top: 6px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace;">
+                        <input type="checkbox" id="showClean" checked>
+                        overlay clean signal
+                    </label>
+                </div>
+
+                <div class="panel">
+                    <h3>// Export</h3>
+                    <div class="action-row">
+                        <button class="pillbtn" id="reseed" type="button">Reseed noise</button>
+                    </div>
+                    <div class="action-row">
+                        <button class="pillbtn primary" id="download" type="button">Download CSV</button>
+                        <button class="pillbtn primary" id="downloadTxt" type="button">Download TXT · Multisim PWL</button>
+                    </div>
+                    <p class="muted-note"><span style="color:var(--fg)">CSV</span> — columns <span style="color:var(--fg)">time_s, ecg_mV, ecg_clean_mV, noise_mV</span>, one sample per row, for use in analysis environments such as MATLAB or Python.</p>
+                    <p class="muted-note"><span style="color:var(--fg)">TXT</span> — two-column <span style="color:var(--fg)">time (s) voltage (V)</span> ASCII file in the format accepted by NI Multisim's <em>PIECEWISE_LINEAR_VOLTAGE</em> source. Instantiate a PWL voltage source in Multisim and set its data-file parameter to the downloaded file to drive the analog front-end with the synthesised waveform during transient analysis.</p>
+                </div>
+            </div>
+        </div>
+
+        <footer>BMEN90033 · The University of Melbourne</footer>
+    </div>
+
+    <script>
+    (function () {
+        const canvas = document.getElementById('ecgCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ─── State ─────────────────────────────────────────────────────────────
+        const state = {
+            hr: 72, dur: 10, fs: 500,
+            amp: 1.2, hrv: 5,
+            bw: 0.2, bwf: 0.3,
+            emg: 0.04,
+            plFreq: 50, pl: 0.05, plh: 0.3,
+            pop: 0.1,
+            wht: 0.02,
+            showClean: true,
+            seed: 0xDEADBEEF >>> 0,
+        };
+
+        // PQRST Gaussian model parameters (McSharry-style, tuned for lead II)
+        // theta in radians relative to R peak, a = amplitude, b = width
+        const waves = [
+            { th: -1.09, a: 0.12, b: 0.25 },  // P
+            { th: -0.17, a: -0.10, b: 0.10 }, // Q
+            { th:  0.00, a: 1.00, b: 0.10 },  // R
+            { th:  0.17, a: -0.25, b: 0.10 }, // S
+            { th:  1.19, a: 0.35, b: 0.40 },  // T
+        ];
+
+        // ─── Deterministic RNG (mulberry32) ────────────────────────────────────
+        function rng(seed) {
+            let s = seed >>> 0;
+            return function () {
+                s = (s + 0x6D2B79F5) >>> 0;
+                let t = s;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+        function gauss(rand) {
+            // Box–Muller
+            let u = 0, v = 0;
+            while (u === 0) u = rand();
+            while (v === 0) v = rand();
+            return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        }
+
+        // ─── Synthesis ─────────────────────────────────────────────────────────
+        function synthesize() {
+            const fs = state.fs;
+            const N = Math.round(state.dur * fs);
+            const dt = 1 / fs;
+            const rand = rng(state.seed);
+
+            // Build beat schedule with HR variability
+            const meanRR = 60 / state.hr;
+            const sigmaRR = meanRR * (state.hrv / 100);
+            const beats = [];
+            let t = 0.25 * meanRR; // first R peak offset
+            while (t < state.dur + meanRR) {
+                beats.push(t);
+                const jitter = sigmaRR * gauss(rand);
+                t += Math.max(0.25, meanRR + jitter);
+            }
+
+            // Clean signal = sum of nearest-beat PQRST Gaussians
+            const clean = new Float64Array(N);
+            for (let i = 0; i < N; i++) {
+                const ti = i * dt;
+                // Find up to 2 nearest beats (previous + next) — plenty given gaussian widths
+                let sum = 0;
+                for (let b = 0; b < beats.length; b++) {
+                    const dtb = ti - beats[b];
+                    if (dtb < -0.6) break;
+                    if (dtb > 0.8) continue;
+                    // convert to "phase" in radians using local RR so T relaxes between beats
+                    const localRR = (b + 1 < beats.length ? beats[b + 1] - beats[b] : meanRR);
+                    const phase = 2 * Math.PI * dtb / Math.max(localRR, 0.3);
+                    for (let w = 0; w < waves.length; w++) {
+                        const dth = phase - waves[w].th;
+                        sum += waves[w].a * Math.exp(-(dth * dth) / (2 * waves[w].b * waves[w].b));
+                    }
+                }
+                clean[i] = sum * state.amp;
+            }
+
+            // ── Noise components ──
+            const noise = new Float64Array(N);
+
+            // 1) Baseline wander: a couple of low-freq sinusoids + slow random walk
+            if (state.bw > 0) {
+                const ph1 = rand() * 2 * Math.PI;
+                const ph2 = rand() * 2 * Math.PI;
+                const f1 = state.bwf;
+                const f2 = state.bwf * 2.3;
+                // slow random walk
+                const walk = new Float64Array(N);
+                let w = 0;
+                const tau = Math.max(0.05, state.bwf) * 2 * Math.PI;
+                for (let i = 0; i < N; i++) {
+                    w += (gauss(rand) * 0.02 - w * dt * tau);
+                    walk[i] = w;
+                }
+                // normalize walk to ~unit amplitude
+                let wmax = 1e-9;
+                for (let i = 0; i < N; i++) if (Math.abs(walk[i]) > wmax) wmax = Math.abs(walk[i]);
+                for (let i = 0; i < N; i++) {
+                    const tt = i * dt;
+                    const sinu = 0.6 * Math.sin(2 * Math.PI * f1 * tt + ph1)
+                               + 0.3 * Math.sin(2 * Math.PI * f2 * tt + ph2);
+                    const rw = 0.5 * walk[i] / wmax;
+                    noise[i] += state.bw * (sinu + rw);
+                }
+            }
+
+            // 2) Muscle tremor / EMG: broadband noise band-limited ~20–100 Hz
+            if (state.emg > 0) {
+                // Sum of many mid-high freq sinusoids with random phase — cheap band-limited
+                const harmonics = 24;
+                const fmin = 20, fmax = Math.min(100, fs * 0.45);
+                const phases = [];
+                const freqs = [];
+                for (let h = 0; h < harmonics; h++) {
+                    phases.push(rand() * 2 * Math.PI);
+                    freqs.push(fmin + (fmax - fmin) * rand());
+                }
+                for (let i = 0; i < N; i++) {
+                    const tt = i * dt;
+                    let s = 0;
+                    for (let h = 0; h < harmonics; h++) {
+                        s += Math.sin(2 * Math.PI * freqs[h] * tt + phases[h]);
+                    }
+                    // modulation envelope — tremor comes in bursts
+                    const env = 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.7 * tt + phases[0]);
+                    noise[i] += state.emg * (s / Math.sqrt(harmonics)) * env;
+                }
+            }
+
+            // 3) Powerline interference: fundamental + small 3rd/5th harmonics
+            if (state.pl > 0) {
+                const f0 = state.plFreq;
+                const ph = rand() * 2 * Math.PI;
+                const hAmp = state.plh;
+                for (let i = 0; i < N; i++) {
+                    const tt = i * dt;
+                    let s = Math.sin(2 * Math.PI * f0 * tt + ph);
+                    s += hAmp * 0.4 * Math.sin(2 * Math.PI * 3 * f0 * tt + ph * 1.3);
+                    s += hAmp * 0.2 * Math.sin(2 * Math.PI * 5 * f0 * tt + ph * 0.7);
+                    noise[i] += state.pl * s;
+                }
+            }
+
+            // 4) Electrode pops / motion spikes: occasional exponential transients
+            if (state.pop > 0) {
+                const expected = state.pop * state.dur;
+                // sample count from Poisson approx by rounding with jitter
+                const count = Math.max(0, Math.round(expected + gauss(rand) * Math.sqrt(expected || 1)));
+                for (let k = 0; k < count; k++) {
+                    const tk = rand() * state.dur;
+                    const sign = rand() < 0.5 ? -1 : 1;
+                    const amp = sign * (0.4 + 0.8 * rand()) * state.amp * 0.8;
+                    const tauPop = 0.03 + rand() * 0.12; // 30–150 ms decay
+                    const iStart = Math.round(tk * fs);
+                    const iEnd = Math.min(N, iStart + Math.round(tauPop * 6 * fs));
+                    for (let i = iStart; i < iEnd; i++) {
+                        const dtp = (i - iStart) * dt;
+                        noise[i] += amp * Math.exp(-dtp / tauPop);
+                    }
+                }
+            }
+
+            // 5) White (thermal / quantisation) noise
+            if (state.wht > 0) {
+                for (let i = 0; i < N; i++) {
+                    noise[i] += state.wht * gauss(rand);
+                }
+            }
+
+            // Combine
+            const noisy = new Float64Array(N);
+            for (let i = 0; i < N; i++) noisy[i] = clean[i] + noise[i];
+
+            // SNR (power-based)
+            let ps = 0, pn = 0;
+            for (let i = 0; i < N; i++) {
+                ps += clean[i] * clean[i];
+                pn += noise[i] * noise[i];
+            }
+            const snr = pn > 0 ? 10 * Math.log10(ps / pn) : Infinity;
+
+            return { clean, noise, noisy, fs, N, snr };
+        }
+
+        // ─── Rendering ─────────────────────────────────────────────────────────
+        let lastData = null;
+
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = Math.max(1, Math.round(rect.width * dpr));
+            canvas.height = Math.max(1, Math.round(rect.height * dpr));
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        function draw(data) {
+            const rect = canvas.getBoundingClientRect();
+            const W = rect.width, H = rect.height;
+            ctx.clearRect(0, 0, W, H);
+
+            const padL = 46, padR = 14, padT = 14, padB = 26;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            // Determine y-range from noisy
+            let ymin = Infinity, ymax = -Infinity;
+            for (let i = 0; i < data.N; i++) {
+                const v = data.noisy[i];
+                if (v < ymin) ymin = v;
+                if (v > ymax) ymax = v;
+            }
+            if (!isFinite(ymin) || !isFinite(ymax)) { ymin = -1; ymax = 1; }
+            if (ymax - ymin < 0.5) { const m = (ymin + ymax) / 2; ymin = m - 0.25; ymax = m + 0.25; }
+            // pad y
+            const yPad = (ymax - ymin) * 0.08;
+            ymin -= yPad; ymax += yPad;
+
+            const xToPx = (t) => padL + (t / state.dur) * plotW;
+            const yToPx = (v) => padT + (1 - (v - ymin) / (ymax - ymin)) * plotH;
+
+            // Grid — ECG-style "small square" feel
+            const gridStyleMinor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim() || 'rgba(255,255,255,0.05)';
+            const gridStyleMajor = getComputedStyle(document.documentElement).getPropertyValue('--grid-strong').trim() || 'rgba(255,255,255,0.1)';
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = gridStyleMinor;
+            ctx.beginPath();
+            const tMinor = 0.04, tMajor = 0.2; // s
+            for (let t = 0; t <= state.dur + 1e-9; t += tMinor) {
+                const x = xToPx(t);
+                ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH);
+            }
+            const vRange = ymax - ymin;
+            const vMinor = 0.1, vMajor = 0.5;
+            const vStart = Math.floor(ymin / vMinor) * vMinor;
+            for (let v = vStart; v <= ymax + 1e-9; v += vMinor) {
+                const y = yToPx(v);
+                ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y);
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = gridStyleMajor;
+            ctx.beginPath();
+            for (let t = 0; t <= state.dur + 1e-9; t += tMajor) {
+                const x = xToPx(t);
+                ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH);
+            }
+            const vStart2 = Math.floor(ymin / vMajor) * vMajor;
+            for (let v = vStart2; v <= ymax + 1e-9; v += vMajor) {
+                const y = yToPx(v);
+                ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y);
+            }
+            ctx.stroke();
+
+            // Axes labels
+            const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#8b90a3';
+            ctx.fillStyle = axisColor;
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.textBaseline = 'top';
+            // x ticks every 1 s (or finer if dur small)
+            const xTick = state.dur <= 5 ? 0.5 : 1;
+            for (let t = 0; t <= state.dur + 1e-9; t += xTick) {
+                const x = xToPx(t);
+                ctx.textAlign = 'center';
+                ctx.fillText(t.toFixed(xTick < 1 ? 1 : 0) + 's', x, padT + plotH + 6);
+            }
+            // y ticks at major
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let v = vStart2; v <= ymax + 1e-9; v += vMajor) {
+                const y = yToPx(v);
+                ctx.fillText(v.toFixed(1) + ' mV', padL - 6, y);
+            }
+
+            // Clean overlay
+            if (state.showClean) {
+                const cleanColor = getComputedStyle(document.documentElement).getPropertyValue('--clean').trim() || '#58a6ff';
+                ctx.strokeStyle = cleanColor;
+                ctx.globalAlpha = 0.55;
+                ctx.lineWidth = 1.1;
+                ctx.beginPath();
+                drawPoly(ctx, data.clean, data.N, state.dur, xToPx, yToPx);
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
+            // Noisy trace
+            const traceColor = getComputedStyle(document.documentElement).getPropertyValue('--trace').trim() || '#7be089';
+            ctx.strokeStyle = traceColor;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            drawPoly(ctx, data.noisy, data.N, state.dur, xToPx, yToPx);
+            ctx.stroke();
+        }
+
+        function drawPoly(ctx, arr, N, dur, xToPx, yToPx) {
+            // Downsample to ~2 px per sample max
+            const rect = canvas.getBoundingClientRect();
+            const targetPts = Math.min(N, Math.round(rect.width * 2));
+            const step = Math.max(1, Math.floor(N / targetPts));
+            let first = true;
+            for (let i = 0; i < N; i += step) {
+                const t = (i / (N - 1)) * dur;
+                const x = xToPx(t);
+                const y = yToPx(arr[i]);
+                if (first) { ctx.moveTo(x, y); first = false; }
+                else ctx.lineTo(x, y);
+            }
+        }
+
+        // ─── Update pipeline ───────────────────────────────────────────────────
+        function update() {
+            lastData = synthesize();
+            draw(lastData);
+            // readouts
+            document.getElementById('roHR').textContent = state.hr + ' bpm';
+            document.getElementById('roDur').textContent = state.dur.toFixed(1) + ' s';
+            document.getElementById('roFs').textContent = state.fs + ' Hz';
+            document.getElementById('roN').textContent = lastData.N.toLocaleString();
+            const snrText = isFinite(lastData.snr) ? (lastData.snr.toFixed(1) + ' dB') : '— dB';
+            document.getElementById('roSNR').textContent = snrText;
+        }
+
+        // ─── Hook up controls ──────────────────────────────────────────────────
+        const SLIDERS = [
+            ['hr',  'hr',  v => v.toFixed(0) + ' bpm'],
+            ['dur', 'dur', v => v.toFixed(1) + ' s'],
+            ['fs',  'fs',  v => v.toFixed(0) + ' Hz'],
+            ['amp', 'amp', v => v.toFixed(2) + ' mV'],
+            ['hrv', 'hrv', v => v.toFixed(0) + ' %'],
+            ['bw',  'bw',  v => v.toFixed(2) + ' mV'],
+            ['bwf', 'bwf', v => v.toFixed(2) + ' Hz'],
+            ['emg', 'emg', v => v.toFixed(2) + ' mV'],
+            ['pl',  'pl',  v => v.toFixed(3) + ' mV'],
+            ['plh', 'plh', v => v.toFixed(2)],
+            ['pop', 'pop', v => v.toFixed(2) + ' /s'],
+            ['wht', 'wht', v => v.toFixed(3) + ' mV'],
+        ];
+
+        function labelEl(id) {
+            return document.getElementById('v' + id.charAt(0).toUpperCase() + id.slice(1));
+        }
+
+        SLIDERS.forEach(([id, key, fmt]) => {
+            const el = document.getElementById(id);
+            const label = labelEl(id);
+            if (label) label.textContent = fmt(state[key]);
+            el.addEventListener('input', () => {
+                state[key] = parseFloat(el.value);
+                if (label) label.textContent = fmt(state[key]);
+                clearActivePreset();
+                update();
+            });
+        });
+
+        function setPlFreq(f) {
+            state.plFreq = f;
+            document.querySelectorAll('#plFreq button').forEach(b => {
+                b.classList.toggle('active', parseFloat(b.dataset.f) === f);
+            });
+        }
+        document.querySelectorAll('#plFreq button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setPlFreq(parseFloat(btn.dataset.f));
+                clearActivePreset();
+                update();
+            });
+        });
+
+        // ─── Presets ───────────────────────────────────────────────────────────
+        const PRESETS = [
+            { id: 'clean',      name: 'Clean reference',   sub: 'textbook',        cfg: { hr: 70,  dur: 10, fs: 500, amp: 1.20, hrv: 3,  bw: 0.02, bwf: 0.20, emg: 0.005, plFreq: 50, pl: 0.003, plh: 0.2, pop: 0.00, wht: 0.005 } },
+            { id: 'resting',    name: 'Resting adult',     sub: 'clinic',          cfg: { hr: 72,  dur: 10, fs: 500, amp: 1.20, hrv: 5,  bw: 0.10, bwf: 0.25, emg: 0.03,  plFreq: 50, pl: 0.015, plh: 0.3, pop: 0.05, wht: 0.010 } },
+            { id: 'ambulatory', name: 'Ambulatory Holter', sub: 'walking',         cfg: { hr: 86,  dur: 10, fs: 500, amp: 1.15, hrv: 9,  bw: 0.28, bwf: 0.40, emg: 0.06,  plFreq: 50, pl: 0.020, plh: 0.3, pop: 0.15, wht: 0.015 } },
+            { id: 'exercise',   name: 'Exercise / stress', sub: 'treadmill',       cfg: { hr: 150, dur: 8,  fs: 500, amp: 1.00, hrv: 12, bw: 0.45, bwf: 0.80, emg: 0.18,  plFreq: 50, pl: 0.025, plh: 0.3, pop: 0.30, wht: 0.020 } },
+            { id: 'mains',      name: 'Mains-coupled',     sub: '50 hz dominated', cfg: { hr: 72,  dur: 10, fs: 500, amp: 1.20, hrv: 4,  bw: 0.05, bwf: 0.30, emg: 0.02,  plFreq: 50, pl: 0.200, plh: 0.6, pop: 0.00, wht: 0.010 } },
+            { id: 'loose',      name: 'Loose electrode',   sub: 'popping',         cfg: { hr: 70,  dur: 12, fs: 500, amp: 1.00, hrv: 5,  bw: 0.35, bwf: 0.30, emg: 0.04,  plFreq: 50, pl: 0.020, plh: 0.2, pop: 0.80, wht: 0.020 } },
+            { id: 'brady',      name: 'Bradycardia',       sub: '42 bpm',          cfg: { hr: 42,  dur: 12, fs: 500, amp: 1.30, hrv: 4,  bw: 0.10, bwf: 0.20, emg: 0.02,  plFreq: 50, pl: 0.015, plh: 0.3, pop: 0.05, wht: 0.010 } },
+            { id: 'tachy',      name: 'Tachycardia',       sub: '155 bpm',         cfg: { hr: 155, dur: 8,  fs: 500, amp: 1.00, hrv: 6,  bw: 0.10, bwf: 0.40, emg: 0.06,  plFreq: 50, pl: 0.020, plh: 0.3, pop: 0.05, wht: 0.015 } },
+        ];
+
+        function clearActivePreset() {
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+        }
+
+        function applyPreset(preset) {
+            const cfg = preset.cfg;
+            // Apply numeric sliders
+            SLIDERS.forEach(([id, key, fmt]) => {
+                if (cfg[key] === undefined) return;
+                state[key] = cfg[key];
+                const el = document.getElementById(id);
+                el.value = cfg[key];
+                const label = labelEl(id);
+                if (label) label.textContent = fmt(cfg[key]);
+            });
+            // Powerline frequency segmented control
+            if (cfg.plFreq !== undefined) setPlFreq(cfg.plFreq);
+            // Highlight
+            clearActivePreset();
+            const btn = document.querySelector(`.preset-btn[data-preset="${preset.id}"]`);
+            if (btn) btn.classList.add('active');
+            update();
+        }
+
+        (function buildPresetButtons() {
+            const grid = document.getElementById('presetGrid');
+            PRESETS.forEach(p => {
+                const b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'preset-btn';
+                b.dataset.preset = p.id;
+                b.innerHTML = `<span class="pt-name">${p.name}</span><span class="pt-sub">${p.sub}</span>`;
+                b.addEventListener('click', () => applyPreset(p));
+                grid.appendChild(b);
+            });
+        })();
+
+        document.getElementById('showClean').addEventListener('change', (e) => {
+            state.showClean = e.target.checked;
+            update();
+        });
+
+        document.getElementById('reseed').addEventListener('click', () => {
+            state.seed = (Math.random() * 0xFFFFFFFF) >>> 0;
+            update();
+        });
+
+        function downloadBlob(content, mime, filename) {
+            const blob = new Blob([content], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function fileStamp(ext) {
+            const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            return `ecg_${state.hr}bpm_${state.fs}Hz_${state.dur.toFixed(1)}s_${ts}.${ext}`;
+        }
+
+        document.getElementById('download').addEventListener('click', () => {
+            if (!lastData) return;
+            const { clean, noise, noisy, N, fs } = lastData;
+            const lines = ['time_s,ecg_mV,ecg_clean_mV,noise_mV'];
+            const dt = 1 / fs;
+            for (let i = 0; i < N; i++) {
+                lines.push(
+                    (i * dt).toFixed(6) + ',' +
+                    noisy[i].toFixed(6) + ',' +
+                    clean[i].toFixed(6) + ',' +
+                    noise[i].toFixed(6)
+                );
+            }
+            downloadBlob(lines.join('\n'), 'text/csv;charset=utf-8', fileStamp('csv'));
+        });
+
+        // Multisim piecewise-linear source expects an ASCII file with one
+        // "<time_seconds> <voltage_volts>" pair per line, monotonically
+        // increasing in time and in SI units. The waveform is emitted in
+        // volts (mV / 1000) so it can be consumed directly by a PWL source.
+        document.getElementById('downloadTxt').addEventListener('click', () => {
+            if (!lastData) return;
+            const { noisy, N, fs } = lastData;
+            const dt = 1 / fs;
+            const lines = [
+                '* NI Multisim piecewise-linear voltage source',
+                `* Generated by ECG simulator — ${new Date().toISOString()}`,
+                `* Heart rate: ${state.hr} bpm   Duration: ${state.dur.toFixed(2)} s   Fs: ${state.fs} Hz   Samples: ${N}`,
+                '* Columns: time (s)  voltage (V)',
+            ];
+            for (let i = 0; i < N; i++) {
+                const v = noisy[i] * 1e-3; // mV → V
+                lines.push((i * dt).toExponential(9) + '  ' + v.toExponential(9));
+            }
+            downloadBlob(lines.join('\n') + '\n', 'text/plain;charset=utf-8', fileStamp('txt'));
+        });
+
+        // ─── Boot ──────────────────────────────────────────────────────────────
+        window.addEventListener('resize', () => { resizeCanvas(); if (lastData) draw(lastData); });
+        // Re-draw on theme toggle (theme.js swaps data-theme)
+        const themeObserver = new MutationObserver(() => { if (lastData) draw(lastData); });
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        resizeCanvas();
+        update();
+    })();
+    </script>
+</body>
+</html>

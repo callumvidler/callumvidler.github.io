@@ -2,6 +2,24 @@
    Global light-mode overrides — shared across all pages
    ══════════════════════════════════════════════════════════ */
 
+:root {
+    --site-accent: #2898BD;
+    --site-accent-2: #42B2D7;
+    --site-on-accent: #0a0a10;
+    --site-accent-soft: color-mix(in srgb, var(--site-accent) 6%, transparent);
+    --site-accent-soft-faint: color-mix(in srgb, var(--site-accent) 4%, transparent);
+    --site-accent-soft-edge: color-mix(in srgb, var(--site-accent) 22%, transparent);
+}
+
+[data-theme="light"] {
+    --site-accent: #0e7490;
+    --site-accent-2: #0D6C88;
+    --site-on-accent: #ffffff;
+    --site-accent-soft: color-mix(in srgb, var(--site-accent) 6%, transparent);
+    --site-accent-soft-faint: color-mix(in srgb, var(--site-accent) 4%, transparent);
+    --site-accent-soft-edge: color-mix(in srgb, var(--site-accent) 22%, transparent);
+}
+
 /* ─── Light-mode body ─── */
 [data-theme="light"] body {
     background: #f5f5f7;

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Sallen-Key Filters</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="sallen_key_filters_JS/sallen_key_filters.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 8</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 8 · SALLEN-KEY FILTERS</div>
+            <h1 class="hero">A second-order response from a <em>single op-amp</em>.</h1>
+            <p class="sub">A two-stage passive RC cascade is degraded by interstage loading. Buffering
+                each stage restores the ideal product but adds one op-amp per stage. The Sallen-Key
+                topology produces the same second-order response, with adjustable damping, from a
+                single op-amp.</p>
+            <div class="tags">
+                <span class="field-tag">passive cascade</span>
+                <span class="field-tag">buffered cascade</span>
+                <span class="field-tag">Sallen-Key</span>
+                <span class="field-tag">complex poles</span>
+                <span class="field-tag">Q tuning</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · WHAT IS Q ================= -->
+    <section class="scene" id="sec-q">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the Q parameter</span></div>
+            <h2>The quality factor and <em class="active">second-order damping</em></h2>
+
+            <p class="lead">Every second-order low-pass on this page reduces to a standard form with
+                natural frequency $\omega_0$ and quality factor $Q$:</p>
+
+            <div class="eq-block">$$H(s) \;=\; \frac{1}{\dfrac{s^{2}}{\omega_0^{\,2}}
+                \;+\; \dfrac{s}{Q\,\omega_0} \;+\; 1}.$$</div>
+
+            <p>$\omega_0$ sets the corner frequency. $Q$ sets the response shape near the corner. The
+                two parameters are independent: $\omega_0$ is fixed first, then $Q$ is chosen to trade
+                passband flatness against settling time and transition sharpness.</p>
+
+            <h3>Pole locations.</h3>
+            <p>The denominator factors to give the pole pair</p>
+
+            <div class="eq-block">$$s \;=\; -\,\frac{\omega_0}{2Q}
+                \;\pm\; j\,\omega_0\sqrt{\,1 - \frac{1}{4Q^{2}}\,}.$$</div>
+
+            <p>The pair lies on a circle of radius $\omega_0$ for every $Q$; the angle off the negative
+                real axis is set by $Q$. Three regimes follow:</p>
+
+            <ul class="bullets">
+                <li><b>Q &lt; 1/2 · overdamped.</b> Both poles are real and lie on the negative real
+                    axis. The response settles monotonically and the slower pole dominates.</li>
+                <li><b>Q = 1/2 · critically damped.</b> The poles coincide at $s = -\omega_0$. This is
+                    the fastest monotonic response; lower damping introduces overshoot, higher damping
+                    slows the response.</li>
+                <li><b>Q &gt; 1/2 · underdamped.</b> The poles form a complex conjugate pair on
+                    $|s| = \omega_0$. As the pair approaches the imaginary axis, the magnitude peak
+                    grows and the time-domain ringing persists for longer.</li>
+            </ul>
+
+            <h3>Time-domain response.</h3>
+            <p>The right panel shows the response to a unit step. Three quantities summarise the
+                underdamped case, with $\zeta = 1/(2Q)$:</p>
+
+            <ul class="bullets">
+                <li><b>Overshoot.</b> $M_p = \exp\!\bigl(-\pi\zeta/\sqrt{1-\zeta^{2}}\bigr)$. At
+                    $Q = 1/\sqrt{2}$, $M_p \approx 4\%$; at $Q = 2$, $M_p \approx 44\%$.</li>
+                <li><b>Ringing frequency.</b> $\omega_d = \omega_0\sqrt{1 - \zeta^{2}}$, which
+                    approaches $\omega_0$ for large $Q$.</li>
+                <li><b>Decay envelope.</b> $e^{-\zeta\omega_0 t}$, set by the real part of the pole.
+                    The envelope decays more slowly as $Q$ grows.</li>
+            </ul>
+
+            <p>The slider drives both panels. Reference values used later: $Q = 0.5$ (passive cascade
+                limit), $Q = 1/\sqrt{3} \approx 0.58$ (Bessel), $Q = 1/\sqrt{2} \approx 0.71$
+                (Butterworth), and $Q > 1$ (Chebyshev, peaking).</p>
+
+            <div class="callout">
+                The same $Q$ governs the time-domain overshoot and the frequency-domain magnitude
+                peak. At $Q = 2$ the magnitude peaks near $\omega_0$ by about $6\,\text{dB}$ and the
+                step overshoot is $44\%$. Both descriptions reflect the same pole pair.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">Q</span>
+                        <input type="range" id="q-intro-slider" min="-1" max="0.7" step="0.01" value="0">
+                        <span class="val" id="q-intro-val">1.00</span>
+                    </span>
+                </div>
+                <div class="regime-readout"><b id="q-intro-regime">underdamped · complex conjugate pair · ringing</b></div>
+                <div class="plot-row">
+                    <div class="plot-box splane">
+                        <div class="label">s-plane · <b>pole pair on |s| = ω0</b></div>
+                        <svg class="bode" id="plot-splane-q"></svg>
+                    </div>
+                    <div class="plot-box step">
+                        <div class="label">step response · <b>y(t) for a unit step</b></div>
+                        <svg class="bode" id="plot-step-q"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · PASSIVE CASCADE ================= -->
+    <section class="scene" id="sec-passive">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>passive cascade</span></div>
+            <h2><em class="passive">Interstage loading</em> in a passive RC cascade</h2>
+
+            <p class="lead">Cascading two first-order RC sections is the simplest way to obtain a
+                steeper roll-off. If the stages were isolated, the transfer function would be
+                $1/(1+sRC)^{2}$, with a $-40\,\text{dB/decade}$ asymptote and a repeated pole at
+                $s = -1/RC$. In practice the second stage draws current from the first capacitor and
+                the isolation assumption fails.</p>
+
+            <p>Solving the two-node network with $R_1 = R_2 = R$ and $C_1 = C_2 = C$:</p>
+
+            <div class="eq-block">$$H_{\text{loaded}}(s) \;=\; \frac{1}{1 + 3sRC + s^{2}R^{2}C^{2}},$$</div>
+
+            <p>against the ideal product</p>
+
+            <div class="eq-block">$$H_{\text{ideal}}(s) \;=\; \frac{1}{(1+sRC)^{2}}
+                \;=\; \frac{1}{1 + 2sRC + s^{2}R^{2}C^{2}}.$$</div>
+
+            <p>The middle coefficient increases from $2$ to $3$. The repeated pole at $s = -1/RC$
+                splits into two real poles at $s = (-3 \pm \sqrt{5})/(2RC)$, approximately
+                $-0.382/RC$ and $-2.618/RC$. The slow pole pulls the passband edge inward; the fast
+                pole moves outward but does not compensate.</p>
+
+            <h3>Bound on the corner sharpness.</h3>
+            <p>Any second-order all-pole RC network has a quality factor bounded by</p>
+
+            <div class="eq-block">$$Q \;\le\; \tfrac{1}{2}.$$</div>
+
+            <p>The bound is reached by a coincident real pole pair, i.e. the ideal product above.
+                Loading reduces $Q$ further, so the passband sags well before the cutoff: at
+                $\omega = 1/RC$ the magnitude has already fallen below $-6\,\text{dB}$. A sharper
+                corner requires complex conjugate poles, which a purely RC network cannot produce.</p>
+
+            <div class="callout">
+                The plot shows the loaded response (red) against the ideal product (blue). The ideal
+                curve is itself softer than Butterworth, since two coincident real poles already give
+                $Q = \tfrac{1}{2}$. The loaded curve lies below it across the passband.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="circuit-box">
+                    <svg class="circuit" id="circuit-passive" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet"></svg>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>loaded passive 2RC vs ideal product</b></div>
+                    <svg class="bode" id="plot-bode-passive"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · BUFFERED ACTIVE CASCADE ================= -->
+    <section class="scene" id="sec-buffered">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>buffered active cascade</span></div>
+            <h2>The <em class="buffered">buffered RC cascade</em></h2>
+
+            <p class="lead">An ideal voltage follower has infinite input impedance and zero output
+                impedance. Inserting one between the RC sections forces the input current of the
+                second stage to zero, so the first stage's output is independent of the load. The
+                product rule then holds exactly:</p>
+
+            <div class="eq-block">$$H_{\text{buffered}}(s) \;=\; \frac{1}{(1+sRC)^{2}}.$$</div>
+
+            <p>This is the ideal product from the previous section. The asymptotic roll-off is
+                $-40\,\text{dB/decade}$ and the $-3\,\text{dB}$ frequency is
+                $\omega_{-3} = \omega_{c}\sqrt{2^{1/2} - 1} \approx 0.64\,\omega_{c}$. The passband no
+                longer sags.</p>
+
+            <h3>Cost of the buffer.</h3>
+            <p>A second-order section now contains <strong>two op-amps</strong>: one buffer between
+                the stages and a second at the output. The active device count scales linearly with
+                order. The composite transfer function is still a product of coincident real poles,
+                so the corner remains soft ($Q = \tfrac{1}{2}$) regardless of order. The buffered
+                cascade restores the ideal product but does not sharpen the corner.</p>
+
+            <div class="callout">
+                The plot compares the buffered cascade (blue) against the passive baseline (faded
+                red). The buffered curve coincides with the ideal product. The hardware difference is
+                one op-amp per interstage boundary, with its supply and bias network.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="circuit-box">
+                    <svg class="circuit" id="circuit-buffered-cascade" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet"></svg>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>buffered cascade vs passive</b></div>
+                    <svg class="bode" id="plot-bode-buffered"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · SALLEN-KEY ================= -->
+    <section class="scene" id="sec-circuit">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the Sallen-Key topology</span></div>
+            <h2>The <em class="active">Sallen-Key low-pass</em> topology</h2>
+
+            <p class="lead">The Sallen-Key low-pass retains the two resistors and two capacitors of
+                the passive network and adds one op-amp wired as a unity-gain buffer at the output.
+                The structural change is the routing of $C_1$, which now connects from internal node
+                $A$ to $V_{\text{out}}$ rather than to ground. At low frequency $C_1$ is effectively
+                open and the network reduces to the passive cascade. At high frequency $C_1$ is a
+                short, feeding the op-amp output back into node $A$.</p>
+
+            <p>The feedback is positive: the op-amp drives node $A$ in the same direction as
+                $V_{\text{in}}$. Its strength, set by $C_1$, cancels the loading interaction of the
+                passive cascade and places a complex pole pair. The same op-amp also provides the
+                output buffering, so a single device performs both isolation and pole placement where
+                the buffered cascade required two.</p>
+
+            <h3>Transfer function.</h3>
+            <p>Applying KCL at node $A$ and at $V_{+}$, with $V_{\text{out}} = V_{+}$ for the
+                unity-gain buffer:</p>
+
+            <div class="eq-block">$$H(s) \;=\; \frac{V_{\text{out}}(s)}{V_{\text{in}}(s)}
+                \;=\; \frac{1}{1 + sC_2(R_1+R_2) + s^{2}\,R_1 R_2 C_1 C_2}.$$</div>
+
+            <p>Matching the standard form
+                $H(s) = 1\big/\bigl(s^{2}/\omega_0^{2} + s/(Q\omega_0) + 1\bigr)$ gives</p>
+
+            <div class="eq-block">$$\omega_0 = \frac{1}{\sqrt{R_1 R_2 C_1 C_2}},
+                \qquad Q = \frac{\sqrt{R_1 R_2 C_1 C_2}}{C_2(R_1+R_2)}.$$</div>
+
+            <p>Setting $R_1 = R_2 = R$ reduces this to
+                $\omega_0 = 1\big/\bigl(R\sqrt{C_1 C_2}\bigr)$ and
+                $Q = \tfrac{1}{2}\sqrt{C_1/C_2}$. $\omega_0$ is fixed by the geometric mean of the
+                capacitors and $Q$ by their ratio. Feedback through $C_1$ removes the
+                $Q \le \tfrac{1}{2}$ constraint of the passive cascade, so $Q$ can take any value in
+                the standard range.</p>
+
+            <h3>Comparison.</h3>
+            <p>The plot overlays three responses with $\omega_0 = 1\,\text{rad/s}$: the loaded
+                passive cascade, the buffered cascade $1/(1+sRC)^{2}$, and a Sallen-Key tuned to
+                $Q = 1/\sqrt{2}$ (Butterworth). The Sallen-Key trace stays flat past the corner where
+                the buffered cascade has already dropped, then rolls off at the same
+                $-40\,\text{dB/decade}$. A single op-amp produces a sharper corner than two op-amps
+                in the buffered topology.</p>
+
+            <div class="callout">
+                The passive network is rearranged, not extended. The single positive-feedback path
+                through $C_1$ is the only structural difference from the buffered cascade of section
+                03, and is responsible for both the impedance isolation and the placement of the
+                complex pole pair.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="circuit-box">
+                    <svg class="circuit" id="circuit-sk" viewBox="0 0 720 320" preserveAspectRatio="xMidYMid meet"></svg>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>passive vs buffered vs Sallen-Key</b></div>
+                    <svg class="bode" id="plot-bode-compare"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · TUNING Q ================= -->
+    <section class="scene" id="sec-tuning">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>tuning the response</span></div>
+            <h2>Tuning Q via the capacitor ratio</h2>
+
+            <p class="lead">With $R_1 = R_2 = R$ and $\omega_0 = 1\,\text{rad/s}$ fixed, the
+                capacitors satisfy $C_1 C_2 = 1/(R^{2}\omega_0^{2})$. Sweeping the ratio $C_1/C_2$
+                moves the pole pair along a vertical line in the s-plane, varying $Q$ without
+                changing $\omega_0$.</p>
+
+            <p>The plot shows the Sallen-Key response (amber) against three reference responses:</p>
+
+            <ul class="bullets">
+                <li><b>Passive 2-stage RC</b> (red). The loaded baseline from section 02. Equivalent
+                    $Q = 1/3$ at $\omega_0 = 1\,\text{rad/s}$; the response sags well before the
+                    cutoff and rolls off softly.</li>
+                <li><b>Bessel</b> ($Q = 0.577$, green). Maximally flat group delay, no time-domain
+                    overshoot. Used where waveform shape must be preserved, e.g. in ECG and EMG
+                    front-ends.</li>
+                <li><b>Butterworth</b> ($Q = 1/\sqrt{2} \approx 0.707$, blue). Maximally flat
+                    magnitude. Standard choice for anti-alias and reconstruction filtering.</li>
+                <li><b>Chebyshev / peaking</b> ($Q > 1$, purple). A peak above unity at the corner,
+                    in exchange for a sharper transition into the stopband.</li>
+            </ul>
+
+            <p>The slider sets the Sallen-Key $Q$. At $Q = 0.5$ the curve coincides with the
+                buffered cascade of section 03, since both have coincident real poles. Increasing
+                $Q$ flattens the passband and then introduces a peak. A single topology realises all
+                three classical responses, with the capacitor ratio as the only distinguishing
+                parameter.</p>
+
+            <div class="callout">
+                The $-3\,\text{dB}$ frequency stays near $\omega_0$ across the Bessel-to-Butterworth
+                range and departs as $Q$ exceeds unity. For Butterworth the $-3\,\text{dB}$ point is
+                exactly $\omega_0$; for Chebyshev the corner is defined by the passband ripple
+                specification rather than the half-power point.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">Q (Sallen-Key)</span>
+                        <input type="range" id="q-slider" min="-0.30103" max="0.69897" step="0.01" value="-0.15">
+                        <span class="val" id="q-val">0.71</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill active" id="show-passive">passive cascade</span>
+                    <span class="pill active" id="show-references">Bessel / Butterworth / Cheby</span>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>Sallen-Key vs reference responses</b></div>
+                    <svg class="bode" id="plot-bode-sk"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="sallen_key_filters_JS/katex_label.js"></script>
+    <script defer src="sallen_key_filters_JS/bode_helpers.js"></script>
+    <script defer src="sallen_key_filters_JS/q_intro.js"></script>
+    <script defer src="sallen_key_filters_JS/circuit_passive_cascade.js"></script>
+    <script defer src="sallen_key_filters_JS/bode_passive_cascade.js"></script>
+    <script defer src="sallen_key_filters_JS/circuit_buffered_cascade.js"></script>
+    <script defer src="sallen_key_filters_JS/bode_buffered_cascade.js"></script>
+    <script defer src="sallen_key_filters_JS/circuit_sk.js"></script>
+    <script defer src="sallen_key_filters_JS/bode_compare.js"></script>
+    <script defer src="sallen_key_filters_JS/bode_sk.js"></script>
+</body>
+
+</html>

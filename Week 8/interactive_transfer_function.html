@@ -1,0 +1,3307 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Interactive Transfer Function</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../theme.css">
+    <style>
+        :root {
+            --bg: #0a0a10;
+            --bg-2: #12131c;
+            --bg-panel: rgba(22, 23, 32, 0.75);
+            --fg: #eef0f5;
+            --text: #eef0f5;
+            --text-dim: #d4d7e0;
+            --muted: #8b90a3;
+            --time: #7be089;
+            --accent: var(--site-accent);
+            --on-accent: var(--site-on-accent);
+            --pole: #ff5c7a;
+            --zero: #58a6ff;
+            --probe: #ffcf5c;
+            --complex-result: #a78bfa;
+            --grid: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.09);
+            --border-hover: rgba(255, 255, 255, 0.18);
+            /* Semantic alpha overlays composed from the base colour, so they
+               retrack the theme automatically. */
+            --pole-soft: color-mix(in srgb, var(--pole) 6%, transparent);
+            --pole-soft-strong: color-mix(in srgb, var(--pole) 12%, transparent);
+            --zero-soft: color-mix(in srgb, var(--zero) 6%, transparent);
+            --zero-soft-strong: color-mix(in srgb, var(--zero) 12%, transparent);
+            --probe-soft: color-mix(in srgb, var(--probe) 5%, transparent);
+            --probe-soft-faint: color-mix(in srgb, var(--probe) 4%, transparent);
+            --probe-soft-edge: color-mix(in srgb, var(--probe) 18%, transparent);
+            --probe-overlay: color-mix(in srgb, var(--probe) 14%, transparent);
+            /* Accent-tinted panel backgrounds for equations and callouts. */
+            --accent-soft: color-mix(in srgb, var(--accent) 6%, transparent);
+            --accent-soft-faint: color-mix(in srgb, var(--accent) 4%, transparent);
+            --accent-soft-edge: color-mix(in srgb, var(--accent) 22%, transparent);
+            --body-size: 17px;
+            --math-size: 18px;
+            --hero-size: 64px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: var(--body-size);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .katex {
+            font-size: var(--math-size) !important;
+        }
+
+        .katex-display {
+            margin: 0.6em 0 !important;
+        }
+
+        .katex-display>.katex {
+            font-size: calc(var(--math-size) * 1.08) !important;
+        }
+
+        h1 .katex,
+        h2 .katex,
+        h3 .katex {
+            font-size: inherit !important;
+        }
+
+        a {
+            color: var(--accent);
+        }
+
+        .brand {
+            position: fixed;
+            top: 20px;
+            left: 24px;
+            z-index: 40;
+            font-size: 12px;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand .mark {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: conic-gradient(var(--pole), var(--zero), var(--accent), var(--pole));
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 12px;
+            right: 60px;
+            z-index: 40;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 14px;
+            border-radius: 999px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            color: var(--fg);
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+            transition: all 0.15s;
+        }
+
+        .back-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        section.scene {
+            min-height: 100vh;
+            padding: 100px 40px 80px;
+            display: grid;
+            grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
+            gap: 28px;
+            align-items: start;
+            position: relative;
+            border-bottom: 1px solid var(--border);
+        }
+
+        section.scene .copy {
+            max-width: 560px;
+        }
+
+        .eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .eyebrow .num {
+            color: var(--accent);
+        }
+
+        .eyebrow .bar {
+            flex: 0 0 28px;
+            height: 1px;
+            background: var(--accent);
+        }
+
+        h1.hero {
+            font-size: var(--hero-size);
+            line-height: 1.02;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+            margin: 0 0 24px;
+        }
+
+        h1.hero em {
+            font-style: normal;
+            background: linear-gradient(135deg, var(--zero), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        h2 {
+            font-size: 36px;
+            line-height: 1.1;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin: 0 0 18px;
+            color: var(--fg);
+        }
+
+        h2 em {
+            font-style: normal;
+        }
+
+        h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin: 22px 0 8px;
+            color: var(--fg);
+            letter-spacing: -0.01em;
+        }
+
+        p {
+            margin: 0 0 14px;
+            color: var(--text-dim);
+        }
+
+        p.lead {
+            font-size: calc(var(--body-size) + 2px);
+            color: var(--fg);
+        }
+
+        p.dim {
+            color: var(--muted);
+        }
+
+        strong {
+            color: var(--fg);
+            font-weight: 600;
+        }
+
+        em.pole {
+            font-style: normal;
+            color: var(--pole);
+        }
+
+        em.zero {
+            font-style: normal;
+            color: var(--zero);
+        }
+
+        em.acc {
+            font-style: normal;
+            color: var(--accent);
+        }
+
+        .eq-block {
+            display: block;
+            margin: 16px 0;
+            padding: 14px 18px;
+            background: var(--accent-soft);
+            border: 1px solid var(--accent-soft-edge);
+            border-radius: 10px;
+            text-align: center;
+            color: var(--fg);
+            overflow-x: auto;
+        }
+
+        .eq-line {
+            display: block;
+            padding: 12px 16px;
+            margin: 12px 0;
+            background: var(--pill-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            color: var(--fg);
+            overflow-x: auto;
+        }
+
+        .callout {
+            margin-top: 18px;
+            padding: 14px 18px;
+            border-left: 2px solid var(--accent);
+            background: var(--accent-soft);
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            color: var(--text-dim);
+            line-height: 1.7;
+        }
+
+        .callout.pole {
+            border-left-color: var(--pole);
+            background: var(--pole-soft);
+        }
+
+        .callout.zero {
+            border-left-color: var(--zero);
+            background: var(--zero-soft);
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 14px;
+            padding: 14px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            backdrop-filter: blur(8px);
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: 130px 1fr 110px;
+            align-items: center;
+            gap: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .control-group label {
+            color: var(--muted);
+        }
+
+        .control-group .control-value {
+            color: var(--accent);
+            text-align: right;
+            font-size: 12px;
+        }
+
+        .control-group input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            width: 100%;
+        }
+
+        .control-group input[type=range]::-webkit-slider-runnable-track {
+            height: 3px;
+            background: var(--slider-track);
+            border-radius: 2px;
+        }
+
+        .control-group input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            margin-top: -5.5px;
+            cursor: grab;
+            border: 2px solid var(--bg);
+        }
+
+        .control-group input[type=range]::-moz-range-track {
+            height: 3px;
+            background: var(--slider-track);
+            border-radius: 2px;
+        }
+
+        .control-group input[type=range]::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 2px solid var(--bg);
+            cursor: grab;
+        }
+
+        .control-group select,
+        .control-group input[type=number] {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--fg);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            width: 100%;
+        }
+
+        .plot-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 100%;
+            max-width: 960px;
+            margin-left: 0;
+            margin-right: auto;
+        }
+
+        .plot-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .plot-row .plot-box {
+            aspect-ratio: 1 / 1;
+        }
+
+        @media (max-width: 700px) {
+            .plot-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .plot-box {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-2);
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .plot-box.square {
+            aspect-ratio: 1 / 1;
+        }
+
+        .plot-box.wide {
+            aspect-ratio: 2.2 / 1;
+        }
+
+        .plot-box svg,
+        .plot-box canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .plot-box .label {
+            position: absolute;
+            top: 10px;
+            left: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .plot-box .label b {
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            color: var(--fg);
+        }
+
+        .plot-box .hint {
+            position: absolute;
+            bottom: 10px;
+            right: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .pz-toolbar {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .pz-toolbar .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--pill-bg);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--text-dim);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            font-size: 10px;
+            transition: all 0.12s;
+        }
+
+        .pz-toolbar .pill:hover {
+            border-color: var(--border-hover);
+            color: var(--fg);
+        }
+
+        .pz-toolbar .pill.active {
+            background: var(--pill-active-bg);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .pz-toolbar .pill.pole.active {
+            background: var(--pole-soft-strong);
+            border-color: var(--pole);
+            color: var(--pole);
+        }
+
+        .pz-toolbar .pill.zero.active {
+            background: var(--zero-soft-strong);
+            border-color: var(--zero);
+            color: var(--zero);
+        }
+
+        .pz-toolbar .pill input[type=checkbox] {
+            accent-color: var(--accent);
+        }
+
+        .pz-toolbar .divider {
+            width: 1px;
+            height: 18px;
+            background: var(--border);
+            margin: 0 4px;
+        }
+
+        .pz-toolbar select {
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--fg);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .legend-row {
+            display: flex;
+            gap: 14px;
+            margin: 12px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            flex-wrap: wrap;
+        }
+
+        .legend-row .lg {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-row .sw {
+            display: inline-block;
+            width: 14px;
+            text-align: center;
+            color: var(--fg);
+            font-weight: 600;
+        }
+
+        .legend-row .sw.p {
+            color: var(--pole);
+        }
+
+        .legend-row .sw.z {
+            color: var(--zero);
+        }
+
+        .legend-row .sw.k {
+            color: var(--probe);
+        }
+
+        .tf-latex {
+            margin: 14px 0;
+            padding: 18px 18px;
+            background: var(--accent-soft-faint);
+            border: 1px solid var(--accent-soft-edge);
+            border-radius: 10px;
+            overflow-x: auto;
+            text-align: center;
+        }
+
+        .tf-latex .caption {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .view-toggle {
+            display: inline-flex;
+            padding: 3px;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .view-toggle button {
+            background: transparent;
+            border: 0;
+            color: var(--muted);
+            padding: 6px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            letter-spacing: inherit;
+            text-transform: inherit;
+            transition: all 0.12s;
+        }
+
+        .view-toggle button.active {
+            background: var(--accent);
+            color: var(--on-accent);
+            font-weight: 600;
+        }
+
+        .breakdown {
+            margin-top: 14px;
+            padding: 14px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .breakdown table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .breakdown th,
+        .breakdown td {
+            text-align: left;
+            padding: 5px 8px;
+            border-bottom: 1px dashed var(--border);
+            color: var(--text-dim);
+        }
+
+        .breakdown th {
+            color: var(--muted);
+            font-weight: 500;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .breakdown tr:last-child td {
+            border-bottom: 0;
+        }
+
+        @media (max-width: 900px) {
+            section.scene {
+                grid-template-columns: 1fr;
+                padding: 80px 24px 60px;
+            }
+
+            h1.hero {
+                font-size: 44px;
+            }
+
+            h2 {
+                font-size: 28px;
+            }
+
+            .back-btn {
+                top: 14px;
+                right: 16px;
+            }
+
+            .brand {
+                top: 16px;
+                left: 16px;
+            }
+
+            .control-group {
+                grid-template-columns: 110px 1fr 80px;
+            }
+        }
+
+        .landing {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 120px 56px 80px;
+            position: relative;
+            text-align: center;
+        }
+
+        .landing .meta {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 32px;
+        }
+
+        .landing h1 {
+            max-width: 22ch;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .landing .sub {
+            color: var(--muted);
+            font-size: 18px;
+            max-width: 64ch;
+            margin: 20px auto 0;
+            line-height: 1.6;
+        }
+
+        .landing .tags {
+            margin-top: 40px;
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .field-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            display: inline-block;
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            color: var(--muted);
+            text-transform: uppercase;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .scroll-hint .line {
+            width: 1px;
+            height: 32px;
+            background: linear-gradient(var(--muted), transparent);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        footer {
+            padding: 60px 56px 80px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* --- D3 plot styling (theme-aware via CSS vars) --- */
+        :root {
+            --axis: rgba(255, 255, 255, 0.35);
+            --grid-line: rgba(255, 255, 255, 0.06);
+            --grid-zero: rgba(255, 255, 255, 0.22);
+            --unit-circle: rgba(255, 255, 255, 0.12);
+            --rhp-shade: color-mix(in srgb, var(--pole) 5%, transparent);
+            --tick-line: rgba(255, 255, 255, 0.18);
+            --domain-line: rgba(255, 255, 255, 0.3);
+            --slider-track: rgba(255, 255, 255, 0.12);
+            --input-bg: rgba(255, 255, 255, 0.04);
+            --pill-bg: rgba(255, 255, 255, 0.03);
+            --pill-active-bg: color-mix(in srgb, var(--accent) 10%, transparent);
+            --dashed-stripe: rgba(255, 255, 255, 0.06);
+            --quad-outline: rgba(0, 0, 0, 0.18);
+        }
+
+        svg.d3plot text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            fill: var(--muted);
+        }
+
+        svg.d3plot .axis-line {
+            stroke: var(--axis);
+            stroke-width: 1;
+        }
+
+        svg.d3plot .grid line {
+            stroke: var(--grid-line);
+            stroke-width: 1;
+        }
+
+        svg.d3plot .grid .zero-line {
+            stroke: var(--grid-zero);
+        }
+
+        svg.d3plot .unit-circle {
+            fill: none;
+            stroke: var(--unit-circle);
+            stroke-dasharray: 2 3;
+        }
+
+        svg.d3plot .rhp-shade {
+            fill: var(--rhp-shade);
+        }
+
+        svg.d3plot .pole {
+            stroke: var(--pole);
+            stroke-width: 2.2;
+        }
+
+        svg.d3plot .zero {
+            stroke: var(--zero);
+            stroke-width: 2;
+            fill: none;
+        }
+
+        svg.d3plot .pz-hit {
+            fill: transparent;
+            cursor: grab;
+        }
+
+        svg.d3plot .pz-hit.dragging {
+            cursor: grabbing;
+        }
+
+        svg.d3plot .vec {
+            stroke-width: 1.4;
+            fill: none;
+        }
+
+        svg.d3plot .vec.p {
+            stroke: var(--pole);
+            opacity: 0.85;
+        }
+
+        svg.d3plot .vec.z {
+            stroke: var(--zero);
+            opacity: 0.85;
+        }
+
+        svg.d3plot .vec-lab {
+            font-size: 11px;
+            fill: var(--text-dim);
+        }
+
+        svg.d3plot .vec.dom {
+            stroke-width: 2.6;
+            opacity: 1;
+        }
+
+        svg.d3plot .vec-len {
+            font-size: 11px;
+            font-family: "JetBrains Mono", monospace;
+            paint-order: stroke fill;
+            stroke: var(--canvas-bg, var(--bg));
+            stroke-width: 3;
+            stroke-linejoin: round;
+        }
+
+        svg.d3plot .vec-arc {
+            fill: none;
+            opacity: 0.8;
+        }
+
+        svg.d3plot .vec-ang {
+            font-size: 10px;
+            font-family: "JetBrains Mono", monospace;
+            paint-order: stroke fill;
+            stroke: var(--canvas-bg, var(--bg));
+            stroke-width: 3;
+            stroke-linejoin: round;
+        }
+
+        svg.d3plot .probe {
+            fill: var(--probe);
+            stroke: var(--bg);
+            stroke-width: 1.5;
+            cursor: ns-resize;
+        }
+
+        svg.d3plot .bode-line {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 1.8;
+        }
+
+        svg.d3plot .bode-line.phase {
+            stroke: var(--zero);
+        }
+
+        svg.d3plot .cursor-line {
+            stroke: var(--probe);
+            stroke-width: 1;
+            stroke-dasharray: 3 3;
+            pointer-events: none;
+        }
+
+        svg.d3plot .axis-label {
+            font-size: 13px;
+            fill: var(--text-dim);
+        }
+
+        svg.d3plot .tick text {
+            fill: var(--muted);
+            font-size: 11px;
+        }
+
+        svg.d3plot .tick line {
+            stroke: var(--tick-line);
+        }
+
+        svg.d3plot .domain {
+            stroke: var(--domain-line);
+        }
+
+        svg.d3plot foreignObject {
+            overflow: visible;
+        }
+
+        svg.d3plot .katex-axis {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: var(--text-dim);
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        svg.d3plot .katex-axis .katex {
+            font-size: 14px;
+        }
+
+        /* --- LIGHT THEME OVERRIDES --- */
+        [data-theme="light"] {
+            --bg: #f5f5f7;
+            --bg-2: #ffffff;
+            --bg-panel: rgba(255, 255, 255, 0.85);
+            --fg: #1a1a1e;
+            --text: #1a1a1e;
+            --text-dim: #333842;
+            --muted: #6a6f7c;
+            --pole: #e11d48;
+            --zero: #1d4ed8;
+            --probe: #c2410c;
+            --accent: var(--site-accent);
+            --on-accent: var(--site-on-accent);
+            --time: #15803d;
+            --complex-result: #7c3aed;
+            --grid: rgba(0, 0, 0, 0.06);
+            --border: rgba(0, 0, 0, 0.12);
+            --border-hover: rgba(0, 0, 0, 0.28);
+            --axis: rgba(0, 0, 0, 0.4);
+            --grid-line: rgba(0, 0, 0, 0.06);
+            --grid-zero: rgba(0, 0, 0, 0.22);
+            --unit-circle: rgba(0, 0, 0, 0.15);
+            --rhp-shade: color-mix(in srgb, var(--pole) 5%, transparent);
+            --tick-line: rgba(0, 0, 0, 0.18);
+            --domain-line: rgba(0, 0, 0, 0.3);
+            --slider-track: rgba(0, 0, 0, 0.12);
+            --input-bg: rgba(0, 0, 0, 0.03);
+            --pill-bg: rgba(0, 0, 0, 0.03);
+            --pill-active-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+            --quad-outline: rgba(255, 255, 255, 0.25);
+        }
+
+        [data-theme="light"] h1.hero em {
+            background: linear-gradient(135deg, var(--zero), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* The .view-toggle button.active rule already uses var(--on-accent),
+           which the light theme overrides above. No additional rule needed. */
+
+        [data-theme="light"] .landing .sub {
+            color: var(--text-dim);
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 8</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 8 · FREQUENCY RESPONSE</div>
+            <h1 class="hero">Interactive <em>transfer function</em>.</h1>
+            <p class="sub">An interactive construction of a rational transfer function from its pole and zero pattern.
+                The first section establishes the correspondence between pole and zero positions and the magnitude
+                response. The second builds $|H(j\omega)|$ from first principles as a product of vector lengths drawn
+                from each zero and pole to the test point, and extends the construction to $|H(s)|$ as a surface over
+                the complex plane. The third decomposes the phase response into the angles those same vectors subtend
+                with the positive real direction. The fourth derives the $-3$ dB definition of the cutoff frequency
+                from the geometry of a first-order low-pass. The fifth takes the high-frequency limit of the same
+                expression, deriving the $-20$ dB/decade asymptotic slope and identifying the corner frequency as the
+                intersection of the passband and rolloff asymptotes.</p>
+            <div class="tags">
+                <span class="field-tag">s-plane</span>
+                <span class="field-tag">bode</span>
+                <span class="field-tag">phase geometry</span>
+                <span class="field-tag">3D magnitude</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 1 — BUILD ================= -->
+    <section class="scene" id="sec-build">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>build &amp; observe</span>
+            </div>
+            <h2><em class="pole">Poles</em>, <em class="zero">zeros</em>, and the magnitude response.</h2>
+            <p class="lead">A rational transfer function is determined to within a scalar gain $K$ by the locations of
+                its zeros $\{z_i\}$ and its poles $\{p_j\}$ in the complex plane:</p>
+            <div class="eq-block">$$H(s) \;=\; K\,\frac{\displaystyle\prod_{i}(s - z_i)}{\displaystyle\prod_{j}(s -
+                p_j)}.$$</div>
+            <p>Poles and zeros are added by clicking inside the $s$-plane in the mode selected above the plot,
+                repositioned by dragging, and removed by right-clicking. The factored and expanded forms of $H(s)$ and
+                the Bode magnitude response are recomputed from the current pole–zero set after every modification.</p>
+
+            <div class="tf-latex">
+                <div class="caption">H(s) &middot; factored</div>
+                <div id="tf-factored"></div>
+                <div class="caption" style="margin-top:12px">H(s) &middot; expanded</div>
+                <div id="tf-expanded"></div>
+            </div>
+
+            <div class="legend-row">
+                <span class="lg"><span class="sw p">×</span>pole</span>
+                <span class="lg"><span class="sw z">◯</span>zero</span>
+                <span class="lg">drag to move &middot; right-click to delete</span>
+            </div>
+
+            <h3>Interpreting the pole–zero pattern.</h3>
+            <p>A pole situated close to the $j\omega$ axis produces a local maximum of $|H(j\omega)|$ at the frequency
+                directly opposite it, because the denominator factor $|j\omega - p_j|$ attains a local minimum at that
+                point. A zero close to the axis produces a local minimum of $|H(j\omega)|$ by the same argument applied
+                to the numerator. A pole in the right-half plane (shaded red) places the corresponding time-domain mode
+                in exponential growth and the system is unstable; the frequency response remains well-defined as an
+                algebraic expression but no longer describes the steady-state response to a sinusoidal input.</p>
+
+            <div class="callout">
+                Load the <em class="acc">2nd-order LP</em> preset and drag the complex-conjugate pair towards the
+                $j\omega$ axis: the peak in $|H(j\omega)|$ sharpens and narrows, consistent with $|j\omega - p_j|$
+                approaching zero at the resonant frequency. Moving either pole into the right-half plane renders the
+                system unstable without otherwise changing the algebraic form of $H(s)$.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="pz-toolbar">
+                    <span class="pill pole active" data-mode="pole" id="mode-pole">×&nbsp;pole</span>
+                    <span class="pill zero" data-mode="zero" id="mode-zero">◯&nbsp;zero</span>
+                    <span class="divider"></span>
+                    <label class="pill" style="cursor:pointer"><input type="checkbox" id="conj-pair" checked> conj
+                        pair</label>
+                    <span class="divider"></span>
+                    <select id="preset-select" title="Preset templates">
+                        <option value="blank">preset…</option>
+                        <option value="lp1">1st-order LP</option>
+                        <option value="hp1">1st-order HP</option>
+                        <option value="lp2">2nd-order LP (&zeta;=0.3)</option>
+                        <option value="notch">notch @ &omega;=3</option>
+                        <option value="bp">bandpass</option>
+                        <option value="integrator">integrator</option>
+                    </select>
+                    <span class="divider"></span>
+                    <span class="pill" id="btn-reset">clear</span>
+                </div>
+
+                <div class="plot-row">
+                    <div class="plot-box" id="splane-wrap">
+                        <div class="label">s-plane</div>
+                        <div class="hint" id="splane-hint">σ=0, jω=0</div>
+                        <svg class="d3plot" id="splane"></svg>
+                    </div>
+                    <div class="plot-box">
+                        <div class="label">bode · <b>|H(jω)| in dB</b></div>
+                        <svg class="d3plot" id="bode-mag"></svg>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>gain $K$</label>
+                        <input type="range" id="k-slider" min="-2" max="2" step="0.01" value="0">
+                        <span class="control-value" id="k-val">1.00</span>
+                    </div>
+                    <div class="control-group">
+                        <label>ω range</label>
+                        <input type="range" id="w-range" min="1" max="4" step="0.1" value="2">
+                        <span class="control-value" id="w-range-val">0.01–100</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 2 — MAGNITUDE GEOMETRY ================= -->
+    <section class="scene" id="sec-magnitude">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>magnitude response</span>
+            </div>
+            <h2>Geometric construction of the <em class="acc">magnitude response</em>.</h2>
+            <p class="lead">Each factor $(j\omega - z_i)$ in the numerator and $(j\omega - p_j)$ in the denominator is a
+                complex number, and any complex number $w$ can be drawn as a vector with length $|w|$ and angle
+                $\arg(w)$. Read this way, $(j\omega - p_j)$ is the vector from the pole $p_j$ to the test point
+                $j\omega$ on the imaginary axis, and likewise for each zero. The magnitude rule for products and
+                quotients of complex numbers, $|ab| = |a||b|$ and $|a/b| = |a|/|b|$, then reads the response off
+                directly:</p>
+            <div class="eq-block">$$|H(j\omega)| \;=\; |K|\,\frac{\displaystyle\prod_{i}|\,j\omega - z_i\,|}{\displaystyle\prod_{j}|\,j\omega - p_j\,|}.$$</div>
+            <p>The magnitude at any frequency is therefore the product of the zero-vector lengths divided by the product
+                of the pole-vector lengths, scaled by the gain. The probe slider moves the test point up the $j\omega$
+                axis; the diagram on the right redraws each vector and writes its length along it. The shortest pole and
+                shortest zero vectors are highlighted because they dominate the local behaviour of $|H|$.</p>
+
+            <h3>Pole near the probe.</h3>
+            <p>When $\omega$ approaches the imaginary part of a pole, the corresponding pole-vector becomes short. Its
+                reciprocal in the denominator is large, so $|H(j\omega)|$ peaks. Pushing the probe past the pole's
+                imaginary part lengthens the vector again, so the peak is local to that frequency.</p>
+
+            <h3>Zero near the probe.</h3>
+            <p>A zero close to the axis produces a short zero-vector when the probe is near it; the numerator drops, so
+                $|H(j\omega)|$ falls into a notch.</p>
+
+            <h3>Probe far from every pole and zero.</h3>
+            <p>When the probe is far from all singularities, every vector length grows roughly like $\omega$. The ratio
+                of the products tends to a fixed power of $\omega$ set by the difference between the number of zeros
+                and the number of poles, giving the high-frequency asymptote of the Bode magnitude.</p>
+
+            <h3>The magnitude surface $|H(s)|$.</h3>
+            <p>The same construction extended off the $j\omega$ axis defines $|H(s)|$ as a surface over the entire
+                complex plane. Poles are points at which the surface diverges, zeros are points at which it vanishes,
+                and the Bode magnitude curve is the <em class="acc">cross-section of this surface along the $j\omega$
+                    axis</em>. Toggle the 3D view below to inspect the surface directly.</p>
+
+            <div class="callout">
+                The Bode magnitude is just this product over quotient evaluated as the probe slides up the $j\omega$
+                axis: peaks appear where a pole-vector becomes short, notches appear where a zero-vector becomes short,
+                and the slope at high frequency is set by how many more poles than zeros remain.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="pz-toolbar">
+                    <span class="pill pole active" data-mode="pole" id="mode-pole-mag">×&nbsp;pole</span>
+                    <span class="pill zero" data-mode="zero" id="mode-zero-mag">◯&nbsp;zero</span>
+                    <span class="divider"></span>
+                    <label class="pill" style="cursor:pointer"><input type="checkbox" id="conj-pair-mag"> conj
+                        pair</label>
+                    <span class="divider"></span>
+                    <span class="pill" id="btn-reset-mag">reset</span>
+                </div>
+
+                <div class="view-toggle" role="tablist">
+                    <button class="active" id="view-2d-mag">2D</button>
+                    <button id="view-3d-mag">3D</button>
+                </div>
+
+                <div class="plot-row">
+                    <div class="plot-box" id="splane-mag-wrap">
+                        <div class="label">s-plane</div>
+                        <div class="hint" id="probe-hint-mag">ω = 1.00</div>
+                        <svg class="d3plot" id="splane-mag"></svg>
+                        <canvas id="surface3d-mag" style="display:none"></canvas>
+                    </div>
+                    <div class="plot-box">
+                        <div class="label">bode · <b>|H(jω)| in dB</b></div>
+                        <svg class="d3plot" id="bode-mag-sec3"></svg>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label>probe ω</label>
+                        <input type="range" id="probe-slider-mag" min="-2" max="2" step="0.001" value="0">
+                        <span class="control-value" id="probe-val-mag">1.00</span>
+                    </div>
+                    <div class="control-group" id="camera-ctrl-mag" style="display:none">
+                        <label>3D cam</label>
+                        <input type="range" id="cam-rot-mag" min="0" max="360" step="1" value="35">
+                        <span class="control-value" id="cam-rot-val-mag">35°</span>
+                    </div>
+                    <div class="control-group" id="camera-ctrl2-mag" style="display:none">
+                        <label>3D tilt</label>
+                        <input type="range" id="cam-tilt-mag" min="10" max="80" step="1" value="35">
+                        <span class="control-value" id="cam-tilt-val-mag">35°</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 3 — PHASE GEOMETRY ================= -->
+    <section class="scene" id="sec-phase">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>phase response</span></div>
+            <h2>Geometric construction of the <em class="acc">phase response</em>.</h2>
+            <p class="lead">Using the same vectors from the previous section, the argument rule for products and
+                quotients, $\arg(ab) = \arg(a) + \arg(b)$ and $\arg(a/b) = \arg(a) - \arg(b)$, gives the phase
+                decomposition</p>
+            <div class="eq-block">$$\angle H(j\omega) \;=\; \sum_i \angle(j\omega - z_i) \;-\; \sum_j \angle(j\omega -
+                p_j).$$</div>
+            <p>Moving the probe along the $j\omega$ axis rotates each vector and changes the angle it subtends with the
+                positive real direction. The diagram on the right marks the angle of each vector with an arc and a
+                signed value, in zero or pole colour. The Bode phase at the probe frequency equals the sum of zero
+                angles minus the sum of pole angles modulo $360°$.</p>
+
+            <div class="callout">
+                As $\omega$ approaches the imaginary part of a pole, the vector angle contributed by that pole sweeps
+                through $90°$, producing a corresponding step in $\angle H(j\omega)$. Integrated from $\omega = 0$ to
+                $\omega = \infty$, each pole contributes a net phase of $-90°$ and each zero contributes $+90°$.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-row">
+                    <div class="plot-box" id="splane2-wrap">
+                        <div class="label">s-plane</div>
+                        <div class="hint" id="probe-hint">ω = 1.00</div>
+                        <svg class="d3plot" id="splane2"></svg>
+                    </div>
+                    <div class="plot-box">
+                        <div class="label">bode · <b>∠H(jω) in degrees</b></div>
+                        <svg class="d3plot" id="bode-phase2"></svg>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>probe ω</label>
+                        <input type="range" id="probe-slider" min="-2" max="2" step="0.001" value="0">
+                        <span class="control-value" id="probe-val">1.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 4 — WHY -3 dB ================= -->
+    <section class="scene" id="sec-cutoff">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the −3 dB cutoff</span></div>
+            <h2>The <em class="acc">$-3$ dB</em> definition of the cutoff frequency.</h2>
+            <p class="lead">A first-order low-pass filter has a single pole at $s = -\omega_c$ on the negative real axis
+                and no finite zeros:</p>
+            <div class="eq-block">$$H(s) = \frac{\omega_c}{s + \omega_c}.$$</div>
+            <p>Evaluated on the $j\omega$ axis, the magnitude is the constant $\omega_c$ divided by the length of the
+                vector from the pole at $-\omega_c$ to the evaluation point $j\omega$:</p>
+            <div class="eq-block">$$|H(j\omega)| \;=\; \frac{\omega_c}{|j\omega - (-\omega_c)|} \;=\;
+                \frac{\omega_c}{\sqrt{\omega_c^{\,2} + \omega^{\,2}}}.$$</div>
+            <p>At $\omega = 0$ the pole-vector is horizontal with length $\omega_c$, so $|H(0)| = 1$ (the 0 dB
+                passband). As $\omega$ increases the vector lengthens monotonically and the magnitude decreases.</p>
+
+            <h3>The geometry at $\omega = \omega_c$.</h3>
+            <p>When $\omega = \omega_c$ the triangle formed by the <em class="pole">pole</em>, the origin, and the
+                evaluation point $j\omega$ is right-isosceles: both legs have length $\omega_c$ and the hypotenuse,
+                equal to the pole-vector length, is therefore $\sqrt{2}\,\omega_c$.</p>
+            <div class="eq-block">$$|H(j\omega_c)| \;=\; \frac{\omega_c}{\sqrt{2}\,\omega_c} \;=\; \frac{1}{\sqrt{2}}.$$
+            </div>
+            <p>In decibels,</p>
+            <div class="eq-block">$$20\log_{10}\!\left(\tfrac{1}{\sqrt{2}}\right) \;=\; -10\log_{10}(2) \;\approx\;
+                -3.01\ \text{dB}.$$</div>
+            <p>The $-3$ dB definition of the cutoff frequency is therefore an algebraic consequence of the squared
+                pole-vector length doubling between $\omega = 0$ and $\omega = \omega_c$. Because $|H|^{\,2}$ is
+                proportional to transmitted power, the same frequency is equivalently termed the <em
+                    class="acc">half-power point</em>: $|H(j\omega_c)|^{\,2} = 1/2$.</p>
+
+            <div class="breakdown" style="margin-top:18px">
+                <table>
+                    <tbody id="d3-readout"></tbody>
+                </table>
+            </div>
+
+            <div class="callout">
+                Setting the probe to $\omega = \omega_c$ (snap button below) places the triangle in its right-isosceles
+                configuration: the angle at the pole equals $45°$, the pole-vector length equals $\sqrt{2}\,\omega_c$,
+                and the magnitude curve intersects the $-3$ dB line at $\omega_c$. The dashed circle of radius
+                $\omega_c$ centred at the origin passes through both the pole at $-\omega_c$ and the point $j\omega_c$,
+                which is the geometric statement of this construction.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-row">
+                    <div class="plot-box" id="splane3-wrap">
+                        <div class="label">s-plane · <b>geometry of |H|</b></div>
+                        <svg class="d3plot" id="splane3"></svg>
+                    </div>
+                    <div class="plot-box" id="bode3-wrap">
+                        <div class="label">bode · <b>|H(jω)| with −3 dB marker</b></div>
+                        <svg class="d3plot" id="bode3"></svg>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>pole $\omega_c$</label>
+                        <input type="range" id="d3-wc" min="0.3" max="3" step="0.01" value="1">
+                        <span class="control-value" id="d3-wc-val">1.00</span>
+                    </div>
+                    <div class="control-group">
+                        <label>probe $\omega$</label>
+                        <input type="range" id="d3-probe" min="-2" max="2" step="0.001" value="0">
+                        <span class="control-value" id="d3-probe-val">1.00</span>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:4px;">
+                        <span id="d3-snap"
+                            style="display:inline-flex; align-items:center; padding:8px 14px; background:var(--pill-active-bg); border:1px solid var(--accent); border-radius:999px; color:var(--accent); cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;">snap
+                            probe to ω = ωc</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 5 — ROLLOFF ================= -->
+    <section class="scene" id="sec-rolloff">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the $-20$ dB/decade
+                    rolloff</span></div>
+            <h2>Why the magnitude falls at <em class="acc">$-20$ dB/decade</em>.</h2>
+            <p class="lead">The pole-vector length expression from the previous section fixes the magnitude of a
+                first-order low-pass at every frequency. Taking the high-frequency limit of that expression shows that,
+                far above $\omega_c$, the Bode plot settles onto a straight line whose slope is exactly $-20$ dB per
+                decade.</p>
+
+            <div class="eq-block">$$|H(j\omega)| \;=\; \frac{\omega_c}{\sqrt{\omega_c^{\,2} + \omega^{\,2}}}.$$</div>
+
+            <h3>High-frequency limit.</h3>
+            <p>For $\omega \gg \omega_c$ the term $\omega_c^{\,2}$ under the square root is negligible, so
+                $\sqrt{\omega_c^{\,2} + \omega^{\,2}} \approx \omega$ and the magnitude collapses to the ratio of the
+                two vertical distances,</p>
+            <div class="eq-block">$$|H(j\omega)| \;\approx\; \frac{\omega_c}{\omega}.$$</div>
+            <p>Geometrically this is the pole-vector from $-\omega_c$ to $j\omega$ becoming dominated by its imaginary
+                leg: once $\omega$ is several times $\omega_c$, the small horizontal offset is negligible and the vector
+                length is essentially $\omega$ itself.</p>
+
+            <h3>Decibels and the slope.</h3>
+            <p>Taking $20\log_{10}$ of both sides converts the ratio into a difference:</p>
+            <div class="eq-block">$$20\log_{10}|H(j\omega)| \;\approx\; 20\log_{10}\omega_c \;-\; 20\log_{10}\omega.$$
+            </div>
+            <p>On a log-frequency axis this is an affine function of $\log_{10}\omega$ with slope $-20$. Multiplying
+                $\omega$ by ten (one decade) subtracts $20$ dB; multiplying $\omega$ by two (one octave) subtracts
+                $20\log_{10}2 \approx 6.02$ dB. The two conventions, $-20$ dB/decade and $-6$ dB/octave, describe the
+                same line.</p>
+
+            <h3>The corner at $\omega = \omega_c$.</h3>
+            <p>The low-frequency asymptote is $|H| = 1$, i.e. $0$ dB. The high-frequency asymptote is $|H| =
+                \omega_c/\omega$. Setting them equal gives $\omega = \omega_c$: the two straight-line segments meet at
+                the same frequency identified in the previous section as the $-3$ dB point. The true magnitude passes
+                $3$ dB below that intersection, since at $\omega = \omega_c$ the exact value is $1/\sqrt{2}$ rather than
+                $1$.</p>
+
+            <h3>Higher-order cascades.</h3>
+            <p>Cascading $n$ identical first-order poles multiplies the magnitudes, so $|H(j\omega)| \propto
+                \omega^{-n}$ at high frequency and the asymptotic slope becomes $-20n$ dB/decade. This is the content of
+                the Bode rule in its simplest form: each real pole contributes $-20$ dB/decade above its break
+                frequency, each real zero contributes $+20$ dB/decade, and the total slope at any $\omega$ is the
+                algebraic sum.</p>
+
+            <div class="breakdown" style="margin-top:18px">
+                <table>
+                    <tbody id="d4-readout"></tbody>
+                </table>
+            </div>
+
+            <div class="callout">
+                The s-plane on the left shows the right triangle whose horizontal leg is $\omega_c$, vertical leg is the
+                probe frequency $\omega$, and hypotenuse is the pole-vector $|j\omega - p|$. As the probe is dragged up
+                the imaginary axis, the hypotenuse approaches the vertical leg in length: that is the geometric content
+                of $|j\omega - p| \approx \omega$ for $\omega \gg \omega_c$. On the right, the dashed accent line is the
+                high-frequency asymptote extrapolated back to the passband; the dashed muted line is the $0$ dB passband
+                extended into the stopband. Their intersection marks $\omega_c$. The true magnitude, drawn solid, hugs
+                the passband asymptote below $\omega_c$, passes $3n$ dB below the corner at $\omega = \omega_c$ for an
+                $n$-pole cascade, and asymptotically merges with the $-20n$ dB/decade line above.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-row">
+                    <div class="plot-box" id="splane4-wrap">
+                        <div class="label">s-plane · <b>pole-vector geometry</b></div>
+                        <svg class="d3plot" id="splane4"></svg>
+                    </div>
+                    <div class="plot-box" id="bode4-wrap">
+                        <div class="label">bode · <b>|H(jω)| with asymptotes</b></div>
+                        <svg class="d3plot" id="bode4"></svg>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <label>corner $\omega_c$</label>
+                        <input type="range" id="d4-wc" min="0.3" max="10" step="0.01" value="1">
+                        <span class="control-value" id="d4-wc-val">1.00</span>
+                    </div>
+                    <div class="control-group">
+                        <label>probe $\omega$</label>
+                        <input type="range" id="d4-probe" min="-1" max="2" step="0.001" value="0.7">
+                        <span class="control-value" id="d4-probe-val">5.01</span>
+                    </div>
+                    <div class="control-group">
+                        <label>order $n$</label>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <span class="order-pill active" data-order="1"
+                                style="display:inline-flex; align-items:center; padding:6px 14px; background:var(--pill-active-bg); border:1px solid var(--accent); border-radius:999px; color:var(--accent); cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;">n
+                                = 1</span>
+                            <span class="order-pill" data-order="2"
+                                style="display:inline-flex; align-items:center; padding:6px 14px; background:var(--pill-bg); border:1px solid var(--border); border-radius:999px; color:var(--text-dim); cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;">n
+                                = 2</span>
+                            <span class="order-pill" data-order="3"
+                                style="display:inline-flex; align-items:center; padding:6px 14px; background:var(--pill-bg); border:1px solid var(--border); border-radius:999px; color:var(--text-dim); cursor:pointer; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;">n
+                                = 3</span>
+                            <input type="range" id="d4-order-slider" min="1" max="10" step="1" value="1"
+                                style="flex:1; min-width:80px; margin-left:8px;">
+                        </div>
+                        <span class="control-value" id="d4-order-val">n = 1</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>2D plots rendered with D3; the 3D magnitude surface rendered on the HTML canvas element. All curves are
+            recomputed from the current pole–zero configuration on every interaction.</p>
+    </footer>
+
+    <script src="../theme.js"></script>
+    <script>
+        /* =====================================================================
+           INTERACTIVE TRANSFER FUNCTION — Week 8
+           ===================================================================== */
+
+        // --- state ----------------------------------------------------------------
+        const state = {
+            poles: [],
+            zeros: [],
+            K: 1,
+            conjPair: true,
+            mode: 'pole',
+            view3D: false,
+            probeOmega: 1,
+            omegaRange: [0.1, 100],
+            camRot: 35,      // yaw (deg)
+            camTilt: 35,     // pitch (deg)
+            _uid: 0,
+        };
+        const uid = () => ++state._uid;
+
+        // --- complex arithmetic ---------------------------------------------------
+        const C = {
+            add: (a, b) => ({ re: a.re + b.re, im: a.im + b.im }),
+            sub: (a, b) => ({ re: a.re - b.re, im: a.im - b.im }),
+            mul: (a, b) => ({ re: a.re * b.re - a.im * b.im, im: a.re * b.im + a.im * b.re }),
+            div: (a, b) => {
+                const d = b.re * b.re + b.im * b.im;
+                return { re: (a.re * b.re + a.im * b.im) / d, im: (a.im * b.re - a.re * b.im) / d };
+            },
+            abs: a => Math.hypot(a.re, a.im),
+            arg: a => Math.atan2(a.im, a.re),
+        };
+
+        // evaluate H(s) given a state object (default: global state)
+        function evalH(s, st = state) {
+            let num = { re: st.K, im: 0 };
+            for (const z of st.zeros) num = C.mul(num, C.sub(s, { re: z.re, im: z.im }));
+            let den = { re: 1, im: 0 };
+            for (const p of st.poles) den = C.mul(den, C.sub(s, { re: p.re, im: p.im }));
+            // avoid hard div-by-zero; inject tiny epsilon to denominator if needed
+            if (den.re === 0 && den.im === 0) den = { re: 1e-12, im: 0 };
+            return C.div(num, den);
+        }
+
+        // auto omega range: spans 0.01*min to 100*max of pole/zero magnitudes
+        function autoOmegaRange(st = state) {
+            const mags = [...st.poles, ...st.zeros]
+                .map(p => Math.max(1e-3, Math.hypot(p.re, p.im)));
+            if (mags.length === 0) return [0.1, 100];
+            const lo = Math.max(1e-3, Math.min(...mags) * 0.05);
+            const hi = Math.max(10, Math.max(...mags) * 20);
+            return [lo, hi];
+        }
+
+        // --- sampling -------------------------------------------------------------
+        function bodeSamples(N = 400, st = state) {
+            const [w0, w1] = st.omegaRange;
+            const lo = Math.log10(w0), hi = Math.log10(w1);
+            const out = [];
+            let prev = null;
+            let acc = 0; // phase-unwrap accumulator in radians
+            for (let k = 0; k < N; k++) {
+                const w = Math.pow(10, lo + (hi - lo) * (k / (N - 1)));
+                const H = evalH({ re: 0, im: w }, st);
+                const mag = C.abs(H);
+                let phi = C.arg(H);
+                if (prev !== null) {
+                    let d = phi - prev;
+                    while (d > Math.PI) { acc -= 2 * Math.PI; d -= 2 * Math.PI; }
+                    while (d < -Math.PI) { acc += 2 * Math.PI; d += 2 * Math.PI; }
+                }
+                prev = phi;
+                const unwrapped = phi + acc;
+                out.push({ w, magDb: 20 * Math.log10(Math.max(1e-30, mag)), phaseDeg: unwrapped * 180 / Math.PI });
+            }
+            return out;
+        }
+
+        // --- palette helpers ------------------------------------------------------
+        // Reads page-local CSS vars (--pole, --zero, --probe, --time, --complex-result)
+        // for the semantic plot colours, and theme.js (window.T) for the shared
+        // canvas/text/grid colours. Called on every render so theme toggles re-colour
+        // immediately via the existing `themechange` listener.
+        const cssVar = (name, fallback) => {
+            const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+            return v || fallback;
+        };
+        const palette = () => ({
+            bg: window.T ? T.canvasBg : cssVar('--bg', '#111111'),
+            text: window.T ? T.text : cssVar('--text', '#eef0f5'),
+            muted: window.T ? T.textMuted : cssVar('--muted', '#888'),
+            grid: window.T ? T.grid : cssVar('--grid', 'rgba(255,255,255,0.08)'),
+            axis: window.T ? T.gridAxis : cssVar('--axis', 'rgba(255,255,255,0.35)'),
+            pole: cssVar('--pole', '#ff5c7a'),
+            zero: cssVar('--zero', '#58a6ff'),
+            probe: cssVar('--probe', '#ffcf5c'),
+            time: cssVar('--time', '#7be089'),
+            complex: cssVar('--complex-result', '#a78bfa'),
+        });
+
+        /**
+         * Place a KaTeX-rendered math label inside an SVG via foreignObject.
+         *  - svg:    a d3 selection wrapping the <svg>
+         *  - cx,cy:  centre of the label box in SVG coords
+         *  - tex:    LaTeX source (no surrounding $)
+         *  - opts:   { width, height, color, fontSize, anchor: 'start'|'middle'|'end',
+         *              vAlign: 'top'|'middle'|'bottom', rotate: deg }
+         * The foreignObject is sized to (width × height) and positioned so the
+         * resolved KaTeX box sits at (cx,cy). overflow:visible on the foreignObject
+         * lets the rendered HTML escape the box if needed without clipping.
+         */
+        function svgKatex(svg, cx, cy, tex, opts = {}) {
+            const fs = opts.fontSize || 14;
+            const color = opts.color || 'var(--text-dim)';
+            const rot = opts.rotate || 0;
+
+            // For rotated labels, use a square foreignObject (no SVG transform on
+            // it, since Safari does not render rotated foreignObject content) and
+            // CSS-rotate an absolutely-centred <span> inside. CSS transforms on
+            // HTML elements inside an unrotated foreignObject render correctly in
+            // every modern browser, so KaTeX is preserved.
+            if (rot) {
+                const w = opts.width || 200;
+                const box = Math.max(w, 80);
+                const fo = svg.append('foreignObject')
+                    .attr('x', cx - box / 2).attr('y', cy - box / 2)
+                    .attr('width', box).attr('height', box)
+                    .style('overflow', 'visible')
+                    .style('pointer-events', 'none');
+                const wrap = fo.append('xhtml:div')
+                    .style('position', 'relative')
+                    .style('width', '100%').style('height', '100%');
+                const span = wrap.append('xhtml:span')
+                    .attr('class', 'katex-axis')
+                    .style('position', 'absolute')
+                    .style('left', '50%').style('top', '50%')
+                    .style('transform', `translate(-50%, -50%) rotate(${rot}deg)`)
+                    .style('transform-origin', 'center center')
+                    .style('white-space', 'nowrap')
+                    .style('color', color)
+                    .style('font-size', fs + 'px')
+                    .style('line-height', '1');
+                const sNode = span.node();
+                if (window.katex) {
+                    try {
+                        window.katex.render(tex, sNode, { throwOnError: false, displayMode: false });
+                    } catch (e) {
+                        sNode.textContent = tex;
+                    }
+                } else {
+                    sNode.textContent = tex;
+                }
+                return fo;
+            }
+
+            const w = opts.width || 200;
+            const h = opts.height || 26;
+            const anchor = opts.anchor || 'middle';
+            const vAlign = opts.vAlign || 'middle';
+            const dx = anchor === 'start' ? 0 : anchor === 'end' ? -w : -w / 2;
+            const dy = vAlign === 'top' ? 0 : vAlign === 'bottom' ? -h : -h / 2;
+            const justify = anchor === 'start' ? 'flex-start' : anchor === 'end' ? 'flex-end' : 'center';
+            const alignI = vAlign === 'top' ? 'flex-start' : vAlign === 'bottom' ? 'flex-end' : 'center';
+            const fo = svg.append('foreignObject')
+                .attr('x', cx + dx).attr('y', cy + dy)
+                .attr('width', w).attr('height', h)
+                .style('overflow', 'visible')
+                .style('pointer-events', 'none');
+            const div = fo.append('xhtml:div')
+                .attr('class', 'katex-axis')
+                .style('justify-content', justify)
+                .style('align-items', alignI)
+                .style('color', color)
+                .style('font-size', fs + 'px');
+            const node = div.node();
+            if (window.katex) {
+                try {
+                    window.katex.render(tex, node, { throwOnError: false, displayMode: false });
+                } catch (e) {
+                    node.textContent = tex;
+                }
+            } else {
+                node.textContent = tex;
+            }
+            return fo;
+        }
+
+        // ========================= S-PLANE (D3 SVG) ==============================
+        // opts: {
+        //   state            : state object to operate on (default: global state)
+        //   editable         : click-to-add, drag, right-click-delete (default true)
+        //   withProbe        : draw probe marker, vectors from each pole/zero to probe
+        //   drawLengths      : write each vector's length along the vector
+        //   drawAngles       : draw an arc + signed-degree label per vector
+        //   highlightDominant: thicken/brighten the shortest pole and shortest zero vector
+        //   probeSliderId    : slider id whose value tracks state.probeOmega (default 'probe-slider')
+        //   hintId           : id of the hover readout element ('σ=…, jω=…') if any
+        // }
+        function makeSPlane(svgSel, opts = {}) {
+            const svg = d3.select(svgSel);
+            const svgNode = svg.node();
+            const wrap = svgSel.parentElement;
+            const editable = opts.editable !== false;
+            const probeSliderId = opts.probeSliderId || 'probe-slider';
+            const hintId = opts.hintId || 'splane-hint';
+
+            const view = { re: [-4, 4], im: [-4, 4] };
+
+            function render() {
+                const st = opts.state || state;
+                const rect = wrap.getBoundingClientRect();
+                const W = Math.max(300, rect.width);
+                const H = Math.max(300, rect.height);
+                svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+                svg.selectAll('*').remove();
+
+                const pad = 40;
+                const x = d3.scaleLinear().domain(view.re).range([pad, W - pad]);
+                const y = d3.scaleLinear().domain(view.im).range([H - pad, pad]);
+
+                // RHP shading
+                svg.append('rect')
+                    .attr('class', 'rhp-shade')
+                    .attr('x', x(0)).attr('y', pad)
+                    .attr('width', W - pad - x(0)).attr('height', H - 2 * pad);
+
+                // Grid
+                const grid = svg.append('g').attr('class', 'grid');
+                for (let v = Math.ceil(view.re[0]); v <= view.re[1]; v++) {
+                    grid.append('line')
+                        .attr('class', v === 0 ? 'zero-line' : null)
+                        .attr('x1', x(v)).attr('x2', x(v))
+                        .attr('y1', pad).attr('y2', H - pad);
+                }
+                for (let v = Math.ceil(view.im[0]); v <= view.im[1]; v++) {
+                    grid.append('line')
+                        .attr('class', v === 0 ? 'zero-line' : null)
+                        .attr('x1', pad).attr('x2', W - pad)
+                        .attr('y1', y(v)).attr('y2', y(v));
+                }
+
+                // Axis titles outside the frame
+                svgKatex(svg, W - pad + 6, y(0), '\\sigma',
+                    { width: pad - 8, height: 22, anchor: 'start' });
+                svgKatex(svg, x(0), pad - 14, 'j\\omega',
+                    { width: 60, height: 22 });
+
+                const tickG = svg.append('g');
+                for (let v = Math.ceil(view.re[0]); v <= view.re[1]; v++) {
+                    if (v === 0) continue;
+                    tickG.append('text').attr('x', x(v)).attr('y', y(0) + 14).attr('text-anchor', 'middle').text(v);
+                }
+                for (let v = Math.ceil(view.im[0]); v <= view.im[1]; v++) {
+                    if (v === 0) continue;
+                    tickG.append('text').attr('x', x(0) - 8).attr('y', y(v) + 3).attr('text-anchor', 'end').text(v);
+                }
+
+                // Background click area (only when editable)
+                svg.append('rect')
+                    .attr('x', pad).attr('y', pad)
+                    .attr('width', W - 2 * pad).attr('height', H - 2 * pad)
+                    .attr('fill', 'transparent')
+                    .style('cursor', editable ? 'crosshair' : 'default')
+                    .on('click', (event) => {
+                        if (!editable) return;
+                        const [mx, my] = d3.pointer(event);
+                        const re = x.invert(mx), im = y.invert(my);
+                        addPZ(st.mode, re, im, st);
+                    });
+
+                // ----- probe vectors (length labels and/or angle arcs) -----------
+                if (opts.withProbe) {
+                    const px = x(0);
+                    const py = y(st.probeOmega);
+
+                    // identify dominant (shortest) vectors per kind
+                    const lenOf = pz => Math.hypot(0 - pz.re, st.probeOmega - pz.im);
+                    let domPoleId = null, domZeroId = null;
+                    if (opts.highlightDominant) {
+                        let bestP = Infinity, bestZ = Infinity;
+                        for (const p of st.poles) { const L = lenOf(p); if (L < bestP) { bestP = L; domPoleId = p.id; } }
+                        for (const z of st.zeros) { const L = lenOf(z); if (L < bestZ) { bestZ = L; domZeroId = z.id; } }
+                    }
+
+                    const drawLengthAlong = (sx, sy, gx, gy, txt, color) => {
+                        const dx = gx - sx, dy = gy - sy;
+                        const lenPx = Math.hypot(dx, dy) || 1;
+                        let rot = Math.atan2(dy, dx) * 180 / Math.PI;
+                        let off = 12;
+                        if (rot > 90) { rot -= 180; off = -off; }
+                        if (rot < -90) { rot += 180; off = -off; }
+                        const mx = (sx + gx) / 2, my = (sy + gy) / 2;
+                        const nx = -dy / lenPx, ny = dx / lenPx;
+                        const tx = mx + nx * off, ty = my + ny * off;
+                        svg.append('text')
+                            .attr('class', 'vec-len')
+                            .attr('x', tx).attr('y', ty)
+                            .attr('text-anchor', 'middle')
+                            .attr('dominant-baseline', 'middle')
+                            .attr('fill', color)
+                            .attr('transform', `rotate(${rot}, ${tx}, ${ty})`)
+                            .text(txt);
+                    };
+
+                    const drawAngleArc = (sx, sy, gx, gy, color) => {
+                        const dx = gx - sx, dy = gy - sy;
+                        const angScreen = Math.atan2(dy, dx);
+                        const angMath = -angScreen;
+                        let degMath = angMath * 180 / Math.PI;
+                        const r = 22;
+                        const startX = sx + r, startY = sy;
+                        const endX = sx + r * Math.cos(angScreen);
+                        const endY = sy + r * Math.sin(angScreen);
+                        const sweep = angScreen < 0 ? 0 : 1;
+                        const large = Math.abs(degMath) > 180 ? 1 : 0;
+                        svg.append('path')
+                            .attr('class', 'vec-arc')
+                            .attr('d', `M ${startX} ${startY} A ${r} ${r} 0 ${large} ${sweep} ${endX} ${endY}`)
+                            .attr('fill', 'none')
+                            .attr('stroke', color)
+                            .attr('stroke-width', 1.4);
+                        const labMid = -angScreen / 2;
+                        const lr = r + 12;
+                        const lx = sx + lr * Math.cos(-labMid);
+                        const ly = sy + lr * Math.sin(-labMid);
+                        const sign = degMath >= 0 ? '+' : '−';
+                        svg.append('text')
+                            .attr('class', 'vec-ang')
+                            .attr('x', lx).attr('y', ly + 4)
+                            .attr('text-anchor', 'middle')
+                            .attr('fill', color)
+                            .text(`${sign}${Math.abs(degMath).toFixed(0)}°`);
+                    };
+
+                    const drawVec = (pz, cls, isDominant, kind) => {
+                        const sx = x(pz.re), sy = y(pz.im);
+                        const cls2 = 'vec ' + cls + (isDominant ? ' dom' : '');
+                        svg.append('line')
+                            .attr('class', cls2)
+                            .attr('x1', sx).attr('y1', sy)
+                            .attr('x2', px).attr('y2', py);
+                        if (opts.drawLengths) {
+                            const L = Math.hypot(0 - pz.re, st.probeOmega - pz.im);
+                            const color = kind === 'pole' ? 'var(--pole)' : 'var(--zero)';
+                            drawLengthAlong(sx, sy, px, py, L.toFixed(2), color);
+                        }
+                        if (opts.drawAngles) {
+                            const color = kind === 'pole' ? 'var(--pole)' : 'var(--zero)';
+                            drawAngleArc(sx, sy, px, py, color);
+                        }
+                    };
+                    for (const p of st.poles) drawVec(p, 'p', p.id === domPoleId, 'pole');
+                    for (const z of st.zeros) drawVec(z, 'z', z.id === domZeroId, 'zero');
+                }
+
+                // poles (×)
+                const poleG = svg.append('g');
+                st.poles.forEach((p) => {
+                    const cx = x(p.re), cy = y(p.im);
+                    const size = 9;
+                    poleG.append('line').attr('class', 'pole')
+                        .attr('x1', cx - size).attr('y1', cy - size)
+                        .attr('x2', cx + size).attr('y2', cy + size);
+                    poleG.append('line').attr('class', 'pole')
+                        .attr('x1', cx - size).attr('y1', cy + size)
+                        .attr('x2', cx + size).attr('y2', cy - size);
+                    if (editable) {
+                        const hit = poleG.append('circle')
+                            .attr('class', 'pz-hit')
+                            .attr('cx', cx).attr('cy', cy).attr('r', 13);
+                        attachDrag(hit, 'pole', p.id, x, y, st);
+                    }
+                });
+
+                // zeros (circles)
+                const zeroG = svg.append('g');
+                st.zeros.forEach((z) => {
+                    const cx = x(z.re), cy = y(z.im);
+                    zeroG.append('circle').attr('class', 'zero')
+                        .attr('cx', cx).attr('cy', cy).attr('r', 8);
+                    if (editable) {
+                        const hit = zeroG.append('circle')
+                            .attr('class', 'pz-hit')
+                            .attr('cx', cx).attr('cy', cy).attr('r', 13);
+                        attachDrag(hit, 'zero', z.id, x, y, st);
+                    }
+                });
+
+                // probe on jω axis
+                if (opts.withProbe) {
+                    const px = x(0);
+                    const py = y(st.probeOmega);
+                    const probe = svg.append('circle')
+                        .attr('class', 'probe')
+                        .attr('cx', px).attr('cy', py).attr('r', 8);
+                    probe.call(d3.drag()
+                        .container(() => svgNode)
+                        .on('start', function () { d3.select(this).attr('r', 10); })
+                        .on('drag', function (event) {
+                            if (!isFinite(event.y)) return;
+                            const im = y.invert(event.y);
+                            st.probeOmega = Math.max(0.01, Math.abs(im));
+                            const slider = document.getElementById(probeSliderId);
+                            if (slider) slider.value = String(Math.log10(st.probeOmega));
+                            renderAll();
+                        })
+                        .on('end', function () { d3.select(this).attr('r', 8); })
+                    );
+                }
+
+                // hover readout (only useful for editable plots without a probe)
+                svg.on('mousemove', function (event) {
+                    if (opts.withProbe) return;
+                    const [mx, my] = d3.pointer(event);
+                    const re = x.invert(mx), im = y.invert(my);
+                    const hint = document.getElementById(hintId);
+                    if (hint) hint.textContent = `σ=${re.toFixed(2)}, jω=${im.toFixed(2)}`;
+                });
+            }
+
+            function attachDrag(sel, kind, itemId, x, y, st) {
+                sel.on('contextmenu', (event) => {
+                    event.preventDefault();
+                    const list = kind === 'pole' ? st.poles : st.zeros;
+                    const idx = list.findIndex(o => o.id === itemId);
+                    if (idx >= 0) removePZ(kind, idx, st);
+                });
+                sel.call(d3.drag()
+                    .container(() => svgNode)
+                    .on('start', function () { d3.select(this).classed('dragging', true); })
+                    .on('drag', function (event) {
+                        if (!isFinite(event.x) || !isFinite(event.y)) return;
+                        const re = x.invert(event.x), im = y.invert(event.y);
+                        const list = kind === 'pole' ? st.poles : st.zeros;
+                        const item = list.find(o => o.id === itemId);
+                        if (!item) return;
+                        item.re = re; item.im = im;
+                        if (st.conjPair && item.partner != null) {
+                            const partner = list.find(o => o.id === item.partner);
+                            if (partner) { partner.re = re; partner.im = -im; }
+                        }
+                        renderAll();
+                    })
+                    .on('end', function () { d3.select(this).classed('dragging', false); })
+                );
+            }
+
+            return { render };
+        }
+
+        // ---------------------- add / remove pole or zero ------------------------
+        function addPZ(kind, re, im, st = state) {
+            const list = kind === 'pole' ? st.poles : st.zeros;
+            const item = { id: uid(), re, im };
+            list.push(item);
+            if (st.conjPair && Math.abs(im) > 0.05) {
+                const partner = { id: uid(), re, im: -im, partner: item.id };
+                item.partner = partner.id;
+                list.push(partner);
+            }
+            updateOmegaRangeAuto(st);
+            renderAll();
+        }
+
+        function removePZ(kind, idx, st = state) {
+            const list = kind === 'pole' ? st.poles : st.zeros;
+            const item = list[idx];
+            if (!item) return;
+            if (st.conjPair && item.partner != null) {
+                const partnerIdx = list.findIndex(x => x.id === item.partner);
+                if (partnerIdx >= 0) list.splice(partnerIdx, 1);
+            }
+            const againIdx = list.findIndex(x => x === item);
+            if (againIdx >= 0) list.splice(againIdx, 1);
+            updateOmegaRangeAuto(st);
+            renderAll();
+        }
+
+        function updateOmegaRangeAuto(st = state) {
+            st.omegaRange = autoOmegaRange(st);
+        }
+
+        // =========================== KaTeX TF rendering ==========================
+        function fmt(n, d = 2) {
+            if (Math.abs(n) < 1e-10) return '0';
+            const s = n.toFixed(d);
+            return s.replace(/\.?0+$/, '') || '0';
+        }
+
+        // Factored form: group conjugate pairs into real quadratic blocks
+        function factoredLatex() {
+            const zeroTerm = (z) => {
+                if (Math.abs(z.im) < 1e-6) {
+                    if (Math.abs(z.re) < 1e-6) return 's';
+                    return `(s ${z.re > 0 ? '-' : '+'} ${fmt(Math.abs(z.re))})`;
+                }
+                // (s - z) with z = a + bj  →  "(s - a - bj)" / "(s + a + bj)" etc.
+                const reSign = z.re > 0 ? '-' : '+';
+                const imSign = z.im > 0 ? '-' : '+';
+                return `(s ${reSign} ${fmt(Math.abs(z.re))} ${imSign} ${fmt(Math.abs(z.im))}j)`;
+            };
+            // group conj pairs
+            const groupFactor = (list) => {
+                const seen = new Set();
+                const parts = [];
+                for (const p of list) {
+                    if (seen.has(p.id)) continue;
+                    if (p.partner != null) {
+                        const partner = list.find(x => x.id === p.partner);
+                        if (partner) {
+                            seen.add(p.id); seen.add(partner.id);
+                            // (s - a)(s - a*) = s^2 - 2Re(a) s + |a|^2
+                            const a = p.re, b = Math.abs(p.im);
+                            const two_a = 2 * a;
+                            const mag2 = a * a + b * b;
+                            parts.push(`(s^2 ${two_a >= 0 ? '-' : '+'} ${fmt(Math.abs(two_a))}s ${mag2 >= 0 ? '+' : '-'} ${fmt(Math.abs(mag2))})`);
+                            continue;
+                        }
+                    }
+                    seen.add(p.id);
+                    parts.push(zeroTerm(p));
+                }
+                return parts.length ? parts.join('\\,') : '1';
+            };
+
+            const num = groupFactor(state.zeros);
+            const den = groupFactor(state.poles);
+            const k = fmt(state.K, 3);
+            const kPrefix = (k === '1') ? '' : `${k}\\,`;
+            return `H(s) = ${kPrefix}\\dfrac{${num}}{${den}}`;
+        }
+
+        // Expand ∏(s - r) into coefficients of a polynomial in s (descending degree)
+        function expandRoots(roots) {
+            // roots are {re,im}; result coefficients are real when conjugate pairs are present,
+            // otherwise we just take real parts (ok for well-formed inputs).
+            let coeffs = [{ re: 1, im: 0 }]; // constant polynomial "1"
+            for (const r of roots) {
+                const next = new Array(coeffs.length + 1).fill(null).map(() => ({ re: 0, im: 0 }));
+                const negR = { re: -r.re, im: -r.im };
+                for (let i = 0; i < coeffs.length; i++) {
+                    // (s + negR) * existing
+                    next[i] = C.add(next[i], coeffs[i]); // s * c_i
+                    next[i + 1] = C.add(next[i + 1], C.mul(coeffs[i], negR)); // negR * c_i
+                }
+                coeffs = next;
+            }
+            return coeffs.map(c => c.re); // drop residual imaginary (should be ~0 for real / conj pairs)
+        }
+
+        function polyLatex(coeffs) {
+            const deg = coeffs.length - 1;
+            if (deg < 0) return '0';
+            const parts = [];
+            for (let i = 0; i < coeffs.length; i++) {
+                const c = coeffs[i];
+                const p = deg - i;
+                if (Math.abs(c) < 1e-8) continue;
+                const absC = Math.abs(c);
+                let term = '';
+                if (p === 0) term = fmt(absC);
+                else if (p === 1) term = (Math.abs(absC - 1) < 1e-8) ? 's' : `${fmt(absC)}s`;
+                else term = (Math.abs(absC - 1) < 1e-8) ? `s^{${p}}` : `${fmt(absC)}s^{${p}}`;
+                if (parts.length === 0) {
+                    parts.push(c < 0 ? `-${term}` : term);
+                } else {
+                    parts.push(c < 0 ? ` - ${term}` : ` + ${term}`);
+                }
+            }
+            return parts.length ? parts.join('') : '0';
+        }
+
+        function expandedLatex() {
+            const numRoots = state.zeros.map(z => ({ re: z.re, im: z.im }));
+            const denRoots = state.poles.map(p => ({ re: p.re, im: p.im }));
+            const numCoeffs = expandRoots(numRoots).map(c => c * state.K);
+            const denCoeffs = expandRoots(denRoots);
+            const numStr = polyLatex(numCoeffs);
+            const denStr = polyLatex(denCoeffs);
+            return `H(s) = \\dfrac{${numStr}}{${denStr}}`;
+        }
+
+        function renderLatex() {
+            const fac = document.getElementById('tf-factored');
+            const exp = document.getElementById('tf-expanded');
+            if (!fac || !exp || typeof katex === 'undefined') return;
+            try {
+                katex.render(factoredLatex(), fac, { throwOnError: false, displayMode: true });
+                katex.render(expandedLatex(), exp, { throwOnError: false, displayMode: true });
+            } catch (e) { /* ignore transient render errors during rapid drag */ }
+        }
+
+        // ========================= BODE PLOTS (D3 SVG) ===========================
+        // makeBodePlot(svg, kind, factoryOpts)
+        //   factoryOpts: { state }  — state used for omegaRange (default global state)
+        //   render(samples, renderOpts)
+        //     renderOpts: { cursorW, dotOnCurve }
+        //       cursorW    : if given, draw a vertical dotted line at this ω
+        //       dotOnCurve : if true, place a marker dot on the curve at cursorW
+        function makeBodePlot(svgSel, kind, factoryOpts = {}) {
+            const svg = d3.select(svgSel);
+            const wrap = svgSel.parentElement;
+
+            function render(samples, opts = {}) {
+                const st = factoryOpts.state || state;
+                const rect = wrap.getBoundingClientRect();
+                const W = Math.max(300, rect.width);
+                const H = Math.max(160, rect.height);
+                svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+                svg.selectAll('*').remove();
+
+                const pL = 64, pR = 22, pT = 30, pB = 50;
+                const x = d3.scaleLog().domain(st.omegaRange).range([pL, W - pR]);
+                const yDomain = kind === 'mag'
+                    ? (() => {
+                        const vs = samples.map(s => s.magDb).filter(v => isFinite(v));
+                        if (!vs.length) return [-60, 20];
+                        const lo = Math.floor(Math.min(...vs) / 10) * 10 - 10;
+                        const hi = Math.ceil(Math.max(...vs) / 10) * 10 + 10;
+                        return [Math.max(lo, -120), Math.min(hi, 120)];
+                    })()
+                    : (() => {
+                        const vs = samples.map(s => s.phaseDeg).filter(v => isFinite(v));
+                        if (!vs.length) return [-180, 180];
+                        const lo = Math.floor(Math.min(...vs) / 45) * 45 - 15;
+                        const hi = Math.ceil(Math.max(...vs) / 45) * 45 + 15;
+                        return [lo, hi];
+                    })();
+                const y = d3.scaleLinear().domain(yDomain).range([H - pB, pT]);
+
+                // Grid
+                const grid = svg.append('g').attr('class', 'grid');
+                const [w0, w1] = st.omegaRange;
+                for (let d = Math.floor(Math.log10(w0)); d <= Math.ceil(Math.log10(w1)); d++) {
+                    for (let m = 1; m <= 9; m++) {
+                        const w = m * Math.pow(10, d);
+                        if (w < w0 || w > w1) continue;
+                        grid.append('line')
+                            .attr('class', m === 1 ? 'zero-line' : null)
+                            .attr('x1', x(w)).attr('x2', x(w))
+                            .attr('y1', pT).attr('y2', H - pB);
+                    }
+                }
+
+                const yTicks = y.ticks(5);
+                for (const v of yTicks) {
+                    grid.append('line')
+                        .attr('class', v === 0 ? 'zero-line' : null)
+                        .attr('x1', pL).attr('x2', W - pR)
+                        .attr('y1', y(v)).attr('y2', y(v));
+                }
+
+                svg.append('g').attr('transform', `translate(0,${H - pB})`)
+                    .call(d3.axisBottom(x).ticks(5, '~g'));
+                svg.append('g').attr('transform', `translate(${pL},0)`)
+                    .call(d3.axisLeft(y).ticks(5));
+
+                svgKatex(svg, (pL + W - pR) / 2, H - 14, '\\omega\\;(\\text{rad/s, log})',
+                    { width: 240, height: 22 });
+                const yTex = kind === 'mag'
+                    ? '|H(j\\omega)|\\;(\\text{dB})'
+                    : '\\angle H(j\\omega)\\;(\\text{deg})';
+                svgKatex(svg, pL - 44, (pT + H - pB) / 2, yTex,
+                    { width: 200, height: 22, rotate: -90 });
+
+                const line = d3.line()
+                    .x(d => x(d.w))
+                    .y(d => y(kind === 'mag' ? d.magDb : d.phaseDeg))
+                    .defined(d => isFinite(kind === 'mag' ? d.magDb : d.phaseDeg));
+
+                svg.append('path')
+                    .attr('class', 'bode-line ' + (kind === 'phase' ? 'phase' : ''))
+                    .attr('d', line(samples));
+
+                if (opts.cursorW != null && opts.cursorW > 0) {
+                    const cw = opts.cursorW;
+                    const cx = x(cw);
+                    if (cx >= pL && cx <= W - pR) {
+                        svg.append('line')
+                            .attr('class', 'cursor-line')
+                            .attr('x1', cx).attr('x2', cx)
+                            .attr('y1', pT).attr('y2', H - pB);
+                        if (opts.dotOnCurve) {
+                            // pick the value on the curve nearest cw
+                            let best = samples[0], bestErr = Infinity;
+                            for (const s of samples) {
+                                const e = Math.abs(Math.log10(s.w) - Math.log10(cw));
+                                if (e < bestErr) { bestErr = e; best = s; }
+                            }
+                            const yv = kind === 'mag' ? best.magDb : best.phaseDeg;
+                            if (isFinite(yv)) {
+                                svg.append('circle')
+                                    .attr('class', 'probe')
+                                    .attr('cx', cx).attr('cy', y(yv)).attr('r', 5);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return { render };
+        }
+
+        // ===================== 3D |H(s)| surface (canvas) ========================
+        // factoryOpts: { state, camRotId, camRotValId, camTiltId, camTiltValId }
+        function makeSurface3D(canvas, factoryOpts = {}) {
+            const ctx = canvas.getContext('2d');
+            const camRotId = factoryOpts.camRotId || 'cam-rot';
+            const camRotValId = factoryOpts.camRotValId || 'cam-rot-val';
+            const camTiltId = factoryOpts.camTiltId || 'cam-tilt';
+            const camTiltValId = factoryOpts.camTiltValId || 'cam-tilt-val';
+
+            // viridis-ish LUT
+            function heightColor(t) {
+                t = Math.max(0, Math.min(1, t));
+                const stops = [
+                    [68, 1, 84],
+                    [59, 82, 139],
+                    [33, 145, 140],
+                    [94, 201, 98],
+                    [253, 231, 37],
+                ];
+                const i = Math.min(stops.length - 2, Math.floor(t * (stops.length - 1)));
+                const f = t * (stops.length - 1) - i;
+                const a = stops[i], b = stops[i + 1];
+                return `rgb(${Math.round(a[0] + (b[0] - a[0]) * f)},${Math.round(a[1] + (b[1] - a[1]) * f)},${Math.round(a[2] + (b[2] - a[2]) * f)})`;
+            }
+
+            function render() {
+                const st = factoryOpts.state || state;
+                const rect = canvas.getBoundingClientRect();
+                const W = Math.max(300, rect.width);
+                const H = Math.max(300, rect.height);
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = W * dpr; canvas.height = H * dpr;
+                canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+                const pal = palette();
+                const quadOutline = getComputedStyle(document.documentElement).getPropertyValue('--quad-outline').trim() || 'rgba(0,0,0,0.18)';
+                ctx.fillStyle = pal.bg;
+                ctx.fillRect(0, 0, W, H);
+
+                // Build grid over σ × ω
+                const N = 48;
+                const sigmaMax = 4, omegaMax = 4;
+                const verts = new Array(N);
+                let logMin = Infinity, logMax = -Infinity;
+                const cap = 4; // cap log|H| to keep poles finite
+                for (let i = 0; i < N; i++) {
+                    verts[i] = new Array(N);
+                    const sigma = -sigmaMax + 2 * sigmaMax * (i / (N - 1));
+                    for (let j = 0; j < N; j++) {
+                        const omega = -omegaMax + 2 * omegaMax * (j / (N - 1));
+                        const Hv = evalH({ re: sigma, im: omega }, st);
+                        let logMag = Math.log10(C.abs(Hv) + 1e-12);
+                        if (!isFinite(logMag)) logMag = cap;
+                        logMag = Math.max(-cap, Math.min(cap, logMag));
+                        verts[i][j] = { sigma, omega, h: logMag };
+                        if (logMag < logMin) logMin = logMag;
+                        if (logMag > logMax) logMax = logMax < logMag ? logMag : logMax;
+                    }
+                }
+                // fallback if all equal
+                if (logMax - logMin < 1e-6) { logMax = logMin + 1; }
+
+                // camera
+                const yaw = st.camRot * Math.PI / 180;
+                const pitch = st.camTilt * Math.PI / 180;
+                const scale = Math.min(W, H) * 0.12;
+                const cx = W / 2, cy = H / 2 + 40;
+                const heightScale = Math.min(W, H) * 0.28 / (logMax - logMin);
+
+                // treat h as vertical axis post-rotation
+                function proj(sigma, omega, h) {
+                    const nh = (h - logMin) * heightScale;
+                    const cyw = Math.cos(yaw), syw = Math.sin(yaw);
+                    // rotate sigma-omega plane around vertical
+                    const rx = sigma * cyw - omega * syw;
+                    const ry = sigma * syw + omega * cyw;
+                    // apply pitch (tilting y into screen, lifting h up)
+                    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+                    const screenX = cx + rx * scale;
+                    const screenY = cy - ry * sp * scale - nh * cp;  // horizon + height
+                    const depth = ry * cp - nh * sp / scale;          // for painter's
+                    return { x: screenX, y: screenY, z: depth };
+                }
+
+                // Build quads with average depth for painter's sort
+                const quads = [];
+                for (let i = 0; i < N - 1; i++) {
+                    for (let j = 0; j < N - 1; j++) {
+                        const v00 = verts[i][j], v10 = verts[i + 1][j], v01 = verts[i][j + 1], v11 = verts[i + 1][j + 1];
+                        const p00 = proj(v00.sigma, v00.omega, v00.h);
+                        const p10 = proj(v10.sigma, v10.omega, v10.h);
+                        const p01 = proj(v01.sigma, v01.omega, v01.h);
+                        const p11 = proj(v11.sigma, v11.omega, v11.h);
+                        const avgH = (v00.h + v10.h + v01.h + v11.h) / 4;
+                        const avgZ = (p00.z + p10.z + p01.z + p11.z) / 4;
+                        quads.push({ p00, p10, p01, p11, avgH, avgZ });
+                    }
+                }
+                quads.sort((a, b) => a.avgZ - b.avgZ);
+
+                // Draw quads
+                for (const q of quads) {
+                    const t = (q.avgH - logMin) / (logMax - logMin);
+                    ctx.beginPath();
+                    ctx.moveTo(q.p00.x, q.p00.y);
+                    ctx.lineTo(q.p10.x, q.p10.y);
+                    ctx.lineTo(q.p11.x, q.p11.y);
+                    ctx.lineTo(q.p01.x, q.p01.y);
+                    ctx.closePath();
+                    ctx.fillStyle = heightColor(t);
+                    ctx.globalAlpha = 0.92;
+                    ctx.fill();
+                    ctx.strokeStyle = quadOutline;
+                    ctx.lineWidth = 0.6;
+                    ctx.stroke();
+                }
+                ctx.globalAlpha = 1;
+
+                // Floor grid lines (σ, ω axes at h = logMin)
+                ctx.strokeStyle = pal.axis;
+                ctx.lineWidth = 1.2;
+                const a0 = proj(-sigmaMax, 0, logMin), a1 = proj(sigmaMax, 0, logMin);
+                ctx.beginPath(); ctx.moveTo(a0.x, a0.y); ctx.lineTo(a1.x, a1.y); ctx.stroke();
+                const b0 = proj(0, -omegaMax, logMin), b1 = proj(0, omegaMax, logMin);
+                ctx.beginPath(); ctx.moveTo(b0.x, b0.y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
+
+                // jω ridge: trace the surface along σ=0
+                ctx.strokeStyle = pal.probe;
+                ctx.lineWidth = 2.4;
+                ctx.beginPath();
+                for (let j = 0; j < N; j++) {
+                    const omega = -omegaMax + 2 * omegaMax * (j / (N - 1));
+                    const Hv = evalH({ re: 0, im: omega }, st);
+                    let logMag = Math.log10(C.abs(Hv) + 1e-12);
+                    logMag = Math.max(-cap, Math.min(cap, logMag));
+                    const pt = proj(0, omega, logMag);
+                    if (j === 0) ctx.moveTo(pt.x, pt.y);
+                    else ctx.lineTo(pt.x, pt.y);
+                }
+                ctx.stroke();
+
+                // Probe bead on jω ridge at st.probeOmega
+                {
+                    const Hv = evalH({ re: 0, im: st.probeOmega }, st);
+                    let logMag = Math.log10(C.abs(Hv) + 1e-12);
+                    logMag = Math.max(-cap, Math.min(cap, logMag));
+                    const pt = proj(0, st.probeOmega, logMag);
+                    ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = pal.probe;
+                    ctx.strokeStyle = pal.bg;
+                    ctx.lineWidth = 2;
+                    ctx.fill(); ctx.stroke();
+                }
+
+                // Axis labels
+                ctx.fillStyle = pal.muted;
+                ctx.font = '10px "JetBrains Mono", monospace';
+                const lx = proj(sigmaMax * 1.08, 0, logMin);
+                const ly = proj(0, omegaMax * 1.08, logMin);
+                ctx.fillText('σ', lx.x, lx.y);
+                ctx.fillText('jω', ly.x, ly.y);
+                const lz = proj(0, 0, logMax);
+                ctx.fillStyle = pal.text;
+                ctx.fillText('log|H|', lz.x + 6, lz.y - 4);
+            }
+
+            // orbit with drag
+            let dragging = false, dsx = 0, dsy = 0, rot0 = 0, tilt0 = 0;
+            canvas.addEventListener('mousedown', e => {
+                const st = factoryOpts.state || state;
+                dragging = true; dsx = e.clientX; dsy = e.clientY;
+                rot0 = st.camRot; tilt0 = st.camTilt;
+            });
+            window.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const st = factoryOpts.state || state;
+                st.camRot = (rot0 + (e.clientX - dsx) * 0.5 + 360) % 360;
+                st.camTilt = Math.max(10, Math.min(80, tilt0 - (e.clientY - dsy) * 0.3));
+                const rEl = document.getElementById(camRotId);
+                const rVal = document.getElementById(camRotValId);
+                const tEl = document.getElementById(camTiltId);
+                const tVal = document.getElementById(camTiltValId);
+                if (rEl) rEl.value = st.camRot;
+                if (rVal) rVal.textContent = Math.round(st.camRot) + '°';
+                if (tEl) tEl.value = st.camTilt;
+                if (tVal) tVal.textContent = Math.round(st.camTilt) + '°';
+                render();
+            });
+            window.addEventListener('mouseup', () => { dragging = false; });
+
+            return { render };
+        }
+
+        // ===================== presets ===========================================
+        const PRESETS = {
+            blank: { K: 1, poles: [], zeros: [] },
+            lp1: { K: 1, poles: [{ re: -1, im: 0 }], zeros: [] },
+            hp1: { K: 1, poles: [{ re: -1, im: 0 }], zeros: [{ re: 0, im: 0 }] },
+            lp2: (() => {
+                const zeta = 0.3, wn = 1;
+                const r = -zeta * wn, i = wn * Math.sqrt(1 - zeta * zeta);
+                return { K: wn * wn, poles: [{ re: r, im: i }, { re: r, im: -i }], zeros: [] };
+            })(),
+            notch: { K: 1, poles: [{ re: -0.5, im: 3 }, { re: -0.5, im: -3 }], zeros: [{ re: 0, im: 3 }, { re: 0, im: -3 }] },
+            bp: { K: 0.5, poles: [{ re: -0.3, im: 2 }, { re: -0.3, im: -2 }], zeros: [{ re: 0, im: 0 }] },
+            integrator: { K: 1, poles: [{ re: 0, im: 0 }], zeros: [] },
+        };
+        function loadPreset(name) {
+            const p = PRESETS[name];
+            if (!p) return;
+            state.K = p.K;
+            state.poles = p.poles.map(x => ({ ...x, id: uid() }));
+            state.zeros = p.zeros.map(x => ({ ...x, id: uid() }));
+            // link conj pairs by proximity
+            linkConjPartners(state.poles);
+            linkConjPartners(state.zeros);
+            document.getElementById('k-slider').value = String(Math.log10(Math.max(0.01, Math.abs(state.K))));
+            document.getElementById('k-val').textContent = fmt(state.K, 2);
+            updateOmegaRangeAuto();
+            renderAll();
+        }
+
+        function linkConjPartners(list) {
+            for (let i = 0; i < list.length; i++) {
+                if (list[i].partner != null) continue;
+                if (Math.abs(list[i].im) < 0.05) continue;
+                for (let j = i + 1; j < list.length; j++) {
+                    if (list[j].partner != null) continue;
+                    if (Math.abs(list[i].re - list[j].re) < 0.02 && Math.abs(list[i].im + list[j].im) < 0.02) {
+                        list[i].partner = list[j].id;
+                        list[j].partner = list[i].id;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
+        // SECTION 4 — first-order LP: geometry of the −3 dB cutoff
+        // =====================================================================
+
+        const demo3 = { wc: 1, probeOmega: 1 };
+
+        function demo3_mag(omega) {
+            return demo3.wc / Math.sqrt(demo3.wc * demo3.wc + omega * omega);
+        }
+        function demo3_magDb(omega) { return 20 * Math.log10(demo3_mag(omega)); }
+
+        function makeDemo3SPlane(svgSel) {
+            const svg = d3.select(svgSel);
+            const svgNode = svg.node();
+            const wrap = svgSel.parentElement;
+
+            function render() {
+                const rect = wrap.getBoundingClientRect();
+                const W = Math.max(300, rect.width);
+                const H = Math.max(300, rect.height);
+                svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+                svg.selectAll('*').remove();
+
+                const pad = 40;
+                const span = Math.max(demo3.wc * 1.6, demo3.probeOmega * 1.25, 2.2);
+                // show more of the upper half-plane where the probe lives
+                const xDom = [-span, span * 0.5];
+                const yDom = [-span * 0.4, span];
+                // preserve equal units per pixel for a true square unit circle
+                const wAvail = W - 2 * pad, hAvail = H - 2 * pad;
+                const xSpan = xDom[1] - xDom[0], ySpan = yDom[1] - yDom[0];
+                const scale = Math.min(wAvail / xSpan, hAvail / ySpan);
+                const cxPix = (W) / 2 - ((xDom[0] + xDom[1]) / 2) * scale;
+                const cyPix = (H) / 2 + ((yDom[0] + yDom[1]) / 2) * scale;
+                const x = v => cxPix + v * scale;
+                const y = v => cyPix - v * scale;
+
+                // Grid
+                const grid = svg.append('g').attr('class', 'grid');
+                for (let v = Math.ceil(xDom[0]); v <= Math.floor(xDom[1]); v++) {
+                    grid.append('line').attr('class', v === 0 ? 'zero-line' : null)
+                        .attr('x1', x(v)).attr('x2', x(v))
+                        .attr('y1', pad).attr('y2', H - pad);
+                }
+                for (let v = Math.ceil(yDom[0]); v <= Math.floor(yDom[1]); v++) {
+                    grid.append('line').attr('class', v === 0 ? 'zero-line' : null)
+                        .attr('x1', pad).attr('x2', W - pad)
+                        .attr('y1', y(v)).attr('y2', y(v));
+                }
+
+                // Axis titles placed OUTSIDE the plot frame (four-quadrant view).
+                svgKatex(svg, W - pad + 6, y(0), '\\sigma',
+                    { width: pad - 8, height: 22, anchor: 'start' });
+                svgKatex(svg, x(0), pad - 14, 'j\\omega',
+                    { width: 60, height: 22 });
+
+                const poleX = x(-demo3.wc), poleY = y(0);
+                const origX = x(0), origY = y(0);
+                const probX = x(0), probY = y(demo3.probeOmega);
+                const isCutoff = Math.abs(demo3.probeOmega - demo3.wc) / demo3.wc < 0.02;
+
+                // Cutoff circle — radius ωc centered at origin. The pole sits on it (at σ = −ωc),
+                // and so does the jω-axis cutoff point (at jω = ωc). When the probe lies anywhere
+                // on this circle, |jω − p|² = 2 ωc², i.e. |H| = 1/√2 = −3 dB.
+                svg.append('circle')
+                    .attr('cx', origX).attr('cy', origY)
+                    .attr('r', demo3.wc * scale)
+                    .attr('fill', 'none')
+                    .attr('stroke', 'var(--accent)')
+                    .attr('stroke-width', 1.2)
+                    .attr('stroke-dasharray', '4 4')
+                    .attr('opacity', 0.75);
+                // label at the top of the circle (on the jω axis)
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', origX + 6).attr('y', y(demo3.wc) - 4)
+                    .attr('fill', 'var(--accent)')
+                    .text(`jωc = j·${demo3.wc.toFixed(2)}`);
+
+                // Triangle fill
+                svg.append('path')
+                    .attr('d', `M ${poleX} ${poleY} L ${origX} ${origY} L ${probX} ${probY} Z`)
+                    .attr('fill', isCutoff ? 'var(--probe-overlay)' : 'var(--input-bg)')
+                    .attr('stroke', 'none');
+
+                // Right-angle marker at origin (small square), visible always (triangle is always right-angled at origin)
+                const sq = 8;
+                const rxDir = -1, ryDir = -1; // square toward lower-left, in lower half? no, origin is between pole (left) and probe (up); square in upper-left quadrant of origin
+                svg.append('path')
+                    .attr('d', `M ${origX - sq} ${origY} L ${origX - sq} ${origY - sq} L ${origX} ${origY - sq}`)
+                    .attr('fill', 'none')
+                    .attr('stroke', 'var(--muted)').attr('stroke-width', 1);
+
+                // Horizontal leg (pole -> origin) labeled ωc
+                svg.append('line')
+                    .attr('x1', poleX).attr('y1', poleY).attr('x2', origX).attr('y2', origY)
+                    .attr('stroke', 'var(--pole)').attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3');
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', (poleX + origX) / 2).attr('y', poleY + 16).attr('text-anchor', 'middle')
+                    .attr('fill', 'var(--pole)').text(`ωc = ${demo3.wc.toFixed(2)}`);
+
+                // Vertical leg (origin -> probe) labeled ω
+                svg.append('line')
+                    .attr('x1', origX).attr('y1', origY).attr('x2', probX).attr('y2', probY)
+                    .attr('stroke', 'var(--probe)').attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3');
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', origX + 8).attr('y', (origY + probY) / 2 + 4)
+                    .attr('fill', 'var(--probe)').text(`ω = ${demo3.probeOmega.toFixed(2)}`);
+
+                // Hypotenuse (pole -> probe) — the pole vector whose length sets |H|
+                const hypLen = Math.sqrt(demo3.wc * demo3.wc + demo3.probeOmega * demo3.probeOmega);
+                svg.append('line')
+                    .attr('x1', poleX).attr('y1', poleY).attr('x2', probX).attr('y2', probY)
+                    .attr('stroke', isCutoff ? 'var(--accent)' : 'var(--zero)').attr('stroke-width', 2.2);
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', (poleX + probX) / 2 - 8).attr('y', (poleY + probY) / 2 - 8)
+                    .attr('text-anchor', 'end')
+                    .attr('fill', isCutoff ? 'var(--accent)' : 'var(--zero)')
+                    .text(`|jω − p| = ${hypLen.toFixed(2)}`);
+
+                // Angle arc at the pole (between horizontal-right and hypotenuse)
+                const ang = Math.atan2(demo3.probeOmega, demo3.wc);
+                const arcR = Math.min(36, Math.hypot(origX - poleX, origY - poleY) * 0.38);
+                const arcPath = `M ${poleX + arcR} ${poleY} A ${arcR} ${arcR} 0 0 0 ${poleX + arcR * Math.cos(ang)} ${poleY - arcR * Math.sin(ang)}`;
+                svg.append('path').attr('d', arcPath)
+                    .attr('fill', 'none')
+                    .attr('stroke', isCutoff ? 'var(--accent)' : 'var(--muted)')
+                    .attr('stroke-width', 1.4);
+                const labR = arcR * 0.72;
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', poleX + labR * Math.cos(ang / 2) + 4)
+                    .attr('y', poleY - labR * Math.sin(ang / 2) + 4)
+                    .attr('fill', isCutoff ? 'var(--accent)' : 'var(--text-dim)')
+                    .text(`${(ang * 180 / Math.PI).toFixed(0)}°`);
+
+                // Pole (×)
+                const sz = 9;
+                const poleG = svg.append('g');
+                poleG.append('line').attr('class', 'pole')
+                    .attr('x1', poleX - sz).attr('y1', poleY - sz)
+                    .attr('x2', poleX + sz).attr('y2', poleY + sz);
+                poleG.append('line').attr('class', 'pole')
+                    .attr('x1', poleX - sz).attr('y1', poleY + sz)
+                    .attr('x2', poleX + sz).attr('y2', poleY - sz);
+
+                // Probe (draggable yellow bead on the jω axis)
+                const probe = svg.append('circle')
+                    .attr('class', 'probe')
+                    .attr('cx', probX).attr('cy', probY).attr('r', 8);
+                probe.call(d3.drag()
+                    .container(() => svgNode)
+                    .on('drag', function (event) {
+                        if (!isFinite(event.y)) return;
+                        // y.invert isn't available (we used functions above); invert manually
+                        const dataY = (cyPix - event.y) / scale;
+                        demo3.probeOmega = Math.max(0.01, Math.abs(dataY));
+                        document.getElementById('d3-probe').value = String(Math.log10(demo3.probeOmega));
+                        renderDemo3();
+                    })
+                );
+            }
+
+            return { render };
+        }
+
+        function makeDemo3Bode(svgSel) {
+            const svg = d3.select(svgSel);
+            const wrap = svgSel.parentElement;
+
+            function render() {
+                const rect = wrap.getBoundingClientRect();
+                const W = Math.max(300, rect.width);
+                const H = Math.max(300, rect.height);
+                svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+                svg.selectAll('*').remove();
+
+                const pL = 64, pR = 24, pT = 30, pB = 52;
+                const wLo = 0.01, wHi = 100;
+                const x = d3.scaleLog().domain([wLo, wHi]).range([pL, W - pR]);
+                const y = d3.scaleLinear().domain([-60, 6]).range([H - pB, pT]);
+
+                // Grid
+                const grid = svg.append('g').attr('class', 'grid');
+                for (let d = Math.floor(Math.log10(wLo)); d <= Math.ceil(Math.log10(wHi)); d++) {
+                    for (let m = 1; m <= 9; m++) {
+                        const w = m * Math.pow(10, d);
+                        if (w < wLo || w > wHi) continue;
+                        grid.append('line')
+                            .attr('class', m === 1 ? 'zero-line' : null)
+                            .attr('x1', x(w)).attr('x2', x(w))
+                            .attr('y1', pT).attr('y2', H - pB);
+                    }
+                }
+                for (const v of y.ticks(5)) {
+                    grid.append('line').attr('class', v === 0 ? 'zero-line' : null)
+                        .attr('x1', pL).attr('x2', W - pR)
+                        .attr('y1', y(v)).attr('y2', y(v));
+                }
+
+                svg.append('g').attr('transform', `translate(0,${H - pB})`)
+                    .call(d3.axisBottom(x).ticks(5, '~g'));
+                svg.append('g').attr('transform', `translate(${pL},0)`)
+                    .call(d3.axisLeft(y).ticks(5));
+                svgKatex(svg, (pL + W - pR) / 2, H - 14, '\\omega\\;(\\text{rad/s, log})',
+                    { width: 240, height: 22 });
+                svgKatex(svg, pL - 44, (pT + H - pB) / 2, '|H(j\\omega)|\\;(\\text{dB})',
+                    { width: 200, height: 22, rotate: -90 });
+
+                // Magnitude curve
+                const N = 400;
+                const pts = [];
+                for (let k = 0; k < N; k++) {
+                    const w = Math.pow(10, Math.log10(wLo) + (Math.log10(wHi) - Math.log10(wLo)) * k / (N - 1));
+                    pts.push({ w, magDb: demo3_magDb(w) });
+                }
+                svg.append('path').attr('class', 'bode-line')
+                    .attr('d', d3.line().x(d => x(d.w)).y(d => y(d.magDb))(pts));
+
+                // −3 dB horizontal marker + ωc vertical marker (both accent)
+                svg.append('line').attr('class', 'cursor-line')
+                    .attr('x1', pL).attr('x2', W - pR)
+                    .attr('y1', y(-3)).attr('y2', y(-3))
+                    .attr('stroke', 'var(--accent)');
+                svgKatex(svg, W - pR - 6, y(-3) - 12, '-3\\;\\text{dB}',
+                    { width: 70, height: 20, anchor: 'end', color: 'var(--accent)', fontSize: 12 });
+
+                svg.append('line').attr('class', 'cursor-line')
+                    .attr('x1', x(demo3.wc)).attr('x2', x(demo3.wc))
+                    .attr('y1', pT).attr('y2', H - pB)
+                    .attr('stroke', 'var(--accent)');
+                svgKatex(svg, x(demo3.wc), H - pB - 8, '\\omega_c',
+                    { width: 40, height: 20, color: 'var(--accent)', fontSize: 13, vAlign: 'bottom' });
+
+                // intersection dot at (ωc, −3)
+                svg.append('circle')
+                    .attr('cx', x(demo3.wc)).attr('cy', y(-3)).attr('r', 5)
+                    .attr('fill', 'var(--accent)').attr('stroke', 'var(--bg)').attr('stroke-width', 2);
+
+                // probe cursor + dot on curve
+                svg.append('line').attr('class', 'cursor-line')
+                    .attr('x1', x(demo3.probeOmega)).attr('x2', x(demo3.probeOmega))
+                    .attr('y1', pT).attr('y2', H - pB);
+                svg.append('circle')
+                    .attr('cx', x(demo3.probeOmega)).attr('cy', y(demo3_magDb(demo3.probeOmega))).attr('r', 5)
+                    .attr('fill', 'var(--probe)').attr('stroke', 'var(--bg)').attr('stroke-width', 2);
+            }
+
+            return { render };
+        }
+
+        let demo3SPlane, demo3Bode;
+        function renderDemo3() {
+            if (!demo3SPlane) return;
+            demo3SPlane.render();
+            demo3Bode.render();
+
+            const vec = Math.sqrt(demo3.wc * demo3.wc + demo3.probeOmega * demo3.probeOmega);
+            const ratio = vec / demo3.wc;
+            const mag = 1 / ratio;
+            const magDb = 20 * Math.log10(mag);
+            const ang = Math.atan2(demo3.probeOmega, demo3.wc) * 180 / Math.PI;
+            const out = document.getElementById('d3-readout');
+            if (out) out.innerHTML =
+                `<tr><td>ωc &middot; pole distance from jω</td><td>${demo3.wc.toFixed(2)}</td></tr>` +
+                `<tr><td>ω &middot; probe frequency</td><td>${demo3.probeOmega.toFixed(2)}</td></tr>` +
+                `<tr><td>pole-vector length &nbsp; |jω − p|</td><td>${vec.toFixed(3)}</td></tr>` +
+                `<tr><td>length ratio &nbsp; |jω − p| / ωc</td><td>${ratio.toFixed(3)}${Math.abs(ratio - Math.SQRT2) < 0.02 ? ' &nbsp; ≈ √2' : ''}</td></tr>` +
+                `<tr><td>|H(jω)|</td><td>${mag.toFixed(3)} &nbsp; (${magDb.toFixed(2)} dB)</td></tr>` +
+                `<tr><td>∠ at pole</td><td>${ang.toFixed(1)}°${Math.abs(ang - 45) < 1 ? ' &nbsp; ← right-isosceles' : ''}</td></tr>`;
+            const wcVal = document.getElementById('d3-wc-val');
+            if (wcVal) wcVal.textContent = demo3.wc.toFixed(2);
+            const pv = document.getElementById('d3-probe-val');
+            if (pv) pv.textContent = demo3.probeOmega.toFixed(2);
+        }
+
+        // ===================== Section 5 — rolloff slope =========================
+        const demo4 = { wc: 1, order: 1, probeOmega: 5 };
+
+        function demo4_magDb(w, wc, n) {
+            const mag = Math.pow(wc / Math.sqrt(wc * wc + w * w), n);
+            return 20 * Math.log10(mag);
+        }
+
+        function demo4_niceStep(span) {
+            const raw = span / 6;
+            const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+            const m = raw / pow;
+            if (m < 1.5) return 1 * pow;
+            if (m < 3.5) return 2 * pow;
+            if (m < 7.5) return 5 * pow;
+            return 10 * pow;
+        }
+
+        function makeRolloffSPlane(svgSel) {
+            const svg = d3.select(svgSel);
+            const svgNode = svg.node();
+            const wrap = svgSel.parentElement;
+
+            function render() {
+                const rect = wrap.getBoundingClientRect();
+                const W = Math.max(300, rect.width);
+                const H = Math.max(300, rect.height);
+                svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+                svg.selectAll('*').remove();
+
+                const pad = 36;
+                const wc = demo4.wc;
+                const w = demo4.probeOmega;
+                const n = demo4.order;
+
+                // Auto-fit y-domain so both the pole at -wc and the probe at jω stay visible.
+                const yMax = Math.max(w * 1.18, 2.6 * wc);
+                const yMin = -0.22 * yMax;
+                const xMax = Math.max(0.55 * wc, 0.18 * yMax);
+                const xMin = -Math.max(2.0 * wc, 0.45 * yMax);
+
+                const wAvail = W - 2 * pad, hAvail = H - 2 * pad;
+                const xSpan = xMax - xMin, ySpan = yMax - yMin;
+                const scale = Math.min(wAvail / xSpan, hAvail / ySpan);
+                const cxPix = W / 2 - ((xMin + xMax) / 2) * scale;
+                const cyPix = H / 2 + ((yMin + yMax) / 2) * scale;
+                const x = v => cxPix + v * scale;
+                const y = v => cyPix - v * scale;
+
+                // Grid
+                const grid = svg.append('g').attr('class', 'grid');
+                const xStep = demo4_niceStep(xSpan);
+                const yStep = demo4_niceStep(ySpan);
+                for (let v = Math.ceil(xMin / xStep) * xStep; v <= xMax + 1e-9; v += xStep) {
+                    grid.append('line').attr('class', Math.abs(v) < 1e-9 ? 'zero-line' : null)
+                        .attr('x1', x(v)).attr('x2', x(v))
+                        .attr('y1', pad).attr('y2', H - pad);
+                }
+                for (let v = Math.ceil(yMin / yStep) * yStep; v <= yMax + 1e-9; v += yStep) {
+                    grid.append('line').attr('class', Math.abs(v) < 1e-9 ? 'zero-line' : null)
+                        .attr('x1', pad).attr('x2', W - pad)
+                        .attr('y1', y(v)).attr('y2', y(v));
+                }
+
+                // Axis titles placed OUTSIDE the plot frame (four-quadrant view).
+                svgKatex(svg, W - pad + 6, y(0), '\\sigma',
+                    { width: pad - 8, height: 22, anchor: 'start' });
+                svgKatex(svg, x(0), pad - 14, 'j\\omega',
+                    { width: 60, height: 22 });
+
+                const poleX = x(-wc), poleY = y(0);
+                const origX = x(0), origY = y(0);
+                const probX = x(0), probY = y(w);
+                const isHighF = w > 5 * wc;
+
+                // Triangle fill
+                svg.append('path')
+                    .attr('d', `M ${poleX} ${poleY} L ${origX} ${origY} L ${probX} ${probY} Z`)
+                    .attr('fill', 'var(--input-bg)').attr('stroke', 'none');
+
+                // Right-angle marker at origin
+                const sq = 8;
+                svg.append('path')
+                    .attr('d', `M ${origX - sq} ${origY} L ${origX - sq} ${origY - sq} L ${origX} ${origY - sq}`)
+                    .attr('fill', 'none').attr('stroke', 'var(--muted)').attr('stroke-width', 1);
+
+                // Horizontal leg (pole → origin) labelled ωc
+                svg.append('line')
+                    .attr('x1', poleX).attr('y1', poleY).attr('x2', origX).attr('y2', origY)
+                    .attr('stroke', 'var(--pole)').attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3');
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', (poleX + origX) / 2).attr('y', poleY + 16).attr('text-anchor', 'middle')
+                    .attr('fill', 'var(--pole)').text(`ωc = ${wc.toFixed(2)}`);
+
+                // Vertical leg (origin → probe) labelled ω
+                svg.append('line')
+                    .attr('x1', origX).attr('y1', origY).attr('x2', probX).attr('y2', probY)
+                    .attr('stroke', 'var(--probe)').attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3');
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', origX + 8).attr('y', (origY + probY) / 2 + 4)
+                    .attr('fill', 'var(--probe)').text(`ω = ${w.toFixed(2)}`);
+
+                // Hypotenuse (pole → probe): the pole-vector whose length sets |H|
+                const hypLen = Math.sqrt(wc * wc + w * w);
+                svg.append('line')
+                    .attr('x1', poleX).attr('y1', poleY).attr('x2', probX).attr('y2', probY)
+                    .attr('stroke', isHighF ? 'var(--accent)' : 'var(--zero)')
+                    .attr('stroke-width', 2.2);
+                // Hypotenuse label, offset perpendicular to the line on its left side
+                const midX = (poleX + probX) / 2, midY = (poleY + probY) / 2;
+                const dx = probX - poleX, dy = probY - poleY;
+                const norm = Math.hypot(dx, dy);
+                // perpendicular pointing toward the upper-left of the line (away from the triangle interior)
+                const ux = dy / norm, uy = -dx / norm;
+                const off = 16;
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', midX + ux * off).attr('y', midY + uy * off)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', isHighF ? 'var(--accent)' : 'var(--zero)')
+                    .text(`|jω − p| = ${hypLen.toFixed(2)}`);
+
+                // Pole × marker (with multiplicity badge if n > 1)
+                const sz = 9;
+                const poleG = svg.append('g');
+                poleG.append('line').attr('class', 'pole')
+                    .attr('x1', poleX - sz).attr('y1', poleY - sz)
+                    .attr('x2', poleX + sz).attr('y2', poleY + sz);
+                poleG.append('line').attr('class', 'pole')
+                    .attr('x1', poleX - sz).attr('y1', poleY + sz)
+                    .attr('x2', poleX + sz).attr('y2', poleY - sz);
+                if (n > 1) {
+                    poleG.append('text').attr('class', 'axis-label')
+                        .attr('x', poleX).attr('y', poleY - 14)
+                        .attr('text-anchor', 'middle')
+                        .attr('fill', 'var(--pole)')
+                        .text(`(×${n})`);
+                }
+
+                // Probe (draggable bead on the jω axis)
+                const probe = svg.append('circle').attr('class', 'probe')
+                    .attr('cx', probX).attr('cy', probY).attr('r', 8);
+                probe.call(d3.drag()
+                    .container(() => svgNode)
+                    .on('drag', function (event) {
+                        if (!isFinite(event.y)) return;
+                        const dataY = (cyPix - event.y) / scale;
+                        const newW = Math.max(0.1, Math.min(100, Math.abs(dataY)));
+                        demo4.probeOmega = newW;
+                        const slider = document.getElementById('d4-probe');
+                        if (slider) slider.value = String(Math.log10(newW));
+                        renderDemo4();
+                    })
+                );
+
+                // High-frequency annotation: show that |jω−p| ≈ ω once ω ≫ ωc
+                if (isHighF) {
+                    svg.append('text').attr('class', 'axis-label')
+                        .attr('x', W - pad - 4).attr('y', H - pad - 8)
+                        .attr('text-anchor', 'end')
+                        .attr('fill', 'var(--accent)')
+                        .text(`|jω − p| ≈ ω  (ratio = ${(w / hypLen).toFixed(3)})`);
+                }
+            }
+
+            return { render };
+        }
+
+        function makeRolloffBode(svgSel) {
+            const svg = d3.select(svgSel);
+            const wrap = svgSel.parentElement;
+
+            function render() {
+                const rect = wrap.getBoundingClientRect();
+                const W = Math.max(300, rect.width);
+                const H = Math.max(240, rect.height);
+                svg.attr('viewBox', `0 0 ${W} ${H}`).attr('width', W).attr('height', H);
+                svg.selectAll('*').remove();
+
+                const pL = 64, pR = 28, pT = 36, pB = 52;
+                const wLo = 0.01, wHi = 1000;
+                const yLo = -80, yHi = 10;
+                const x = d3.scaleLog().domain([wLo, wHi]).range([pL, W - pR]);
+                const y = d3.scaleLinear().domain([yLo, yHi]).range([H - pB, pT]);
+                const n = demo4.order;
+                const wc = demo4.wc;
+                const probeW = demo4.probeOmega;
+
+                // Grid (decade majors + minors)
+                const grid = svg.append('g').attr('class', 'grid');
+                for (let d = Math.floor(Math.log10(wLo)); d <= Math.ceil(Math.log10(wHi)); d++) {
+                    for (let m = 1; m <= 9; m++) {
+                        const wv = m * Math.pow(10, d);
+                        if (wv < wLo || wv > wHi) continue;
+                        grid.append('line')
+                            .attr('class', m === 1 ? 'zero-line' : null)
+                            .attr('x1', x(wv)).attr('x2', x(wv))
+                            .attr('y1', pT).attr('y2', H - pB);
+                    }
+                }
+                for (const v of y.ticks(6)) {
+                    grid.append('line').attr('class', v === 0 ? 'zero-line' : null)
+                        .attr('x1', pL).attr('x2', W - pR)
+                        .attr('y1', y(v)).attr('y2', y(v));
+                }
+
+                svg.append('g').attr('transform', `translate(0,${H - pB})`)
+                    .call(d3.axisBottom(x).ticks(6, '~g'));
+                svg.append('g').attr('transform', `translate(${pL},0)`)
+                    .call(d3.axisLeft(y).ticks(6));
+
+                // Axis labels — bottom-centre for x, rotated on the left for y (KaTeX)
+                svgKatex(svg, (pL + W - pR) / 2, H - 14, '\\omega\\;(\\text{rad/s, log})',
+                    { width: 240, height: 22 });
+                svgKatex(svg, pL - 46, (pT + H - pB) / 2, '|H(j\\omega)|\\;(\\text{dB})',
+                    { width: 200, height: 22, rotate: -90 });
+
+                // Low-frequency asymptote (0 dB)
+                svg.append('line')
+                    .attr('x1', pL).attr('x2', W - pR)
+                    .attr('y1', y(0)).attr('y2', y(0))
+                    .attr('stroke', 'var(--muted)')
+                    .attr('stroke-width', 1.4)
+                    .attr('stroke-dasharray', '6 4')
+                    .attr('opacity', 0.7);
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', W - pR - 4).attr('y', y(0) - 6)
+                    .attr('text-anchor', 'end')
+                    .attr('fill', 'var(--muted)').text('0 dB');
+
+                // High-frequency asymptote: line through (wc, 0) with slope −20n dB/dec
+                const asymAt = (wv) => -20 * n * (Math.log10(wv) - Math.log10(wc));
+                const wA_lo = wc;
+                const wA_hi = Math.min(wHi, wc * Math.pow(10, 80 / (20 * n)));
+                const aP1 = { x: x(wA_lo), y: y(0) };
+                const aP2 = { x: x(wA_hi), y: y(Math.max(yLo, asymAt(wA_hi))) };
+                svg.append('line')
+                    .attr('x1', aP1.x).attr('y1', aP1.y)
+                    .attr('x2', aP2.x).attr('y2', aP2.y)
+                    .attr('stroke', 'var(--accent)')
+                    .attr('stroke-width', 1.6)
+                    .attr('stroke-dasharray', '6 4')
+                    .attr('opacity', 0.9);
+
+                // Slope label rotated to follow the asymptote line
+                const slopeDb = -20 * n;
+                const dx = aP2.x - aP1.x, dy = aP2.y - aP1.y;
+                const norm = Math.hypot(dx, dy) || 1;
+                const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+                // anchor 60% along the visible asymptote, offset perpendicular toward the upper-right
+                const t = 0.6;
+                const ax = aP1.x + dx * t, ay = aP1.y + dy * t;
+                const upx = dy / norm, upy = -dx / norm; // perpendicular, points up-right for a down-going line
+                const labOff = 14;
+                const lx = ax + upx * labOff, ly = ay + upy * labOff;
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', lx).attr('y', ly)
+                    .attr('text-anchor', 'middle')
+                    .attr('transform', `rotate(${angleDeg},${lx},${ly})`)
+                    .attr('fill', 'var(--accent)')
+                    .text(`${slopeDb} dB/decade`);
+
+                // ωc cursor — labelled at the bottom of the plot to avoid colliding with the slope label
+                svg.append('line').attr('class', 'cursor-line')
+                    .attr('x1', x(wc)).attr('x2', x(wc))
+                    .attr('y1', pT).attr('y2', H - pB)
+                    .attr('stroke', 'var(--accent)').attr('opacity', 0.5);
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', x(wc)).attr('y', H - pB - 6)
+                    .attr('text-anchor', 'middle')
+                    .attr('fill', 'var(--accent)').text(`ωc = ${wc.toFixed(2)}`);
+
+                // Probe cursor (only when distinct from ωc)
+                const probeDistinct = Math.abs(Math.log10(probeW) - Math.log10(wc)) > 0.04;
+                if (probeDistinct && probeW >= wLo && probeW <= wHi) {
+                    svg.append('line').attr('class', 'cursor-line')
+                        .attr('x1', x(probeW)).attr('x2', x(probeW))
+                        .attr('y1', pT).attr('y2', H - pB)
+                        .attr('stroke', 'var(--probe)').attr('opacity', 0.55);
+                    svg.append('text').attr('class', 'axis-label')
+                        .attr('x', x(probeW)).attr('y', pT + 12)
+                        .attr('text-anchor', 'middle')
+                        .attr('fill', 'var(--probe)').text(`ω = ${probeW.toFixed(2)}`);
+                }
+
+                // True magnitude curve for the n-pole cascade
+                const N = 500;
+                const pts = [];
+                for (let k = 0; k < N; k++) {
+                    const wv = Math.pow(10, Math.log10(wLo) + (Math.log10(wHi) - Math.log10(wLo)) * k / (N - 1));
+                    pts.push({ w: wv, magDb: demo4_magDb(wv, wc, n) });
+                }
+                svg.append('path').attr('class', 'bode-line')
+                    .attr('d', d3.line().x(d => x(d.w)).y(d => y(Math.max(yLo, d.magDb)))(pts));
+
+                // Corner dot at (ωc, −3n dB)
+                const cornerDb = demo4_magDb(wc, wc, n);
+                svg.append('circle')
+                    .attr('cx', x(wc)).attr('cy', y(cornerDb)).attr('r', 5)
+                    .attr('fill', 'var(--probe)').attr('stroke', 'var(--bg)').attr('stroke-width', 2);
+                svg.append('text').attr('class', 'axis-label')
+                    .attr('x', x(wc) - 8).attr('y', y(cornerDb) + 4)
+                    .attr('text-anchor', 'end')
+                    .attr('fill', 'var(--probe)').text(`${cornerDb.toFixed(2)} dB`);
+
+                // Probe dot on the curve
+                if (probeDistinct && probeW >= wLo && probeW <= wHi) {
+                    const probeDb = demo4_magDb(probeW, wc, n);
+                    const pyV = y(Math.max(yLo, probeDb));
+                    svg.append('circle')
+                        .attr('cx', x(probeW)).attr('cy', pyV).attr('r', 4.5)
+                        .attr('fill', 'var(--probe)').attr('stroke', 'var(--bg)').attr('stroke-width', 2);
+                }
+            }
+
+            return { render };
+        }
+
+        let demo4Bode, demo4SPlane;
+        function renderDemo4() {
+            if (!demo4Bode) return;
+            demo4SPlane && demo4SPlane.render();
+            demo4Bode.render();
+
+            const n = demo4.order;
+            const wc = demo4.wc;
+            const w = demo4.probeOmega;
+            const slopeDec = -20 * n;
+            const slopeOct = -20 * n * Math.log10(2);
+            const db10 = demo4_magDb(10 * wc, wc, n);
+            const db100 = demo4_magDb(100 * wc, wc, n);
+            const dbProbe = demo4_magDb(w, wc, n);
+            const hypLen = Math.sqrt(wc * wc + w * w);
+            const out = document.getElementById('d4-readout');
+            if (out) out.innerHTML =
+                `<tr><td>ωc &middot; corner frequency</td><td>${wc.toFixed(2)}</td></tr>` +
+                `<tr><td>n &middot; cascade order</td><td>${n}</td></tr>` +
+                `<tr><td>asymptotic slope</td><td>${slopeDec} dB/decade &nbsp; (${slopeOct.toFixed(2)} dB/octave)</td></tr>` +
+                `<tr><td>|jω − p| at probe</td><td>${hypLen.toFixed(3)} &nbsp; (ω/|jω − p| = ${(w / hypLen).toFixed(3)})</td></tr>` +
+                `<tr><td>|H| at ω = probe</td><td>${dbProbe.toFixed(2)} dB</td></tr>` +
+                `<tr><td>|H| at ω = ωc</td><td>${demo4_magDb(wc, wc, n).toFixed(2)} dB</td></tr>` +
+                `<tr><td>|H| at ω = 10 ωc</td><td>${db10.toFixed(2)} dB</td></tr>` +
+                `<tr><td>|H| at ω = 100 ωc</td><td>${db100.toFixed(2)} dB</td></tr>`;
+            const wcVal = document.getElementById('d4-wc-val');
+            if (wcVal) wcVal.textContent = wc.toFixed(2);
+            const probeVal = document.getElementById('d4-probe-val');
+            if (probeVal) probeVal.textContent = w.toFixed(2);
+        }
+
+        // ======================= magnitude-section state =========================
+        // Independent pole/zero set used only by the new magnitude section.
+        // Initialised with one pole and one zero so the construction starts at
+        // the simplest non-trivial case; students extend it with the toolbar.
+        const magState = {
+            poles: [{ id: 1001, re: -1, im: 1 }],
+            zeros: [{ id: 1002, re: 0, im: 2 }],
+            K: 1,
+            conjPair: false,
+            mode: 'pole',
+            view3D: false,
+            probeOmega: 1,
+            omegaRange: [0.1, 100],
+            camRot: 35,
+            camTilt: 35,
+        };
+
+        // ======================= main render loop ================================
+        let sPlane1, sPlane2, bodeMag, bodePhase2;
+        let sPlaneMag, surface3DMag, bodeMagSec3;
+
+        function renderAll() {
+            renderLatex();
+            const samples = bodeSamples(400);
+            sPlane1.render();
+            sPlane2.render();
+            bodeMag.render(samples);
+            bodePhase2.render(samples, { cursorW: Math.abs(state.probeOmega), dotOnCurve: true });
+
+            // magnitude section
+            const magSamples = bodeSamples(400, magState);
+            sPlaneMag.render();
+            if (magState.view3D) surface3DMag.render();
+            bodeMagSec3.render(magSamples, { cursorW: Math.abs(magState.probeOmega), dotOnCurve: true });
+
+            // section 1 readouts
+            document.getElementById('w-range-val').textContent =
+                fmt(state.omegaRange[0], 2) + '–' + fmt(state.omegaRange[1], 0);
+            // phase section readouts
+            document.getElementById('probe-val').textContent = fmt(state.probeOmega, 2);
+            document.getElementById('probe-hint').textContent = 'ω = ' + fmt(state.probeOmega, 2);
+            // magnitude section readouts
+            const probeValMag = document.getElementById('probe-val-mag');
+            const probeHintMag = document.getElementById('probe-hint-mag');
+            if (probeValMag) probeValMag.textContent = fmt(magState.probeOmega, 2);
+            if (probeHintMag) probeHintMag.textContent = 'ω = ' + fmt(magState.probeOmega, 2);
+        }
+
+        // ======================= wiring (DOM ready) ==============================
+        function init() {
+            sPlane1 = makeSPlane(document.getElementById('splane'));
+            sPlane2 = makeSPlane(document.getElementById('splane2'), {
+                withProbe: true,
+                editable: false,
+                drawAngles: true,
+            });
+            bodeMag = makeBodePlot(document.getElementById('bode-mag'), 'mag');
+            bodePhase2 = makeBodePlot(document.getElementById('bode-phase2'), 'phase');
+
+            // magnitude section plots
+            sPlaneMag = makeSPlane(document.getElementById('splane-mag'), {
+                state: magState,
+                withProbe: true,
+                editable: true,
+                drawLengths: true,
+                highlightDominant: true,
+                probeSliderId: 'probe-slider-mag',
+                hintId: 'probe-hint-mag',
+            });
+            surface3DMag = makeSurface3D(document.getElementById('surface3d-mag'), {
+                state: magState,
+                camRotId: 'cam-rot-mag',
+                camRotValId: 'cam-rot-val-mag',
+                camTiltId: 'cam-tilt-mag',
+                camTiltValId: 'cam-tilt-val-mag',
+            });
+            bodeMagSec3 = makeBodePlot(document.getElementById('bode-mag-sec3'), 'mag', {
+                state: magState,
+            });
+
+            // === section 1 — mode pills ===
+            const pPole = document.getElementById('mode-pole');
+            const pZero = document.getElementById('mode-zero');
+            pPole.addEventListener('click', () => {
+                state.mode = 'pole';
+                pPole.classList.add('active'); pZero.classList.remove('active');
+            });
+            pZero.addEventListener('click', () => {
+                state.mode = 'zero';
+                pZero.classList.add('active'); pPole.classList.remove('active');
+            });
+
+            document.getElementById('conj-pair').addEventListener('change', e => {
+                state.conjPair = e.target.checked;
+            });
+
+            document.getElementById('preset-select').addEventListener('change', e => {
+                if (e.target.value) loadPreset(e.target.value);
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                state.poles = []; state.zeros = []; state.K = 1;
+                document.getElementById('k-slider').value = 0;
+                document.getElementById('k-val').textContent = '1.00';
+                updateOmegaRangeAuto();
+                renderAll();
+            });
+
+            document.getElementById('k-slider').addEventListener('input', e => {
+                state.K = Math.pow(10, parseFloat(e.target.value));
+                document.getElementById('k-val').textContent = fmt(state.K, 3);
+                renderAll();
+            });
+
+            document.getElementById('w-range').addEventListener('input', e => {
+                const mag = Math.pow(10, parseFloat(e.target.value));
+                state.omegaRange = [1 / mag, mag];
+                renderAll();
+            });
+
+            // === section 4 (phase) probe slider — value is log10(ω) ===
+            document.getElementById('probe-slider').addEventListener('input', e => {
+                state.probeOmega = Math.pow(10, parseFloat(e.target.value));
+                renderAll();
+            });
+
+            // === section 3 (magnitude) controls ===
+            const pPoleM = document.getElementById('mode-pole-mag');
+            const pZeroM = document.getElementById('mode-zero-mag');
+            pPoleM.addEventListener('click', () => {
+                magState.mode = 'pole';
+                pPoleM.classList.add('active'); pZeroM.classList.remove('active');
+            });
+            pZeroM.addEventListener('click', () => {
+                magState.mode = 'zero';
+                pZeroM.classList.add('active'); pPoleM.classList.remove('active');
+            });
+            document.getElementById('conj-pair-mag').addEventListener('change', e => {
+                magState.conjPair = e.target.checked;
+            });
+            document.getElementById('btn-reset-mag').addEventListener('click', () => {
+                magState.poles = [{ id: uid(), re: -1, im: 1 }];
+                magState.zeros = [{ id: uid(), re: 0, im: 2 }];
+                magState.K = 1;
+                magState.conjPair = false;
+                document.getElementById('conj-pair-mag').checked = false;
+                magState.probeOmega = 1;
+                document.getElementById('probe-slider-mag').value = '0';
+                updateOmegaRangeAuto(magState);
+                renderAll();
+            });
+            document.getElementById('probe-slider-mag').addEventListener('input', e => {
+                magState.probeOmega = Math.pow(10, parseFloat(e.target.value));
+                renderAll();
+            });
+
+            // magnitude-section view toggle (2D s-plane <-> 3D |H(s)| surface)
+            const v2dM = document.getElementById('view-2d-mag');
+            const v3dM = document.getElementById('view-3d-mag');
+            const svgM = document.getElementById('splane-mag');
+            const canvM = document.getElementById('surface3d-mag');
+            const camMag = document.getElementById('camera-ctrl-mag');
+            const camMag2 = document.getElementById('camera-ctrl2-mag');
+            v2dM.addEventListener('click', () => {
+                magState.view3D = false;
+                v2dM.classList.add('active'); v3dM.classList.remove('active');
+                svgM.style.display = ''; canvM.style.display = 'none';
+                camMag.style.display = 'none'; camMag2.style.display = 'none';
+                renderAll();
+            });
+            v3dM.addEventListener('click', () => {
+                magState.view3D = true;
+                v3dM.classList.add('active'); v2dM.classList.remove('active');
+                svgM.style.display = 'none'; canvM.style.display = '';
+                camMag.style.display = ''; camMag2.style.display = '';
+                renderAll();
+            });
+            document.getElementById('cam-rot-mag').addEventListener('input', e => {
+                magState.camRot = parseFloat(e.target.value);
+                document.getElementById('cam-rot-val-mag').textContent = Math.round(magState.camRot) + '°';
+                if (magState.view3D) surface3DMag.render();
+            });
+            document.getElementById('cam-tilt-mag').addEventListener('input', e => {
+                magState.camTilt = parseFloat(e.target.value);
+                document.getElementById('cam-tilt-val-mag').textContent = Math.round(magState.camTilt) + '°';
+                if (magState.view3D) surface3DMag.render();
+            });
+
+            // Section 4 — cutoff demo
+            demo3SPlane = makeDemo3SPlane(document.getElementById('splane3'));
+            demo3Bode = makeDemo3Bode(document.getElementById('bode3'));
+            document.getElementById('d3-wc').addEventListener('input', e => {
+                demo3.wc = parseFloat(e.target.value);
+                renderDemo3();
+            });
+            document.getElementById('d3-probe').addEventListener('input', e => {
+                demo3.probeOmega = Math.pow(10, parseFloat(e.target.value));
+                renderDemo3();
+            });
+            document.getElementById('d3-snap').addEventListener('click', () => {
+                demo3.probeOmega = demo3.wc;
+                document.getElementById('d3-probe').value = String(Math.log10(demo3.wc));
+                renderDemo3();
+            });
+
+            // Section 5 — rolloff slope demo
+            demo4SPlane = makeRolloffSPlane(document.getElementById('splane4'));
+            demo4Bode = makeRolloffBode(document.getElementById('bode4'));
+            document.getElementById('d4-wc').addEventListener('input', e => {
+                demo4.wc = parseFloat(e.target.value);
+                renderDemo4();
+            });
+            document.getElementById('d4-probe').addEventListener('input', e => {
+                demo4.probeOmega = Math.pow(10, parseFloat(e.target.value));
+                renderDemo4();
+            });
+            function syncOrderUI(n) {
+                document.querySelectorAll('.order-pill').forEach(p => {
+                    const active = parseInt(p.dataset.order, 10) === n;
+                    p.classList.toggle('active', active);
+                    p.style.background = active ? 'var(--pill-active-bg)' : 'var(--pill-bg)';
+                    p.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+                    p.style.color = active ? 'var(--accent)' : 'var(--text-dim)';
+                });
+                const slider = document.getElementById('d4-order-slider');
+                if (slider && parseInt(slider.value, 10) !== n) slider.value = String(n);
+                const out = document.getElementById('d4-order-val');
+                if (out) out.textContent = `n = ${n}`;
+            }
+            document.querySelectorAll('.order-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    const n = parseInt(pill.dataset.order, 10);
+                    demo4.order = n;
+                    syncOrderUI(n);
+                    renderDemo4();
+                });
+            });
+            document.getElementById('d4-order-slider').addEventListener('input', e => {
+                const n = parseInt(e.target.value, 10);
+                demo4.order = n;
+                syncOrderUI(n);
+                renderDemo4();
+            });
+
+            // theme change hook
+            window.addEventListener('themechange', () => { renderAll(); renderDemo3(); renderDemo4(); });
+            window.addEventListener('resize', () => { renderAll(); renderDemo3(); renderDemo4(); });
+
+            // start with a useful preset so the page isn't empty
+            loadPreset('lp2');
+            updateOmegaRangeAuto(magState);
+            renderDemo3();
+            renderDemo4();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+
+</html>

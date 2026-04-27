@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Complex Multiplication and Division</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="complex_arithmetic_JS/complex_arithmetic.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 8</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 8 · COMPLEX ARITHMETIC</div>
+            <h1 class="hero">Multiplication and division of <em>complex numbers</em>.</h1>
+            <p class="sub">In polar form, the product and quotient of two complex numbers are obtained geometrically
+                rather than algebraically. The magnitude of the product equals the product of the input magnitudes, and
+                its argument equals the sum of the input arguments; division reverses the latter operation. The
+                constructions that follow develop these rules on the Argand plane and provide the geometric foundation
+                for evaluating a transfer function $H(s)$ from its pole and zero locations.</p>
+            <div class="tags">
+                <span class="field-tag">argand plane</span>
+                <span class="field-tag">polar form</span>
+                <span class="field-tag">rotation + scaling</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · MULTIPLICATION ================= -->
+    <section class="scene" id="sec-mul">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>multiplication</span></div>
+            <h2>Multiplication: magnitudes <em class="r">multiply</em>, arguments <em class="r">add</em>.</h2>
+
+            <p class="lead">A complex number expressed in polar form is written $z = r\,e^{i\theta}$, where $r = |z|$
+                denotes its magnitude and $\theta = \arg z$ denotes its argument, measured anticlockwise from the
+                positive real axis. Application of the angle-addition identity to the product of two such numbers
+                yields:</p>
+
+            <div class="eq-block">$$z_1 z_2 \;=\; r_1 e^{i\theta_1} \cdot r_2 e^{i\theta_2} \;=\; (r_1 r_2)\,
+                e^{i(\theta_1 + \theta_2)}.$$</div>
+
+            <p>The product has magnitude $r_1 r_2$ and argument $\theta_1 + \theta_2$. Multiplication by $z_2$ therefore
+                acts on $z_1$ as the composition of two geometric operations on the plane: a <strong>rotation</strong>
+                through the angle $\theta_2$ and a <strong>scaling</strong> by the factor $r_2$. These operations
+                commute, so the order in which they are applied does not affect the result.</p>
+
+            <h3>Geometric interpretation.</h3>
+            <p>The arc from the positive real axis to <em class="z1" style="color:var(--z1-color)">$z_1$</em> subtends
+                the angle $\theta_1$, and the arc to <em class="z2" style="color:var(--z2-color)">$z_2$</em> subtends
+                $\theta_2$. The arc to the <em class="r">product</em> subtends $\theta_1 + \theta_2$, equal to the two
+                preceding arcs placed end to end. The length of the product vector equals $r_1 r_2$. When both inputs
+                lie on the unit circle, the product also lies on the unit circle, and multiplication reduces to a pure
+                rotation.</p>
+
+            <div class="callout">
+                Dragging $z_2$ around the unit circle, with its magnitude fixed at one, causes the product to trace the
+                same circle as $z_1$, rotated through $\arg z_2$. Increasing the magnitude of $z_2$ outward scales the
+                product radially without altering its argument. The two effects superpose because the exponential
+                factors associated with magnitude and argument are independent.
+            </div>
+
+            <div class="breakdown">
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>magnitude</th>
+                            <th>argument</th>
+                            <th>cartesian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mul-readout"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="pill" id="mul-animate">▶&nbsp;animate&nbsp;×&nbsp;z₂</span>
+                    <span class="pill" id="mul-unit">z₂&nbsp;on&nbsp;unit&nbsp;circle</span>
+                    <span class="divider"></span>
+                    <span class="pill" id="mul-reset">reset</span>
+                    <span class="hint">drag the blue or green dot; vectors snap near grid lines</span>
+                </div>
+
+                <div class="plot-box">
+                    <div class="label">argand plane · <b>z₁ · z₂</b></div>
+                    <svg class="argand" id="plot-mul"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · DIVISION ================= -->
+    <section class="scene" id="sec-div">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>division</span></div>
+            <h2>Division: magnitudes <em class="r">divide</em>, arguments <em class="r">subtract</em>.</h2>
+
+            <p class="lead">Division of complex numbers in polar form follows from the same identity applied to the
+                reciprocal:</p>
+
+            <div class="eq-block">$$\frac{z_1}{z_2} \;=\; \frac{r_1 e^{i\theta_1}}{r_2 e^{i\theta_2}} \;=\;
+                \frac{r_1}{r_2}\, e^{i(\theta_1 - \theta_2)}.$$</div>
+
+            <p>The quotient has magnitude $r_1 / r_2$ and argument $\theta_1 - \theta_2$. Division by $z_2$ is the
+                inverse of multiplication by $z_2$, comprising a <strong>rotation</strong> through $-\theta_2$ and a
+                <strong>scaling</strong> by $1/r_2$. Composition of the two operations returns $z_1$ to itself, since
+                $z_1 \cdot z_2 \cdot z_2^{-1} = z_1$.</p>
+
+            <h3>Geometric interpretation.</h3>
+            <p>The arc to the <em class="r">quotient</em> subtends $\theta_1 - \theta_2$. When $\theta_2 > \theta_1$,
+                this difference is negative and the quotient lies below the positive real axis even when both inputs
+                lie above it. The length of the quotient vector equals $r_1$ scaled by the factor $1/r_2$. A divisor of
+                magnitude greater than one therefore contracts the result, while a divisor of magnitude less than one
+                expands it. A divisor that lies on the unit circle preserves the magnitude and contributes only a
+                rotation.</p>
+
+            <div class="callout">
+                Setting $r_1 = r_2$ places the quotient on the unit circle regardless of the chosen arguments, since
+                its magnitude equals one. Holding $r_1$ fixed while reducing $r_2$ towards zero causes the quotient to
+                grow without bound, the planar analogue of dividing by a small number on the real line. The same
+                construction governs the formation of resonance peaks when an evaluation point on the $j\omega$ axis
+                approaches a pole of $H(s)$.
+            </div>
+
+            <div class="breakdown">
+                <table>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>magnitude</th>
+                            <th>argument</th>
+                            <th>cartesian</th>
+                        </tr>
+                    </thead>
+                    <tbody id="div-readout"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="pill" id="div-animate">▶&nbsp;animate&nbsp;÷&nbsp;z₂</span>
+                    <span class="pill" id="div-unit">z₂&nbsp;on&nbsp;unit&nbsp;circle</span>
+                    <span class="divider"></span>
+                    <span class="pill" id="div-reset">reset</span>
+                    <span class="hint">drag the blue or green dot; vectors snap near grid lines</span>
+                </div>
+
+                <div class="plot-box">
+                    <div class="label">argand plane · <b>z₁ / z₂</b></div>
+                    <svg class="argand" id="plot-div"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · GRID TRANSFORMATION ================= -->
+    <section class="scene" id="sec-transform">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>grid transformation</span></div>
+            <h2>Multiplication as a transformation of the plane.</h2>
+
+            <p class="lead">Multiplication by a fixed complex number $a$ defines a linear transformation of the plane
+                that maps the unit vector at $1$ to $a$. Every point $w$ is sent to $aw$, so the rotation and scaling
+                applied to the unit vector are applied uniformly to the entire Cartesian grid.</p>
+
+            <div class="eq-block">$$1 \mapsto a,\qquad w \mapsto aw,\qquad w \mapsto \frac{w}{a}.$$</div>
+
+            <p>Setting <em class="z1" style="color:var(--z1-color)">$z_1$</em> and
+                <em class="z2" style="color:var(--z2-color)">$z_2$</em> and dragging the transform handle away from $1$
+                updates the overlay. When the handle is placed on $z_1$, the overlay displays the grid transformation
+                associated with multiplication by $z_1$, and the point $z_2$ is mapped to the corresponding product.
+                Selecting division displays the inverse transformation, in which each point is rotated through $-\arg a$
+                and scaled by $1/|a|$.</p>
+
+            <div class="callout">
+                The original Cartesian grid remains fixed beneath the overlay. The transformed grid is the image of
+                that grid under the chosen complex operation. Complex multiplication preserves right angles and
+                parallelism, so the visible effect is a rotation combined with a uniform scaling.
+            </div>
+
+            <div class="breakdown transform-readout" id="transform-readout"></div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="pill active" id="transform-mode-mul">multiply</span>
+                    <span class="pill" id="transform-mode-div">divide</span>
+                    <span class="divider"></span>
+                    <span class="pill" id="transform-snap-z1">place handle on z₁</span>
+                    <span class="pill" id="transform-reset">reset</span>
+                    <span class="hint">divide sets a on z₂; dragging z₂ then updates the grid map</span>
+                </div>
+
+                <div class="plot-box">
+                    <div class="label">argand plane · <b>grid map</b></div>
+                    <svg class="argand transform-argand" id="plot-transform"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="complex_arithmetic_JS/katex_label.js"></script>
+    <script defer src="complex_arithmetic_JS/argand_plot.js"></script>
+    <script defer src="complex_arithmetic_JS/plot_multiplication.js"></script>
+    <script defer src="complex_arithmetic_JS/plot_division.js"></script>
+    <script defer src="complex_arithmetic_JS/transform_grid.js"></script>
+</body>
+
+</html>

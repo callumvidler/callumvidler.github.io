@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · What Can Go Wrong</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="what_can_go_wrong_JS/what_can_go_wrong.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 8</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 8 · FILTER FAILURE MODES</div>
+            <h1 class="hero">When the filter <em>distorts the measurement</em>.</h1>
+            <p class="sub">Filter design proceeds from a transfer function $H(s)$, its pole-zero map, and its Bode response.
+                A biomedical recording, however, is judged on waveform morphology, on spectral content, and on its clinical
+                interpretation. Each section below isolates one mechanism by which $H(s)$ alters the recorded signal,
+                relates it to the governing equation, and states the standard remedy.</p>
+            <div class="tags">
+                <span class="field-tag">Bode response</span>
+                <span class="field-tag">pole-zero maps</span>
+                <span class="field-tag">ECG morphology</span>
+                <span class="field-tag">sampling</span>
+                <span class="field-tag">ADC resolution</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <section class="scene" id="sec-phase-distortion">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>group delay distortion</span></div>
+            <h2>A flat magnitude response does not preserve <em class="distort">waveform morphology</em>.</h2>
+            <p class="lead">Waveform fidelity requires that every spectral component be delayed by the same amount.
+                The relevant quantity is the group delay,
+                $$\tau_g(\omega) = -\frac{d\phi(\omega)}{d\omega},$$
+                where $\phi(\omega) = \angle H(j\omega)$. Constant $\tau_g$ corresponds to linear phase and produces a
+                pure time shift; non-constant $\tau_g$ shifts components by different amounts and reshapes the waveform.</p>
+            <p>A fourth-order Butterworth low-pass filter is maximally flat in magnitude, yet $\tau_g(\omega)$ rises near
+                cutoff. Faster ECG features (the QRS complex) are delayed differently from slower ones (the T wave), so
+                inter-beat intervals and ST timing are corrupted. The Bessel response is designed to maximise the flatness
+                of $\tau_g(\omega)$ at the expense of a softer roll-off.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Use a Bessel response or a linear-phase FIR filter when
+                morphology and timing must be preserved. Reserve Butterworth for applications in which only the magnitude
+                spectrum is interpreted.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">cutoff</span><input type="range" id="phase-cutoff-slider"
+                        min="1.55" max="2.3" step="0.01" value="1.9"><span class="val" id="phase-cutoff-val">79 rad/s</span></span>
+            </div>
+            <div class="response-grid">
+                <div class="plot-box response"><div class="label">mechanism · <b>magnitude</b></div><svg class="bode" id="plot-phase-mag"></svg></div>
+                <div class="plot-box response"><div class="label">mechanism · <b>phase</b></div><svg class="bode" id="plot-phase-phase"></svg></div>
+            </div>
+            <div class="plot-box ecg-wide"><div class="label">consequence · <b>ECG morphology</b></div><svg class="bode" id="plot-phase-ecg"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-instability">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>unstable poles</span></div>
+            <h2>A pole in the right half-plane forces the output to <em class="distort">grow without bound</em>.</h2>
+            <p class="lead">For a rational transfer function $H(s) = N(s)/D(s)$, the impulse response is a sum of modes
+                set by the roots $p_i$ of $D(s)$. A complex pair $p = \sigma \pm j\omega_d$ contributes a term of the form
+                $$h(t) = A\, e^{\sigma t} \cos(\omega_d t + \phi).$$
+                Bounded-input bounded-output stability therefore requires $\mathrm{Re}(p_i) < 0$ for every pole.</p>
+            <p>If any pole crosses the imaginary axis, $\sigma \ge 0$, the mode no longer decays and the output either
+                oscillates indefinitely or diverges. In analogue instrumentation this typically arises from excessive loop
+                gain, insufficient phase margin, or parasitic feedback around an op-amp stage. The Routh-Hurwitz criterion
+                gives an algebraic test on the coefficients of $D(s)$ without solving for the roots explicitly.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Confirm $\mathrm{Re}(p_i) < 0$ for all poles. Apply
+                Routh-Hurwitz to the closed-loop denominator, ensure adequate phase margin, and minimise stray capacitance
+                in the feedback path.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">pole angle</span><input type="range" id="instability-angle-slider"
+                        min="0" max="180" step="1" value="125"><span class="val" id="instability-angle-val">125 deg</span></span>
+                <span class="hint">drag anywhere in the s-plane</span>
+            </div>
+            <div class="instability-grid">
+                <div class="plot-box splane"><div class="label">mechanism · <b>s-plane pole pair</b></div><svg class="bode" id="plot-instability-splane"></svg></div>
+                <div class="plot-box step"><div class="label">consequence · <b>step response</b></div><svg class="bode" id="plot-instability-step"></svg></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-ringing">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>high-Q ringing</span></div>
+            <h2>High-$Q$ sections store energy and <em class="distort">ring</em> after a transient.</h2>
+            <p class="lead">A second-order low-pass section has the canonical form
+                $$H(s) = \frac{\omega_n^2}{s^2 + \dfrac{\omega_n}{Q}\, s + \omega_n^2},$$
+                with damping ratio $\zeta = 1/(2Q)$. The poles lie at $p = -\zeta\omega_n \pm j\omega_n\sqrt{1-\zeta^2}$.
+                As $Q$ increases, the poles approach the imaginary axis and the response becomes underdamped.</p>
+            <p>The fractional overshoot of the step response is
+                $$M_p = \exp\!\left(-\frac{\pi\zeta}{\sqrt{1-\zeta^2}}\right),$$
+                so a sharper transition is paid for in time-domain ringing. For reference, $Q = 0.707$ (Butterworth) gives
+                a maximally flat magnitude with $\approx 4\%$ overshoot, and $Q \approx 0.58$ (Bessel) gives no overshoot.
+                Above $Q \approx 1$, oscillatory tails appear on QRS edges that are not present in the source.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Where transient fidelity matters, restrict each second-order
+                section to $Q \le 0.707$, or adopt a Bessel cascade for which $\zeta \ge 1/\sqrt{2}$ throughout.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">Q</span><input type="range" id="ringing-q-slider"
+                        min="0.50" max="2.50" step="0.01" value="0.90"><span class="val" id="ringing-q-val">0.90</span></span>
+            </div>
+            <div class="plot-box tall"><div class="label">mechanism and consequence · <b>step plus ECG</b></div><svg class="bode" id="plot-ringing-dual"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-brick-wall">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>brick-wall ringing</span></div>
+            <h2>An ideal cutoff has an impulse response that is <em class="distort">non-local in time</em>.</h2>
+            <p class="lead">An ideal low-pass with cutoff $f_c$ has frequency response $H(f) = \mathrm{rect}(f/2f_c)$, and
+                its inverse Fourier transform is
+                $$h(t) = 2 f_c\, \mathrm{sinc}(2 f_c t),\qquad \mathrm{sinc}(x) = \frac{\sin \pi x}{\pi x}.$$
+                Because $h(t)$ extends over all time and decays only as $1/t$, truncation to a finite FIR length introduces
+                the Gibbs phenomenon: oscillations near the discontinuity whose peak amplitude does not vanish as the
+                length grows.</p>
+            <p>For a non-causal symmetric truncation, the ringing appears on both sides of a sharp event, including a
+                <em>pre-ringing</em> lobe that precedes the QRS spike in the output. The artifact is purely a property of
+                $h(t)$, not of the underlying physiology. Multiplying $h(t)$ by a smooth window (Hamming, Blackman, Kaiser)
+                trades transition sharpness for reduced sidelobe energy.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Apply a tapered window to the truncated impulse response, or
+                adopt an IIR design with finite roll-off (Butterworth, Bessel) for time-domain interpretation.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="plot-box tall"><div class="label">mechanism and consequence · <b>FIR impulse and ECG event</b></div><svg class="bode" id="plot-brick-dual"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-incomplete-noise">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>incomplete noise removal</span></div>
+            <h2>A notch filter <em class="distort">removes signal energy</em> together with the interference.</h2>
+            <p class="lead">A second-order notch centred at $\omega_0$ has the transfer function
+                $$H(s) = \frac{s^2 + \omega_0^2}{s^2 + \dfrac{\omega_0}{Q}\, s + \omega_0^2},$$
+                with $-3\,\mathrm{dB}$ rejection bandwidth $\mathrm{BW} = f_0/Q$. The notch quality factor $Q$ therefore
+                trades selectivity for residual interference.</p>
+            <p>For a 50 Hz mains notch on an EMG recording, a low $Q$ widens $\mathrm{BW}$ and removes physiological EMG
+                content adjacent to 50 Hz. A high $Q$ leaves the EMG spectrum intact but is sensitive to drift in the mains
+                frequency: when the interference moves outside the narrow notch, residual leakage remains. The choice is
+                governed by how stationary the interference is.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Use an adaptive notch that tracks $\omega_0(t)$, or a comb
+                filter when multiple harmonics are present. Where feasible, record a separate mains-reference channel and
+                subtract the correlated component by adaptive cancellation.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">notch Q</span><input type="range" id="noise-q-slider"
+                        min="3" max="45" step="0.5" value="14"><span class="val" id="noise-q-val">14.0</span></span>
+            </div>
+            <div class="noise-grid">
+                <div class="plot-box noise-side"><div class="label">consequence · <b>EMG trace</b></div><svg class="bode" id="plot-noise-time"></svg></div>
+                <div class="plot-box noise-side"><div class="label">consequence · <b>EMG spectrum</b></div><svg class="bode" id="plot-noise-spectrum"></svg></div>
+            </div>
+            <div class="plot-box noise-bode"><div class="label">mechanism · <b>notch magnitude</b></div><svg class="bode" id="plot-noise-bode"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-passband-ripple">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>passband ripple</span></div>
+            <h2>Chebyshev responses <em class="distort">reweight</em> components within the passband.</h2>
+            <p class="lead">A Chebyshev type I low-pass of order $N$ has squared magnitude
+                $$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2\, T_N^2(\omega/\omega_c)},$$
+                where $T_N$ is the Chebyshev polynomial and the passband ripple in decibels is
+                $A_p = 10 \log_{10}(1 + \varepsilon^2)$. The polynomial $T_N(x)$ oscillates between $\pm 1$ on $|x| \le 1$,
+                so the magnitude oscillates between $1$ and $1/\sqrt{1+\varepsilon^2}$ across the passband.</p>
+            <p>The reward is a steeper transition, given by the equiripple property; the cost is that any in-band
+                Fourier component is multiplied by a position-dependent gain. A multi-component biomedical waveform
+                therefore changes shape even when every component lies below the nominal cutoff.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Use Butterworth or Bessel responses when in-band flatness
+                governs interpretation. Accept Chebyshev only where the steeper transition justifies a quantified
+                redistribution of in-band amplitudes.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">ripple</span><input type="range" id="ripple-db-slider"
+                        min="0.1" max="3" step="0.05" value="1.2"><span class="val" id="ripple-db-val">1.2 dB</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">cutoff</span><input type="range" id="ripple-cutoff-slider"
+                        min="45" max="160" step="1" value="90"><span class="val" id="ripple-cutoff-val">90 rad/s</span></span>
+            </div>
+            <div class="response-grid">
+                <div class="plot-box response"><div class="label">mechanism · <b>magnitude ripple</b></div><svg class="bode" id="plot-ripple-mag"></svg></div>
+                <div class="plot-box response"><div class="label">mechanism · <b>phase response</b></div><svg class="bode" id="plot-ripple-phase"></svg></div>
+            </div>
+            <div class="plot-box ecg-wide"><div class="label">consequence · <b>unequal harmonic weighting</b></div><svg class="bode" id="plot-ripple-signal"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-aliasing">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>undersampling</span></div>
+            <h2>Spectral content above $f_s/2$ <em class="distort">folds</em> into the diagnostic band.</h2>
+            <p class="lead">The Nyquist-Shannon theorem requires that a band-limited signal of highest frequency $f_{\max}$
+                be sampled at $f_s \ge 2 f_{\max}$. The Nyquist frequency $f_N = f_s/2$ is the largest frequency that can
+                be uniquely represented at a sampling rate $f_s$.</p>
+            <p>A sinusoid at frequency $f$ exceeding $f_N$ is indistinguishable from its alias
+                $$f_{\mathrm{alias}} = \bigl|\, f - k f_s \,\bigr|,\qquad k = \mathrm{round}(f/f_s),$$
+                so it appears in the sampled record as a low-frequency artifact within $[0, f_N]$. A 40 Hz component
+                superimposed on ECG, sampled at $f_s = 65\,\mathrm{Hz}$, aliases to $25\,\mathrm{Hz}$ and contaminates
+                the diagnostic band. The artifact cannot be removed after sampling; it must be prevented before it.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Place an analogue anti-alias low-pass filter before the ADC
+                with cutoff well below $f_N$, and choose $f_s \ge 2 f_{\max}$ with engineering margin (typically
+                $f_s \approx 5\text{–}10\, f_{\max}$ for waveform fidelity).</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">sampling rate</span><input type="range" id="alias-fs-slider"
+                        min="5" max="180" step="1" value="65"><span class="val" id="alias-fs-val">65 Hz</span></span>
+            </div>
+            <div class="alias-grid">
+                <div class="plot-box alias-side"><div class="label">consequence · <b>sampled ECG trace</b></div><svg class="bode" id="plot-alias-time"></svg></div>
+                <div class="plot-box alias-side"><div class="label">mechanism · <b>spectrum folding</b></div><svg class="bode" id="plot-alias-spectrum"></svg></div>
+            </div>
+            <div class="plot-box alias-nyquist"><div class="label">explanation · <b>same samples, different sinusoids</b></div><svg class="bode" id="plot-alias-nyquist"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-hp-cutoff">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">08</span><span>high-pass cutoff</span></div>
+            <h2>A high-pass cutoff above $0.05\,\mathrm{Hz}$ <em class="distort">distorts the ST segment</em>.</h2>
+            <p class="lead">A first-order high-pass has the transfer function
+                $$H(s) = \frac{s}{s + \omega_c},\qquad \omega_c = 2\pi f_c,$$
+                with magnitude $|H(j\omega)| = \omega/\sqrt{\omega^2 + \omega_c^2}$. Frequencies satisfying
+                $\omega \ll \omega_c$ are attenuated and phase-shifted; the response is not a simple subtraction of
+                a DC level.</p>
+            <p>The ST segment of the ECG is a quasi-DC feature whose spectral energy lies below $1\,\mathrm{Hz}$.
+                Raising $f_c$ to suppress baseline drift therefore attenuates the very feature used to detect myocardial
+                ischemia, and the differentiator-like phase response of $H(s)$ tilts the segment, producing apparent
+                elevation or depression that is an artifact of the filter. AHA guidance specifies
+                $f_c \le 0.05\,\mathrm{Hz}$ for diagnostic ECG and tolerates $f_c \le 0.5\,\mathrm{Hz}$ only in
+                monitoring contexts.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Hold $f_c \le 0.05\,\mathrm{Hz}$ for diagnostic recording.
+                Suppress baseline wander by polynomial or spline regression, by an adaptive baseline estimator, or by a
+                zero-phase forward-backward filter rather than by increasing $f_c$.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">HP cutoff</span><input type="range" id="hp-cutoff-slider"
+                        min="-1.301" max="0.699" step="0.005" value="-0.301"><span class="val" id="hp-cutoff-val">0.50 Hz</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">consequence · <b>ST segment distortion</b></div><svg class="bode" id="plot-hp-st"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-quantization">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">09</span><span>quantization noise</span></div>
+            <h2>Bit depth sets an irreducible <em class="distort">noise floor</em> on the recording.</h2>
+            <p class="lead">An $N$-bit ADC partitions a full-scale range $V_{\mathrm{FS}}$ into $2^N$ codes of width
+                $$q = \frac{V_{\mathrm{FS}}}{2^N}.$$
+                Modelling the quantization error as uniform on $[-q/2, +q/2]$ gives mean-square error $\sigma_q^2 = q^2/12$.
+                For a full-scale sinusoid the resulting signal-to-noise ratio is
+                $$\mathrm{SNR} = 6.02 N + 1.76\ \mathrm{dB},$$
+                so each additional bit improves SNR by approximately $6\,\mathrm{dB}$.</p>
+            <p>At low bit depth the ECG shows a visible staircase, and the spectrum gains a broadband pedestal at
+                $\sigma_q^2 / f_N$ per hertz. Dithering decorrelates the quantization error from the signal at the cost
+                of a small noise increase; oversampling by a factor $M$ followed by decimation reduces in-band noise by
+                $10 \log_{10} M\ \mathrm{dB}$.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Increase $N$ to satisfy the required dynamic range, apply
+                dither when small signals must be resolved below $q$, or oversample and decimate to redistribute
+                quantization noise outside the band of interest.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">bit depth</span><input type="range" id="quant-bits-slider"
+                        min="4" max="16" step="1" value="6"><span class="val" id="quant-bits-val">6 bits</span></span>
+            </div>
+            <div class="plot-box tall"><div class="label">mechanism and consequence · <b>codes plus noise floor</b></div><svg class="bode" id="plot-quant-dual"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-transient">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">10</span><span>analogue settling</span></div>
+            <h2>Coupling capacitors impose an <em class="distort">exponential transient</em> on the output.</h2>
+            <p class="lead">A first-order high-pass coupling stage with resistance $R$ and capacitance $C$ has time
+                constant $\tau = RC$. Its response to an initial offset $V_0$ relaxing toward steady state $V_\infty$ is
+                $$v_o(t) = V_\infty + (V_0 - V_\infty)\, e^{-t/\tau}.$$
+                The transient is set by the circuit, not by the physiology, and it superimposes on every measurement
+                made before settling is complete.</p>
+            <p>The offset $V_0$ is largest immediately after lead connection, after electrode motion, after recovery from
+                amplifier saturation, or at power-up. The exponential reaches $99.3\%$ of its final value in $5\tau$, so
+                this interval is conventionally treated as the settling time. Acquisition during this window records
+                $v_o(t)$, not the patient signal.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Wait at least $5\tau$ before recording. Provide a bias or
+                reset path for coupling capacitors so that $V_0$ is bounded, prevent amplifier saturation by limiting
+                input range, and mark or discard the first $5\tau$ after any connection change or gain switch.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">time constant</span><input type="range" id="transient-tau-slider"
+                        min="0.25" max="1.20" step="0.01" value="0.65"><span class="val" id="transient-tau-val">0.65 s</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">initial offset</span><input type="range" id="transient-offset-slider"
+                        min="-0.8" max="0.8" step="0.02" value="0.45"><span class="val" id="transient-offset-val">0.45 mV</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">consequence · <b>analogue settling transient</b></div><svg class="bode" id="plot-transient"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-tolerance">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">11</span><span>component tolerance and drift</span></div>
+            <h2>Resistor and capacitor tolerances <em class="distort">spread</em> the realised response.</h2>
+            <p class="lead">A Sallen-Key second-order section has natural frequency
+                $$f_c = \frac{1}{2\pi\sqrt{R_1 R_2 C_1 C_2}}.$$
+                Logarithmic differentiation gives the first-order sensitivity
+                $$\frac{\delta f_c}{f_c} \approx -\tfrac{1}{2}\!\left(\frac{\delta R_1}{R_1} + \frac{\delta R_2}{R_2} + \frac{\delta C_1}{C_1} + \frac{\delta C_2}{C_2}\right),$$
+                so independent ±1% resistors and ±5% capacitors give $\sigma_{f_c}/f_c \approx \tfrac{1}{2}\sqrt{2(0.01)^2 + 2(0.05)^2} \approx 3.6\%$.
+                Temperature coefficients add a slow drift on the same parameters.</p>
+            <p>The pole quality factor $Q$ depends on the same components, and high-$Q$ sections amplify the spread. The plot
+                shows a Monte Carlo ensemble of magnitude responses for the chosen tolerance and nominal $Q$.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Use $\le 1\%$ resistors and NP0/C0G capacitors in the
+                frequency-determining positions, trim or calibrate after build where the specification demands it, and
+                avoid high-$Q$ sections when component spread cannot be tightened.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">tolerance</span><input type="range" id="tol-pct-slider"
+                        min="0.5" max="10" step="0.1" value="3"><span class="val" id="tol-pct-val">3.0%</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">section Q</span><input type="range" id="tol-q-slider"
+                        min="0.50" max="2.00" step="0.01" value="0.71"><span class="val" id="tol-q-val">0.71</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">mechanism · <b>magnitude response with tolerance envelope</b></div><svg class="bode" id="plot-tol-mag"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-gbw">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">12</span><span>finite gain-bandwidth product</span></div>
+            <h2>The op-amp imposes a <em class="distort">second roll-off</em> above the design cutoff.</h2>
+            <p class="lead">A real op-amp has open-loop gain $A(s) = A_0/(1 + s/\omega_p)$ with gain-bandwidth product
+                $\mathrm{GBW} = A_0 \omega_p / 2\pi$. For a closed-loop stage of noise gain $G$, the loop bandwidth is
+                $$f_{cl} \approx \frac{\mathrm{GBW}}{G},$$
+                and the realised response of an active filter is the product of the intentional response and the op-amp
+                roll-off at $f_{cl}$.</p>
+            <p>For a biopotential front end with $G = 100$ driving an intentional low-pass at $f_c = 100\,\mathrm{Hz}$,
+                a $1\,\mathrm{MHz}$ op-amp gives $f_{cl} = 10\,\mathrm{kHz}$, and the realised passband is flat.
+                A $0.1\,\mathrm{MHz}$ op-amp gives $f_{cl} = 1\,\mathrm{kHz}$ and noticeably attenuates the upper passband.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Specify $\mathrm{GBW} \ge 100 G f_c$ as a working margin,
+                distribute high gain across two stages so each stage runs at lower $G$, and verify the realised response
+                rather than relying on the schematic.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">GBW</span><input type="range" id="gbw-slider"
+                        min="-1" max="2" step="0.01" value="0"><span class="val" id="gbw-val">1.00 MHz</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">stage gain</span><input type="range" id="gbw-gain-slider"
+                        min="1" max="500" step="1" value="100"><span class="val" id="gbw-gain-val">100</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">mechanism · <b>ideal vs realised magnitude</b></div><svg class="bode" id="plot-gbw-mag"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-dc-errors">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">13</span><span>op-amp DC errors</span></div>
+            <h2>Input bias current through the source impedance can <em class="distort">saturate</em> the front end.</h2>
+            <p class="lead">An op-amp has an input offset voltage $V_{os}$ and input bias currents $I_{B+}, I_{B-}$. With a
+                source resistance $R_s$ at the non-inverting terminal, the referred-to-input error is
+                $$V_{e} = V_{os} + I_{B+} R_s,$$
+                and the stage of gain $G$ delivers an output offset $V_{o,\text{off}} = G\, V_e$. When $|V_{o,\text{off}}|$
+                exceeds the supply rails the amplifier saturates and the recorded waveform is clipped.</p>
+            <p>Bioelectrode source impedance is large and time-varying: gel electrodes sit at $10\text{–}100\,\mathrm{k}\Omega$,
+                dry electrodes can reach $1\text{–}10\,\mathrm{M}\Omega$. A $100\,\mathrm{nA}$ bias current and a
+                $1\,\mathrm{M}\Omega$ source produce $100\,\mathrm{mV}$ of input offset before any signal amplification.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Choose a low-bias amplifier (CMOS, $I_B$ in pA), match the
+                impedance seen by the two inputs to cancel $I_B R_s$ to first order, AC-couple to remove $V_{os}$ at the
+                cost of a high-pass corner, and provide a DC servo loop where DC fidelity is required.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">source Rs</span><input type="range" id="dc-rs-slider"
+                        min="3" max="7" step="0.01" value="5"><span class="val" id="dc-rs-val">100 kΩ</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">IB</span><input type="range" id="dc-ib-slider"
+                        min="-1" max="3" step="0.01" value="2"><span class="val" id="dc-ib-val">100 nA</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">stage gain</span><input type="range" id="dc-gain-slider"
+                        min="1" max="200" step="1" value="100"><span class="val" id="dc-gain-val">100</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">consequence · <b>output saturation against rails</b></div><svg class="bode" id="plot-dc-out"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-noise-floor">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">14</span><span>active filter noise floor</span></div>
+            <h2>Filtering cannot reduce the noise added by its own components.</h2>
+            <p class="lead">The output noise of an active filter is set by three uncorrelated sources referred to the input:
+                the op-amp voltage noise density $e_n$, the current noise $i_n$ flowing in the source resistance $R$, and
+                the Johnson noise of $R$,
+                $$e_R = \sqrt{4 k_B T R}.$$
+                The total input-referred noise density is
+                $$e_{ni} = \sqrt{e_n^2 + (i_n R)^2 + 4 k_B T R}\ \ [\mathrm{V}/\!\sqrt{\mathrm{Hz}}],$$
+                and the integrated RMS output noise over the filter bandwidth $\Delta f$ is
+                $V_{n,\text{rms}} = G\sqrt{\int_0^{\infty} |H(j2\pi f)|^2 e_{ni}^2\, df}$.</p>
+            <p>Choice of $R$ is a trade. Small $R$ minimises $e_R$ and $i_n R$ but loads the previous stage and the op-amp
+                output. Large $R$ relaxes loading but raises both Johnson and current-noise contributions. The optimum
+                depends on $e_n / i_n$ for the chosen op-amp.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Pick the source resistance near $R_{\text{opt}} = e_n / i_n$,
+                select a low-$e_n$ op-amp for low-impedance sources and a low-$i_n$ part for high-impedance sources, and
+                limit the noise bandwidth to the smallest $\Delta f$ compatible with the signal.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">resistor R</span><input type="range" id="noise-r-slider"
+                        min="2" max="7" step="0.01" value="4"><span class="val" id="noise-r-val">10 kΩ</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">en</span><input type="range" id="noise-en-slider"
+                        min="1" max="50" step="0.1" value="8"><span class="val" id="noise-en-val">8.0 nV/√Hz</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">in</span><input type="range" id="noise-in-slider"
+                        min="-2" max="2" step="0.01" value="0"><span class="val" id="noise-in-val">1.00 pA/√Hz</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">mechanism · <b>input-referred noise density</b></div><svg class="bode" id="plot-noise-floor"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-electrode-z">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">15</span><span>electrode impedance interaction</span></div>
+            <h2>Source impedance <em class="distort">moves</em> the high-pass corner of the input stage.</h2>
+            <p class="lead">An AC-coupled input has a coupling capacitor $C_c$ followed by a bias resistor $R_{in}$ to
+                reference. The intended high-pass corner is $f_c = 1/(2\pi R_{in} C_c)$. Adding a non-zero electrode
+                impedance $Z_e$ in series shifts the realised corner to
+                $$f_c' = \frac{1}{2\pi (R_{in} + Z_e)\, C_c},$$
+                and reduces the in-band gain by the divider ratio $R_{in}/(R_{in} + Z_e)$.</p>
+            <p>Skin-electrode impedance is large and time-varying: gel electrodes settle at $10\text{–}100\,\mathrm{k}\Omega$,
+                dry contacts at $1\text{–}10\,\mathrm{M}\Omega$, and motion modulates $Z_e(t)$ on a beat-by-beat scale.
+                The realised filter therefore drifts during the recording, even when the schematic is fixed.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Use $R_{in} \gg Z_{e,\max}$ (typically $\ge 100\,\mathrm{M}\Omega$),
+                place an active buffer at the electrode, and monitor lead-off impedance so that the affected segments can
+                be flagged.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">electrode Ze</span><input type="range" id="ze-slider"
+                        min="3" max="7" step="0.01" value="5"><span class="val" id="ze-val">100 kΩ</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">amp Rin</span><input type="range" id="rin-slider"
+                        min="5" max="9" step="0.01" value="7"><span class="val" id="rin-val">10 MΩ</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">mechanism · <b>nominal vs realised high-pass</b></div><svg class="bode" id="plot-ze-mag"></svg></div>
+        </div>
+    </section>
+
+    <section class="scene" id="sec-cmrr">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">16</span><span>CMRR degradation through the filter</span></div>
+            <h2>Mismatched per-channel filters <em class="distort">convert</em> common-mode interference to differential.</h2>
+            <p class="lead">A differential biopotential channel relies on the front end to reject mains and electrosurgical
+                interference that appears equally on both inputs. If a per-channel low-pass with time constants
+                $\tau_1, \tau_2$ is placed before the difference stage, its mismatch $\delta\tau = \tau_1 - \tau_2$ converts
+                a common-mode input $V_{cm}$ into a differential signal of magnitude
+                $$V_{d,\text{cm}}(\omega) = V_{cm}\!\left| \frac{1}{1 + j\omega \tau_1} - \frac{1}{1 + j\omega \tau_2} \right|.$$
+                The filter's contribution to the system common-mode rejection ratio is therefore
+                $\mathrm{CMRR}_F(\omega) = |H_{\text{diff}}|/|H_{cm \to d}|$, which falls with frequency as the mismatch
+                term grows.</p>
+            <p>A 1% RC mismatch limits $\mathrm{CMRR}_F$ to roughly $40\,\mathrm{dB}$ at the corner, which is well below
+                the $80\text{–}120\,\mathrm{dB}$ specified for an instrumentation amplifier alone.</p>
+            <div class="fix-callout"><strong>Remedy.</strong> Place differential filtering after the instrumentation
+                amplifier so the CMRR is set by matched components, use precision resistor networks and matched capacitor
+                arrays where per-channel filtering is required, and verify CMRR at the mains frequency rather than at DC.</div>
+        </div>
+        <div class="plot-stack">
+            <div class="toolbar">
+                <span class="slider-group"><span class="lab">RC mismatch</span><input type="range" id="cmrr-mm-slider"
+                        min="0.05" max="10" step="0.05" value="1"><span class="val" id="cmrr-mm-val">1.00%</span></span>
+                <span class="divider"></span>
+                <span class="slider-group"><span class="lab">fc</span><input type="range" id="cmrr-fc-slider"
+                        min="20" max="500" step="1" value="100"><span class="val" id="cmrr-fc-val">100 Hz</span></span>
+            </div>
+            <div class="plot-box single"><div class="label">mechanism · <b>filter CMRR vs frequency</b></div><svg class="bode" id="plot-cmrr"></svg></div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="what_can_go_wrong_JS/katex_label.js"></script>
+    <script defer src="cascading_filters_JS/bode_helpers.js"></script>
+    <script defer src="what_can_go_wrong_JS/plot_helpers.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_phase_distortion.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_instability.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_ringing.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_brick_wall_ringing.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_incomplete_noise.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_passband_ripple.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_aliasing.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_hp_cutoff_st.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_quantization.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_transient_edge.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_tolerance.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_gbw.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_dc_errors.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_noise_floor.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_electrode_z.js"></script>
+    <script defer src="what_can_go_wrong_JS/scene_cmrr.js"></script>
+</body>
+
+</html>

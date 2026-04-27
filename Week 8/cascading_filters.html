@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Cascading Low-Pass Filters</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="cascading_filters_JS/cascading_filters.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 8</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 8 · CASCADING FILTERS</div>
+            <h1 class="hero">Cascading <em>first-order low-pass</em> stages</h1>
+            <p class="sub">A first-order low-pass filter has one pole and rolls off at $20\,\text{dB}$ per decade.
+                Chaining $N$ stages multiplies their transfer functions in the ideal case and yields an $N$th-order
+                response with steeper stopband attenuation. The product rule holds only when the stages do not
+                interact. In a passive chain each stage loads the previous one, splitting the repeated pole and
+                degrading the passband. A unity-gain buffer between stages restores the ideal product.</p>
+            <div class="tags">
+                <span class="field-tag">low-pass filter</span>
+                <span class="field-tag">cascade</span>
+                <span class="field-tag">loading</span>
+                <span class="field-tag">buffered stages</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · FIRST-ORDER LPF ================= -->
+    <section class="scene" id="sec-first">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>first-order low-pass</span></div>
+            <h2>The first-order RC low-pass transfer function</h2>
+
+            <p class="lead">A series RC network with the output taken across the capacitor forms a passive first-order
+                low-pass filter. The impedance divider at complex frequency $s$ gives</p>
+
+            <div class="eq-block">$$H(s) \;=\; \frac{V_{\text{out}}(s)}{V_{\text{in}}(s)}
+                \;=\; \frac{1/(sC)}{R + 1/(sC)} \;=\; \frac{1}{1 + sRC}.$$</div>
+
+            <p>The denominator has a single root at $s = -1/RC$. Setting $s = j\omega$ gives the magnitude and phase
+                on the imaginary axis:</p>
+
+            <div class="eq-block">$$\small \begin{aligned}
+                |H(j\omega)| &= \frac{1}{\sqrt{1 + (\omega/\omega_c)^2}}, \\
+                \angle H(j\omega) &= -\arctan\!\left(\frac{\omega}{\omega_c}\right), \\
+                \omega_c &= \frac{1}{RC}.
+                \end{aligned}$$</div>
+
+            <h3>Magnitude and phase response</h3>
+            <p>Below $\omega_c$ the magnitude is near unity and the phase near zero. At $\omega = \omega_c$ the
+                magnitude is $1/\sqrt{2}$ ($-3\,\text{dB}$) and the phase is $-45^\circ$. Above $\omega_c$ the
+                magnitude falls at $20\,\text{dB}$ per decade and the phase asymptotes to $-90^\circ$. The slider
+                moves the pole along the negative real axis: smaller $RC$ raises $\omega_c$, larger $RC$ lowers it.</p>
+
+            <div class="callout">
+                A first-order stopband slope is fixed at $20\,\text{dB}$ per decade. Steeper attenuation requires a
+                higher-order filter or a different topology. Chaining first-order stages is the simplest route to
+                higher order.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">cutoff</span>
+                        <input type="range" id="fc1-slider" min="-1" max="3" step="0.01" value="1">
+                        <span class="val" id="fc1-val">10.0 rad/s</span>
+                    </span>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>H(s) = 1 / (1 + sRC)</b></div>
+                    <svg class="bode" id="plot-bode-first"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · IDEAL CASCADE ================= -->
+    <section class="scene" id="sec-cascade">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>ideal cascade</span></div>
+            <h2>Cascade response under stage independence</h2>
+
+            <p class="lead">If the stages act independently, with the output of stage $k$ depending only on its own
+                input, the overall transfer function is the product of the stage transfer functions:</p>
+
+            <div class="eq-block">$$H_{\text{total}}(s) = \prod_{k=1}^{N} H_k(s).$$</div>
+
+            <p>Cascading $N$ identical first-order stages with the same time constant therefore gives</p>
+
+            <div class="eq-block">$$H_N(s) = \frac{1}{(1 + sRC)^N},
+                \qquad |H_N(j\omega)| = \frac{1}{\bigl(1 + (\omega/\omega_c)^2\bigr)^{N/2}}.$$</div>
+
+            <p>The asymptotic high-frequency slope is $-20N\,\text{dB}$ per decade and the phase tends to
+                $-90N^\circ$. The pole at $s = -1/RC$ acquires multiplicity $N$.</p>
+
+            <h3>Composite $-3\,\text{dB}$ frequency</h3>
+            <p>The composite $-3\,\text{dB}$ frequency is not $\omega_c$. Setting
+                $|H_N(j\omega_{-3})| = 1/\sqrt{2}$ gives</p>
+
+            <div class="eq-block">$$\omega_{-3} = \omega_c\sqrt{\,2^{1/N} - 1\,}.$$</div>
+
+            <p>For $N = 2$ this is $0.64\,\omega_c$; for $N = 4$, $0.43\,\omega_c$. Each added stage contributes a
+                further $-3\,\text{dB}$ at the original cutoff, so the passband edge contracts as the stopband slope
+                steepens. The dashed marker tracks the composite cutoff.</p>
+
+            <div class="callout">
+                The product rule assumes the stages do not interact. In hardware this fails unless the stages are
+                isolated, because the input impedance of stage $k+1$ draws current from the output of stage $k$.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">N stages</span>
+                        <input type="range" id="nstage-slider" min="1" max="6" step="1" value="3">
+                        <span class="val" id="nstage-val">3</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill active" id="show-stages">show individual stages</span>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>H<sub>N</sub>(s) = 1 / (1 + sRC)<sup>N</sup></b></div>
+                    <svg class="bode" id="plot-bode-cascade"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · LOADED PASSIVE CASCADE ================= -->
+    <section class="scene" id="sec-loaded-cascade">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>loaded passive cascade</span></div>
+            <h2>Response of an N-stage passive cascade</h2>
+
+            <p class="lead">In a passive cascade the stages are wired directly together and each stage loads the
+                previous one. The product rule no longer applies, and the composite poles differ from the
+                isolated-stage pole. The exact response follows from the product of ABCD matrices of the individual
+                sections:</p>
+
+            <div class="eq-block">$$\small \begin{aligned}
+                \begin{bmatrix} A_{\text{tot}} & B_{\text{tot}} \\ C_{\text{tot}} & D_{\text{tot}} \end{bmatrix}
+                &= \prod_{k=1}^{N}\begin{bmatrix} 1 + sR_kC_k & R_k \\ sC_k & 1 \end{bmatrix}, \\[4pt]
+                H_{\text{loaded}}(s) &= \frac{1}{A_{\text{tot}}(s)}.
+                \end{aligned}$$</div>
+
+            <p>For $N$ identical stages with the same $R$ and $C$, the middle coefficients of $A_{\text{tot}}$ grow
+                faster than those of the binomial expansion of $(1+sRC)^N$. Writing $x = sRC$:</p>
+
+            <div class="eq-block">$$\begin{aligned}
+                A_2(x) &= 1 + 3x + x^2, \\
+                A_3(x) &= 1 + 6x + 5x^2 + x^3, \\
+                A_4(x) &= 1 + 10x + 15x^2 + 7x^3 + x^4.
+                \end{aligned}$$</div>
+
+            <h3>Splitting of the repeated pole</h3>
+            <p>The repeated pole at $s = -1/RC$ splits into $N$ distinct real poles along the negative real axis. The
+                slowest pole drifts toward the origin and pulls the composite $-3\,\text{dB}$ frequency below the ideal
+                value; the fastest pole moves outward but does not compensate, since both contribute to the same
+                magnitude. The asymptotic slope remains $-20N\,\text{dB}$ per decade, but the transition broadens, the
+                passband sags, and the phase rolls off earlier. The plot compares the loaded cascade (red) against the
+                ideal product $1/(1+sRC)^N$ (blue).</p>
+
+            <div class="callout">
+                The error grows with $N$. One stage is exact; two stages already deviate measurably; at four or five
+                stages the loaded response differs substantially from the ideal product, with a slower passband
+                drop-off and a lower effective cutoff. The next section isolates the two-stage case and examines
+                impedance scaling as a partial mitigation.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">N stages</span>
+                        <input type="range" id="nload-slider" min="1" max="6" step="1" value="3">
+                        <span class="val" id="nload-val">3</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill active" id="show-ideal-overlay">show ideal product</span>
+                </div>
+                <div class="plot-box bode-side">
+                    <div class="label">bode response · <b>loaded N-stage passive cascade vs ideal</b></div>
+                    <svg class="bode" id="plot-bode-loaded-cascade"></svg>
+                </div>
+                <div class="plot-box splane">
+                    <div class="label">s-plane · <b>poles of H<sub>loaded</sub>(s)</b></div>
+                    <svg class="bode" id="plot-splane-loaded"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · LOADING PROBLEM ================= -->
+    <section class="scene" id="sec-loading">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the loading problem</span></div>
+            <h2>Loading in a two-stage passive cascade</h2>
+
+            <p class="lead">Connecting two RC sections directly violates the independence assumption. The input
+                impedance of the second section is finite at all frequencies and draws current from $C_1$. Solving the
+                two-node network with $R_1 = R_2 = R$ and $C_1 = C_2 = C$ gives</p>
+
+            <div class="eq-block">$$H_{\text{real}}(s) = \frac{1}{1 + 3sRC + s^2 R^2 C^2},$$</div>
+
+            <p>compared with the ideal product</p>
+
+            <div class="eq-block">$$H_{\text{ideal}}(s) = \frac{1}{(1 + sRC)^2}
+                = \frac{1}{1 + 2sRC + s^2 R^2 C^2}.$$</div>
+
+            <p>The middle coefficient shifts from $2$ to $3$. The repeated pole at $s = -1/RC$ splits into two real
+                poles at $s = (-3 \pm \sqrt{5})/(2RC)$, approximately $-0.382/RC$ and $-2.618/RC$. The slower pole
+                pulls the passband edge inward; the faster pole moves outward but does not compensate, since both
+                contribute to the same magnitude.</p>
+
+            <h3>Mitigation by impedance scaling</h3>
+            <p>Loading depends on $R_2$ relative to the source impedance at the output of stage one. Raising
+                $R_2/R_1$ reduces the current drawn and recovers the ideal response, provided $C_2$ is reduced in the
+                same proportion to preserve the stage cutoff. The slider sweeps $k = R_2/R_1 = C_1/C_2$; the real and
+                ideal curves converge as $k$ grows.</p>
+
+            <div class="callout">
+                Even at $k = 100$ the passband sags by a fraction of a decibel. Adding stages compounds the error: a
+                four-stage passive chain at $k = 1$ differs substantially from $1/(1 + sRC)^4$. Loading is intrinsic
+                to passive networks; the general remedy is to isolate the stages.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">impedance ratio k</span>
+                        <input type="range" id="imp-ratio-slider" min="0" max="2" step="0.01" value="0">
+                        <span class="val" id="imp-ratio-val">1.0</span>
+                    </span>
+                </div>
+                <div class="circuit-box">
+                    <svg class="circuit" id="circuit-loading" viewBox="0 0 720 280" preserveAspectRatio="xMidYMid meet"></svg>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>two-stage passive cascade vs ideal product</b></div>
+                    <svg class="bode" id="plot-bode-loading"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · BUFFERED CASCADE ================= -->
+    <section class="scene" id="sec-buffered">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>buffered cascade</span></div>
+            <h2>Stage isolation with a unity-gain buffer</h2>
+
+            <p class="lead">An ideal voltage follower has infinite input impedance and zero output impedance. Inserting
+                one between successive RC stages forces the input current of stage $k+1$ to zero, so stage $k$ drives
+                only the buffer and its output voltage is unaffected by subsequent stages. The product rule applies
+                exactly:</p>
+
+            <div class="eq-block">$$H_N(s) = \frac{1}{(1 + sRC)^N}.$$</div>
+
+            <p>The op-amp passes voltage at unity gain. In the non-inverting follower configuration the inverting
+                input is tied to the output, so $V_{\text{out}} = V_+$ and the input draws no current.</p>
+
+            <h3>Comparison of buffered and passive cascades</h3>
+            <p>The plot shows the buffered $N$-stage response (blue) against the unbuffered passive cascade (red) for
+                the same $N$. The buffered curve follows the ideal $-20N\,\text{dB}$ per decade slope. The passive
+                curve sits below it in the passband and has a broader transition, since its poles are no longer
+                coincident.</p>
+
+            <div class="callout">
+                The buffer fixes the loading problem at the cost of an active component and a power supply. The same
+                isolation principle underlies Sallen-Key and other active topologies, where the op-amp additionally
+                shapes pole locations to produce Butterworth, Chebyshev, or Bessel responses rather than the
+                repeated-pole product.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">N stages</span>
+                        <input type="range" id="nbuf-slider" min="2" max="5" step="1" value="3">
+                        <span class="val" id="nbuf-val">3</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill active" id="show-passive">show passive cascade</span>
+                    <span class="pill active" id="show-buffered">show buffered cascade</span>
+                </div>
+                <div class="circuit-box">
+                    <svg class="circuit" id="circuit-buffered" viewBox="0 0 720 280" preserveAspectRatio="xMidYMid meet"></svg>
+                </div>
+                <div class="plot-box bode-pair">
+                    <div class="label">bode response · <b>buffered vs unbuffered cascade</b></div>
+                    <svg class="bode" id="plot-bode-buffered"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="cascading_filters_JS/katex_label.js"></script>
+    <script defer src="cascading_filters_JS/bode_helpers.js"></script>
+    <script defer src="cascading_filters_JS/bode_first_order.js"></script>
+    <script defer src="cascading_filters_JS/bode_cascade_ideal.js"></script>
+    <script defer src="cascading_filters_JS/bode_loaded_cascade.js"></script>
+    <script defer src="cascading_filters_JS/circuit_loading.js"></script>
+    <script defer src="cascading_filters_JS/bode_loading.js"></script>
+    <script defer src="cascading_filters_JS/circuit_buffered.js"></script>
+    <script defer src="cascading_filters_JS/bode_buffered.js"></script>
+</body>
+
+</html>

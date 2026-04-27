@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Active Filters</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="active_filters_JS/active_filters.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 8</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 8 · ACTIVE FILTER FAMILIES</div>
+            <h1 class="hero">From filter shape to <em>pole and zero placement</em></h1>
+            <p class="sub">A buffered cascade of first-order stages can only place poles on the negative real axis. Active
+                topologies, by contrast, allow each pole pair to sit anywhere in the left half plane, and zeros to be
+                introduced on the imaginary axis. The four classical lowpass families differ only in where they place
+                these singularities. This page builds each placement up from its geometric reason: the pole circle of
+                the Butterworth, the pole ellipse of the Chebyshev Type I, the imaginary-axis zeros of the Chebyshev
+                Type II, and the combined pole-zero pattern of the elliptic.</p>
+            <div class="tags">
+                <span class="field-tag">butterworth</span>
+                <span class="field-tag">chebyshev</span>
+                <span class="field-tag">elliptic</span>
+                <span class="field-tag">s-plane geometry</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · INTRO ================= -->
+    <section class="scene" id="sec-intro">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>from cascade to family</span></div>
+            <h2>Why pole placement defines a filter family</h2>
+
+            <p class="lead">A cascade of $N$ identical buffered first-order stages has $N$ repeated real poles at
+                $s = -1/RC$. The magnitude response is</p>
+
+            <div class="eq-block">$$|H(j\omega)| = \frac{1}{(1 + (\omega/\omega_c)^2)^{N/2}},$$</div>
+
+            <p>which has slope $-20N\,\text{dB/decade}$ at high frequency but a soft transition near $\omega_c$. The
+                response only reaches its asymptotic slope well into the stopband. The passband edge is gradual because
+                every pole sits on the same point on the negative real axis: there is no resonance to keep the
+                magnitude up near the edge.</p>
+
+            <p>Once an op-amp synthesises complex pole pairs, each pair has two degrees of freedom: the distance from
+                the origin sets the natural frequency, and the angle from the negative real axis sets the damping. A
+                pole close to the imaginary axis produces a nearly resonant response that lifts the magnitude near
+                that frequency. Choosing how to spend these degrees of freedom across $N$ poles, and whether to add
+                zeros on the imaginary axis, defines a filter family.</p>
+
+            <h3>The four classical lowpass families</h3>
+
+            <p>The prototypes are shown on a normalised frequency scale. Butterworth, Chebyshev Type I, and elliptic
+                responses use $\omega_p = 1\,\text{rad/s}$ as the passband edge; Chebyshev Type II is referenced to a
+                stopband edge $\omega_s = 1\,\text{rad/s}$. In each case, the magnitude is at most unity. They differ
+                in the optimisation criterion:</p>
+
+            <ul class="bullets">
+                <li><strong>Butterworth.</strong> Maximally flat passband. No zeros. Poles on a circle.</li>
+                <li><strong>Chebyshev Type I.</strong> Equiripple in the passband, monotone stopband. No zeros. Poles
+                    on an ellipse.</li>
+                <li><strong>Chebyshev Type II.</strong> Monotone passband, equiripple in the stopband. Zeros on the
+                    imaginary axis. Poles are the reciprocals of a Chebyshev Type I prototype.</li>
+                <li><strong>Elliptic (Cauer).</strong> Equiripple in both bands. Zeros on the imaginary axis. Poles
+                    inside a Chebyshev Type I ellipse.</li>
+            </ul>
+
+            <div class="callout">
+                The plot to the right shows the magnitude response of each family at $N = 4$, all with the same
+                normalised edge marker. Read the geometry from right to left: more constraint on the magnitude shape
+                pushes the poles into more specific locations. Butterworth is the most relaxed, elliptic the most
+                constrained.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box bode-single">
+                    <div class="label">magnitude response · <b>N = 4 lowpass, four families</b></div>
+                    <svg class="bode" id="plot-intro-overlay"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · BUTTERWORTH ================= -->
+    <section class="scene" id="sec-butter">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>butterworth</span></div>
+            <h2>Butterworth: poles on a circle</h2>
+
+            <p class="lead">The Butterworth response is defined by a single condition on the magnitude:</p>
+
+            <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + (\omega/\omega_c)^{2N}}.$$</div>
+
+            <p>This makes the first $2N - 1$ derivatives of $|H(j\omega)|^2$ vanish at $\omega = 0$. The passband is as
+                flat as a rational function of degree $N$ allows, hence the name "maximally flat".</p>
+
+            <h3>Where the poles come from</h3>
+
+            <p>The defining magnitude condition implies, on the imaginary axis,</p>
+
+            <div class="eq-block">$$H(s)\,H(-s) = \frac{1}{1 + (s/j\omega_c)^{2N}}.$$</div>
+
+            <p>The $2N$ roots of $1 + (s/j\omega_c)^{2N} = 0$ are evenly spaced on a circle of radius $\omega_c$
+                centred at the origin. Exactly $N$ roots lie in the left half plane and $N$ lie in the right half
+                plane. A causal stable filter takes the $N$ left-half-plane roots as the poles of $H(s)$:</p>
+
+            <div class="eq-block">$$s_k = \omega_c \, \exp\!\left(j \, \frac{\pi}{2}\,\frac{2k - 1 + N}{N}\right),
+                \quad k = 1, 2, \ldots, N.$$</div>
+
+            <h3>The geometric reason for the circle</h3>
+
+            <p>The condition $|H(j\omega)|^2 = 1/(1 + (\omega/\omega_c)^{2N})$ depends only on the magnitude
+                $|s| = \omega$ along the imaginary axis. Any rotation of the pole pattern about the origin leaves the
+                product $|s_k - j\omega|$ unchanged when summed in pairs across the conjugate symmetric set, so the
+                only constraint is on the radius. Equal spacing distributes the $N$ poles to keep the magnitude
+                response symmetric about $\omega_c$, and the unit-radius circle is what places every pole at the same
+                distance from the origin. That equidistance is what makes every pole contribute equally to the
+                rolloff, giving the smoothest possible passband edge.</p>
+
+            <div class="callout">
+                A pole closer to the imaginary axis produces a sharper resonance at its imaginary frequency. With every
+                Butterworth pole on the same circle, the closest pole to $j\omega$ for any given $\omega \le \omega_c$
+                is always nearby, but never <em>too</em> nearby. No single pole dominates, so the passband is flat
+                rather than rippled.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">order N</span>
+                        <input type="range" id="butter-N" min="2" max="6" step="1" value="4">
+                        <span class="val" id="butter-N-val">4</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">probe ω</span>
+                        <input type="range" id="butter-probe" min="0" max="1.5" step="0.01" value="0">
+                        <span class="val" id="butter-probe-val">off</span>
+                    </span>
+                    <span class="pill" data-mode="mag" id="butter-probe-mag">|·|</span>
+                    <span class="pill" data-mode="angle" id="butter-probe-angle">∠·</span>
+                    <span class="pill" id="butter-view-3d">3D view</span>
+                </div>
+                <div class="plot-row">
+                    <div class="plot-box splane">
+                        <div class="label">s-plane · <b>Butterworth poles, normalised to <span class="kx">$\omega_c = 1$</span></b></div>
+                        <svg class="bode" id="butter-splane"></svg>
+                    </div>
+                    <div class="plot-box bode-pair">
+                        <div class="label">Bode response · <b>maximally flat magnitude</b></div>
+                        <svg class="bode" id="butter-bode"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · CHEBYSHEV I ================= -->
+    <section class="scene" id="sec-cheb1">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>chebyshev type i</span></div>
+            <h2>Chebyshev Type I: poles on an ellipse</h2>
+
+            <p class="lead">The Chebyshev Type I response trades the maximally flat passband for a sharper transition.
+                The magnitude obeys</p>
+
+            <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2 \, T_N^2(\omega/\omega_c)},$$</div>
+
+            <p>where $T_N$ is the Chebyshev polynomial of the first kind. Across the passband, $T_N$ remains bounded
+                between $-1$ and $+1$, so $|H(j\omega)|^2$ oscillates between $1$ and
+                $1/(1 + \varepsilon^2)$. The ripple amplitude is set by $\varepsilon$.</p>
+
+            <h3>From ripple to ellipse</h3>
+
+            <p>Solving $H(s)H(-s) = $ constant for the poles on the locus where $T_N$ oscillates gives a closed form.
+                Let $\mu = (1/N)\,\sinh^{-1}(1/\varepsilon)$. The $N$ left-half-plane poles are</p>
+
+            <div class="eq-block">$$\small \begin{aligned}
+                s_k &= -\sinh\mu \, \sin\theta_k \;+\; j \cosh\mu \, \cos\theta_k, \\
+                \theta_k &= (2k - 1)\,\frac{\pi}{2N}, \qquad k = 1, \ldots, N.
+                \end{aligned}$$</div>
+
+            <p>These coordinates are the parametric equation of an ellipse with semi-minor axis $\sinh\mu$ along the
+                real axis and semi-major axis $\cosh\mu$ along the imaginary axis. As the ripple shrinks,
+                $\varepsilon \to 0$ sends $\mu \to \infty$ and $\sinh\mu / \cosh\mu \to 1$, so the ellipse becomes
+                asymptotically circular after the usual frequency renormalisation.</p>
+
+            <h3>The geometric reason for the ellipse</h3>
+
+            <p>The same Chebyshev polynomials that minimise the maximum deviation on $[-1, 1]$ over polynomials of
+                degree $N$ have evenly spaced extrema in the angle variable. Mapping those extrema onto the imaginary
+                axis and lifting them off through a real-axis offset $\sinh\mu$ gives the ellipse. The horizontal
+                compression by the factor $\sinh\mu / \cosh\mu < 1$ pulls every pole closer to the
+                imaginary axis than its Butterworth counterpart, which sharpens each pole's resonance and accelerates
+                the rolloff. The price is paid in the passband: the closer poles produce multiple peaks where the
+                response touches unity, separated by dips of $1/\sqrt{1 + \varepsilon^2}$.</p>
+
+            <div class="callout">
+                Larger ripple means smaller $\mu$, a flatter ellipse, and poles even closer to the imaginary axis.
+                For the same order, a Chebyshev Type I rolls off faster than a Butterworth in direct proportion to how
+                much passband ripple is tolerated. The trade is geometric: ellipse aspect ratio sets passband ripple;
+                Butterworth is the zero-ripple limit after renormalisation.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">order N</span>
+                        <input type="range" id="cheb1-N" min="2" max="6" step="1" value="4">
+                        <span class="val" id="cheb1-N-val">4</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">ripple ε</span>
+                        <input type="range" id="cheb1-eps" min="0.1" max="0.9" step="0.01" value="0.35">
+                        <span class="val" id="cheb1-eps-val">0.35</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">probe ω</span>
+                        <input type="range" id="cheb1-probe" min="0" max="2.4" step="0.01" value="0">
+                        <span class="val" id="cheb1-probe-val">off</span>
+                    </span>
+                    <span class="pill" data-mode="mag" id="cheb1-probe-mag">|·|</span>
+                    <span class="pill" data-mode="angle" id="cheb1-probe-angle">∠·</span>
+                    <span class="pill" id="cheb1-view-3d">3D view</span>
+                </div>
+                <div class="plot-row">
+                    <div class="plot-box splane">
+                        <div class="label">s-plane · <b>Chebyshev I poles on the ellipse</b></div>
+                        <svg class="bode" id="cheb1-splane"></svg>
+                    </div>
+                    <div class="plot-box bode-pair">
+                        <div class="label">Bode response · <b>equiripple in passband</b></div>
+                        <svg class="bode" id="cheb1-bode"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · CHEBYSHEV II ================= -->
+    <section class="scene" id="sec-cheb2">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>chebyshev type ii</span></div>
+            <h2>Chebyshev Type II: zeros on the imaginary axis</h2>
+
+            <p class="lead">The Type II response (also called inverse Chebyshev) inverts the Type I trade. The
+                passband is monotone, and the equiripple behaviour is moved into the stopband:</p>
+
+            <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + \dfrac{1}{\varepsilon^2 \, T_N^2(\omega_s/\omega)}}.$$
+            </div>
+
+            <p>Here $\omega_s$ is the stopband edge. The argument $\omega_s/\omega$ inverts the frequency variable, so
+                the Chebyshev oscillation that was in the passband for Type I is mapped into the stopband.</p>
+
+            <h3>Where the zeros come from</h3>
+
+            <p>Whenever $T_N(\omega_s/\omega) = 0$, the reciprocal term diverges and the magnitude goes to zero. The
+                zeros occur at $\omega_s/\omega = \pm \cos\theta_k$, that is</p>
+
+            <div class="eq-block">$$\omega_{z,k} = \frac{\omega_s}{\cos\theta_k}, \qquad
+                \theta_k = (2k - 1)\,\frac{\pi}{2N}, \qquad k = 1, \ldots, \lfloor N/2 \rfloor.$$</div>
+
+            <p>These zeros sit on the imaginary axis above the stopband edge. Each zero punches a notch into the
+                response: since $|j\omega - j\omega_{z,k}| = 0$ exactly at $\omega = \omega_{z,k}$, the magnitude is
+                forced to zero there. The notches alternate with rebounds because, between adjacent zeros, the
+                ratio of zero distances to pole distances determines the stopband ripple envelope.</p>
+
+            <h3>Where the poles come from</h3>
+
+            <p>The poles of a Chebyshev Type II filter are the reciprocals of a Chebyshev Type I prototype with the
+                same $N$ and ripple parameter:</p>
+
+            <div class="eq-block">$$s_{k,\,\text{II}} = \frac{1}{s_{k,\,\text{I}}^*}\bigg|_{\text{LHP}}.$$</div>
+
+            <p>Geometrically, the Chebyshev I ellipse is reflected through the unit circle. Poles that were close to
+                the imaginary axis in the Type I prototype move outward toward $|s| \to \infty$, and poles that were
+                close to the real axis move inward toward the imaginary axis. The Type II pole pattern is the
+                "inversion" of the Type I ellipse, which is why this filter is sometimes called the inverse Chebyshev.
+            </p>
+
+            <h3>The geometric reason for the placement</h3>
+
+            <p>Notches on the imaginary axis are the only way a rational $H(s)$ can produce stopband ripple at finite
+                frequencies. The pole reciprocation is dictated by the requirement that the passband be monotone: the
+                product of pole distances along the passband must vary smoothly, with no peaks. Inverting the
+                Chebyshev I ellipse achieves exactly this. The result is a flat passband, a sharper transition than
+                Butterworth (because of the imaginary-axis zeros pulling the magnitude down), and equiripple stopband
+                attenuation set by $\varepsilon$ (smaller $\varepsilon$ means a lower stopband ripple envelope between
+                the notches).</p>
+
+            <div class="callout">
+                Chebyshev II is the right choice when the stopband must meet a specified attenuation with controlled
+                equiripple peaks between transmission zeros. The penalty is that the magnitude does not roll to zero
+                monotonically: it drops sharply, rebounds, drops again, and asymptotes to a non-zero stopband floor
+                between the highest zero and infinity for $N$ even.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">order N</span>
+                        <input type="range" id="cheb2-N" min="2" max="6" step="1" value="4">
+                        <span class="val" id="cheb2-N-val">4</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">stopband ε</span>
+                        <input type="range" id="cheb2-eps" min="0.05" max="0.5" step="0.005" value="0.1">
+                        <span class="val" id="cheb2-eps-val">0.10</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">probe ω</span>
+                        <input type="range" id="cheb2-probe" min="0" max="4.5" step="0.01" value="0">
+                        <span class="val" id="cheb2-probe-val">off</span>
+                    </span>
+                    <span class="pill" data-mode="mag" id="cheb2-probe-mag">|·|</span>
+                    <span class="pill" data-mode="angle" id="cheb2-probe-angle">∠·</span>
+                    <span class="pill" id="cheb2-view-3d">3D view</span>
+                </div>
+                <div class="plot-row">
+                    <div class="plot-box splane">
+                        <div class="label">s-plane · <b>Chebyshev II poles and imaginary-axis zeros</b></div>
+                        <svg class="bode" id="cheb2-splane"></svg>
+                    </div>
+                    <div class="plot-box bode-pair">
+                        <div class="label">Bode response · <b>equiripple in stopband</b></div>
+                        <svg class="bode" id="cheb2-bode"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · ELLIPTIC ================= -->
+    <section class="scene" id="sec-ellip">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>elliptic (cauer)</span></div>
+            <h2>Elliptic: ripple in both bands</h2>
+
+            <p class="lead">The elliptic, or Cauer, response is the magnitude that achieves the steepest possible
+                transition for a given order, ripple, and stopband attenuation. It generalises the Chebyshev family
+                by allowing equiripple behaviour in both bands at once:</p>
+
+            <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + \varepsilon^2 \, R_N^2(\omega, \xi)},$$</div>
+
+            <p>where $R_N(\omega, \xi)$ is the elliptic rational function with selectivity parameter
+                $\xi = \omega_s/\omega_p$. $R_N$ is bounded between $\pm 1$ on the passband and has an equiripple
+                envelope in the stopband, with poles that become transmission zeros of $H(s)$. This makes both bands
+                equiripple after the $1/(1 + \varepsilon^2 R_N^2)$ transformation.</p>
+
+            <h3>Pole and zero placement</h3>
+
+            <p>Two sets of singularities appear:</p>
+
+            <ul class="bullets">
+                <li>Zeros on the imaginary axis at the poles of the elliptic rational function $R_N$. These produce
+                    notches in the stopband, just as in Chebyshev Type II.</li>
+                <li>Poles in the left half plane, sitting <em>inside</em> the Chebyshev Type I ellipse for the same
+                    ripple. The elliptic poles cluster more tightly near the imaginary axis at the passband edge,
+                    which sharpens the corner.</li>
+            </ul>
+
+            <p>The closed form involves Jacobi elliptic functions:</p>
+
+            <div class="eq-block">$$\omega_{z,r} = \frac{1}{\kappa \, \mathrm{sn}\!\left(\dfrac{(2r - 1) K(\kappa^2)}{N},\, \kappa^2\right)},
+                \qquad r = 1, \ldots, \lfloor N/2 \rfloor,$$</div>
+
+            <p>where $\mathrm{sn}$ is the Jacobi sine and $K$ the complete elliptic integral, both evaluated at
+                modulus $\kappa = 1/\xi$. The pole locations come from a related elliptic transcendental equation
+                involving a second modulus tied to $\varepsilon$.</p>
+
+            <h3>The geometric reason for the placement</h3>
+
+            <p>An elliptic filter spends every degree of freedom on the transition. Each pole-zero pair locally
+                steepens the transition: the zero on the imaginary axis at $\omega_{z,r}$ pulls the magnitude down
+                sharply, and the matched pole just inside the passband edge maintains the passband edge against that
+                zero. The pairs are placed so that the local minima in the passband are equal and the local maxima in
+                the stopband are equal, by the equioscillation theorem. No other rational placement
+                of the same number of poles and zeros achieves a steeper transition for the same ripple and floor.</p>
+
+            <div class="callout">
+                Setting the stopband attenuation to infinity collapses the elliptic into a Chebyshev Type I; setting
+                the passband ripple to zero collapses it into a Chebyshev Type II; setting both to their respective
+                limits recovers the Butterworth. The elliptic is the parent; the other three families are special
+                cases obtained by giving up either the passband ripple, the stopband ripple, or both.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">order N</span>
+                        <input type="range" id="ellip-N" min="2" max="5" step="1" value="4">
+                        <span class="val" id="ellip-N-val">4</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">probe ω</span>
+                        <input type="range" id="ellip-probe" min="0" max="3.0" step="0.01" value="0">
+                        <span class="val" id="ellip-probe-val">off</span>
+                    </span>
+                    <span class="pill" data-mode="mag" id="ellip-probe-mag">|·|</span>
+                    <span class="pill" data-mode="angle" id="ellip-probe-angle">∠·</span>
+                    <span class="pill" id="ellip-view-3d">3D view</span>
+                </div>
+                <div class="plot-row">
+                    <div class="plot-box splane">
+                        <div class="label">s-plane · <b>elliptic poles and zeros</b></div>
+                        <svg class="bode" id="ellip-splane"></svg>
+                    </div>
+                    <div class="plot-box bode-pair">
+                        <div class="label">Bode response · <b>equiripple in both bands</b></div>
+                        <svg class="bode" id="ellip-bode"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 06 · COMPARISON ================= -->
+    <section class="scene" id="sec-compare">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>side by side</span></div>
+            <h2>The four families together</h2>
+
+            <p class="lead">Plotted at the same order on a normalised frequency scale, the four families show what
+                each trade buys:</p>
+
+            <ul class="bullets">
+                <li><strong>Butterworth</strong> has the smoothest passband but the slowest transition.</li>
+                <li><strong>Chebyshev Type I</strong> trades passband flatness for transition steepness.</li>
+                <li><strong>Chebyshev Type II</strong> keeps the passband flat and gains transition steepness through
+                    stopband notches.</li>
+                <li><strong>Elliptic</strong> spends ripple on both sides and has the steepest transition for the same
+                    order.</li>
+            </ul>
+
+            <p>The s-plane plot below overlays the pole and zero patterns. Read the geometry: the Butterworth poles
+                sit on a circle, the Chebyshev I poles on a horizontally compressed ellipse, the Chebyshev II poles on
+                the reciprocal ellipse with zeros on the imaginary axis, and the elliptic poles inside a Chebyshev I
+                ellipse with zeros also on the imaginary axis. Each step toward sharper transition pulls the
+                low-frequency poles closer to the imaginary axis and, for Type II and elliptic, adds zeros that punch
+                notches into the stopband.</p>
+
+            <div class="callout">
+                The choice of family is a choice about <em>where ripple is acceptable</em>. Biopotential amplifiers
+                use Bessel filters when flat group delay is the priority and Butterworth filters when a flat magnitude
+                passband is the priority; antialiasing stages favour elliptic or Chebyshev II for sharp transitions;
+                pulse-detection front ends sometimes favour Chebyshev I for its fast rolloff with the simplest
+                topology. The geometry on the s-plane is a direct picture of the underlying compromise.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">order N</span>
+                        <input type="range" id="cmp-N" min="2" max="5" step="1" value="4">
+                        <span class="val" id="cmp-N-val">4</span>
+                    </span>
+                </div>
+                <div class="plot-row">
+                    <div class="plot-box splane">
+                        <div class="label">s-plane · <b>poles and zeros, four families overlaid</b></div>
+                        <svg class="bode" id="cmp-splane"></svg>
+                    </div>
+                    <div class="plot-box bode-pair">
+                        <div class="label">Bode response · <b>magnitude and phase, four families</b></div>
+                        <svg class="bode" id="cmp-bode"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="active_filters_JS/katex_label.js"></script>
+    <script defer src="active_filters_JS/filter_math.js"></script>
+    <script defer src="active_filters_JS/plot_helpers.js"></script>
+    <script defer src="active_filters_JS/jw_probe.js"></script>
+    <script defer src="active_filters_JS/d3_splane.js"></script>
+    <script defer src="active_filters_JS/section_intro.js"></script>
+    <script defer src="active_filters_JS/section_butterworth.js"></script>
+    <script defer src="active_filters_JS/section_chebyshev1.js"></script>
+    <script defer src="active_filters_JS/section_chebyshev2.js"></script>
+    <script defer src="active_filters_JS/section_elliptic.js"></script>
+    <script defer src="active_filters_JS/section_compare.js"></script>
+</body>
+
+</html>

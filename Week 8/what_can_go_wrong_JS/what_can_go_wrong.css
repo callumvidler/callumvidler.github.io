@@ -97,7 +97,7 @@ a { color: var(--accent); }
 }
 
 .back-btn {
-    position: fixed; top: 12px; right: 60px; z-index: 40;
+    position: fixed; top: 14px; right: 56px; z-index: 9999;
     display: inline-flex; align-items: center; gap: 8px;
     padding: 7px 14px; border-radius: 999px;
     background: var(--bg-panel); border: 1px solid var(--border);
@@ -454,6 +454,5 @@ footer {
     .alias-grid { grid-template-columns: 1fr; }
     h1.hero { font-size: 42px; }
     h2 { font-size: 26px; }
-    .back-btn { top: 14px; right: 16px; }
     .brand { top: 16px; left: 16px; }
 }

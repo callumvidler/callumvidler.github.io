@@ -94,7 +94,7 @@ a { color: var(--accent); }
 }
 
 .back-btn {
-    position: fixed; top: 12px; right: 60px; z-index: 40;
+    position: fixed; top: 14px; right: 56px; z-index: 9999;
     display: inline-flex; align-items: center; gap: 8px;
     padding: 7px 14px; border-radius: 999px;
     background: var(--bg-panel); border: 1px solid var(--border);
@@ -263,6 +263,20 @@ section.scene#sec-q {
     grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.8fr);
 }
 section.scene#sec-q .plot-stack { max-width: none; }
+
+/* Section 05 (tuning Q): s-plane on the left, Bode mag/phase on the right. */
+section.scene#sec-tuning {
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.8fr);
+}
+section.scene#sec-tuning .plot-stack { max-width: none; }
+
+/* Splane stroke classes used by bode_sk.js for pole markers. */
+svg.bode .pole-x { fill: none; stroke-linecap: round; stroke-width: 2.6; }
+svg.bode .pole-x.active { stroke: var(--c-active); }
+svg.bode .pole-x.bessel { stroke: var(--c-bessel); opacity: 0.8; stroke-width: 2; }
+svg.bode .pole-x.butter { stroke: var(--c-butter); opacity: 0.8; stroke-width: 2; }
+svg.bode .pole-x.cheby  { stroke: var(--c-cheby);  opacity: 0.8; stroke-width: 2; }
+svg.bode .pole-x.passive { stroke: var(--c-passive); opacity: 0.8; stroke-width: 2; }
 
 .regime-readout {
     font-family: 'JetBrains Mono', monospace;
@@ -434,6 +448,5 @@ footer {
     section.scene { grid-template-columns: 1fr; padding: 80px 24px 60px; }
     h1.hero { font-size: 42px; }
     h2 { font-size: 26px; }
-    .back-btn { top: 14px; right: 16px; }
     .brand { top: 16px; left: 16px; }
 }

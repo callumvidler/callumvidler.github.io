@@ -116,9 +116,9 @@
 
         .back-btn {
             position: fixed;
-            top: 12px;
-            right: 60px;
-            z-index: 40;
+            top: 14px;
+            right: 56px;
+            z-index: 9999;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -665,11 +665,6 @@
 
             h2 {
                 font-size: 28px;
-            }
-
-            .back-btn {
-                top: 14px;
-                right: 16px;
             }
 
             .brand {
@@ -1231,7 +1226,7 @@
                     </div>
                     <div class="control-group" id="camera-ctrl2-mag" style="display:none">
                         <label>3D tilt</label>
-                        <input type="range" id="cam-tilt-mag" min="10" max="80" step="1" value="35">
+                        <input type="range" id="cam-tilt-mag" min="10" max="90" step="1" value="35">
                         <span class="control-value" id="cam-tilt-val-mag">35°</span>
                     </div>
                 </div>
@@ -1263,11 +1258,27 @@
 
         <div>
             <div class="plot-stack">
+                <div class="pz-toolbar">
+                    <span class="pill pole active" data-mode="pole" id="mode-pole-phase">×&nbsp;pole</span>
+                    <span class="pill zero" data-mode="zero" id="mode-zero-phase">◯&nbsp;zero</span>
+                    <span class="divider"></span>
+                    <label class="pill" style="cursor:pointer"><input type="checkbox" id="conj-pair-phase"> conj
+                        pair</label>
+                    <span class="divider"></span>
+                    <span class="pill" id="btn-reset-phase">reset</span>
+                </div>
+
+                <div class="view-toggle" role="tablist">
+                    <button class="active" id="view-2d-phase">2D</button>
+                    <button id="view-3d-phase">3D</button>
+                </div>
+
                 <div class="plot-row">
                     <div class="plot-box" id="splane2-wrap">
                         <div class="label">s-plane</div>
                         <div class="hint" id="probe-hint">ω = 1.00</div>
                         <svg class="d3plot" id="splane2"></svg>
+                        <canvas id="surface3d-phase" style="display:none"></canvas>
                     </div>
                     <div class="plot-box">
                         <div class="label">bode · <b>∠H(jω) in degrees</b></div>
@@ -1279,6 +1290,16 @@
                         <label>probe ω</label>
                         <input type="range" id="probe-slider" min="-2" max="2" step="0.001" value="0">
                         <span class="control-value" id="probe-val">1.00</span>
+                    </div>
+                    <div class="control-group" id="camera-ctrl-phase" style="display:none">
+                        <label>3D cam</label>
+                        <input type="range" id="cam-rot-phase" min="0" max="360" step="1" value="35">
+                        <span class="control-value" id="cam-rot-val-phase">35°</span>
+                    </div>
+                    <div class="control-group" id="camera-ctrl2-phase" style="display:none">
+                        <label>3D tilt</label>
+                        <input type="range" id="cam-tilt-phase" min="10" max="90" step="1" value="35">
+                        <span class="control-value" id="cam-tilt-val-phase">35°</span>
                     </div>
                 </div>
             </div>
@@ -2188,9 +2209,10 @@
             const camRotValId = factoryOpts.camRotValId || 'cam-rot-val';
             const camTiltId = factoryOpts.camTiltId || 'cam-tilt';
             const camTiltValId = factoryOpts.camTiltValId || 'cam-tilt-val';
+            const field = factoryOpts.field || 'mag'; // 'mag' or 'phase'
 
-            // viridis-ish LUT
-            function heightColor(t) {
+            // viridis-ish LUT (used for magnitude)
+            function magColor(t) {
                 t = Math.max(0, Math.min(1, t));
                 const stops = [
                     [68, 1, 84],
@@ -2203,6 +2225,39 @@
                 const f = t * (stops.length - 1) - i;
                 const a = stops[i], b = stops[i + 1];
                 return `rgb(${Math.round(a[0] + (b[0] - a[0]) * f)},${Math.round(a[1] + (b[1] - a[1]) * f)},${Math.round(a[2] + (b[2] - a[2]) * f)})`;
+            }
+
+            // cyclic LUT for phase (HSL hue rotates with angle)
+            function phaseColor(angRad) {
+                // map -π..π → 0..360 hue
+                const hue = ((angRad + Math.PI) / (2 * Math.PI)) * 360;
+                return `hsl(${hue.toFixed(1)}, 70%, 55%)`;
+            }
+
+            function heightColor(t, hVal) {
+                if (field === 'phase') return phaseColor(hVal);
+                return magColor(t);
+            }
+
+            // Geometry captured each render so the mouse handlers can do
+            // accurate hit-tests and inverse-projection without re-deriving.
+            let lastGeom = null;
+            let pzDrag = null;
+
+            // Phase as a sum of per-factor atan2s (rather than atan2 of the product).
+            // Each factor's branch cut runs along its pole/zero's negative-real
+            // direction, so the visible "shelf" sits at ω = im(p) for σ < re(p)
+            // (parallel to the real axis).
+            function phaseAtPoint(sigma, omega, st) {
+                let phi = 0;
+                for (const z of (st.zeros || [])) {
+                    phi += Math.atan2(omega - z.im, sigma - z.re);
+                }
+                for (const p of (st.poles || [])) {
+                    phi -= Math.atan2(omega - p.im, sigma - p.re);
+                }
+                if ((st.K || 1) < 0) phi += Math.PI;
+                return phi;
             }
 
             function render() {
@@ -2220,25 +2275,56 @@
                 ctx.fillStyle = pal.bg;
                 ctx.fillRect(0, 0, W, H);
 
-                // Build grid over σ × ω
-                const N = 48;
-                const sigmaMax = 4, omegaMax = 4;
+                // Symmetric-log mapping for the σ–ω plane: linear inside |x| < linthresh,
+                // log10 outside. This matches the log-frequency axis of the Bode plot and
+                // gives more visual real-estate to the structure near the origin.
+                const linthresh = 0.1;
+                const sigmaMaxLin = 100, omegaMaxLin = 100;
+                function slog(x) {
+                    const s = Math.sign(x), a = Math.abs(x);
+                    if (a <= linthresh) return s * (a / linthresh);
+                    return s * (1 + Math.log10(a / linthresh));
+                }
+                function slogInv(u) {
+                    const s = Math.sign(u), a = Math.abs(u);
+                    if (a <= 1) return s * a * linthresh;
+                    return s * linthresh * Math.pow(10, a - 1);
+                }
+                const sigmaMaxLog = slog(sigmaMaxLin);
+                const omegaMaxLog = slog(omegaMaxLin);
+
+                // Build grid: vertices uniform in symlog space, evaluated at the corresponding
+                // linear (σ, ω). u, v store the symlog screen coordinates.
+                const N = 56;
                 const verts = new Array(N);
                 let logMin = Infinity, logMax = -Infinity;
-                const cap = 4; // cap log|H| to keep poles finite
+                const cap = 80; // cap |H| in dB to keep poles finite
                 for (let i = 0; i < N; i++) {
                     verts[i] = new Array(N);
-                    const sigma = -sigmaMax + 2 * sigmaMax * (i / (N - 1));
+                    const u = -sigmaMaxLog + 2 * sigmaMaxLog * (i / (N - 1));
+                    const sigma = slogInv(u);
                     for (let j = 0; j < N; j++) {
-                        const omega = -omegaMax + 2 * omegaMax * (j / (N - 1));
-                        const Hv = evalH({ re: sigma, im: omega }, st);
-                        let logMag = Math.log10(C.abs(Hv) + 1e-12);
-                        if (!isFinite(logMag)) logMag = cap;
-                        logMag = Math.max(-cap, Math.min(cap, logMag));
-                        verts[i][j] = { sigma, omega, h: logMag };
-                        if (logMag < logMin) logMin = logMag;
-                        if (logMag > logMax) logMax = logMax < logMag ? logMag : logMax;
+                        const v = -omegaMaxLog + 2 * omegaMaxLog * (j / (N - 1));
+                        const omega = slogInv(v);
+                        let h;
+                        if (field === 'phase') {
+                            h = phaseAtPoint(sigma, omega, st);
+                            if (!isFinite(h)) h = 0;
+                        } else {
+                            const Hv = evalH({ re: sigma, im: omega }, st);
+                            h = 20 * Math.log10(C.abs(Hv) + 1e-12);
+                            if (!isFinite(h)) h = cap;
+                            h = Math.max(-cap, Math.min(cap, h));
+                        }
+                        verts[i][j] = { u, v, h };
+                        if (h < logMin) logMin = h;
+                        if (h > logMax) logMax = h;
                     }
+                }
+                if (field === 'phase') {
+                    // symmetric range with a small pad so the surface fits cleanly
+                    const m = Math.max(Math.PI, Math.abs(logMin), Math.abs(logMax));
+                    logMin = -m; logMax = m;
                 }
                 // fallback if all equal
                 if (logMax - logMin < 1e-6) { logMax = logMin + 1; }
@@ -2246,22 +2332,21 @@
                 // camera
                 const yaw = st.camRot * Math.PI / 180;
                 const pitch = st.camTilt * Math.PI / 180;
-                const scale = Math.min(W, H) * 0.12;
+                const planeExtent = Math.max(sigmaMaxLog, omegaMaxLog);
+                const scale = Math.min(W, H) * 0.42 / planeExtent;
                 const cx = W / 2, cy = H / 2 + 40;
                 const heightScale = Math.min(W, H) * 0.28 / (logMax - logMin);
 
-                // treat h as vertical axis post-rotation
-                function proj(sigma, omega, h) {
+                // proj takes positions in symlog (u, v) coords; h is the vertical value.
+                function proj(u, v, h) {
                     const nh = (h - logMin) * heightScale;
                     const cyw = Math.cos(yaw), syw = Math.sin(yaw);
-                    // rotate sigma-omega plane around vertical
-                    const rx = sigma * cyw - omega * syw;
-                    const ry = sigma * syw + omega * cyw;
-                    // apply pitch (tilting y into screen, lifting h up)
+                    const rx = u * cyw - v * syw;
+                    const ry = u * syw + v * cyw;
                     const cp = Math.cos(pitch), sp = Math.sin(pitch);
                     const screenX = cx + rx * scale;
-                    const screenY = cy - ry * sp * scale - nh * cp;  // horizon + height
-                    const depth = ry * cp - nh * sp / scale;          // for painter's
+                    const screenY = cy - ry * sp * scale - nh * cp;
+                    const depth = ry * cp - nh * sp / scale;
                     return { x: screenX, y: screenY, z: depth };
                 }
 
@@ -2270,10 +2355,10 @@
                 for (let i = 0; i < N - 1; i++) {
                     for (let j = 0; j < N - 1; j++) {
                         const v00 = verts[i][j], v10 = verts[i + 1][j], v01 = verts[i][j + 1], v11 = verts[i + 1][j + 1];
-                        const p00 = proj(v00.sigma, v00.omega, v00.h);
-                        const p10 = proj(v10.sigma, v10.omega, v10.h);
-                        const p01 = proj(v01.sigma, v01.omega, v01.h);
-                        const p11 = proj(v11.sigma, v11.omega, v11.h);
+                        const p00 = proj(v00.u, v00.v, v00.h);
+                        const p10 = proj(v10.u, v10.v, v10.h);
+                        const p01 = proj(v01.u, v01.v, v01.h);
+                        const p11 = proj(v11.u, v11.v, v11.h);
                         const avgH = (v00.h + v10.h + v01.h + v11.h) / 4;
                         const avgZ = (p00.z + p10.z + p01.z + p11.z) / 4;
                         quads.push({ p00, p10, p01, p11, avgH, avgZ });
@@ -2290,7 +2375,7 @@
                     ctx.lineTo(q.p11.x, q.p11.y);
                     ctx.lineTo(q.p01.x, q.p01.y);
                     ctx.closePath();
-                    ctx.fillStyle = heightColor(t);
+                    ctx.fillStyle = heightColor(t, q.avgH);
                     ctx.globalAlpha = 0.92;
                     ctx.fill();
                     ctx.strokeStyle = quadOutline;
@@ -2299,35 +2384,83 @@
                 }
                 ctx.globalAlpha = 1;
 
-                // Floor grid lines (σ, ω axes at h = logMin)
+                // Floor grid lines (σ, ω axes at h = logMin) plus log-decade tick marks
                 ctx.strokeStyle = pal.axis;
                 ctx.lineWidth = 1.2;
-                const a0 = proj(-sigmaMax, 0, logMin), a1 = proj(sigmaMax, 0, logMin);
+                const a0 = proj(-sigmaMaxLog, 0, logMin), a1 = proj(sigmaMaxLog, 0, logMin);
                 ctx.beginPath(); ctx.moveTo(a0.x, a0.y); ctx.lineTo(a1.x, a1.y); ctx.stroke();
-                const b0 = proj(0, -omegaMax, logMin), b1 = proj(0, omegaMax, logMin);
+                const b0 = proj(0, -omegaMaxLog, logMin), b1 = proj(0, omegaMaxLog, logMin);
                 ctx.beginPath(); ctx.moveTo(b0.x, b0.y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
+
+                // tick marks at decade values |10^k| for k = 0..log10(sigmaMaxLin)
+                ctx.strokeStyle = pal.muted;
+                ctx.lineWidth = 0.8;
+                ctx.fillStyle = pal.muted;
+                ctx.font = '9px "JetBrains Mono", monospace';
+                const decadesS = [];
+                for (let k = -1; k <= Math.floor(Math.log10(sigmaMaxLin)); k++) {
+                    const val = Math.pow(10, k);
+                    if (val <= sigmaMaxLin) { decadesS.push(val); decadesS.push(-val); }
+                }
+                const decadesO = [];
+                for (let k = -1; k <= Math.floor(Math.log10(omegaMaxLin)); k++) {
+                    const val = Math.pow(10, k);
+                    if (val <= omegaMaxLin) { decadesO.push(val); decadesO.push(-val); }
+                }
+                for (const sv of decadesS) {
+                    const u = slog(sv);
+                    const t0 = proj(u, 0, logMin);
+                    ctx.beginPath();
+                    ctx.arc(t0.x, t0.y, 1.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                for (const ov of decadesO) {
+                    const v = slog(ov);
+                    const t0 = proj(0, v, logMin);
+                    ctx.beginPath();
+                    ctx.arc(t0.x, t0.y, 1.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
 
                 // jω ridge: trace the surface along σ=0
                 ctx.strokeStyle = pal.probe;
                 ctx.lineWidth = 2.4;
                 ctx.beginPath();
+                let prevPt = null;
                 for (let j = 0; j < N; j++) {
-                    const omega = -omegaMax + 2 * omegaMax * (j / (N - 1));
-                    const Hv = evalH({ re: 0, im: omega }, st);
-                    let logMag = Math.log10(C.abs(Hv) + 1e-12);
-                    logMag = Math.max(-cap, Math.min(cap, logMag));
-                    const pt = proj(0, omega, logMag);
+                    const v = -omegaMaxLog + 2 * omegaMaxLog * (j / (N - 1));
+                    const omega = slogInv(v);
+                    let h;
+                    if (field === 'phase') {
+                        h = phaseAtPoint(0, omega, st);
+                    } else {
+                        const Hv = evalH({ re: 0, im: omega }, st);
+                        h = 20 * Math.log10(C.abs(Hv) + 1e-12);
+                        h = Math.max(-cap, Math.min(cap, h));
+                    }
+                    const pt = proj(0, v, h);
+                    // for wrapped phase, break the ridge at jumps so it doesn't draw a vertical streak
                     if (j === 0) ctx.moveTo(pt.x, pt.y);
-                    else ctx.lineTo(pt.x, pt.y);
+                    else if (field === 'phase' && prevPt && Math.abs(h - prevPt.h) > Math.PI * 0.6) {
+                        ctx.moveTo(pt.x, pt.y);
+                    } else {
+                        ctx.lineTo(pt.x, pt.y);
+                    }
+                    prevPt = { h };
                 }
                 ctx.stroke();
 
                 // Probe bead on jω ridge at st.probeOmega
                 {
-                    const Hv = evalH({ re: 0, im: st.probeOmega }, st);
-                    let logMag = Math.log10(C.abs(Hv) + 1e-12);
-                    logMag = Math.max(-cap, Math.min(cap, logMag));
-                    const pt = proj(0, st.probeOmega, logMag);
+                    let h;
+                    if (field === 'phase') {
+                        h = phaseAtPoint(0, st.probeOmega, st);
+                    } else {
+                        const Hv = evalH({ re: 0, im: st.probeOmega }, st);
+                        h = 20 * Math.log10(C.abs(Hv) + 1e-12);
+                        h = Math.max(-cap, Math.min(cap, h));
+                    }
+                    const pt = proj(0, slog(st.probeOmega), h);
                     ctx.beginPath();
                     ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
                     ctx.fillStyle = pal.probe;
@@ -2336,30 +2469,175 @@
                     ctx.fill(); ctx.stroke();
                 }
 
+                // Pole / zero markers projected onto the surface, with a vertical
+                // drop-line down to the floor so their (σ, ω) location is unambiguous.
+                const poleCol = cssVar('--pole', '#ff5c7a');
+                const zeroCol = cssVar('--zero', '#7be3a3');
+                const hitTargets = [];
+                function drawPZMarker(pz, kind) {
+                    const u = slog(pz.re), v = slog(pz.im);
+                    if (Math.abs(u) > sigmaMaxLog || Math.abs(v) > omegaMaxLog) return;
+                    // height to draw the marker at (top of the rendered range so it sits above)
+                    const hMark = logMax;
+                    const top = proj(u, v, hMark);
+                    const bottom = proj(u, v, logMin);
+                    hitTargets.push({ x: top.x, y: top.y, kind, id: pz.id, hMark });
+                    hitTargets.push({ x: bottom.x, y: bottom.y, kind, id: pz.id, hMark: logMin });
+
+                    // drop-line from floor to marker
+                    ctx.strokeStyle = kind === 'pole' ? poleCol : zeroCol;
+                    ctx.lineWidth = 1.2;
+                    ctx.setLineDash([3, 3]);
+                    ctx.beginPath();
+                    ctx.moveTo(bottom.x, bottom.y);
+                    ctx.lineTo(top.x, top.y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    // floor footprint (small filled dot)
+                    ctx.fillStyle = kind === 'pole' ? poleCol : zeroCol;
+                    ctx.beginPath();
+                    ctx.arc(bottom.x, bottom.y, 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // glyph at top: × for pole, ○ for zero
+                    if (kind === 'pole') {
+                        ctx.strokeStyle = poleCol;
+                        ctx.lineWidth = 2.2;
+                        const r = 7;
+                        ctx.beginPath();
+                        ctx.moveTo(top.x - r, top.y - r); ctx.lineTo(top.x + r, top.y + r);
+                        ctx.moveTo(top.x - r, top.y + r); ctx.lineTo(top.x + r, top.y - r);
+                        ctx.stroke();
+                    } else {
+                        ctx.strokeStyle = zeroCol;
+                        ctx.lineWidth = 2.0;
+                        ctx.beginPath();
+                        ctx.arc(top.x, top.y, 6.5, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+                for (const p of (st.poles || [])) drawPZMarker(p, 'pole');
+                for (const z of (st.zeros || [])) drawPZMarker(z, 'zero');
+
                 // Axis labels
                 ctx.fillStyle = pal.muted;
                 ctx.font = '10px "JetBrains Mono", monospace';
-                const lx = proj(sigmaMax * 1.08, 0, logMin);
-                const ly = proj(0, omegaMax * 1.08, logMin);
-                ctx.fillText('σ', lx.x, lx.y);
-                ctx.fillText('jω', ly.x, ly.y);
+                const lx = proj(sigmaMaxLog * 1.05, 0, logMin);
+                const ly = proj(0, omegaMaxLog * 1.05, logMin);
+                ctx.fillText('σ (log)', lx.x, lx.y);
+                ctx.fillText('jω (log)', ly.x, ly.y);
                 const lz = proj(0, 0, logMax);
                 ctx.fillStyle = pal.text;
-                ctx.fillText('log|H|', lz.x + 6, lz.y - 4);
+                ctx.fillText(field === 'phase' ? 'arg H' : '|H| (dB)', lz.x + 6, lz.y - 4);
+
+                // freeze geometry for hit-testing / inverse projection in mouse handlers
+                lastGeom = {
+                    yaw, pitch, scale, cx, cy,
+                    heightScale, logMin, logMax,
+                    sigmaMaxLog, omegaMaxLog,
+                    slog, slogInv,
+                    hitTargets,
+                };
             }
 
-            // orbit with drag
+            // Inverse-project a screen pixel back to (u, v) symlog plane coords,
+            // assuming the cursor lies on the horizontal plane h = hPlane.
+            function screenToUV(mx, my, hPlane) {
+                const g = lastGeom;
+                if (!g) return null;
+                const cp = Math.cos(g.pitch), sp = Math.sin(g.pitch);
+                const nh = (hPlane - g.logMin) * g.heightScale;
+                const rx = (mx - g.cx) / g.scale;
+                // screenY = cy - ry*sp*scale - nh*cp  →  solve for ry
+                // sp may be 0 only at pitch=0 (excluded by min=10°), but guard anyway
+                const denom = sp * g.scale;
+                const ry = denom > 1e-6 ? (g.cy - my - nh * cp) / denom : 0;
+                const cyw = Math.cos(g.yaw), syw = Math.sin(g.yaw);
+                // inverse of (rx = u*cyw - v*syw, ry = u*syw + v*cyw)
+                const u = rx * cyw + ry * syw;
+                const v = -rx * syw + ry * cyw;
+                return { u, v };
+            }
+
+            function hitTestPZ(mx, my) {
+                if (!lastGeom) return null;
+                const R = 14;
+                let best = null, bestD = R * R;
+                for (const t of lastGeom.hitTargets) {
+                    const dx = mx - t.x, dy = my - t.y;
+                    const d2 = dx * dx + dy * dy;
+                    if (d2 < bestD) { bestD = d2; best = t; }
+                }
+                return best;
+            }
+
+            // pointer interaction: drag a pole/zero if one is hit, otherwise orbit
             let dragging = false, dsx = 0, dsy = 0, rot0 = 0, tilt0 = 0;
             canvas.addEventListener('mousedown', e => {
                 const st = factoryOpts.state || state;
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                const hit = hitTestPZ(mx, my);
+                if (hit) {
+                    pzDrag = { kind: hit.kind, id: hit.id, hPlane: hit.hMark };
+                    e.preventDefault();
+                    return;
+                }
                 dragging = true; dsx = e.clientX; dsy = e.clientY;
                 rot0 = st.camRot; tilt0 = st.camTilt;
             });
+
+            // right-click on a pole/zero removes it
+            canvas.addEventListener('contextmenu', e => {
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                const hit = hitTestPZ(mx, my);
+                if (!hit) return;
+                e.preventDefault();
+                const st = factoryOpts.state || state;
+                const list = hit.kind === 'pole' ? st.poles : st.zeros;
+                const idx = list.findIndex(o => o.id === hit.id);
+                if (idx >= 0) removePZ(hit.kind, idx, st);
+            });
+
+            // hover cursor feedback
+            canvas.addEventListener('mousemove', e => {
+                if (dragging || pzDrag) return;
+                const rect = canvas.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                canvas.style.cursor = hitTestPZ(mx, my) ? 'grab' : 'default';
+            });
+
             window.addEventListener('mousemove', e => {
+                if (pzDrag) {
+                    const st = factoryOpts.state || state;
+                    const rect = canvas.getBoundingClientRect();
+                    const mx = e.clientX - rect.left;
+                    const my = e.clientY - rect.top;
+                    const uv = screenToUV(mx, my, pzDrag.hPlane);
+                    if (!uv) return;
+                    const sigma = lastGeom.slogInv(uv.u);
+                    const omega = lastGeom.slogInv(uv.v);
+                    const list = pzDrag.kind === 'pole' ? st.poles : st.zeros;
+                    const item = list.find(o => o.id === pzDrag.id);
+                    if (!item) return;
+                    item.re = sigma; item.im = omega;
+                    if (st.conjPair && item.partner != null) {
+                        const partner = list.find(o => o.id === item.partner);
+                        if (partner) { partner.re = sigma; partner.im = -omega; }
+                    }
+                    canvas.style.cursor = 'grabbing';
+                    renderAll();
+                    return;
+                }
                 if (!dragging) return;
                 const st = factoryOpts.state || state;
                 st.camRot = (rot0 + (e.clientX - dsx) * 0.5 + 360) % 360;
-                st.camTilt = Math.max(10, Math.min(80, tilt0 - (e.clientY - dsy) * 0.3));
+                st.camTilt = Math.max(10, Math.min(90, tilt0 - (e.clientY - dsy) * 0.3));
                 const rEl = document.getElementById(camRotId);
                 const rVal = document.getElementById(camRotValId);
                 const tEl = document.getElementById(camTiltId);
@@ -2370,7 +2648,11 @@
                 if (tVal) tVal.textContent = Math.round(st.camTilt) + '°';
                 render();
             });
-            window.addEventListener('mouseup', () => { dragging = false; });
+            window.addEventListener('mouseup', () => {
+                dragging = false;
+                pzDrag = null;
+                canvas.style.cursor = 'default';
+            });
 
             return { render };
         }
@@ -3058,17 +3340,40 @@
             camTilt: 35,
         };
 
+        // ======================= phase-section state =============================
+        // Independent pole/zero set for the phase-geometry section. Editing here
+        // does not perturb the section 1 construction.
+        const phaseState = {
+            poles: [{ id: 2001, re: -0.5, im: 1.5 }, { id: 2002, re: -0.5, im: -1.5, partner: 2001 }],
+            zeros: [],
+            K: 1,
+            conjPair: true,
+            mode: 'pole',
+            view3D: false,
+            probeOmega: 1,
+            omegaRange: [0.1, 100],
+            camRot: 35,
+            camTilt: 35,
+        };
+        // link the conj pair declared above
+        phaseState.poles[0].partner = phaseState.poles[1].id;
+
         // ======================= main render loop ================================
         let sPlane1, sPlane2, bodeMag, bodePhase2;
         let sPlaneMag, surface3DMag, bodeMagSec3;
+        let surface3DPhase;
 
         function renderAll() {
             renderLatex();
             const samples = bodeSamples(400);
             sPlane1.render();
-            sPlane2.render();
             bodeMag.render(samples);
-            bodePhase2.render(samples, { cursorW: Math.abs(state.probeOmega), dotOnCurve: true });
+
+            // phase section (independent state)
+            const phaseSamples = bodeSamples(400, phaseState);
+            sPlane2.render();
+            if (phaseState.view3D) surface3DPhase.render();
+            bodePhase2.render(phaseSamples, { cursorW: Math.abs(phaseState.probeOmega), dotOnCurve: true });
 
             // magnitude section
             const magSamples = bodeSamples(400, magState);
@@ -3080,8 +3385,8 @@
             document.getElementById('w-range-val').textContent =
                 fmt(state.omegaRange[0], 2) + '–' + fmt(state.omegaRange[1], 0);
             // phase section readouts
-            document.getElementById('probe-val').textContent = fmt(state.probeOmega, 2);
-            document.getElementById('probe-hint').textContent = 'ω = ' + fmt(state.probeOmega, 2);
+            document.getElementById('probe-val').textContent = fmt(phaseState.probeOmega, 2);
+            document.getElementById('probe-hint').textContent = 'ω = ' + fmt(phaseState.probeOmega, 2);
             // magnitude section readouts
             const probeValMag = document.getElementById('probe-val-mag');
             const probeHintMag = document.getElementById('probe-hint-mag');
@@ -3093,12 +3398,25 @@
         function init() {
             sPlane1 = makeSPlane(document.getElementById('splane'));
             sPlane2 = makeSPlane(document.getElementById('splane2'), {
+                state: phaseState,
                 withProbe: true,
-                editable: false,
+                editable: true,
                 drawAngles: true,
+                probeSliderId: 'probe-slider',
+                hintId: 'probe-hint',
+            });
+            surface3DPhase = makeSurface3D(document.getElementById('surface3d-phase'), {
+                state: phaseState,
+                field: 'phase',
+                camRotId: 'cam-rot-phase',
+                camRotValId: 'cam-rot-val-phase',
+                camTiltId: 'cam-tilt-phase',
+                camTiltValId: 'cam-tilt-val-phase',
             });
             bodeMag = makeBodePlot(document.getElementById('bode-mag'), 'mag');
-            bodePhase2 = makeBodePlot(document.getElementById('bode-phase2'), 'phase');
+            bodePhase2 = makeBodePlot(document.getElementById('bode-phase2'), 'phase', {
+                state: phaseState,
+            });
 
             // magnitude section plots
             sPlaneMag = makeSPlane(document.getElementById('splane-mag'), {
@@ -3161,10 +3479,71 @@
                 renderAll();
             });
 
-            // === section 4 (phase) probe slider — value is log10(ω) ===
+            // === section 3 (phase) controls ===
             document.getElementById('probe-slider').addEventListener('input', e => {
-                state.probeOmega = Math.pow(10, parseFloat(e.target.value));
+                phaseState.probeOmega = Math.pow(10, parseFloat(e.target.value));
                 renderAll();
+            });
+            const pPoleP = document.getElementById('mode-pole-phase');
+            const pZeroP = document.getElementById('mode-zero-phase');
+            pPoleP.addEventListener('click', () => {
+                phaseState.mode = 'pole';
+                pPoleP.classList.add('active'); pZeroP.classList.remove('active');
+            });
+            pZeroP.addEventListener('click', () => {
+                phaseState.mode = 'zero';
+                pZeroP.classList.add('active'); pPoleP.classList.remove('active');
+            });
+            const conjP = document.getElementById('conj-pair-phase');
+            conjP.checked = phaseState.conjPair;
+            conjP.addEventListener('change', e => {
+                phaseState.conjPair = e.target.checked;
+            });
+            document.getElementById('btn-reset-phase').addEventListener('click', () => {
+                const a = { id: uid(), re: -0.5, im: 1.5 };
+                const b = { id: uid(), re: -0.5, im: -1.5, partner: a.id };
+                a.partner = b.id;
+                phaseState.poles = [a, b];
+                phaseState.zeros = [];
+                phaseState.K = 1;
+                phaseState.conjPair = true;
+                conjP.checked = true;
+                phaseState.probeOmega = 1;
+                document.getElementById('probe-slider').value = '0';
+                updateOmegaRangeAuto(phaseState);
+                renderAll();
+            });
+
+            // phase-section view toggle (2D s-plane <-> 3D arg H surface)
+            const v2dP = document.getElementById('view-2d-phase');
+            const v3dP = document.getElementById('view-3d-phase');
+            const svgP = document.getElementById('splane2');
+            const canvP = document.getElementById('surface3d-phase');
+            const camPhase = document.getElementById('camera-ctrl-phase');
+            const camPhase2 = document.getElementById('camera-ctrl2-phase');
+            v2dP.addEventListener('click', () => {
+                phaseState.view3D = false;
+                v2dP.classList.add('active'); v3dP.classList.remove('active');
+                svgP.style.display = ''; canvP.style.display = 'none';
+                camPhase.style.display = 'none'; camPhase2.style.display = 'none';
+                renderAll();
+            });
+            v3dP.addEventListener('click', () => {
+                phaseState.view3D = true;
+                v3dP.classList.add('active'); v2dP.classList.remove('active');
+                svgP.style.display = 'none'; canvP.style.display = '';
+                camPhase.style.display = ''; camPhase2.style.display = '';
+                renderAll();
+            });
+            document.getElementById('cam-rot-phase').addEventListener('input', e => {
+                phaseState.camRot = parseFloat(e.target.value);
+                document.getElementById('cam-rot-val-phase').textContent = Math.round(phaseState.camRot) + '°';
+                if (phaseState.view3D) surface3DPhase.render();
+            });
+            document.getElementById('cam-tilt-phase').addEventListener('input', e => {
+                phaseState.camTilt = parseFloat(e.target.value);
+                document.getElementById('cam-tilt-val-phase').textContent = Math.round(phaseState.camTilt) + '°';
+                if (phaseState.view3D) surface3DPhase.render();
             });
 
             // === section 3 (magnitude) controls ===
@@ -3292,6 +3671,7 @@
             // start with a useful preset so the page isn't empty
             loadPreset('lp2');
             updateOmegaRangeAuto(magState);
+            updateOmegaRangeAuto(phaseState);
             renderDemo3();
             renderDemo4();
         }

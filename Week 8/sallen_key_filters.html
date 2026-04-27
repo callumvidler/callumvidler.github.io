@@ -369,9 +369,15 @@
                     <span class="pill active" id="show-passive">passive cascade</span>
                     <span class="pill active" id="show-references">Bessel / Butterworth / Cheby</span>
                 </div>
-                <div class="plot-box bode-pair">
-                    <div class="label">bode response · <b>Sallen-Key vs reference responses</b></div>
-                    <svg class="bode" id="plot-bode-sk"></svg>
+                <div class="plot-row sk-tuning-row">
+                    <div class="plot-box splane">
+                        <div class="label">s-plane · <b>Sallen-Key pole pair</b></div>
+                        <svg class="bode" id="plot-splane-sk"></svg>
+                    </div>
+                    <div class="plot-box bode-pair">
+                        <div class="label">bode response · <b>Sallen-Key vs references</b></div>
+                        <svg class="bode" id="plot-bode-sk"></svg>
+                    </div>
                 </div>
             </div>
         </div>

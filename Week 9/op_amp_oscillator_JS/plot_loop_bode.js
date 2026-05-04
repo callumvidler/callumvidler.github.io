@@ -40,7 +40,7 @@
         var W = rect.width  || 600;
         var H = rect.height || 540;
 
-        var margin = { top: 56, right: 70, bottom: 50, left: 70 };
+        var margin = { top: 80, right: 150, bottom: 50, left: 70 };
         var innerW = Math.max(50, W - margin.left - margin.right);
         var innerH = Math.max(50, H - margin.top - margin.bottom);
 
@@ -218,11 +218,11 @@
 
         // ── axis titles · 4-quadrant rule ───────────────────────────
         window.renderKatex(svg, '\\Im\\{A\\beta(j\\omega)\\}',
-            margin.left + x(0), margin.top - 26,
+            margin.left + x(0), margin.top - 34,
             { width: 240, height: 24, size: 14 });
         window.renderKatex(svg, '\\Re\\{A\\beta(j\\omega)\\}',
-            margin.left + innerW + 36, margin.top + y(0),
-            { width: 200, height: 24, size: 13 });
+            margin.left + innerW + 70, margin.top + y(0),
+            { width: 140, height: 24, size: 13 });
 
         // ── on-plot annotations ─────────────────────────────────────
         window.renderKatex(svg, '1 + j\\,0',
@@ -233,10 +233,14 @@
             margin.left + x(markerR), margin.top + y(0) + 22,
             { width: 220, height: 22, size: 12, color: traceColor });
 
-        // ── legend (top-left of plot) ───────────────────────────────
-        var legX = margin.left + 10;
-        var legY = margin.top + 10;
+        // ── legend (top-right of plot) ──────────────────────────────
         var legRowH = 18;
+        var legSegW = 22;
+        var legGap  = 8;
+        var legLabelW = 200;
+        var legRight = margin.left + innerW - 10;
+        var legX = legRight - (legSegW + legGap + legLabelW);
+        var legY = margin.top + 10;
         [
             { label: '\\beta(j\\omega) \\text{ (network only)}',
               color: window.CMP.cssVar('--c-input'), dashed: true, op: 0.55 },
@@ -245,14 +249,14 @@
         ].forEach(function (it, idx) {
             var ly = legY + idx * legRowH;
             var seg = svg.append('line')
-                .attr('x1', legX).attr('x2', legX + 22)
+                .attr('x1', legX).attr('x2', legX + legSegW)
                 .attr('y1', ly).attr('y2', ly)
                 .attr('stroke', it.color).attr('stroke-width', 2.4)
                 .attr('opacity', it.op);
             if (it.dashed) seg.attr('stroke-dasharray', '4 4');
             window.renderKatex(svg, it.label,
-                legX + 22 + 8 + 130, ly,
-                { width: 260, height: 18, size: 11,
+                legX + legSegW + legGap + legLabelW / 2, ly,
+                { width: legLabelW, height: 18, size: 11,
                   color: window.T.text, align: 'left' })
                 .attr('opacity', it.op);
         });

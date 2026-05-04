@@ -68,17 +68,17 @@
 
         // Pin label data, anticlockwise from notch: pin 1 top-left, going
         // down the left side (1, 2, 3, 4), then up the right side (5, 6, 7, 8).
-        var leftPins  = [
-            { n: 1, name: 'GND',   latex: '\\mathrm{GND}' },
-            { n: 2, name: 'TRIG',  latex: '\\mathrm{TRIG}' },
-            { n: 3, name: 'OUT',   latex: '\\mathrm{OUT}' },
+        var leftPins = [
+            { n: 1, name: 'GND', latex: '\\mathrm{GND}' },
+            { n: 2, name: 'TRIG', latex: '\\mathrm{TRIG}' },
+            { n: 3, name: 'OUT', latex: '\\mathrm{OUT}' },
             { n: 4, name: 'RESET', latex: '\\overline{\\mathrm{RESET}}' }
         ];
         var rightPins = [
-            { n: 8, name: 'VCC',   latex: 'V_{CC}' },
+            { n: 8, name: 'VCC', latex: 'V_{CC}' },
             { n: 7, name: 'DISCH', latex: '\\mathrm{DISCH}' },
             { n: 6, name: 'THRES', latex: '\\mathrm{THRES}' },
-            { n: 5, name: 'CTRL',  latex: '\\mathrm{CTRL}' }
+            { n: 5, name: 'CTRL', latex: '\\mathrm{CTRL}' }
         ];
 
         // Draw left-side pins

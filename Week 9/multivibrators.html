@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Multivibrators</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="../components/circuit_tooltip.css">
+    <link rel="stylesheet" href="multivibrators_JS/multivibrators.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · MULTIVIBRATORS</div>
+            <h1 class="hero"><em>Bistable</em>, <em>monostable</em>, <em>astable</em>.</h1>
+            <p class="sub">A multivibrator is a two-state circuit whose output rests at one of two saturation rails
+                and switches between them on a defined condition. The three families are distinguished only by how
+                many of those states are stable. A bistable holds either state indefinitely. A monostable holds one
+                state and visits the other for a fixed interval. An astable holds neither and oscillates between
+                them.</p>
+            <div class="tags">
+                <span class="field-tag">positive feedback</span>
+                <span class="field-tag">RC timing</span>
+                <span class="field-tag">square wave</span>
+                <span class="field-tag">one-shot</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · CLASSIFICATION ================= -->
+    <section class="scene" id="sec-classify">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>two states, three behaviours</span></div>
+            <h2>Classifying by stable states</h2>
+
+            <p class="lead">Every multivibrator shares the same skeleton: a comparator with positive feedback to its
+                non-inverting input and an RC network on its inverting input. The output is two-valued, resting at
+                $+V_\text{sat}$ or $-V_\text{sat}$. The three families differ only in the role of the RC network and
+                of any external trigger.</p>
+
+            <ul class="bullets">
+                <li><strong>Bistable.</strong> Two stable states. The output remains at the rail it last latched to
+                    and flips only when an external trigger drives the comparator across its switching threshold.
+                    The RC network is absent or replaced by a direct connection.</li>
+                <li><strong>Monostable.</strong> One stable state and one quasi-stable state. A trigger pulse moves
+                    the circuit into the quasi-stable state, where it remains for a time set by $RC$ before
+                    returning to rest.</li>
+                <li><strong>Astable.</strong> No stable states. The RC network drives the comparator across its
+                    threshold continuously, and the output toggles without any external trigger.</li>
+            </ul>
+
+            <div class="callout">
+                The same op-amp in the same Schmitt-trigger configuration becomes any of the three by changing what
+                is tied to the inverting input. A dc reference yields a bistable, an RC network with a clamp yields
+                a monostable, and an unclamped RC network yields an astable.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box classification">
+                    <div class="label">classification · <b>state diagrams for each family</b></div>
+                    <svg class="bode" id="plot-classification"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · BISTABLE ================= -->
+    <section class="scene" id="sec-bistable">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the bistable multivibrator</span></div>
+            <h2>The bistable: two stable states</h2>
+
+            <p class="lead">A bistable is a comparator with positive feedback. The output returns through the divider
+                $R_1, R_2$ to the non-inverting input, so the comparator references a fixed fraction of its own
+                output. That fraction,</p>
+
+            <div class="eq-block">$$\beta = \frac{R_2}{R_1 + R_2},$$</div>
+
+            <p>sets two switching thresholds, $V_\text{TH} = +\beta V_\text{sat}$ and
+                $V_\text{TL} = -\beta V_\text{sat}$. While the inverting input lies between them, the output stays
+                at whichever rail it was last driven to. Both rails are stable; the feedback reinforces the current
+                state.</p>
+
+            <p>Switching requires the input to cross the active threshold. With the output at $+V_\text{sat}$ the
+                active threshold is $V_\text{TH}$, and the input must rise above it to drive the output to
+                $-V_\text{sat}$. The active threshold then becomes $V_\text{TL}$, and a fall below $V_\text{TL}$ is
+                required to switch back.</p>
+
+            <ul class="bullets">
+                <li>divider $R_1, R_2$: sets the switching thresholds;</li>
+                <li>inverting input: receives the signal that may flip the state;</li>
+                <li>rails $\pm V_\text{sat}$: the two stable states;</li>
+                <li>state memory: the active rail records one bit of information.</li>
+            </ul>
+
+            <div class="callout">
+                The bistable is the inverting Schmitt trigger under another name. As a multivibrator the emphasis is
+                on the two stable states; as a Schmitt trigger the emphasis is on the hysteresis between the
+                thresholds. Both descriptions refer to the same circuit.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>op-amp bistable multivibrator</b></div>
+                    <svg class="bode" id="plot-bistable-circuit"></svg>
+                </div>
+                <div class="plot-box scope">
+                    <div class="label">time domain · <b>input crossing thresholds latches the output</b></div>
+                    <canvas id="scope-bistable"></canvas>
+                </div>
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">feedback ratio $\beta$</span>
+                        <input type="range" id="bi-beta" min="0.10" max="0.80" step="0.01" value="0.40">
+                        <span class="val" id="bi-beta-val">0.40</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">input amplitude</span>
+                        <input type="range" id="bi-amp" min="0.20" max="1.20" step="0.01" value="0.70">
+                        <span class="val" id="bi-amp-val">0.70</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · MONOSTABLE ================= -->
+    <section class="scene" id="sec-monostable">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>the monostable multivibrator</span></div>
+            <h2>The monostable: one timed excursion</h2>
+
+            <p class="lead">A monostable, or one-shot, has one stable state and one quasi-stable state of fixed
+                duration. The trigger $V_\text{trig}$ drives the non-inverting node, which is also the tap of the
+                divider $R_1, R_2$ from the output. A resistor $R$ feeds the output back to the inverting input,
+                where a capacitor $C$ to ground sets the timing and a diode $D$ clamps $v_C$ against rising too
+                far.</p>
+
+            <p>At rest, $V_\text{trig}$ holds $v_+$ near its quiescent value. The output sits at $+V_\text{sat}$ and
+                the diode is forward-biased, clamping $v_C \approx V_D$. With $v_+ > v_-$ the comparator stays
+                latched and the circuit waits indefinitely.</p>
+
+            <p>A negative pulse on $V_\text{trig}$ pulls $v_+$ below $v_C$. The comparator flips, the output snaps
+                to $-V_\text{sat}$, and the diode reverse-biases. The capacitor discharges through $R$ from $V_D$
+                toward $-V_\text{sat}$ along an exponential. With the output now negative, the divider holds $v_+$
+                at $-\beta V_\text{sat}$, so the threshold $v_C$ must cross to flip the comparator back is</p>
+
+            <div class="eq-block">$$V_\text{TL} = -\beta V_\text{sat},
+                \qquad \beta = \frac{R_2}{R_1 + R_2}.$$</div>
+
+            <p>Once $v_C$ reaches $V_\text{TL}$, the comparator flips to $+V_\text{sat}$, the diode reclamps $v_C$ at
+                $V_D$, and the circuit returns to rest. The pulse duration is</p>
+
+            <div class="eq-block">$$T = R\,C \, \ln\!\left(\frac{1 + V_D / V_\text{sat}}{1 - \beta}\right)
+                \;\approx\; R\,C \, \ln\!\left(\frac{1}{1 - \beta}\right),$$</div>
+
+            <p>where the second form neglects $V_D$. The width is fixed by $R$, $C$, and $\beta$, and is independent
+                of the trigger that initiated it.</p>
+
+            <ul class="bullets">
+                <li>stable state: output at $+V_\text{sat}$, $v_C$ clamped at $V_D$;</li>
+                <li>trigger: a brief negative pulse on $V_\text{trig}$ pulls $v_+$ below $v_C$;</li>
+                <li>quasi-stable state: output at $-V_\text{sat}$, $v_C$ discharging through $R$;</li>
+                <li>recovery: $v_C$ reaches $V_\text{TL}$, the comparator flips, and the diode reclamps $v_C$.</li>
+            </ul>
+
+            <div class="callout">
+                A monostable converts a trigger of arbitrary width into a pulse of fixed width. It is used for pulse
+                standardisation, switch debouncing, missing-pulse detection, and any application that requires a
+                defined delay after an event.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>op-amp monostable multivibrator</b></div>
+                    <svg class="bode" id="plot-monostable-circuit"></svg>
+                </div>
+                <div class="plot-box scope">
+                    <div class="label">time domain · <b>trigger pulse, capacitor voltage, output</b></div>
+                    <canvas id="scope-monostable"></canvas>
+                </div>
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">$RC$ product</span>
+                        <input type="range" id="mono-rc" min="0.10" max="0.80" step="0.01" value="0.30">
+                        <span class="val" id="mono-rc-val">0.30 s</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">feedback ratio $\beta$</span>
+                        <input type="range" id="mono-beta" min="0.20" max="0.80" step="0.01" value="0.50">
+                        <span class="val" id="mono-beta-val">0.50</span>
+                    </span>
+                    <span class="divider"></span>
+                    <button type="button" id="mono-trigger" class="ctrl-btn trigger">trigger</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · ASTABLE ================= -->
+    <section class="scene" id="sec-astable">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the astable multivibrator</span></div>
+            <h2>The astable: free-running oscillation</h2>
+
+            <p class="lead">An astable removes the clamping diode of the monostable and allows the capacitor to
+                charge through $R$ in either direction. The circuit never rests; whenever the output is at one rail,
+                the capacitor is moving toward the threshold that will flip it.</p>
+
+            <p>With the output at $+V_\text{sat}$, the capacitor charges toward $+V_\text{sat}$ along the
+                exponential</p>
+
+            <div class="eq-block">$$v_C(t) = V_\text{sat} + \big(v_C(0) - V_\text{sat}\big)\,e^{-t/RC}.$$</div>
+
+            <p>When $v_C$ reaches $V_\text{TH} = +\beta V_\text{sat}$, the comparator flips the output to
+                $-V_\text{sat}$. The capacitor then charges from $+\beta V_\text{sat}$ toward $-V_\text{sat}$ until
+                it reaches $V_\text{TL} = -\beta V_\text{sat}$, at which point the output flips back. Solving for
+                the half-period gives</p>
+
+            <div class="eq-block">$$T = 2\,R\,C \, \ln\!\left(\frac{1 + \beta}{1 - \beta}\right).$$</div>
+
+            <p>The period depends only on $RC$ and $\beta$. With symmetric rails the output is a 50% duty-cycle
+                square wave, and $v_C$ is a piecewise exponential bounded by the two thresholds.</p>
+
+            <ul class="bullets">
+                <li>output: square wave between $+V_\text{sat}$ and $-V_\text{sat}$;</li>
+                <li>capacitor: alternating exponential charge and discharge between the thresholds;</li>
+                <li>thresholds: $\pm\beta V_\text{sat}$, set by the divider $R_1, R_2$;</li>
+                <li>period: $T = 2RC \, \ln\!\big((1+\beta)/(1-\beta)\big)$, with no external trigger.</li>
+            </ul>
+
+            <div class="callout">
+                The astable is the simplest op-amp square-wave generator. The frequency is fixed by $R$, $C$, and
+                $\beta$, all of which are easily varied, which suits it to clock generation, switching power stages,
+                and the Class-D modulator carriers used elsewhere in this course.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>op-amp astable multivibrator</b></div>
+                    <svg class="bode" id="plot-astable-circuit"></svg>
+                </div>
+                <div class="plot-box scope">
+                    <div class="label">time domain · <b>capacitor voltage and square-wave output</b></div>
+                    <canvas id="scope-astable"></canvas>
+                </div>
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">$RC$ product</span>
+                        <input type="range" id="ast-rc" min="0.10" max="0.80" step="0.01" value="0.30">
+                        <span class="val" id="ast-rc-val">0.30 s</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">feedback ratio $\beta$</span>
+                        <input type="range" id="ast-beta" min="0.20" max="0.80" step="0.01" value="0.50">
+                        <span class="val" id="ast-beta-val">0.50</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · APPLICATIONS ================= -->
+    <section class="scene wide" id="sec-uses">
+        <div class="copy full">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>where multivibrators are used</span></div>
+            <h2>Applications in instrumentation</h2>
+
+            <p class="lead">The three families occupy three timing roles. The bistable stores one bit of state. The
+                monostable converts an event into a pulse of defined duration. The astable produces a periodic clock
+                or carrier with no input.</p>
+
+            <div class="card-row">
+                <div class="card">
+                    <div class="card-num">a</div>
+                    <h3>Latches and digital memory</h3>
+                    <p>Cross-coupled bistables, refined into SR and D latches, form the storage cells of every
+                        register, counter, and finite-state machine in digital instrumentation.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">b</div>
+                    <h3>Switch debouncing</h3>
+                    <p>A bistable with two cross-coupled inputs converts the chatter of a mechanical contact into a
+                        single clean transition, suppressing the bounces that would otherwise be counted as separate
+                        events.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">c</div>
+                    <h3>Pulse-width standardisation</h3>
+                    <p>A monostable converts a trigger of arbitrary width or amplitude into a pulse of fixed width
+                        $T = RC \ln\!\big(1/(1-\beta)\big)$. Sensors that produce noisy or variable-width pulses are
+                        conditioned through a one-shot before further processing.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">d</div>
+                    <h3>Missing-pulse and watchdog timers</h3>
+                    <p>A retriggerable monostable that is reset by every incoming pulse times out only when the
+                        train stops. The resulting output transition signals that pulses are missing; this is the
+                        basis of watchdog logic and of arrhythmia detection.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">e</div>
+                    <h3>Clock and timebase generation</h3>
+                    <p>An astable provides the periodic clock that drives sampled systems, pulse-width modulators,
+                        and the carriers of Class-D amplifiers. The frequency is set by $R$, $C$, and $\beta$, and
+                        is easily tuned.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">f</div>
+                    <h3>Stimulus pulse trains</h3>
+                    <p>Pulses for nerve and muscle stimulation are produced by an astable that sets the repetition
+                        rate combined with a monostable that sets the pulse width, giving independent control of
+                        frequency and on-time.</p>
+                </div>
+            </div>
+
+            <div class="callout">
+                The bistable, monostable, and astable are the three behaviours available to any two-state circuit.
+                Together they form the timing skeleton of every clocked instrument: storage from the bistable,
+                event-to-pulse conversion from the monostable, and periodic excitation from the astable.
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="../components/katex_label.js"></script>
+    <script defer src="../components/plot_helpers.js"></script>
+    <script defer src="../components/circuit_tooltip.js"></script>
+    <script defer src="multivibrators_JS/plot_classification.js"></script>
+    <script defer src="multivibrators_JS/plot_bistable_circuit.js"></script>
+    <script defer src="multivibrators_JS/scope_bistable.js"></script>
+    <script defer src="multivibrators_JS/plot_monostable_circuit.js"></script>
+    <script defer src="multivibrators_JS/scope_monostable.js"></script>
+    <script defer src="multivibrators_JS/plot_astable_circuit.js"></script>
+    <script defer src="multivibrators_JS/scope_astable.js"></script>
+</body>
+
+</html>

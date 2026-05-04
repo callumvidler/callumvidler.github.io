@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Schmitt Trigger</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="schmitt_trigger_JS/schmitt_trigger.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · SCHMITT TRIGGER</div>
+            <h1 class="hero">The <em>Schmitt trigger</em></h1>
+            <p class="sub">A plain comparator transitions on every threshold crossing of its input, so noise at the
+                reference produces a burst of edges. The Schmitt trigger replaces the single threshold with two
+                state-dependent thresholds separated by a hysteresis band. After each transition the input must reverse
+                by the full width of the band before the next transition can occur. The following sections derive the
+                threshold pair, examine the hysteresis loop, apply the circuit to a noisy ECG channel, and consider
+                how the band is sized for R-wave detection and contact debouncing.</p>
+            <div class="tags">
+                <span class="field-tag">positive feedback</span>
+                <span class="field-tag">hysteresis</span>
+                <span class="field-tag">two thresholds</span>
+                <span class="field-tag">noise immunity</span>
+                <span class="field-tag">r-wave detection</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · CIRCUIT AND THRESHOLDS ================= -->
+    <section class="scene" id="sec-circuit">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>circuit and threshold derivation</span></div>
+            <h2>The non-inverting Schmitt trigger</h2>
+
+            <p class="lead">The input enters the non-inverting terminal through $R_1$. A second resistor $R_2$
+                returns the output to the same node and supplies positive feedback. The inverting terminal is
+                grounded, so the comparator switches whenever the non-inverting node crosses zero. Because the
+                output takes one of two saturation values, the voltage at the non-inverting node also takes one of
+                two values, and the input therefore sees two effective thresholds.</p>
+
+            <p>Superposition at the non-inverting node gives</p>
+
+            <div class="eq-block">$$V_+ = v_\text{in}\,\frac{R_2}{R_1+R_2} + v_\text{out}\,\frac{R_1}{R_1+R_2}.$$
+            </div>
+
+            <p>Setting $V_+ = 0$ and substituting the two possible output values yields the threshold pair,</p>
+
+            <div class="eq-block">$$V_\text{TH} = +V_\text{sat}\,\frac{R_1}{R_2}, \qquad
+                V_\text{TL} = -V_\text{sat}\,\frac{R_1}{R_2}.$$</div>
+
+            <p>While $v_\text{out} = -V_\text{sat}$, a rising input must reach $V_\text{TH}$ before the output
+                flips high. While $v_\text{out} = +V_\text{sat}$, a falling input must reach $V_\text{TL}$ before
+                the output flips low. The width of the hysteresis band is</p>
+
+            <div class="eq-block">$$\Delta V = V_\text{TH} - V_\text{TL} = 2\,V_\text{sat}\,\frac{R_1}{R_2}.$$
+            </div>
+
+            <p>The band is symmetric about ground because the inverting input is tied to ground. Offsetting that
+                input shifts both thresholds together without changing the width. The width itself depends only
+                on the resistor ratio and the rail separation, not on the absolute resistance values.</p>
+
+            <h3>Stability of the positive feedback path</h3>
+
+            <p>Positive feedback is destabilising in the linear region of an op-amp and is normally avoided. The
+                Schmitt trigger operates outside that region: the output is already at a rail before the feedback
+                takes effect. The fraction returned to the non-inverting input reinforces the existing saturation
+                rather than driving the output away from a quiescent point. The circuit has two stable states and
+                no third equilibrium for the feedback to destabilise.</p>
+
+            <div class="callout">
+                The thresholds are state-dependent. While $v_\text{out} = +V_\text{sat}$, the comparator waits for
+                $v_\text{in} < V_\text{TL}$. After the output flips to $-V_\text{sat}$, it waits for
+                $v_\text{in} > V_\text{TH}$. The input must reverse by at least $\Delta V$ to produce a second
+                transition.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>non-inverting Schmitt trigger</b></div>
+                    <svg class="bode" id="plot-schmitt-circuit"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · HYSTERESIS LOOP ================= -->
+    <section class="scene" id="sec-loop">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>feedback divider and operating zones</span></div>
+            <h2>How the feedback divider sets the thresholds</h2>
+
+            <p class="lead">The non-inverting node is a summing junction for $v_\text{in}$ through $R_1$ and
+                $v_\text{out}$ through $R_2$. The comparator switches when the junction voltage crosses zero, so
+                each stable output state pins the junction to a different threshold of the input. The two panels on
+                the right show this directly: the schematic carries live values for $R_1$, $R_2$ and $v_\text{in}$,
+                and the voltage rule shows $v_\text{in}$ relative to the two thresholds and the direction it must
+                move to flip the output.</p>
+
+            <h3>Effect of the controls</h3>
+
+            <ul class="bullets">
+                <li>$\beta = R_1 / (R_1 + R_2)$ sets the resistance values displayed beside each box. The
+                    thresholds track $R_1/R_2 = \beta/(1-\beta)$, so increasing $\beta$ widens the memory band.</li>
+                <li>The test signal dwells near $\pm A$ with a small superimposed ripple, then transitions
+                    briefly through the band. The dwells expose the role of the resistor pair: while the signal
+                    sits inside a force zone the ripple cannot cross the active threshold, and only the genuine
+                    excursion to the opposite plateau flips the output.</li>
+                <li>Reducing the amplitude below $|V_\text{TH}|$ keeps both plateaus inside the band and the
+                    output stops switching, even though the signal still oscillates. Raising the amplitude past
+                    both thresholds gives one transition per half-cycle.</li>
+                <li>The frequency control varies how often the plateaus alternate. Hysteresis is independent of
+                    frequency in steady state, so the duty cycle of $v_\text{out}$ is unchanged.</li>
+            </ul>
+
+            <div class="callout">
+                The output wire is drawn green when $v_\text{out} = +V_\text{sat}$ and red when
+                $v_\text{out} = -V_\text{sat}$. The same colour appears on the cursor at the right edge of the
+                test signal and on the state badge above, so the two panels read as a single live circuit.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">feedback $\beta$</span>
+                        <input type="range" id="sch-beta" min="0.05" max="0.45" step="0.005" value="0.20">
+                        <span class="val" id="sch-beta-val">0.20</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">test signal amplitude</span>
+                        <input type="range" id="sch-amp" min="0.4" max="3.0" step="0.02" value="2.40">
+                        <span class="val" id="sch-amp-val">2.40 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">frequency</span>
+                        <input type="range" id="sch-freq" min="0.1" max="0.8" step="0.01" value="0.25">
+                        <span class="val" id="sch-freq-val">0.25 Hz</span>
+                    </span>
+                </div>
+                <div class="plot-stack-split">
+                    <div class="plot-box live-circuit">
+                        <div class="label">live circuit · <b>non-inverting Schmitt trigger</b></div>
+                        <svg class="bode" id="plot-live-circuit"></svg>
+                    </div>
+                    <div class="plot-box zone-view">
+                        <div class="label">operating zones · <b>test signal sweeping the thresholds</b></div>
+                        <canvas id="plot-zone-view"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · NOISY BIOSIGNAL ANIMATION ================= -->
+    <section class="scene" id="sec-scope">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>noise rejection on a streaming biosignal</span></div>
+            <h2>Schmitt trigger applied to a noisy ECG channel</h2>
+
+            <p class="lead">A plain comparator transitions on every crossing of its threshold, including those
+                produced by noise. The Schmitt trigger suppresses all crossings that lie inside the hysteresis
+                band and produces a single transition for each genuine excursion of the underlying signal. The
+                animation scrolls a synthetic, noise-corrupted ECG waveform through both circuits in parallel, so
+                the difference is visible directly.</p>
+
+            <p>The top trace is the noisy input together with the reference $V_\text{ref}$ and, for non-zero
+                hysteresis, the thresholds $V_\text{TH}$ and $V_\text{TL}$. The middle trace is the output of a
+                plain comparator referenced to $V_\text{ref}$. The bottom trace is the output of a Schmitt trigger
+                with the hysteresis set on the slider.</p>
+
+            <h3>Observations</h3>
+
+            <ul class="bullets">
+                <li>At low noise levels the two outputs agree, with a single transition per beat in each trace.</li>
+                <li>As the noise level approaches a fraction of the R-wave amplitude, the plain comparator output
+                    breaks into bursts of edges around each crossing. The Schmitt output is unaffected provided
+                    the noise excursion remains smaller than $\Delta V$.</li>
+                <li>Reducing $\Delta V$ below the peak-to-peak noise amplitude allows noise to drag the input
+                    back across the lower threshold while the output is high. The Schmitt output then degrades to
+                    the behaviour of the plain comparator.</li>
+            </ul>
+
+            <div class="callout">
+                The noise rejection is obtained without low-pass filtering. The frequency content of the input is
+                preserved at the moment of the genuine crossing, so the Schmitt trigger introduces no phase delay
+                in the front-end signal. The circuit is therefore preferred over additional filtering when the
+                timing of the crossing carries the information of interest, as in R-wave detection.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">noise level</span>
+                        <input type="range" id="scope-noise" min="0" max="0.6" step="0.005" value="0.18">
+                        <span class="val" id="scope-noise-val">0.18 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">reference $V_\text{ref}$</span>
+                        <input type="range" id="scope-vref" min="0.10" max="0.90" step="0.005" value="0.40">
+                        <span class="val" id="scope-vref-val">0.40 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">hysteresis $\Delta V$</span>
+                        <input type="range" id="scope-hyst" min="0.0" max="0.7" step="0.005" value="0.55">
+                        <span class="val" id="scope-hyst-val">0.55 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">scroll</span>
+                        <input type="range" id="scope-speed" min="0" max="2.5" step="0.05" value="1.0">
+                        <span class="val" id="scope-speed-val">1.00x</span>
+                    </span>
+                </div>
+                <div class="plot-box scope">
+                    <div class="label">streaming · <b>noisy biosignal, plain comparator, Schmitt trigger</b></div>
+                    <canvas id="scope-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · APPLICATIONS ================= -->
+    <section class="scene" id="sec-apps">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>applications in bioinstrumentation</span></div>
+            <h2>Sizing the hysteresis band</h2>
+
+            <p class="lead">The width of the hysteresis band is the principal design parameter of a Schmitt-based
+                front end. The following examples show how the band is chosen against the noise statistics and the
+                required transition behaviour.</p>
+
+            <h3>R-wave detection</h3>
+
+            <p>An ECG channel for heart-rate counting is bandpass filtered to isolate the QRS complex, amplified
+                to a peak excursion of approximately one volt, and passed through a Schmitt trigger whose output
+                drives a counter. The reference is placed near the centre of the expected R-wave, and the
+                hysteresis is set to exceed the peak-to-peak noise at the comparator input. The dominant noise
+                sources are EMG within the QRS passband, residual mains pickup that survives the instrumentation
+                amplifier, and electrode-skin half-cell drift. A common rule selects $\Delta V$ at approximately
+                half the expected R-wave amplitude. The detector then produces one edge per heartbeat with a
+                timing jitter set by the slope of the QRS at the reference, not by the noise excursion across it.</p>
+
+            <p>If $\Delta V$ is too large, the input must climb well past the nominal reference before transitioning.
+                This introduces a systematic delay and reduces sensitivity to low-amplitude beats. If $\Delta V$ is
+                too small, the output retains the chatter of the plain comparator. The optimum depends on the
+                peak-to-peak noise during the QRS interval, not on the average noise of the channel.</p>
+
+            <h3>Switch and contact debouncing</h3>
+
+            <p>Mechanical switches do not transition cleanly. A button pressed against its contact bounces
+                several times over a few milliseconds before settling, and a digital input that samples the
+                switch directly will register multiple presses. A Schmitt trigger placed between the switch and
+                the logic input absorbs the bounces, provided the hysteresis exceeds the residual fluctuation of
+                the contact and the signal voltage sits well clear of each threshold during the steady portions
+                of the press and release. Patient-worn devices with event-marker buttons commonly use this
+                arrangement.</p>
+
+            <h3>Threshold detection of evoked responses</h3>
+
+            <p>Stimulus-locked recordings often require the detection of evoked potentials whose amplitude
+                exceeds a fixed threshold. A Schmitt trigger with $V_\text{ref}$ set at the desired amplitude and
+                $\Delta V$ matched to the expected interpulse noise produces a single trigger per evoked response,
+                independent of small fluctuations of the recorded waveform. The output edge is used to time-stamp
+                the response or to advance an averaging buffer.</p>
+
+            <div class="callout">
+                The hysteresis band converts a noisy analogue signal into a clean digital edge without filtering.
+                The cost is a state-dependent threshold and a small timing offset at each transition. In each
+                application above the offset is acceptable: the timing information of interest is fixed by the
+                slope of the signal at the threshold, and the counter or averaging stages downstream tolerate a
+                constant systematic delay.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box transfer">
+                    <div class="label">sizing · <b>R-wave with peak-to-peak noise envelope and chosen $\Delta V$</b></div>
+                    <svg class="bode" id="plot-sizing"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="../components/katex_label.js"></script>
+    <script defer src="../components/plot_helpers.js"></script>
+    <script defer src="schmitt_trigger_JS/plot_schmitt_circuit.js"></script>
+    <script defer src="schmitt_trigger_JS/plot_live_circuit.js"></script>
+    <script defer src="schmitt_trigger_JS/plot_zone_view.js"></script>
+    <script defer src="schmitt_trigger_JS/plot_scope.js"></script>
+    <script defer src="schmitt_trigger_JS/plot_sizing.js"></script>
+</body>
+
+</html>

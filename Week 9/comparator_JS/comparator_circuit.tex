@@ -1,0 +1,49 @@
+% Basic op-amp comparator schematic, rendered in CircuiTikZ via TikzJax.
+% Loaded by comparator.html through a synchronous XHR + document.write so
+% TikzJax processes the resulting <script type="text/tikz"> tag at startup.
+\begin{document}
+\begin{tikzpicture}[
+    every node/.style={font=\sffamily\small},
+    line cap=round,
+    line join=round,
+    >=latex
+]
+\ctikzset{
+    bipoles/length=1.0cm,
+    amplifiers/fill=white,
+    amplifiers/min height=1.6,
+    amplifiers/min width=1.8,
+    label/align=straight
+}
+
+% ---------- Op-amp ----------
+\node [op amp, yscale=-1] (OA) at (0,0) {};
+
+% Mark inputs and output explicitly so the symbols read clearly.
+\node [left=1pt of OA.+] {\(+\)};
+\node [left=1pt of OA.-] {\(-\)};
+
+% ---------- Inverting input: reference voltage ----------
+\draw (OA.-) to[short, -*] ++(-1.4,0) coordinate (Nref);
+\draw (Nref) to[short] ++(-0.6,0) coordinate (Aref);
+\node [left=2pt of Aref] {\(V_{\mathrm{ref}}\)};
+
+% ---------- Non-inverting input: signal ----------
+\draw (OA.+) to[short, -*] ++(-1.4,0) coordinate (Nin);
+\draw (Nin) to[short] ++(-0.6,0) coordinate (Ain);
+\node [left=2pt of Ain] {\(v_{\mathrm{in}}\)};
+
+% ---------- Output ----------
+\draw (OA.out) to[short, -*] ++(1.6,0) coordinate (Nout);
+\draw (Nout) to[short] ++(0.6,0) coordinate (Aout);
+\node [right=2pt of Aout] {\(v_{\mathrm{out}}\)};
+
+% ---------- Supply rails ----------
+\draw (OA.up) to[short] ++(0,0.45) node [above] {\(V_{CC}^{+}\)};
+\draw (OA.down) to[short] ++(0,-0.45) node [below] {\(V_{CC}^{-}\)};
+
+% ---------- Ground reference for V_ref ----------
+\draw (Aref) to[short] ++(0,-1.0) node [ground] {};
+
+\end{tikzpicture}
+\end{document}

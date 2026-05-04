@@ -91,8 +91,6 @@ When creating any graphs, animation or graphics you must always follow these rul
 ## Creating Circuit Graphics 
 
 When creating any circuit diagrams, circuit animations or graphics you must always follow these rules: 
-
-
 - When creating graphics of circuits, ensure that the circuits are arranged correctly, that all lines are orthogonal and straight, i.e no diagonal lines or curved lines. Ensure labels are placed correctly with respect to the components and are not overlapping. 
 - Show resistors as rectangles instead of zig-zag lines 
 - Ensure that voltage supplies are shown as circles with +/- correctly placed with repect to the circuit and does not overlap any elements 

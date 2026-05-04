@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · 555 Timer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="../components/circuit_tooltip.css">
+    <link rel="stylesheet" href="555_timer_JS/555_timer.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · 555 TIMER</div>
+            <h1 class="hero">One IC, three <em>multivibrator</em> behaviours.</h1>
+            <p class="sub">The 555 timer is a single integrated circuit that realises the bistable, monostable, and astable
+                multivibrators with a fixed internal voltage reference. A resistive divider sets two thresholds at
+                $\tfrac{1}{3}V_{CC}$ and $\tfrac{2}{3}V_{CC}$, two comparators detect when external nodes cross those
+                thresholds, an SR latch stores the resulting state, and an open-collector transistor sinks an external
+                timing capacitor on demand. The mode of operation is selected by what is wired to the timing pins.</p>
+            <div class="tags">
+                <span class="field-tag">integrated circuit</span>
+                <span class="field-tag">RC timing</span>
+                <span class="field-tag">comparator + SR latch</span>
+                <span class="field-tag">pulse generation</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · INSIDE THE 555 ================= -->
+    <section class="scene" id="sec-inside">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>internal architecture</span></div>
+            <h2>Inside the 555</h2>
+
+            <p class="lead">The 555 owes its name to the three nominally-equal 5 k$\Omega$ resistors that form an internal
+                divider between $V_{CC}$ and ground. The divider taps fix two reference voltages,</p>
+
+            <div class="eq-block">$$V_{TH} = \tfrac{2}{3}V_{CC}, \qquad V_{TL} = \tfrac{1}{3}V_{CC}.$$</div>
+
+            <p>An <strong>upper comparator</strong> compares the THRES pin against $V_{TH}$, and a
+                <strong>lower comparator</strong> compares the TRIG pin against $V_{TL}$. The two comparator outputs drive
+                the R and S inputs of an internal SR latch, whose Q output is buffered to the OUT pin. The complementary
+                output $\overline{Q}$ drives the base of an NPN <strong>discharge transistor</strong> whose collector is
+                exposed at the DISCH pin; this transistor grounds DISCH whenever the latch is in the reset state.</p>
+
+            <ul class="bullets">
+                <li>upper comparator: resets the latch when $v_{\text{THRES}} > \tfrac{2}{3}V_{CC}$;</li>
+                <li>lower comparator: sets the latch when $v_{\text{TRIG}} < \tfrac{1}{3}V_{CC}$;</li>
+                <li>RESET pin: directly clears the latch (active low), overriding both comparators;</li>
+                <li>CTRL pin: exposes the upper divider tap externally, allowing the threshold to be modulated.</li>
+            </ul>
+
+            <p>Both thresholds are fixed fractions of $V_{CC}$, so the timing of every configuration is independent of
+                supply voltage. A 555 powered at 5 V and at 12 V produces the same period for the same external
+                $R$ and $C$.</p>
+
+            <div class="callout">
+                The chip is a self-contained two-comparator-and-latch core. Whether it acts as a bistable, monostable,
+                or astable is fixed entirely by the external wiring on TRIG, THRES, DISCH, and RESET; nothing inside the
+                chip changes between modes.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box block">
+                    <div class="label">block diagram · <b>internal architecture of the 555</b></div>
+                    <svg class="bode" id="plot-block-diagram"></svg>
+                </div>
+                <div class="plot-box pinout">
+                    <div class="label">pinout · <b>8-pin DIP (top view)</b></div>
+                    <svg class="bode" id="plot-pinout"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · ASTABLE ================= -->
+    <section class="scene" id="sec-astable">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>astable mode</span></div>
+            <h2>Astable: free-running square-wave generator</h2>
+
+            <p class="lead">In astable mode the 555 produces a continuous square wave with no external trigger.
+                The capacitor charges from $\tfrac{1}{3}V_{CC}$ to $\tfrac{2}{3}V_{CC}$ through the series combination
+                $R_1 + R_2$, then discharges from $\tfrac{2}{3}V_{CC}$ back to $\tfrac{1}{3}V_{CC}$ through $R_2$
+                alone, with the discharge transistor providing the path to ground.</p>
+
+            <p>Solving $v_C(t) = V_{CC} + (v_C(0) - V_{CC})\,e^{-t/\tau}$ for the time taken to traverse the band gives</p>
+
+            <div class="eq-block">$$T_H = \ln(2)\,(R_1 + R_2)\,C, \qquad T_L = \ln(2)\,R_2\,C.$$</div>
+
+            <p>The total period and frequency are</p>
+
+            <div class="eq-block">$$T = T_H + T_L = \ln(2)\,(R_1 + 2R_2)\,C, \qquad
+                f = \frac{1}{T} = \frac{1.44}{(R_1 + 2R_2)\,C}.$$</div>
+
+            <p>The duty cycle, defined as the fraction of the period for which OUT is high, is</p>
+
+            <div class="eq-block">$$D = \frac{T_H}{T} = \frac{R_1 + R_2}{R_1 + 2R_2}.$$</div>
+
+            <p>This expression is always greater than $\tfrac{1}{2}$, so the standard astable cannot produce a 50%
+                duty cycle. A 50% duty cycle is achieved either by placing a small-signal diode across $R_2$ (so the
+                charging path bypasses $R_2$ and uses $R_1$ alone), or by using a CMOS variant of the 555 with separate
+                charge and discharge resistors.</p>
+
+            <ul class="bullets">
+                <li>output: square wave between 0 and $V_{CC}$ on pin 3;</li>
+                <li>capacitor: piecewise-exponential traversal of the band $[\tfrac{1}{3}V_{CC},\,\tfrac{2}{3}V_{CC}]$;</li>
+                <li>frequency: depends on $R_1$, $R_2$, and $C$; independent of $V_{CC}$;</li>
+                <li>duty: fixed by the resistor ratio, always above 50% in the classic configuration.</li>
+            </ul>
+
+            <div class="callout">
+                The astable 555 is the simplest practical clock generator in the lab. It is the carrier in low-cost
+                pulse-width modulators, the timebase for capacitive-sensing oscillators, and the repetition-rate
+                generator in nerve and muscle stimulators where it is paired with a monostable that sets the pulse width.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>555 in astable mode</b></div>
+                    <svg class="bode" id="plot-astable-circuit"></svg>
+                </div>
+                <div class="plot-box scope">
+                    <div class="label">time domain · <b>capacitor voltage and OUT pin</b></div>
+                    <canvas id="scope-astable"></canvas>
+                </div>
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">$R_1$</span>
+                        <input type="range" id="ast-r1" min="0.10" max="0.60" step="0.01" value="0.30">
+                        <span class="val" id="ast-r1-val">0.30</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">$R_2$</span>
+                        <input type="range" id="ast-r2" min="0.10" max="0.60" step="0.01" value="0.30">
+                        <span class="val" id="ast-r2-val">0.30</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">$C$</span>
+                        <input type="range" id="ast-c" min="0.50" max="2.00" step="0.05" value="1.00">
+                        <span class="val" id="ast-c-val">1.00</span>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · MONOSTABLE ================= -->
+    <section class="scene" id="sec-monostable">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>monostable mode</span></div>
+            <h2>Monostable: a single timed pulse</h2>
+
+            <p class="lead">In monostable mode the 555 emits a single fixed-width pulse on each negative trigger. At rest
+                the discharge transistor is on, the capacitor is held near 0 V, the output sits low, and the chip waits
+                indefinitely. A brief negative pulse on TRIG (pin 2) drives the lower comparator output high and sets the
+                latch. The output snaps high, the discharge transistor releases the capacitor, and $v_C$ rises along
+                an exponential through $R$ toward $V_{CC}$.</p>
+
+            <p>The pulse ends when $v_C$ reaches $\tfrac{2}{3}V_{CC}$, at which point the upper comparator resets the
+                latch. Solving $v_C(t) = V_{CC}(1 - e^{-t/RC}) = \tfrac{2}{3}V_{CC}$ gives</p>
+
+            <div class="eq-block">$$T = RC \,\ln(3) \;\approx\; 1.1\,R\,C.$$</div>
+
+            <p>As with the astable, the pulse width is independent of $V_{CC}$ because the threshold scales with the
+                supply. The standard 555 monostable is non-retriggerable: a second trigger pulse arriving during the
+                output-high state is ignored. Retriggerable behaviour requires either a CMOS retriggerable variant or
+                an external reset network.</p>
+
+            <ul class="bullets">
+                <li>stable state: output low, capacitor clamped near 0 V by the discharge transistor;</li>
+                <li>quasi-stable state: output high, capacitor charging through $R$;</li>
+                <li>recovery: when $v_C$ reaches $\tfrac{2}{3}V_{CC}$, the latch resets and the discharge transistor
+                    pulls $v_C$ rapidly back to 0;</li>
+                <li>pulse width: $T = \ln(3)\,RC \approx 1.1\,RC$, independent of trigger duration once the trigger
+                    has fallen below $\tfrac{1}{3}V_{CC}$.</li>
+            </ul>
+
+            <div class="callout">
+                The monostable converts an event into a pulse of defined width. In instrumentation it is used for switch
+                debouncing, missing-pulse detection, fixed-duration LED or buzzer alerts, and pulse standardisation
+                ahead of a counter.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>555 in monostable mode</b></div>
+                    <svg class="bode" id="plot-monostable-circuit"></svg>
+                </div>
+                <div class="plot-box scope">
+                    <div class="label">time domain · <b>trigger, capacitor voltage, OUT pin</b></div>
+                    <canvas id="scope-monostable"></canvas>
+                </div>
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">$R$</span>
+                        <input type="range" id="mono-r" min="0.20" max="1.20" step="0.01" value="0.60">
+                        <span class="val" id="mono-r-val">0.60</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">$C$</span>
+                        <input type="range" id="mono-c" min="0.50" max="2.00" step="0.05" value="1.00">
+                        <span class="val" id="mono-c-val">1.00</span>
+                    </span>
+                    <span class="divider"></span>
+                    <button type="button" id="mono-trigger" class="ctrl-btn trigger">trigger</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · BISTABLE ================= -->
+    <section class="scene" id="sec-bistable">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>bistable mode</span></div>
+            <h2>Bistable: SR-latch behaviour</h2>
+
+            <p class="lead">In bistable mode no timing capacitor is used. THRES (pin 6) is tied to ground so the upper
+                comparator can never fire, and DISCH (pin 7) is left disconnected. With the upper comparator inactive,
+                the internal SR latch is exposed directly through the active-low TRIG input (which sets the latch) and
+                the active-low RESET input (which clears it).</p>
+
+            <p>The output is now a pure latched signal. A brief negative pulse on TRIG drives OUT to $V_{CC}$ and the
+                circuit holds that state indefinitely. A brief negative pulse on RESET drives OUT back to 0 and the
+                circuit again holds. In the absence of either pulse the output retains its last value; this is one bit
+                of stored state.</p>
+
+            <ul class="bullets">
+                <li>two stable states: output low or output high, both maintained without external timing;</li>
+                <li>SET input: TRIG pin (active low), latches the output high;</li>
+                <li>RESET input: $\overline{\text{RESET}}$ pin (active low), clears the output to low;</li>
+                <li>no RC timing involved: the response is immediate to either input pulse.</li>
+            </ul>
+
+            <div class="callout">
+                Using a 555 as a bistable is uncommon in practice; a dedicated SR-latch IC such as a 74LS279 is cheaper
+                and lower-power. The configuration is presented here because it isolates the SR latch from the timing
+                network and makes the role of TRIG, RESET, and the upper comparator easy to read.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>555 in bistable mode</b></div>
+                    <svg class="bode" id="plot-bistable-circuit"></svg>
+                </div>
+                <div class="plot-box scope">
+                    <div class="label">time domain · <b>set / reset pulses and latched output</b></div>
+                    <canvas id="scope-bistable"></canvas>
+                </div>
+                <div class="toolbar">
+                    <button type="button" id="bi-set" class="ctrl-btn set">set</button>
+                    <span class="divider"></span>
+                    <button type="button" id="bi-reset" class="ctrl-btn reset">reset</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · PRACTICAL NOTES ================= -->
+    <section class="scene wide" id="sec-notes">
+        <div class="copy full">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>practical notes</span></div>
+            <h2>Working with the 555 in practice</h2>
+
+            <p class="lead">The idealised circuits above are accurate for the chip's logical behaviour but omit several
+                practical details that matter in a working board. The notes below cover the most important ones.</p>
+
+            <div class="card-row">
+                <div class="card">
+                    <div class="card-num">a</div>
+                    <h3>The CTRL pin</h3>
+                    <p>CTRL exposes the $\tfrac{2}{3}V_{CC}$ tap externally. Driving CTRL from an audio source modulates
+                        both thresholds proportionally, which produces frequency modulation in astable mode and
+                        pulse-width modulation in monostable mode. When CTRL is not used, it should be bypassed to
+                        ground through a 10 nF capacitor so supply noise does not couple into the threshold.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">b</div>
+                    <h3>Output drive</h3>
+                    <p>The bipolar NE555 sources and sinks up to roughly 200 mA on the OUT pin, so it can drive a small
+                        speaker, an LED with a series resistor, or a relay coil directly. The CMOS variants
+                        (TLC555, ICM7555) drive less current but operate to a lower $V_{CC}$ and switch faster.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">c</div>
+                    <h3>Decoupling and layout</h3>
+                    <p>The output stage and the discharge transistor produce large $\Delta i / \Delta t$ on the supply.
+                        A local 100 nF ceramic capacitor across $V_{CC}$ to ground, placed close to the chip, is
+                        essential to prevent supply spikes from coupling into the timing network. The CTRL bypass
+                        capacitor handles the divider node separately.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">d</div>
+                    <h3>Frequency limits</h3>
+                    <p>The bipolar NE555 is reliable up to about 500 kHz in astable mode; above this, comparator
+                        propagation delay and switching transients dominate the measured period. CMOS variants reach a
+                        few MHz. Long-period timing is bounded by capacitor leakage and comparator input bias current,
+                        which both shorten the effective time constant for very large $RC$.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">e</div>
+                    <h3>Duty-cycle constraints</h3>
+                    <p>The standard astable cannot reach 50% duty because the charging path uses $R_1 + R_2$ while the
+                        discharging path uses only $R_2$. A small-signal diode placed across $R_2$ (anode at the
+                        discharge node, cathode at the threshold node) lets the capacitor charge through $R_1$ alone,
+                        giving $D = R_1 / (R_1 + R_2)$ and access to duty cycles below 50%.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">f</div>
+                    <h3>Common applications</h3>
+                    <p>Stimulus pulse trains for nerve and muscle stimulators (astable rate generator paired with a
+                        monostable pulse-width shaper); PWM motor and LED drivers; capacitive- and resistive-sensing
+                        oscillators; switch-debounce one-shots; missing-pulse and watchdog timers; tone generators for
+                        alarms and audible feedback.</p>
+                </div>
+            </div>
+
+            <div class="callout">
+                The 555 endures because the same eight-pin part covers three of the most common timing roles in
+                instrumentation. The internal divider, two comparators, and SR latch are sufficient to build the
+                bistable, monostable, and astable behaviours that earlier chapters built from discrete op-amps; the
+                external wiring on TRIG, THRES, and DISCH is what selects among them.
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="../components/katex_label.js"></script>
+    <script defer src="../components/plot_helpers.js"></script>
+    <script defer src="../components/circuit_tooltip.js"></script>
+    <script defer src="555_timer_JS/chip_box.js"></script>
+    <script defer src="555_timer_JS/plot_block_diagram.js"></script>
+    <script defer src="555_timer_JS/plot_pinout.js"></script>
+    <script defer src="555_timer_JS/plot_astable_circuit.js"></script>
+    <script defer src="555_timer_JS/scope_astable.js"></script>
+    <script defer src="555_timer_JS/plot_monostable_circuit.js"></script>
+    <script defer src="555_timer_JS/scope_monostable.js"></script>
+    <script defer src="555_timer_JS/plot_bistable_circuit.js"></script>
+    <script defer src="555_timer_JS/scope_bistable.js"></script>
+</body>
+
+</html>

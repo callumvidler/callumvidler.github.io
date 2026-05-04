@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Comparators and Timers in Practice</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="overview_JS/overview.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · OVERVIEW</div>
+            <h1 class="hero"><em>Comparators</em> and <em>timers</em> in practice.</h1>
+            <p class="sub">A comparator reduces a continuous voltage to a binary decision against a fixed reference.
+                A timer converts an interval into a signal: either a single pulse of chosen duration, or a square
+                wave at a chosen rate. Together these two blocks form the interface between the analog front end
+                and the digital domain, and appear in almost every measurement instrument and stimulator. The
+                scenes below illustrate six canonical uses; the underlying circuits and design equations are
+                derived in the pages that follow.</p>
+            <div class="tags">
+                <span class="field-tag">comparators</span>
+                <span class="field-tag">timers</span>
+                <span class="field-tag">pulse generation</span>
+                <span class="field-tag">threshold detection</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= COMPARATOR SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// comparators</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 01 · BATTERY CUTOFF ================= -->
+    <section class="scene" id="sec-battery">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>battery low-voltage cutoff</span></div>
+            <h2>Protecting a <em class="input">lithium cell</em> from over-discharge.</h2>
+
+            <p class="lead">A lithium-ion cell suffers permanent damage when it is discharged below approximately
+                $3.0\,\mathrm{V}$. Wearable monitors, implanted pumps, and portable defibrillators therefore
+                include a dedicated comparator whose role is to disconnect the load before this limit is
+                reached.</p>
+
+            <p>The panel below traces the cell voltage as it discharges under load. A comparator continuously
+                evaluates whether $V_\mathrm{cell}$ exceeds the cutoff and drives a single binary output to a
+                power-path switch. While the cell remains above the threshold the load stays connected; once it
+                falls below, the comparator flips and the switch opens.</p>
+
+            <p>Drag the dashed red line to change the cutoff voltage and observe the moment of disconnection.</p>
+
+            <div class="callout">
+                Practical implementations add a small amount of hysteresis around the threshold so the comparator
+                does not chatter on a noisy supply. That refinement is the <strong>Schmitt trigger</strong>,
+                covered on the next page.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">discharge rate</span>
+                        <input type="range" id="bat-rate" min="0.2" max="3.0" step="0.05" value="1.0">
+                        <span class="val" id="bat-rate-val">1.0 ×</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill active" id="bat-run">running</span>
+                    <span class="pill" id="bat-reset">reset cell</span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">cell voltage · <b>V<sub>cell</sub>(t)</b> with comparator threshold</div>
+                    <svg id="plot-bat-trace"></svg>
+                </div>
+                <div class="plot-box circuit-box">
+                    <div class="label">circuit · <b>battery cutoff comparator</b></div>
+                    <svg id="plot-bat-circuit"></svg>
+                </div>
+                <div class="readout" id="bat-readout">
+                    <div class="item"><span class="k">V<sub>cell</sub></span><span class="v" id="bat-vcell">3.95 V</span></div>
+                    <div class="item"><span class="k">V<sub>cutoff</sub></span><span class="v" id="bat-vcut">3.20 V</span></div>
+                    <div class="item"><span class="k">load</span><span class="v on" id="bat-load">CONNECTED</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · ECG R-PEAK DETECTION ================= -->
+    <section class="scene" id="sec-ecg">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>heart-rate detection</span></div>
+            <h2>Counting <em class="thresh">R-peaks</em> in a continuous ECG.</h2>
+
+            <p class="lead">A bedside heart-rate monitor reports beats per minute, but its input is a continuous
+                analog ECG. A comparator performs the conversion from waveform to beat. With its threshold placed
+                above the T-wave but below the R-peak, the comparator emits one clean digital pulse on every
+                upward crossing, and a downstream counter divides by the window length to obtain the rate.</p>
+
+            <p>Drag the red threshold line to adjust where the comparator fires. If it is set too low, T-waves
+                and noise are counted as beats; if too high, real R-peaks are missed. The same arrangement
+                appears in pulse oximeters, oscillometric blood-pressure cuffs, and event-driven sleep monitors.</p>
+
+            <div class="callout">
+                A short refractory window follows each pulse to suppress further crossings, since the R-peak
+                spans more than one sample and would otherwise produce several pulses per beat.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">heart rate</span>
+                        <input type="range" id="ecg-hr" min="40" max="160" step="1" value="72">
+                        <span class="val" id="ecg-hr-val">72 bpm</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">noise</span>
+                        <input type="range" id="ecg-noise" min="0" max="0.3" step="0.005" value="0.06">
+                        <span class="val" id="ecg-noise-val">0.06</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">ECG input · <b>v<sub>in</sub>(t)</b> and comparator output</div>
+                    <svg id="plot-ecg-trace"></svg>
+                </div>
+                <div class="readout" id="ecg-readout">
+                    <div class="item"><span class="k">true rate</span><span class="v" id="ecg-true">72 bpm</span></div>
+                    <div class="item"><span class="k">detected</span><span class="v" id="ecg-detected">— bpm</span></div>
+                    <div class="item"><span class="k">threshold</span><span class="v" id="ecg-thresh">0.55</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · STREETLIGHT ================= -->
+    <section class="scene" id="sec-light">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>ambient light switch</span></div>
+            <h2>Switching a <em class="high">streetlight</em> at dusk.</h2>
+
+            <p class="lead">A photoresistor or photodiode produces a voltage proportional to incident light. A
+                comparator placed at its output reduces the continuous reading to a binary day/night decision.
+                The same circuit appears in automatic headlights, in the ambient sensor of a phone display, and
+                in the standby logic of pulse-oximetry probes that sample only when a finger is present on the
+                lens.</p>
+
+            <p>Drag the sun across the sky to vary the sensor voltage. When it falls below the dusk threshold,
+                the comparator output goes high and the lamp switches on. The threshold marker on the right-hand
+                bar sets how dark the scene must become before activation.</p>
+
+            <div class="callout">
+                Without hysteresis, a passing cloud near the threshold would cause the lamp to flicker. A
+                practical photo-switch uses a Schmitt-style comparator with separate on and off thresholds, so
+                the lamp switches at most once per dusk and once per dawn.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box scene-box">
+                    <div class="label">scene · <b>drag the sun</b>; drag the threshold on the right</div>
+                    <svg id="plot-light-scene"></svg>
+                </div>
+                <div class="readout" id="light-readout">
+                    <div class="item"><span class="k">sensor</span><span class="v" id="light-sensor">0.80</span></div>
+                    <div class="item"><span class="k">threshold</span><span class="v" id="light-thresh">0.30</span></div>
+                    <div class="item"><span class="k">lamp</span><span class="v off" id="light-lamp">OFF</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= TIMER SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// timers</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 04 · PACEMAKER ================= -->
+    <section class="scene" id="sec-pacer">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>cardiac pacing</span></div>
+            <h2>Generating timed <em class="output">stimulation pulses</em>.</h2>
+
+            <p class="lead">An implanted pacemaker delivers a brief electrical pulse to the heart at a controlled
+                rate. The timer decides when to fire, emitting one pulse of fixed width each time its internal
+                interval expires. Pulse amplitude is set by a separate output stage; the timer concerns itself
+                only with scheduling.</p>
+
+            <p>The same primitive appears in transcutaneous nerve stimulators (TENS), in cochlear implants that
+                drive electrode arrays in synchrony, and in retinal prostheses. In every case the clinician
+                selects a rate and a pulse width, and the timer renders those parameters as a periodic
+                waveform.</p>
+
+            <p>Use the sliders to set the pacing rate and the pulse width. Each pulse corresponds to one paced
+                heartbeat.</p>
+
+            <div class="callout">
+                A timer that produces a continuous train of pulses is an <strong>astable multivibrator</strong>.
+                A timer that emits a single pulse on demand and then waits is a <strong>monostable
+                multivibrator</strong>. Both are constructed from a comparator with a charging capacitor; the
+                design is derived later in the week.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">pacing rate</span>
+                        <input type="range" id="pacer-rate" min="40" max="180" step="1" value="72">
+                        <span class="val" id="pacer-rate-val">72 ppm</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">pulse width</span>
+                        <input type="range" id="pacer-width" min="0.2" max="2.0" step="0.05" value="0.8">
+                        <span class="val" id="pacer-width-val">0.8 ms</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">pacing output · <b>v<sub>out</sub>(t)</b> over a 4-second window</div>
+                    <svg id="plot-pacer-trace"></svg>
+                </div>
+                <div class="readout" id="pacer-readout">
+                    <div class="item"><span class="k">period T</span><span class="v" id="pacer-period">833 ms</span></div>
+                    <div class="item"><span class="k">duty</span><span class="v" id="pacer-duty">0.10 %</span></div>
+                    <div class="item"><span class="k">heart</span><span class="v on" id="pacer-heart">●</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · PWM DIMMER ================= -->
+    <section class="scene" id="sec-pwm">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>pulse-width modulation</span></div>
+            <h2>Setting average power with a <em class="output">duty cycle</em>.</h2>
+
+            <p class="lead">A timer that produces a square wave at fixed frequency but adjustable on-time can
+                regulate average power without dissipating heat in a series resistance. The load sees the full
+                supply during the on-interval of each cycle and zero during the off-interval, so its time-average
+                is the supply voltage scaled by the duty cycle $D$.</p>
+
+            <p>The same primitive dims a phototherapy LED panel without colour shift, sets the motor speed of a
+                syringe pump, and regulates the backlight of a clinical display. Class-D audio amplifiers apply
+                it at a much higher carrier frequency to drive a speaker.</p>
+
+            <p>Move the duty-cycle slider and observe the load brightness track the time-average of the square
+                wave. The lower plot traces the steady-state envelope of delivered power against PWM frequency:
+                the green line is the time-average $D \cdot V_{cc}$, independent of frequency, and the shaded
+                band is the peak-to-peak ripple at the bulb, modelled as a first-order thermal load with
+                $\tau = 50\,\mathrm{ms}$. The live bulb at the right is driven by exactly this filtered
+                waveform.</p>
+
+            <div class="callout">
+                Below the bulb's thermal corner the ripple band is wide and visible flicker results. Above the
+                corner the band collapses onto the average and the output reads as steady. The eye fuses an LED
+                above roughly $100\,\mathrm{Hz}$, motor inertia smooths anything above a few hundred hertz, and
+                a class-D amplifier operates at hundreds of kilohertz so that only the slow envelope reaches
+                the speaker.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">duty cycle</span>
+                        <input type="range" id="pwm-duty" min="0" max="100" step="1" value="40">
+                        <span class="val" id="pwm-duty-val">40 %</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">frequency</span>
+                        <input type="range" id="pwm-freq" min="0" max="2.301" step="0.01" value="0.7">
+                        <span class="val" id="pwm-freq-val">5 Hz</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">PWM signal · <b>v<sub>pwm</sub>(t)</b> with running average</div>
+                    <svg id="plot-pwm-trace"></svg>
+                </div>
+                <div class="plot-box freq-box">
+                    <div class="label">delivered power vs frequency · <b>incandescent bulb, τ = 50 ms</b></div>
+                    <svg id="plot-pwm-freq"></svg>
+                </div>
+                <div class="pwm-bottom">
+                    <div class="plot-box bulb-box">
+                        <div class="label">live bulb</div>
+                        <svg id="plot-pwm-bulb"></svg>
+                    </div>
+                    <div class="readout pwm-readout-col" id="pwm-readout">
+                        <div class="item"><span class="k">duty D</span><span class="v" id="pwm-d">40 %</span></div>
+                        <div class="item"><span class="k">avg load</span><span class="v" id="pwm-avg">0.40 V<sub>cc</sub></span></div>
+                        <div class="item"><span class="k">ripple Δ</span><span class="v" id="pwm-ripple">— V<sub>cc</sub></span></div>
+                        <div class="item"><span class="k">flicker</span><span class="v" id="pwm-flicker">visible</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 06 · DEBOUNCE ================= -->
+    <section class="scene" id="sec-debounce">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>switch debouncing</span></div>
+            <h2>Filtering a <em class="thresh">bouncing contact</em> with $RC$ + Schmitt.</h2>
+
+            <p class="lead">When a mechanical key is pressed, the metal contacts do not close cleanly. They
+                strike, separate, and continue to bounce for several milliseconds before settling. To a
+                digital input every closure appears as a fresh keypress, so one physical touch produces a
+                burst of phantom characters.</p>
+
+            <p>The standard remedy is an $RC$ low-pass feeding a Schmitt-trigger comparator. The capacitor
+                voltage obeys $\tau\,\dot V_C = V_\mathrm{in} - V_C$ with $\tau = RC$, so $V_C$ cannot
+                follow the bouncing input directly; instead it integrates the burst. The Schmitt output
+                goes high when $V_C$ crosses the upper threshold $V_{T+}$ and only resets after $V_C$ falls
+                below the lower threshold $V_{T-}$. Choosing $\tau$ longer than the bounce interval
+                guarantees that $V_C$ crosses $V_{T+}$ exactly once per physical press.</p>
+
+            <p>Click the input textbox and start typing. Each keypress is replaced by a realistic burst of
+                contact bounces. The lower trace shows $V_C(t)$ integrating that burst, with the dashed
+                band marking the Schmitt hysteresis window. Every $\mathrm{LOW}\!\to\!\mathrm{HIGH}$
+                crossing emits one character on the line; the tick above each crossing is green for the
+                intended press and red for any phantom. At $T_d = 0$ the cap follows the bounces almost
+                perfectly and many phantoms appear; raising $T_d$ (which sets $\tau = T_d$) smooths $V_C$
+                and removes them.</p>
+
+            <div class="callout">
+                A typical key bounces for $1$ to $5\,\mathrm{ms}$. A time constant near $10\,\mathrm{ms}$
+                filters the bounces while remaining well below the inter-key interval of a fast typist
+                (approximately $80\,\mathrm{ms}$). Too short a $T_d$ leaves residual phantoms; too long a
+                $T_d$ suppresses genuine fast-repeated presses.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">debounce T<sub>d</sub></span>
+                        <input type="range" id="db-time" min="0" max="250" step="1" value="0">
+                        <span class="val" id="db-time-val">0 ms</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">bounce severity</span>
+                        <input type="range" id="db-bounce" min="1" max="10" step="1" value="5">
+                        <span class="val" id="db-bounce-val">5</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill" id="db-normal" title="set T_d and bounce to typical values for a real keyboard switch">normal typing</span>
+                    <span class="pill" id="db-scroll">scroll mode</span>
+                    <span class="slider-group" id="db-speed-group" hidden>
+                        <span class="lab">speed</span>
+                        <input type="range" id="db-speed" min="0.1" max="3" step="0.05" value="1">
+                        <span class="val" id="db-speed-val">1.00×</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill" id="db-clear">clear</span>
+                </div>
+
+                <div class="plot-box trace-box">
+                    <svg id="plot-db-trace"></svg>
+                </div>
+
+                <div class="kbd-io">
+                    <div class="kbd-io-card">
+                        <div class="kbd-io-head">
+                            <span class="kbd-io-label">input · click and type</span>
+                            <span class="kbd-io-meta">one char per keypress</span>
+                        </div>
+                        <textarea id="db-input" class="kbd-input" rows="2"
+                            placeholder="start typing…" autocomplete="off"
+                            autocorrect="off" autocapitalize="off"
+                            spellcheck="false"></textarea>
+                    </div>
+                    <div class="kbd-io-output">
+                        <span class="kbd-io-output-label">output</span>
+                        <span class="kbd-io-output-arrow">▸</span>
+                        <span class="kbd-io-output-text" id="db-output"></span>
+                    </div>
+                </div>
+
+                <div class="kbd-graphic" id="db-board" aria-hidden="true"></div>
+
+                <div class="readout" id="db-readout">
+                    <div class="item"><span class="k">keypresses</span><span class="v" id="db-count">0</span></div>
+                    <div class="item"><span class="k">output chars</span><span class="v" id="db-out-n">0</span></div>
+                    <div class="item"><span class="k">phantom chars</span><span class="v warn" id="db-phantom-n">0</span></div>
+                    <div class="item"><span class="k">bounces rejected</span><span class="v on" id="db-rejected">0</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script src="overview_JS/scene_battery.js"></script>
+    <script src="overview_JS/scene_ecg.js"></script>
+    <script src="overview_JS/scene_streetlight.js"></script>
+    <script src="overview_JS/scene_pacemaker.js"></script>
+    <script src="overview_JS/scene_pwm.js"></script>
+    <script src="overview_JS/scene_debounce.js"></script>
+</body>
+
+</html>

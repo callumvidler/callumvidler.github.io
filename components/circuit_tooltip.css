@@ -1,0 +1,57 @@
+/* ══════════════════════════════════════════════════════════
+   circuit_tooltip.css  ·  shared component styles
+   Used by: components/circuit_tooltip.js
+   Variables consumed: --bg-panel, --border, --border-hover,
+                       --text, --text-dim, --accent
+   The consuming page must define these tokens (typically via
+   theme.css plus the page's own colour palette).
+   ══════════════════════════════════════════════════════════ */
+
+.circuit-hot {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 1.4;
+    cursor: help;
+    pointer-events: all;
+    transition: stroke 0.12s ease, fill 0.12s ease;
+}
+.circuit-hot:hover {
+    stroke: var(--accent);
+    fill: var(--accent-soft-faint);
+}
+
+.circuit-tooltip {
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 9999;
+    max-width: 300px;
+    padding: 10px 12px;
+    background: var(--bg-panel);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-hover);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    line-height: 1.5;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-3px);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+}
+.circuit-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.circuit-tooltip .tip-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+}
+.circuit-tooltip .tip-body i { font-style: italic; color: var(--text-dim); }
+.circuit-tooltip .tip-body sub { font-size: 0.78em; }

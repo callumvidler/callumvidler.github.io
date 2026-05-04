@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Sample-and-Hold</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="sample_and_hold_JS/sample_and_hold.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · SAMPLE-AND-HOLD</div>
+            <h1 class="hero">Freezing the input before <em>conversion</em>.</h1>
+            <p class="sub">A successive-approximation ADC takes one bit of decision per clock cycle. If the input
+                drifts during conversion, the comparator decisions made early in the sequence no longer correspond
+                to the value reaching the comparator at the end. The sample-and-hold circuit prevents this by
+                capturing the input on a small capacitor and presenting that captured value to the converter for
+                the full duration of the conversion.</p>
+            <div class="tags">
+                <span class="field-tag">track / hold</span>
+                <span class="field-tag">acquisition time</span>
+                <span class="field-tag">aperture</span>
+                <span class="field-tag">droop</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= MOTIVATION SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// motivation</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 01 · WHY HOLD ================= -->
+    <section class="scene" id="sec-motiv">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>why hold the sample</span></div>
+            <h2>A SAR ADC needs a <em class="input">stationary input</em>.</h2>
+
+            <p class="lead">The successive-approximation algorithm refines a digital estimate of $V_\mathrm{in}$
+                one bit at a time. Each comparison sets one bit of the output, and that bit remains fixed in all
+                subsequent cycles. The algorithm is therefore valid only if the same $V_\mathrm{in}$ is presented
+                to the comparator on every cycle.</p>
+
+            <p>The panel on the right runs an $N=8$ bit SAR conversion on a slowly drifting input. With the
+                sample-and-hold disabled, the DAC trajectory chases a moving target and the final code differs
+                from the value the input had at the start of the conversion. With the sample-and-hold enabled,
+                the input is captured at the start of the conversion and the algorithm converges as intended.</p>
+
+            <p>Toggle the S/H switch and observe how the final code aligns with the captured value rather than
+                the instantaneous input.</p>
+
+            <div class="callout">
+                The maximum input slew that a SAR can tolerate without a front-end S/H is roughly
+                $\mathrm{d}V/\mathrm{d}t < \tfrac{1}{2}\mathrm{LSB} / T_\mathrm{conv}$. For a 12-bit converter
+                running at $\,1\,\mathrm{MS\,s^{-1}}$ on a $1\,\mathrm{V}$ range, this is about
+                $0.12\,\mathrm{V\,ms^{-1}}$, which any signal of clinical interest exceeds easily.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">input slew</span>
+                        <input type="range" id="sh-motiv-slew" min="0" max="1.0" step="0.02" value="0.45">
+                        <span class="val" id="sh-motiv-slew-val">0.45 V/T</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill active" id="sh-motiv-on">S/H on</span>
+                    <span class="pill" id="sh-motiv-step">step ▶</span>
+                    <span class="pill" id="sh-motiv-reset">reset</span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">SAR conversion · <b>input, captured value, DAC trajectory</b></div>
+                    <svg id="plot-sh-motiv-trace"></svg>
+                </div>
+                <div class="readout" id="sh-motiv-readout">
+                    <div class="item"><span class="k">V<sub>in</sub> at start</span><span class="v" id="sh-motiv-v0">0.50 V</span></div>
+                    <div class="item"><span class="k">V<sub>in</sub> at end</span><span class="v" id="sh-motiv-v1">0.50 V</span></div>
+                    <div class="item"><span class="k">final code</span><span class="v" id="sh-motiv-code">128</span></div>
+                    <div class="item"><span class="k">code error</span><span class="v" id="sh-motiv-err">0 LSB</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= TRACK/HOLD SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// track and hold</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 02 · TRACK AND HOLD ================= -->
+    <section class="scene" id="sec-track">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>two operating phases</span></div>
+            <h2>Tracking the input, then <em class="output">holding the last value</em>.</h2>
+
+            <p class="lead">A sample-and-hold alternates between two phases under the control of a clock $\phi$.
+                During the track phase, a switch closes and a small hold capacitor $C_H$ follows the input. During
+                the hold phase, the switch opens and the capacitor retains the voltage it had at the moment of
+                opening, since there is nowhere for charge to flow.</p>
+
+            <p>The capacitor voltage on the held output is therefore a piecewise function: a continuous segment
+                that follows $V_\mathrm{in}$ during track, and a flat segment at the captured value during hold.
+                The downstream ADC performs its conversion entirely within the hold phase.</p>
+
+            <p>Use the sliders to vary the sampling rate and the fraction of the period spent tracking. As the
+                sample rate increases, the staircase of held values approaches the input more closely.</p>
+
+            <div class="callout">
+                If the track phase is shorter than the time required for $C_H$ to settle, the captured value
+                is biased toward the previous sample. The minimum track time is set by the acquisition time
+                derived in the next section.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">input freq</span>
+                        <input type="range" id="sh-track-fin" min="1" max="8" step="0.1" value="2.0">
+                        <span class="val" id="sh-track-fin-val">2.0 Hz</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">sample rate</span>
+                        <input type="range" id="sh-track-fs" min="6" max="80" step="1" value="20">
+                        <span class="val" id="sh-track-fs-val">20 Hz</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">track fraction</span>
+                        <input type="range" id="sh-track-duty" min="0.05" max="0.9" step="0.01" value="0.3">
+                        <span class="val" id="sh-track-duty-val">0.30</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">input and capacitor · <b>v<sub>in</sub>(t), v<sub>C</sub>(t)</b></div>
+                    <svg id="plot-sh-track-trace"></svg>
+                </div>
+                <div class="plot-box short-box">
+                    <div class="label">sampling clock · <b>φ(t)</b></div>
+                    <svg id="plot-sh-track-clock"></svg>
+                </div>
+                <div class="readout" id="sh-track-readout">
+                    <div class="item"><span class="k">period T<sub>s</sub></span><span class="v" id="sh-track-Ts">50 ms</span></div>
+                    <div class="item"><span class="k">track time</span><span class="v" id="sh-track-Ttr">15 ms</span></div>
+                    <div class="item"><span class="k">hold time</span><span class="v" id="sh-track-Thd">35 ms</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · CIRCUIT ================= -->
+    <section class="scene" id="sec-circuit">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>circuit topology</span></div>
+            <h2>An input buffer, a switch, a capacitor, and an <em class="output">output buffer</em>.</h2>
+
+            <p class="lead">The canonical sample-and-hold places a series MOSFET switch between two unity-gain
+                buffers. The input buffer drives the switch with low source impedance so the hold capacitor can
+                charge quickly. The output buffer presents a high impedance to the capacitor so that during hold
+                the only discharge path is through the buffer's input bias current and the switch's leakage.</p>
+
+            <p>The hold capacitor $C_H$ lives at the buffered switch output. Its value is a compromise: a larger
+                $C_H$ reduces droop and is less affected by charge injection, but takes longer to acquire the
+                input.</p>
+
+            <p>Click the gate of the MOSFET to toggle the clock manually. Charging current flows into $C_H$ only
+                while the switch is closed; in the hold phase the capacitor is isolated and $V_C$ is frozen.</p>
+
+            <div class="callout">
+                In practice, the switch is implemented as a transmission gate (an N-channel and a P-channel MOSFET
+                in parallel) so that the on-resistance remains roughly constant across the full input range. The
+                principle is unchanged.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">clock</span>
+                        <input type="range" id="sh-circ-clk" min="0" max="1" step="0.01" value="0.0">
+                        <span class="val" id="sh-circ-clk-val">hold</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill active" id="sh-circ-auto">auto cycle</span>
+                </div>
+                <div class="plot-box circuit-box">
+                    <div class="label">circuit · <b>track-hold front end</b></div>
+                    <svg id="plot-sh-circ"></svg>
+                </div>
+                <div class="readout" id="sh-circ-readout">
+                    <div class="item"><span class="k">phase</span><span class="v on" id="sh-circ-phase">TRACK</span></div>
+                    <div class="item"><span class="k">switch</span><span class="v" id="sh-circ-sw">closed</span></div>
+                    <div class="item"><span class="k">v<sub>C</sub></span><span class="v" id="sh-circ-vc">0.00 V</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · ACQUISITION ================= -->
+    <section class="scene" id="sec-acquire">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>acquisition time</span></div>
+            <h2>Charging $C_H$ through the <em class="thresh">on-resistance</em>.</h2>
+
+            <p class="lead">When the switch closes onto an input that has changed since the previous track phase,
+                the hold capacitor charges through the switch's on-resistance. The capacitor voltage follows
+                $$ V_C(t) = V_\mathrm{in} \left( 1 - e^{-t/\tau} \right), \quad \tau = R_\mathrm{on}\,C_H. $$</p>
+
+            <p>The acquisition time $t_\mathrm{acq}$ is the time required for $V_C$ to settle within an acceptable
+                fraction of the final value. For an $N$-bit ADC, settling to within $\tfrac{1}{2}\mathrm{LSB}$
+                requires $t_\mathrm{acq} \approx \tau (N + 1) \ln 2$. Track phases shorter than this leave the
+                capacitor at a value biased toward the previous sample.</p>
+
+            <p>Adjust $R_\mathrm{on}$ and $C_H$ and observe how the time constant $\tau$ scales the charging
+                curve. The maximum sample rate consistent with full settling within a $30\%$ track duty is
+                reported on the right.</p>
+
+            <div class="callout">
+                The trade-off is clear: a small $C_H$ acquires quickly but droops faster in hold; a large $C_H$
+                holds well but limits the sample rate. Typical hold capacitors in monolithic S/H amplifiers are
+                $1$ to $10\,\mathrm{pF}$.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">R<sub>on</sub></span>
+                        <input type="range" id="sh-acq-ron" min="20" max="2000" step="10" value="200">
+                        <span class="val" id="sh-acq-ron-val">200 Ω</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">C<sub>H</sub></span>
+                        <input type="range" id="sh-acq-ch" min="1" max="50" step="0.5" value="5">
+                        <span class="val" id="sh-acq-ch-val">5.0 pF</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">N bits</span>
+                        <input type="range" id="sh-acq-bits" min="6" max="16" step="1" value="12">
+                        <span class="val" id="sh-acq-bits-val">12</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">step response · <b>v<sub>C</sub>(t)</b> with ½-LSB settling band</div>
+                    <svg id="plot-sh-acq-trace"></svg>
+                </div>
+                <div class="readout" id="sh-acq-readout">
+                    <div class="item"><span class="k">τ</span><span class="v" id="sh-acq-tau">1.00 ns</span></div>
+                    <div class="item"><span class="k">t<sub>acq</sub></span><span class="v" id="sh-acq-tacq">9.0 ns</span></div>
+                    <div class="item"><span class="k">max f<sub>s</sub></span><span class="v" id="sh-acq-fmax">37 MS/s</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · NON-IDEALITIES ================= -->
+    <section class="scene" id="sec-nonid">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>non-idealities</span></div>
+            <h2>Droop, <em class="thresh">aperture jitter</em>, and charge injection.</h2>
+
+            <p class="lead">A real sample-and-hold departs from the ideal in three ways. None is fatal in
+                isolation; together they set the practical resolution and sample rate of the front end.</p>
+
+            <h3>Droop</h3>
+            <p>During hold, the capacitor discharges slowly through the leakage current of the switch and the
+                input bias of the output buffer. The held voltage falls at a rate $\mathrm{d}V/\mathrm{d}t =
+                I_\mathrm{leak} / C_H$. Across a conversion window of $T_\mathrm{conv}$, this produces a droop of
+                $\Delta V = I_\mathrm{leak}\,T_\mathrm{conv} / C_H$.</p>
+
+            <h3>Aperture jitter</h3>
+            <p>The clock edge that opens the switch has its own timing noise. If the input is changing at
+                $\mathrm{d}V/\mathrm{d}t$ at the moment of opening, a jitter $\sigma_t$ on the clock translates to
+                a voltage error $\sigma_V = \sigma_t \cdot \mathrm{d}V/\mathrm{d}t$. Aperture jitter sets the
+                ultimate signal-to-noise ratio of high-frequency converters.</p>
+
+            <h3>Charge injection</h3>
+            <p>When the MOSFET turns off, channel charge is dumped onto $C_H$. This produces a small step
+                $\Delta V_\mathrm{cj} \approx Q_\mathrm{ch} / (2 C_H)$ on every hold transition. A dummy switch of
+                half the size, driven by the inverted clock, cancels most of the injected charge.</p>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">I<sub>leak</sub></span>
+                        <input type="range" id="sh-nid-leak" min="0" max="200" step="1" value="40">
+                        <span class="val" id="sh-nid-leak-val">40 pA</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">σ<sub>t</sub></span>
+                        <input type="range" id="sh-nid-jit" min="0" max="50" step="0.5" value="10">
+                        <span class="val" id="sh-nid-jit-val">10 ps</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">Q<sub>ch</sub></span>
+                        <input type="range" id="sh-nid-qch" min="0" max="500" step="5" value="100">
+                        <span class="val" id="sh-nid-qch-val">100 fC</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">droop · <b>v<sub>C</sub>(t)</b> during hold</div>
+                    <svg id="plot-sh-nid-droop"></svg>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">aperture jitter · <b>fast sine sampled with timing noise</b></div>
+                    <svg id="plot-sh-nid-jit"></svg>
+                </div>
+                <div class="plot-box short-box">
+                    <div class="label">charge injection · <b>step on v<sub>C</sub> at hold transition</b></div>
+                    <svg id="plot-sh-nid-cj"></svg>
+                </div>
+                <div class="readout" id="sh-nid-readout">
+                    <div class="item"><span class="k">droop ΔV</span><span class="v" id="sh-nid-dv">0.40 mV</span></div>
+                    <div class="item"><span class="k">σ<sub>V</sub></span><span class="v" id="sh-nid-sv">0.06 mV</span></div>
+                    <div class="item"><span class="k">ΔV<sub>cj</sub></span><span class="v" id="sh-nid-cj">10 mV</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 06 · HANDOFF TO ADC ================= -->
+    <section class="scene" id="sec-handoff">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>feeding the converter</span></div>
+            <h2>The <em class="output">held value</em> is what the SAR sees.</h2>
+
+            <p class="lead">The output of the sample-and-hold is the input to the converter. From the SAR's point
+                of view, $V_\mathrm{in}$ is constant for the entire conversion window, regardless of how the true
+                input is moving. The staircase shown in the panel is the sequence of held values, each delivered
+                to the converter for one full sample period.</p>
+
+            <p>This is the assumption the next page makes implicitly. The sampling, quantisation, and SAR
+                algorithm scenes in <a href="adc.html">Analog-to-Digital Conversion</a> all operate on the held
+                output, not on the raw input.</p>
+
+            <div class="callout">
+                The combination of a sample-and-hold and a SAR ADC is so universal that monolithic SAR converters
+                integrate the S/H on the same die, often as a charge-redistribution capacitor array that doubles
+                as both the sampling capacitor and the conversion DAC.
+            </div>
+
+            <p style="margin-top: 24px;"><a href="adc.html" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;">Continue to Analog-to-Digital Conversion →</a></p>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">input freq</span>
+                        <input type="range" id="sh-hand-fin" min="0.5" max="6" step="0.1" value="1.5">
+                        <span class="val" id="sh-hand-fin-val">1.5 Hz</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">sample rate</span>
+                        <input type="range" id="sh-hand-fs" min="6" max="60" step="1" value="14">
+                        <span class="val" id="sh-hand-fs-val">14 Hz</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">input · <b>v<sub>in</sub>(t)</b> and held output to the SAR</div>
+                    <svg id="plot-sh-hand-trace"></svg>
+                </div>
+                <div class="readout" id="sh-hand-readout">
+                    <div class="item"><span class="k">samples/s</span><span class="v" id="sh-hand-rate">14</span></div>
+                    <div class="item"><span class="k">conversion window</span><span class="v" id="sh-hand-win">71 ms</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script src="sample_and_hold_JS/scene_motivation.js"></script>
+    <script src="sample_and_hold_JS/scene_track_hold.js"></script>
+    <script src="sample_and_hold_JS/scene_circuit.js"></script>
+    <script src="sample_and_hold_JS/scene_acquisition.js"></script>
+    <script src="sample_and_hold_JS/scene_nonidealities.js"></script>
+    <script src="sample_and_hold_JS/scene_sar_handoff.js"></script>
+</body>
+
+</html>

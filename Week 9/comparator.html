@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Comparators and the Schmitt Trigger</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="comparator_JS/comparator.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · OP-AMP AS A COMPARATOR</div>
+            <h1 class="hero">The op-amp as a <em>comparator</em></h1>
+            <p class="sub">An operational amplifier with no negative feedback no longer behaves as a linear gain
+                stage. The very large open-loop gain forces the output to one of the two supply rails, with the rail
+                selected by the sign of the differential input. The resulting circuit, the comparator, is a
+                single-bit analogue-to-digital element that reports only whether one input is greater than the
+                other.</p>
+            <div class="tags">
+                <span class="field-tag">open loop</span>
+                <span class="field-tag">saturation</span>
+                <span class="field-tag">threshold</span>
+                <span class="field-tag">zero-crossing</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · CIRCUIT ================= -->
+    <section class="scene" id="sec-circuit">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the comparator circuit</span></div>
+            <h2>Structure of the basic op-amp comparator</h2>
+
+            <p class="lead">The op-amp comparator is the operational amplifier in its native open-loop
+                configuration, with no resistive feedback path between the output and either input. A fixed
+                reference $V_\text{ref}$ sits at the inverting terminal, the signal of interest $v_\text{in}(t)$
+                drives the non-inverting terminal, and the output is taken directly. The supply rails $V_{CC}^{+}$
+                and $V_{CC}^{-}$ set the upper and lower limits of the output voltage.</p>
+
+            <ul class="bullets">
+                <li>inverting input ($-$): reference voltage $V_\text{ref}$;</li>
+                <li>non-inverting input ($+$): time-varying signal $v_\text{in}(t)$;</li>
+                <li>output: $v_\text{out}(t)$, the result of the comparison;</li>
+                <li>supplies: $V_{CC}^{+}$ and $V_{CC}^{-}$, defining the output range.</li>
+            </ul>
+
+            <div class="callout">
+                Swapping which input carries the reference and which carries the signal inverts the polarity of the
+                output without changing the function of the circuit.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>basic op-amp comparator</b></div>
+                    <svg class="bode" id="plot-comparator-circuit"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · OPEN LOOP ================= -->
+    <section class="scene" id="sec-openloop">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>open-loop transfer characteristic</span></div>
+            <h2>The open-loop op-amp as a one-bit decision element</h2>
+
+            <p class="lead">An ideal op-amp obeys the differential gain equation,</p>
+
+            <div class="eq-block">$$v_\text{out} = A_\text{OL}\,(v_+ - v_-),$$</div>
+
+            <p>where $A_\text{OL}$ is the open-loop voltage gain, typically $10^5$ to $10^6$ at low frequencies.
+                Without negative feedback, an input differential of a few microvolts is enough to drive $v_\text{out}$
+                outside the supply range, so the output is forced to one of two values:</p>
+
+            <div class="eq-block">$$v_\text{out} = \begin{cases} V_\text{sat}^+ , & v_+ > v_- \\
+                V_\text{sat}^- , & v_+ < v_- \end{cases}$$</div>
+
+            <p>The width of the linear transition between these two states is</p>
+
+            <div class="eq-block">$$\Delta v_\text{lin} = \frac{V_\text{sat}^+ - V_\text{sat}^-}{A_\text{OL}},$$</div>
+
+            <p>about $240\,\mu\text{V}$ for $A_\text{OL} = 10^5$ and $\pm 12\,\text{V}$ rails. At the resolution of
+                most biopotential signals this transition is invisible; the transfer characteristic is effectively a
+                step.</p>
+
+            <div class="callout">
+                The comparator is not an amplifier. Its function is to discard the amplitude of the input and report
+                only the binary outcome of the comparison with the reference. Any processing that depends on a
+                faithful copy of the signal must occur in the stages preceding it.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box transfer-static">
+                    <div class="label">transfer characteristic · <b>open-loop op-amp, $A_\text{OL} = 10^5$</b></div>
+                    <svg class="bode" id="plot-openloop-transfer"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · TIME DOMAIN ================= -->
+    <section class="scene" id="sec-time">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>time-domain response</span></div>
+            <h2>The comparator with a sinusoidal input</h2>
+
+            <p class="lead">A sinusoidal input crossing a fixed reference produces a square wave at the output. Its
+                duty cycle depends on where the threshold sits relative to the input mean and amplitude.</p>
+
+            <p>For $v_\text{in}(t) = V_m \sin(\omega t)$, the output transitions occur at the times where
+                $v_\text{in}(t) = V_\text{ref}$, namely</p>
+
+            <div class="eq-block">$$t_k = \frac{1}{\omega}\arcsin\!\left(\frac{V_\text{ref}}{V_m}\right) + k\,T/2,
+                \qquad |V_\text{ref}| \le V_m.$$</div>
+
+            <p>If $|V_\text{ref}| > V_m$, the input never reaches the threshold and the output remains at one rail.
+                Setting $V_\text{ref} = 0$ gives the zero-crossing detector, in which the output edges coincide with
+                the sign changes of the input. The amplitude of $v_\text{in}$ is then irrelevant; only the timing of
+                its zeros matters. This is the standard front-end for a phase-locked loop, a digital tachometer, or
+                a heart-rate counter.</p>
+
+            <div class="callout">
+                Adjusting the threshold varies the duty cycle without changing the output levels. Adjusting the
+                input amplitude or frequency moves the transition times while leaving the rail values fixed.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">threshold $V_\text{ref}$</span>
+                        <input type="range" id="time-vref" min="-1.5" max="1.5" step="0.01" value="0">
+                        <span class="val" id="time-vref-val">0.00 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">amplitude $V_m$</span>
+                        <input type="range" id="time-vm" min="0.2" max="2.0" step="0.01" value="1.2">
+                        <span class="val" id="time-vm-val">1.20 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">frequency</span>
+                        <input type="range" id="time-freq" min="0.5" max="4.0" step="0.05" value="1.5">
+                        <span class="val" id="time-freq-val">1.50 Hz</span>
+                    </span>
+                </div>
+                <div class="plot-box time-pair">
+                    <div class="label">time domain · <b>input crossing threshold drives output to a rail</b></div>
+                    <svg class="bode" id="plot-time-comparator"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 04 · NOISY BIOSIGNAL ================= -->
+    <section class="scene" id="sec-noise">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>noise at the threshold</span></div>
+            <h2>Limitations of the plain comparator with a noisy input</h2>
+
+            <p class="lead">Real biosignals carry broadband noise from the electrodes, the analogue front-end, and
+                the surrounding environment. Far from the threshold this noise has no effect. Near the threshold,
+                every small excursion of the input across the reference produces an output transition, and the
+                comparator breaks into rapid chatter.</p>
+
+            <p>The plot shows a synthetic ECG-like signal with adjustable noise. The counter on the output trace
+                reports the number of edges produced over a three-second window. Even moderate noise placed near the
+                R-wave threshold can convert a single genuine crossing into ten or more reported edges, making the
+                output unusable for downstream timing or counting.</p>
+
+            <h3>Where the noise comes from</h3>
+
+            <ul class="bullets">
+                <li>drift of the electrode-to-skin half-cell potential, of the order of millivolts per minute;</li>
+                <li>mains pickup at 50 or 60 Hz, partially rejected by a differential amplifier but never
+                    eliminated;</li>
+                <li>electromyogram (EMG) artefact within the passband of the ECG channel;</li>
+                <li>input-referred voltage noise of the first amplifier stage.</li>
+            </ul>
+
+            <p>None of these contributions can be removed entirely by raising the gain or sharpening the upstream
+                filter. The plain comparator has no mechanism to reject small fluctuations of the input around the
+                reference, which is its principal limitation as a threshold detector for biosignals.</p>
+
+            <div class="callout">
+                Sweeping the threshold close to the noise floor demonstrates the failure mode directly: the edge
+                count climbs sharply as the reference enters the noisy portion of the signal, while the underlying
+                heartbeat rate has not changed.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">noise level</span>
+                        <input type="range" id="noise-amp" min="0" max="0.6" step="0.005" value="0.18">
+                        <span class="val" id="noise-amp-val">0.18 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">threshold $V_\text{ref}$</span>
+                        <input type="range" id="noise-vref" min="0.05" max="0.95" step="0.005" value="0.45">
+                        <span class="val" id="noise-vref-val">0.45 V</span>
+                    </span>
+                </div>
+                <div class="plot-box noise-pair">
+                    <div class="label">biosignal at threshold · <b>plain comparator output chatters near the reference</b></div>
+                    <svg class="bode" id="plot-noise-comparator"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="../components/katex_label.js"></script>
+    <script defer src="../components/plot_helpers.js"></script>
+    <script defer src="comparator_JS/plot_comparator_circuit.js"></script>
+    <script defer src="comparator_JS/plot_openloop_transfer.js"></script>
+    <script defer src="comparator_JS/plot_time_comparator.js"></script>
+    <script defer src="comparator_JS/plot_noise_comparator.js"></script>
+</body>
+
+</html>

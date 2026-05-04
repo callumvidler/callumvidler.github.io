@@ -9,6 +9,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../theme.css">
     <script src="../theme.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false},{left:'\\(',right:'\\)',display:false},{left:'\\[',right:'\\]',display:true}]});"></script>
     <style>
         :root {
             --bg: #0a0a10;
@@ -18,7 +22,7 @@
             --text: #eef0f5;
             --text-dim: #d4d7e0;
             --muted: #8b90a3;
-            --accent: #ffcf5c;
+            --accent: #b48cff;
             --trace: #7be089;
             --clean: #58a6ff;
             --border: rgba(255, 255, 255, 0.09);
@@ -35,7 +39,7 @@
             --text: #14151c;
             --text-dim: #2b2d38;
             --muted: #6b6f80;
-            --accent: #b88200;
+            --accent: #6b3fc4;
             --trace: #2a8a3a;
             --clean: #2466c9;
             --border: rgba(0, 0, 0, 0.09);
@@ -68,6 +72,7 @@
         }
 
         .back-btn {
+            position: fixed; top: 14px; right: 56px; z-index: 9999;
             display: inline-flex; align-items: center; gap: 8px;
             padding: 7px 14px; border-radius: 999px;
             background: var(--bg-panel);
@@ -105,6 +110,7 @@
             line-height: 1.6; margin-bottom: 36px;
         }
 
+
         .layout {
             display: grid;
             grid-template-columns: minmax(0, 1fr) 340px;
@@ -136,11 +142,27 @@
         .plot-title .legend { display: flex; gap: 16px; flex-wrap: wrap; }
         .plot-title .legend span { display: inline-flex; align-items: center; gap: 6px; text-transform: none; letter-spacing: 0.04em; font-size: 11px; }
         .plot-title .legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
-        .plot-title .legend i.clean { background: var(--clean); }
-        .plot-title .legend i.noisy { background: var(--trace); }
+        .plot-title .legend i.clean   { background: var(--clean); }
+        .plot-title .legend i.noisy   { background: var(--trace); }
+        .plot-title .legend i.lead-i  { background: var(--clean); }
+        .plot-title .legend i.lead-ii { background: var(--trace); }
 
         canvas.ecg {
-            display: block; width: 100%; height: 420px; background: var(--bg-2);
+            display: block; width: 100%; height: 240px; background: var(--bg-2);
+        }
+        .plot-wrap + .plot-wrap { margin-top: 16px; }
+        .lead-row { position: relative; }
+        .lead-row + .lead-row { border-top: 1px solid var(--border); }
+        .lead-tag {
+            position: absolute; top: 8px; left: 12px; z-index: 2;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+            color: var(--accent);
+            background: var(--bg-2);
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            pointer-events: none;
         }
 
         .readout-bar {
@@ -224,11 +246,11 @@
             font-family: inherit; letter-spacing: 0.06em;
         }
         .seg button.active {
-            background: rgba(255, 207, 92, 0.12);
+            background: rgba(180, 140, 255, 0.14);
             color: var(--accent);
         }
         [data-theme="light"] .seg button.active {
-            background: rgba(184, 130, 0, 0.12);
+            background: rgba(107, 63, 196, 0.12);
         }
 
         .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
@@ -247,10 +269,14 @@
         .pillbtn:hover { border-color: var(--accent); color: var(--accent); }
         .pillbtn.primary {
             border-color: var(--accent);
-            background: rgba(255, 207, 92, 0.1);
+            background: rgba(180, 140, 255, 0.12);
             color: var(--accent);
         }
-        .pillbtn.primary:hover { background: rgba(255, 207, 92, 0.18); }
+        .pillbtn.primary:hover { background: rgba(180, 140, 255, 0.2); }
+        [data-theme="light"] .pillbtn.primary {
+            background: rgba(107, 63, 196, 0.1);
+        }
+        [data-theme="light"] .pillbtn.primary:hover { background: rgba(107, 63, 196, 0.18); }
 
         .ctrl-toggle {
             display: inline-flex; align-items: center; gap: 8px;
@@ -263,6 +289,63 @@
             font-size: 11px; color: var(--muted);
             margin-top: 8px; line-height: 1.5;
             font-family: 'JetBrains Mono', monospace;
+        }
+
+        .explainer {
+            margin-top: 18px;
+            padding: 18px 22px;
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .explainer h4 {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+            color: var(--accent); font-weight: 500;
+            margin: 0 0 12px;
+        }
+        .explainer p {
+            color: var(--text-dim);
+            font-size: 13.5px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .explainer p + p { margin-top: 10px; }
+        .explainer code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: var(--fg);
+            background: rgba(180, 140, 255, 0.1);
+            padding: 1px 6px; border-radius: 4px;
+        }
+        [data-theme="light"] .explainer code {
+            background: rgba(107, 63, 196, 0.1);
+        }
+
+        /* Highlight inline rendered equations so they stand out from prose. */
+        .explainer .katex,
+        .muted-note .katex {
+            background: rgba(180, 140, 255, 0.12);
+            padding: 1px 6px;
+            border-radius: 4px;
+            color: var(--accent);
+        }
+        [data-theme="light"] .explainer .katex,
+        [data-theme="light"] .muted-note .katex {
+            background: rgba(107, 63, 196, 0.1);
+        }
+        /* KaTeX uses its own font colours via CSS specificity; force inheritance. */
+        .explainer .katex .mord,
+        .explainer .katex .mbin,
+        .explainer .katex .mrel,
+        .explainer .katex .mop,
+        .explainer .katex .mpunct,
+        .muted-note .katex .mord,
+        .muted-note .katex .mbin,
+        .muted-note .katex .mrel,
+        .muted-note .katex .mop,
+        .muted-note .katex .mpunct {
+            color: inherit;
         }
 
         .preset-grid {
@@ -288,7 +371,10 @@
         .preset-btn.active {
             border-color: var(--accent);
             color: var(--accent);
-            background: rgba(255, 207, 92, 0.08);
+            background: rgba(180, 140, 255, 0.1);
+        }
+        [data-theme="light"] .preset-btn.active {
+            background: rgba(107, 63, 196, 0.08);
         }
         .preset-btn .pt-name { display: block; font-weight: 500; }
         .preset-btn .pt-sub {
@@ -318,29 +404,61 @@
     <div class="container">
         <div class="eyebrow"><span class="bar"></span><span class="num">EX</span><span>extras · synthetic biosignals</span></div>
         <h1>Simulate <em>ECG Data</em>.</h1>
-        <p class="sub">This simulator synthesises a single-lead electrocardiogram from a PQRST Gaussian-sum model, with additive noise sources representative of surface acquisition: low-frequency baseline wander attributable to respiration and electrode motion, broadband electromyographic interference, narrowband powerline coupling with its odd harmonics, transient electrode artefacts, and Gaussian thermal noise.</p>
-        <p class="sub">The resulting waveforms can be exported as CSV or TXT for use in MATLAB, Excel, or NI Multisim, supporting end-to-end simulation of your device. In Multisim, the TXT file is typically loaded into a piecewise-linear voltage source, which then drives the analog front-end during transient analysis.</p>
+        <p class="sub">This simulator synthesises the two Einthoven bipolar leads (I and II) of an electrocardiogram from a PQRST Gaussian-sum model. Lead II uses a lead-II morphology; Lead I is generated from the same beat schedule with wave amplitudes scaled to approximate a projection of the cardiac vector onto the lead-I axis at a normal QRS orientation. Additive noise sources are representative of surface acquisition: low-frequency baseline wander attributable to respiration and electrode motion, broadband electromyographic interference, narrowband powerline coupling with its odd harmonics, transient electrode artefacts, and Gaussian thermal noise. Each lead receives an independent realisation of the noise.</p>
+        <p class="sub">The resulting waveforms can be exported as CSV or TXT for use in MATLAB, Excel, or NI Multisim, supporting end-to-end simulation of your device. In Multisim, each TXT file is typically loaded into a piecewise-linear voltage source, which then drives the analog front-end during transient analysis; a two-lead front end uses two such sources, one per lead.</p>
 
         <div class="layout">
             <div>
                 <div class="plot-wrap">
                     <div class="plot-title">
-                        <span>ECG trace · lead II model</span>
+                        <span>Two-lead ECG · Einthoven I &amp; II</span>
                         <span class="legend">
                             <span><i class="clean"></i>clean</span>
                             <span><i class="noisy"></i>noisy</span>
                         </span>
                     </div>
-                    <canvas class="ecg" id="ecgCanvas"></canvas>
+                    <div class="lead-row">
+                        <div class="lead-tag">Lead I</div>
+                        <canvas class="ecg" id="ecgCanvasI"></canvas>
+                    </div>
+                    <div class="lead-row">
+                        <div class="lead-tag">Lead II</div>
+                        <canvas class="ecg" id="ecgCanvasII"></canvas>
+                    </div>
                     <div class="readout-bar">
                         <div class="readout-item">HR <span class="val accent" id="roHR">72 bpm</span></div>
                         <div class="readout-item">Duration <span class="val" id="roDur">10.0 s</span></div>
                         <div class="readout-item">fs <span class="val" id="roFs">500 Hz</span></div>
                         <div class="readout-item">Samples <span class="val" id="roN">5000</span></div>
-                        <div class="readout-item">SNR <span class="val" id="roSNR">—</span></div>
+                        <div class="readout-item">SNR I <span class="val" id="roSNR1">—</span></div>
+                        <div class="readout-item">SNR II <span class="val" id="roSNR2">—</span></div>
                     </div>
                 </div>
-                <p class="muted-note">The clean reference is constructed as a superposition of Gaussians parameterised to reproduce the P, Q, R, S, and T deflections, repeated at the prescribed heart rate with physiologically plausible beat-to-beat interval variability. Each noise component is generated independently and additively superimposed on the clean waveform.</p>
+                <p class="muted-note">The clean reference is constructed as a superposition of Gaussians parameterised to reproduce the P, Q, R, S, and T deflections, repeated at the prescribed heart rate with physiologically plausible beat-to-beat interval variability. The two leads share a single beat schedule but use lead-specific wave amplitudes; each noise component is generated independently per lead and additively superimposed on the clean waveform.</p>
+
+                <div class="plot-wrap">
+                    <div class="plot-title">
+                        <span>Two-lead monitor view · simultaneous Lead I and Lead II as recorded</span>
+                        <span class="legend">
+                            <span><i class="lead-i"></i>Lead I</span>
+                            <span><i class="lead-ii"></i>Lead II</span>
+                        </span>
+                    </div>
+                    <canvas class="ecg" id="overlayCanvas"></canvas>
+                    <div class="readout-bar">
+                        <div class="readout-item">Peak I <span class="val" id="roPeakI">—</span></div>
+                        <div class="readout-item">Peak II <span class="val" id="roPeakII">—</span></div>
+                        <div class="readout-item">Peak ratio I:II <span class="val" id="roPeakRatio">—</span></div>
+                    </div>
+                </div>
+                <p class="muted-note">A two-lead ECG monitor records both limb-lead signals simultaneously and presents them on a common time and amplitude axis. This panel reproduces that view: the same noisy waveforms shown above are overlaid here so that morphology, timing, and relative amplitude can be compared directly across the two leads.</p>
+
+                <div class="explainer">
+                    <h4>// Why is Lead I smaller than Lead II?</h4>
+                    <p>The two bipolar limb leads sit at different orientations on Einthoven's triangle: Lead I along the horizontal axis at $0^{\circ}$ (LA − RA), Lead II along the LL − RA axis at $+60^{\circ}$. Each lead records the projection of the mean cardiac vector onto its own axis, so the recorded amplitude scales as $\cos(\theta - \theta_{\text{lead}})$, where $\theta$ is the mean QRS axis.</p>
+                    <p>In a normally oriented adult heart, $\theta$ sits near $+60^{\circ}$, aligning the QRS vector with the Lead II axis. Lead II therefore sees the full magnitude ($\cos 0^{\circ} = 1.0$), while Lead I sees only the horizontal component ($\cos 60^{\circ} = 0.5$). This simulator uses $\theta \approx 60^{\circ}$ as its default, giving a Lead I R wave roughly half the Lead II R wave.</p>
+                    <p>The relationship reverses only when the axis rotates leftward past $+30^{\circ}$, a condition known clinically as left axis deviation, seen for example with left anterior fascicular block or certain inferior infarcts.</p>
+                </div>
             </div>
 
             <div>
@@ -352,7 +470,7 @@
                 <div class="panel">
                     <h3>// Signal</h3>
                     <div class="ctrl">
-                        <label>Heart rate</label><span class="val" id="vHR">72 bpm</span>
+                        <label>Heart rate</label><span class="val" id="vHr">72 bpm</span>
                         <input type="range" id="hr" min="30" max="180" step="1" value="72">
                     </div>
                     <div class="ctrl">
@@ -428,11 +546,14 @@
                         <button class="pillbtn" id="reseed" type="button">Reseed noise</button>
                     </div>
                     <div class="action-row">
-                        <button class="pillbtn primary" id="download" type="button">Download CSV</button>
-                        <button class="pillbtn primary" id="downloadTxt" type="button">Download TXT · Multisim PWL</button>
+                        <button class="pillbtn primary" id="download" type="button">Download CSV · both leads</button>
                     </div>
-                    <p class="muted-note"><span style="color:var(--fg)">CSV</span> — columns <span style="color:var(--fg)">time_s, ecg_mV, ecg_clean_mV, noise_mV</span>, one sample per row, for use in analysis environments such as MATLAB or Python.</p>
-                    <p class="muted-note"><span style="color:var(--fg)">TXT</span> — two-column <span style="color:var(--fg)">time (s) voltage (V)</span> ASCII file in the format accepted by NI Multisim's <em>PIECEWISE_LINEAR_VOLTAGE</em> source. Instantiate a PWL voltage source in Multisim and set its data-file parameter to the downloaded file to drive the analog front-end with the synthesised waveform during transient analysis.</p>
+                    <div class="action-row">
+                        <button class="pillbtn primary" id="downloadTxtI" type="button">TXT · Lead I (PWL)</button>
+                        <button class="pillbtn primary" id="downloadTxtII" type="button">TXT · Lead II (PWL)</button>
+                    </div>
+                    <p class="muted-note"><span style="color:var(--fg)">CSV</span> — columns <span style="color:var(--fg)">time_s, leadI_mV, leadII_mV, leadI_clean_mV, leadII_clean_mV</span>, one sample per row, for use in analysis environments such as MATLAB or Python.</p>
+                    <p class="muted-note"><span style="color:var(--fg)">TXT</span> — two-column <span style="color:var(--fg)">time (s) voltage (V)</span> ASCII file in the format accepted by NI Multisim's <em>PIECEWISE_LINEAR_VOLTAGE</em> source. One file is produced per lead; instantiate a PWL voltage source for each in Multisim and set its data-file parameter to the corresponding download to drive a two-lead analog front-end during transient analysis.</p>
                 </div>
             </div>
         </div>
@@ -442,8 +563,16 @@
 
     <script>
     (function () {
-        const canvas = document.getElementById('ecgCanvas');
-        const ctx = canvas.getContext('2d');
+        const canvases = {
+            I:  { canvas: document.getElementById('ecgCanvasI'),  ctx: null },
+            II: { canvas: document.getElementById('ecgCanvasII'), ctx: null },
+            R:  { canvas: document.getElementById('overlayCanvas'), ctx: null },
+        };
+        canvases.I.ctx  = canvases.I.canvas.getContext('2d');
+        canvases.II.ctx = canvases.II.canvas.getContext('2d');
+        canvases.R.ctx  = canvases.R.canvas.getContext('2d');
+        const LEAD_KEYS = ['I', 'II'];
+        const ALL_CANVAS_KEYS = ['I', 'II', 'R'];
 
         // ─── State ─────────────────────────────────────────────────────────────
         const state = {
@@ -458,15 +587,27 @@
             seed: 0xDEADBEEF >>> 0,
         };
 
-        // PQRST Gaussian model parameters (McSharry-style, tuned for lead II)
-        // theta in radians relative to R peak, a = amplitude, b = width
-        const waves = [
-            { th: -1.09, a: 0.12, b: 0.25 },  // P
-            { th: -0.17, a: -0.10, b: 0.10 }, // Q
-            { th:  0.00, a: 1.00, b: 0.10 },  // R
-            { th:  0.17, a: -0.25, b: 0.10 }, // S
-            { th:  1.19, a: 0.35, b: 0.40 },  // T
+        // PQRST Gaussian model parameters (McSharry-style)
+        // theta in radians relative to R peak, a = amplitude, b = width.
+        // Lead II uses the canonical morphology. Lead I is generated from the
+        // same template with amplitudes scaled by a frontal-plane projection
+        // assuming a normal QRS axis near +60 degrees, which gives a Lead I
+        // R wave roughly half the Lead II R wave.
+        const wavesII = [
+            { th: -1.09, a:  0.12, b: 0.25 },  // P
+            { th: -0.17, a: -0.10, b: 0.10 },  // Q
+            { th:  0.00, a:  1.00, b: 0.10 },  // R
+            { th:  0.17, a: -0.25, b: 0.10 },  // S
+            { th:  1.19, a:  0.35, b: 0.40 },  // T
         ];
+        const wavesI = [
+            { th: -1.09, a:  0.07, b: 0.25 },  // P
+            { th: -0.17, a: -0.04, b: 0.10 },  // Q
+            { th:  0.00, a:  0.55, b: 0.10 },  // R
+            { th:  0.17, a: -0.12, b: 0.10 },  // S
+            { th:  1.19, a:  0.25, b: 0.40 },  // T
+        ];
+        const LEAD_WAVES = { I: wavesI, II: wavesII };
 
         // ─── Deterministic RNG (mulberry32) ────────────────────────────────────
         function rng(seed) {
@@ -488,34 +629,15 @@
         }
 
         // ─── Synthesis ─────────────────────────────────────────────────────────
-        function synthesize() {
-            const fs = state.fs;
-            const N = Math.round(state.dur * fs);
-            const dt = 1 / fs;
-            const rand = rng(state.seed);
-
-            // Build beat schedule with HR variability
-            const meanRR = 60 / state.hr;
-            const sigmaRR = meanRR * (state.hrv / 100);
-            const beats = [];
-            let t = 0.25 * meanRR; // first R peak offset
-            while (t < state.dur + meanRR) {
-                beats.push(t);
-                const jitter = sigmaRR * gauss(rand);
-                t += Math.max(0.25, meanRR + jitter);
-            }
-
-            // Clean signal = sum of nearest-beat PQRST Gaussians
+        function buildClean(beats, meanRR, fs, N, dt, waves) {
             const clean = new Float64Array(N);
             for (let i = 0; i < N; i++) {
                 const ti = i * dt;
-                // Find up to 2 nearest beats (previous + next) — plenty given gaussian widths
                 let sum = 0;
                 for (let b = 0; b < beats.length; b++) {
                     const dtb = ti - beats[b];
                     if (dtb < -0.6) break;
                     if (dtb > 0.8) continue;
-                    // convert to "phase" in radians using local RR so T relaxes between beats
                     const localRR = (b + 1 < beats.length ? beats[b + 1] - beats[b] : meanRR);
                     const phase = 2 * Math.PI * dtb / Math.max(localRR, 0.3);
                     for (let w = 0; w < waves.length; w++) {
@@ -525,17 +647,18 @@
                 }
                 clean[i] = sum * state.amp;
             }
+            return clean;
+        }
 
-            // ── Noise components ──
+        function buildNoise(rand, fs, N, dt) {
             const noise = new Float64Array(N);
 
-            // 1) Baseline wander: a couple of low-freq sinusoids + slow random walk
+            // 1) Baseline wander
             if (state.bw > 0) {
                 const ph1 = rand() * 2 * Math.PI;
                 const ph2 = rand() * 2 * Math.PI;
                 const f1 = state.bwf;
                 const f2 = state.bwf * 2.3;
-                // slow random walk
                 const walk = new Float64Array(N);
                 let w = 0;
                 const tau = Math.max(0.05, state.bwf) * 2 * Math.PI;
@@ -543,7 +666,6 @@
                     w += (gauss(rand) * 0.02 - w * dt * tau);
                     walk[i] = w;
                 }
-                // normalize walk to ~unit amplitude
                 let wmax = 1e-9;
                 for (let i = 0; i < N; i++) if (Math.abs(walk[i]) > wmax) wmax = Math.abs(walk[i]);
                 for (let i = 0; i < N; i++) {
@@ -555,9 +677,8 @@
                 }
             }
 
-            // 2) Muscle tremor / EMG: broadband noise band-limited ~20–100 Hz
+            // 2) Muscle tremor / EMG
             if (state.emg > 0) {
-                // Sum of many mid-high freq sinusoids with random phase — cheap band-limited
                 const harmonics = 24;
                 const fmin = 20, fmax = Math.min(100, fs * 0.45);
                 const phases = [];
@@ -572,13 +693,12 @@
                     for (let h = 0; h < harmonics; h++) {
                         s += Math.sin(2 * Math.PI * freqs[h] * tt + phases[h]);
                     }
-                    // modulation envelope — tremor comes in bursts
                     const env = 0.5 + 0.5 * Math.sin(2 * Math.PI * 0.7 * tt + phases[0]);
                     noise[i] += state.emg * (s / Math.sqrt(harmonics)) * env;
                 }
             }
 
-            // 3) Powerline interference: fundamental + small 3rd/5th harmonics
+            // 3) Powerline interference
             if (state.pl > 0) {
                 const f0 = state.plFreq;
                 const ph = rand() * 2 * Math.PI;
@@ -592,16 +712,15 @@
                 }
             }
 
-            // 4) Electrode pops / motion spikes: occasional exponential transients
+            // 4) Electrode pops
             if (state.pop > 0) {
                 const expected = state.pop * state.dur;
-                // sample count from Poisson approx by rounding with jitter
                 const count = Math.max(0, Math.round(expected + gauss(rand) * Math.sqrt(expected || 1)));
                 for (let k = 0; k < count; k++) {
                     const tk = rand() * state.dur;
                     const sign = rand() < 0.5 ? -1 : 1;
                     const amp = sign * (0.4 + 0.8 * rand()) * state.amp * 0.8;
-                    const tauPop = 0.03 + rand() * 0.12; // 30–150 ms decay
+                    const tauPop = 0.03 + rand() * 0.12;
                     const iStart = Math.round(tk * fs);
                     const iEnd = Math.min(N, iStart + Math.round(tauPop * 6 * fs));
                     for (let i = iStart; i < iEnd; i++) {
@@ -611,26 +730,60 @@
                 }
             }
 
-            // 5) White (thermal / quantisation) noise
+            // 5) White noise
             if (state.wht > 0) {
                 for (let i = 0; i < N; i++) {
                     noise[i] += state.wht * gauss(rand);
                 }
             }
 
-            // Combine
-            const noisy = new Float64Array(N);
-            for (let i = 0; i < N; i++) noisy[i] = clean[i] + noise[i];
+            return noise;
+        }
 
-            // SNR (power-based)
+        function combineAndSnr(clean, noise, N) {
+            const noisy = new Float64Array(N);
             let ps = 0, pn = 0;
             for (let i = 0; i < N; i++) {
+                noisy[i] = clean[i] + noise[i];
                 ps += clean[i] * clean[i];
                 pn += noise[i] * noise[i];
             }
             const snr = pn > 0 ? 10 * Math.log10(ps / pn) : Infinity;
+            return { noisy, snr };
+        }
 
-            return { clean, noise, noisy, fs, N, snr };
+        function synthesize() {
+            const fs = state.fs;
+            const N = Math.round(state.dur * fs);
+            const dt = 1 / fs;
+
+            // Build beat schedule once with a dedicated RNG so it is shared
+            // between the two leads but independent of per-lead noise streams.
+            const schedRand = rng(state.seed);
+            const meanRR = 60 / state.hr;
+            const sigmaRR = meanRR * (state.hrv / 100);
+            const beats = [];
+            let t = 0.25 * meanRR;
+            while (t < state.dur + meanRR) {
+                beats.push(t);
+                const jitter = sigmaRR * gauss(schedRand);
+                t += Math.max(0.25, meanRR + jitter);
+            }
+
+            const noiseSeeds = {
+                I:  ((state.seed ^ 0x5A5A5A5A) >>> 0),
+                II: ((state.seed ^ 0xA5A5A5A5) >>> 0),
+            };
+
+            const leads = {};
+            for (const k of LEAD_KEYS) {
+                const clean = buildClean(beats, meanRR, fs, N, dt, LEAD_WAVES[k]);
+                const noise = buildNoise(rng(noiseSeeds[k]), fs, N, dt);
+                const { noisy, snr } = combineAndSnr(clean, noise, N);
+                leads[k] = { clean, noise, noisy, snr };
+            }
+
+            return { leads, fs, N };
         }
 
         // ─── Rendering ─────────────────────────────────────────────────────────
@@ -638,13 +791,16 @@
 
         function resizeCanvas() {
             const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-            canvas.width = Math.max(1, Math.round(rect.width * dpr));
-            canvas.height = Math.max(1, Math.round(rect.height * dpr));
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            for (const k of ALL_CANVAS_KEYS) {
+                const { canvas, ctx } = canvases[k];
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = Math.max(1, Math.round(rect.width * dpr));
+                canvas.height = Math.max(1, Math.round(rect.height * dpr));
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
         }
 
-        function draw(data) {
+        function draw(canvas, ctx, lead, N) {
             const rect = canvas.getBoundingClientRect();
             const W = rect.width, H = rect.height;
             ctx.clearRect(0, 0, W, H);
@@ -655,8 +811,8 @@
 
             // Determine y-range from noisy
             let ymin = Infinity, ymax = -Infinity;
-            for (let i = 0; i < data.N; i++) {
-                const v = data.noisy[i];
+            for (let i = 0; i < N; i++) {
+                const v = lead.noisy[i];
                 if (v < ymin) ymin = v;
                 if (v > ymax) ymax = v;
             }
@@ -730,7 +886,7 @@
                 ctx.globalAlpha = 0.55;
                 ctx.lineWidth = 1.1;
                 ctx.beginPath();
-                drawPoly(ctx, data.clean, data.N, state.dur, xToPx, yToPx);
+                drawPoly(ctx, canvas, lead.clean, N, state.dur, xToPx, yToPx);
                 ctx.stroke();
                 ctx.globalAlpha = 1;
             }
@@ -740,11 +896,105 @@
             ctx.strokeStyle = traceColor;
             ctx.lineWidth = 1.4;
             ctx.beginPath();
-            drawPoly(ctx, data.noisy, data.N, state.dur, xToPx, yToPx);
+            drawPoly(ctx, canvas, lead.noisy, N, state.dur, xToPx, yToPx);
             ctx.stroke();
         }
 
-        function drawPoly(ctx, arr, N, dur, xToPx, yToPx) {
+        function drawOverlay(canvas, ctx, sigI, sigII, N, dur) {
+            const rect = canvas.getBoundingClientRect();
+            const W = rect.width, H = rect.height;
+            ctx.clearRect(0, 0, W, H);
+
+            const padL = 46, padR = 14, padT = 14, padB = 26;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            // y-range from union of both traces
+            let ymin = Infinity, ymax = -Infinity;
+            for (let i = 0; i < N; i++) {
+                let v = sigI[i];
+                if (v < ymin) ymin = v;
+                if (v > ymax) ymax = v;
+                v = sigII[i];
+                if (v < ymin) ymin = v;
+                if (v > ymax) ymax = v;
+            }
+            if (!isFinite(ymin) || !isFinite(ymax)) { ymin = -1; ymax = 1; }
+            if (ymax - ymin < 0.5) { const m = (ymin + ymax) / 2; ymin = m - 0.25; ymax = m + 0.25; }
+            const yPad = (ymax - ymin) * 0.08;
+            ymin -= yPad; ymax += yPad;
+
+            const xToPx = (t) => padL + (t / dur) * plotW;
+            const yToPx = (v) => padT + (1 - (v - ymin) / (ymax - ymin)) * plotH;
+
+            const gridStyleMinor = getComputedStyle(document.documentElement).getPropertyValue('--grid').trim() || 'rgba(255,255,255,0.05)';
+            const gridStyleMajor = getComputedStyle(document.documentElement).getPropertyValue('--grid-strong').trim() || 'rgba(255,255,255,0.1)';
+
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = gridStyleMinor;
+            ctx.beginPath();
+            const tMinor = 0.04, tMajor = 0.2;
+            for (let t = 0; t <= dur + 1e-9; t += tMinor) {
+                const x = xToPx(t);
+                ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH);
+            }
+            const vMinor = 0.1, vMajor = 0.5;
+            const vStart = Math.floor(ymin / vMinor) * vMinor;
+            for (let v = vStart; v <= ymax + 1e-9; v += vMinor) {
+                const y = yToPx(v);
+                ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y);
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = gridStyleMajor;
+            ctx.beginPath();
+            for (let t = 0; t <= dur + 1e-9; t += tMajor) {
+                const x = xToPx(t);
+                ctx.moveTo(x, padT); ctx.lineTo(x, padT + plotH);
+            }
+            const vStart2 = Math.floor(ymin / vMajor) * vMajor;
+            for (let v = vStart2; v <= ymax + 1e-9; v += vMajor) {
+                const y = yToPx(v);
+                ctx.moveTo(padL, y); ctx.lineTo(padL + plotW, y);
+            }
+            ctx.stroke();
+
+            // Axis labels
+            const axisColor = getComputedStyle(document.documentElement).getPropertyValue('--muted').trim() || '#8b90a3';
+            ctx.fillStyle = axisColor;
+            ctx.font = '10px "JetBrains Mono", monospace';
+            ctx.textBaseline = 'top';
+            const xTick = dur <= 5 ? 0.5 : 1;
+            for (let t = 0; t <= dur + 1e-9; t += xTick) {
+                const x = xToPx(t);
+                ctx.textAlign = 'center';
+                ctx.fillText(t.toFixed(xTick < 1 ? 1 : 0) + 's', x, padT + plotH + 6);
+            }
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let v = vStart2; v <= ymax + 1e-9; v += vMajor) {
+                const y = yToPx(v);
+                ctx.fillText(v.toFixed(1) + ' mV', padL - 6, y);
+            }
+
+            // Lead I trace (clean colour)
+            const colorI = getComputedStyle(document.documentElement).getPropertyValue('--clean').trim() || '#58a6ff';
+            ctx.strokeStyle = colorI;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            drawPoly(ctx, canvas, sigI, N, dur, xToPx, yToPx);
+            ctx.stroke();
+
+            // Lead II trace (trace colour)
+            const colorII = getComputedStyle(document.documentElement).getPropertyValue('--trace').trim() || '#7be089';
+            ctx.strokeStyle = colorII;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            drawPoly(ctx, canvas, sigII, N, dur, xToPx, yToPx);
+            ctx.stroke();
+        }
+
+        function drawPoly(ctx, canvas, arr, N, dur, xToPx, yToPx) {
             // Downsample to ~2 px per sample max
             const rect = canvas.getBoundingClientRect();
             const targetPts = Math.min(N, Math.round(rect.width * 2));
@@ -760,16 +1010,39 @@
         }
 
         // ─── Update pipeline ───────────────────────────────────────────────────
+        function redraw() {
+            if (!lastData) return;
+            for (const k of LEAD_KEYS) {
+                const { canvas, ctx } = canvases[k];
+                draw(canvas, ctx, lastData.leads[k], lastData.N);
+            }
+            const { canvas: oCanvas, ctx: oCtx } = canvases.R;
+            drawOverlay(oCanvas, oCtx, lastData.leads.I.noisy, lastData.leads.II.noisy, lastData.N, state.dur);
+        }
+
         function update() {
             lastData = synthesize();
-            draw(lastData);
+            redraw();
             // readouts
             document.getElementById('roHR').textContent = state.hr + ' bpm';
             document.getElementById('roDur').textContent = state.dur.toFixed(1) + ' s';
             document.getElementById('roFs').textContent = state.fs + ' Hz';
             document.getElementById('roN').textContent = lastData.N.toLocaleString();
-            const snrText = isFinite(lastData.snr) ? (lastData.snr.toFixed(1) + ' dB') : '— dB';
-            document.getElementById('roSNR').textContent = snrText;
+            const fmtSnr = s => isFinite(s) ? (s.toFixed(1) + ' dB') : '— dB';
+            document.getElementById('roSNR1').textContent = fmtSnr(lastData.leads.I.snr);
+            document.getElementById('roSNR2').textContent = fmtSnr(lastData.leads.II.snr);
+
+            // Overlay readouts: peak (max signed amplitude) per lead from clean traces
+            const cI = lastData.leads.I.clean, cII = lastData.leads.II.clean;
+            let peakI = 0, peakII = 0;
+            for (let i = 0; i < lastData.N; i++) {
+                if (cI[i]  > peakI)  peakI  = cI[i];
+                if (cII[i] > peakII) peakII = cII[i];
+            }
+            document.getElementById('roPeakI').textContent  = peakI.toFixed(2)  + ' mV';
+            document.getElementById('roPeakII').textContent = peakII.toFixed(2) + ' mV';
+            document.getElementById('roPeakRatio').textContent =
+                peakII > 1e-6 ? (peakI / peakII).toFixed(2) : '—';
         }
 
         // ─── Hook up controls ──────────────────────────────────────────────────
@@ -889,52 +1162,57 @@
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
-        function fileStamp(ext) {
+        function fileStamp(prefix, ext) {
             const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-            return `ecg_${state.hr}bpm_${state.fs}Hz_${state.dur.toFixed(1)}s_${ts}.${ext}`;
+            return `${prefix}_${state.hr}bpm_${state.fs}Hz_${state.dur.toFixed(1)}s_${ts}.${ext}`;
         }
 
         document.getElementById('download').addEventListener('click', () => {
             if (!lastData) return;
-            const { clean, noise, noisy, N, fs } = lastData;
-            const lines = ['time_s,ecg_mV,ecg_clean_mV,noise_mV'];
+            const { leads, N, fs } = lastData;
+            const lines = ['time_s,leadI_mV,leadII_mV,leadI_clean_mV,leadII_clean_mV'];
             const dt = 1 / fs;
             for (let i = 0; i < N; i++) {
                 lines.push(
                     (i * dt).toFixed(6) + ',' +
-                    noisy[i].toFixed(6) + ',' +
-                    clean[i].toFixed(6) + ',' +
-                    noise[i].toFixed(6)
+                    leads.I.noisy[i].toFixed(6) + ',' +
+                    leads.II.noisy[i].toFixed(6) + ',' +
+                    leads.I.clean[i].toFixed(6) + ',' +
+                    leads.II.clean[i].toFixed(6)
                 );
             }
-            downloadBlob(lines.join('\n'), 'text/csv;charset=utf-8', fileStamp('csv'));
+            downloadBlob(lines.join('\n'), 'text/csv;charset=utf-8', fileStamp('ecg_2lead', 'csv'));
         });
 
         // Multisim piecewise-linear source expects an ASCII file with one
         // "<time_seconds> <voltage_volts>" pair per line, monotonically
         // increasing in time and in SI units. The waveform is emitted in
         // volts (mV / 1000) so it can be consumed directly by a PWL source.
-        document.getElementById('downloadTxt').addEventListener('click', () => {
+        // One file is produced per lead.
+        function downloadLeadTxt(leadKey) {
             if (!lastData) return;
-            const { noisy, N, fs } = lastData;
+            const { N, fs } = lastData;
+            const noisy = lastData.leads[leadKey].noisy;
             const dt = 1 / fs;
             const lines = [
                 '* NI Multisim piecewise-linear voltage source',
                 `* Generated by ECG simulator — ${new Date().toISOString()}`,
-                `* Heart rate: ${state.hr} bpm   Duration: ${state.dur.toFixed(2)} s   Fs: ${state.fs} Hz   Samples: ${N}`,
+                `* Lead ${leadKey}   Heart rate: ${state.hr} bpm   Duration: ${state.dur.toFixed(2)} s   Fs: ${state.fs} Hz   Samples: ${N}`,
                 '* Columns: time (s)  voltage (V)',
             ];
             for (let i = 0; i < N; i++) {
                 const v = noisy[i] * 1e-3; // mV → V
                 lines.push((i * dt).toExponential(9) + '  ' + v.toExponential(9));
             }
-            downloadBlob(lines.join('\n') + '\n', 'text/plain;charset=utf-8', fileStamp('txt'));
-        });
+            downloadBlob(lines.join('\n') + '\n', 'text/plain;charset=utf-8', fileStamp(`ecg_lead${leadKey}`, 'txt'));
+        }
+        document.getElementById('downloadTxtI').addEventListener('click', () => downloadLeadTxt('I'));
+        document.getElementById('downloadTxtII').addEventListener('click', () => downloadLeadTxt('II'));
 
         // ─── Boot ──────────────────────────────────────────────────────────────
-        window.addEventListener('resize', () => { resizeCanvas(); if (lastData) draw(lastData); });
+        window.addEventListener('resize', () => { resizeCanvas(); redraw(); });
         // Re-draw on theme toggle (theme.js swaps data-theme)
-        const themeObserver = new MutationObserver(() => { if (lastData) draw(lastData); });
+        const themeObserver = new MutationObserver(() => redraw());
         themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
         resizeCanvas();

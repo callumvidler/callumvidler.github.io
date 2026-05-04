@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · The Op-Amp as an Oscillator</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="op_amp_oscillator_JS/oscillator.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · OP-AMP AS AN OSCILLATOR</div>
+            <h1 class="hero">The op-amp as an <em>oscillator</em></h1>
+            <p class="sub">An oscillator is a circuit that produces a periodic output without any periodic input. It
+                is built by closing a positive-feedback loop around an amplifier with a frequency-selective network,
+                so that one specific frequency is reinforced on every pass and all other frequencies decay. The
+                op-amp provides the gain, the feedback network sets the frequency, and the loop sustains itself.</p>
+            <div class="tags">
+                <span class="field-tag">positive feedback</span>
+                <span class="field-tag">loop gain</span>
+                <span class="field-tag">Barkhausen</span>
+                <span class="field-tag">Wien bridge</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SECTION 01 · WHAT IS AN OSCILLATOR ================= -->
+    <section class="scene" id="sec-block">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>what is an oscillator</span></div>
+            <h2>An amplifier closed in a positive-feedback loop</h2>
+
+            <p class="lead">A linear oscillator is constructed from two blocks: a forward amplifier of gain $A$ and a
+                feedback network of transfer function $\beta(j\omega)$. The output of the amplifier is sampled by the
+                feedback network, scaled, phase-shifted, and returned to the amplifier input. If the signal that
+                reaches the input is identical in amplitude and phase to the signal that produced it, the loop
+                sustains itself and a steady periodic output emerges.</p>
+
+            <p>Solving the closed-loop equation $v_\text{out} = A\,(v_\text{in} + \beta\,v_\text{out})$ for the
+                transfer function gives</p>
+
+            <div class="eq-block">$$\frac{v_\text{out}}{v_\text{in}} = \frac{A}{1 - A\beta(j\omega)}.$$</div>
+
+            <p>The closed-loop gain is unbounded at any frequency where $A\beta(j\omega) = 1$. At that frequency the
+                circuit produces an output for zero input: it oscillates. The role of the amplifier is to supply
+                energy at the rate the feedback network requires; the role of the feedback network is to select the
+                frequency at which the loop closes.</p>
+
+            <ul class="bullets">
+                <li>amplifier: provides the gain $A$ that compensates for losses around the loop;</li>
+                <li>feedback network: a frequency-selective $\beta(j\omega)$ that returns a specific frequency to the
+                    input with the correct phase;</li>
+                <li>loop gain: the product $A\beta(j\omega)$, the round-trip gain experienced by a signal travelling
+                    once around the loop;</li>
+                <li>start-up: any small perturbation, including thermal noise, contains energy at the loop frequency
+                    and is amplified until amplitude limiting holds it constant.</li>
+            </ul>
+
+            <div class="callout">
+                A negative-feedback amplifier returns an inverted copy of the output to the input, which subtracts
+                from the input and stabilises the gain. A positive-feedback oscillator returns a non-inverted copy,
+                which adds to the input, and the loop is engineered so that addition compounds at exactly one
+                frequency.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box block">
+                    <div class="label">block diagram · <b>amplifier with feedback network</b></div>
+                    <svg class="bode" id="plot-feedback-block"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 02 · WIEN BRIDGE CIRCUIT ================= -->
+    <section class="scene" id="sec-circuit">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the wien bridge oscillator</span></div>
+            <h2>A canonical op-amp oscillator</h2>
+
+            <p class="lead">The Wien bridge oscillator is the standard introductory op-amp oscillator because every
+                element of its construction maps directly onto the abstract feedback diagram. The op-amp at the centre
+                provides the forward gain. Two paths leave the output: a negative-feedback path that fixes that gain,
+                and a positive-feedback path through a frequency-selective RC network.</p>
+
+            <p>The negative feedback path is the familiar non-inverting amplifier wiring. $R_4$ runs from the output
+                to the inverting input, and $R_3$ runs from the inverting input to ground. Together they fix the
+                forward gain at</p>
+
+            <div class="eq-block">$$A = 1 + \frac{R_4}{R_3}.$$</div>
+
+            <p>The positive-feedback path is the network at the bottom of the schematic. Its job is to sample the
+                output, attenuate every frequency except one, and return that one frequency to the non-inverting
+                input. It is built from two RC arms tuned to the same time constant: a series arm of $R_1$ and $C_1$
+                between the output and the non-inverting input, and a parallel arm of $R_2$ and $C_2$ between the
+                non-inverting input and ground.</p>
+
+            <ul class="bullets">
+                <li>op-amp: provides the forward gain in non-inverting configuration;</li>
+                <li>$R_3, R_4$: set the closed-loop gain through negative feedback to the inverting input;</li>
+                <li>series arm $R_1, C_1$: one half of the frequency-selective positive-feedback network;</li>
+                <li>parallel arm $R_2 \,\|\, C_2$: the other half;</li>
+                <li>non-inverting input node: the point at which the selected frequency re-enters the amplifier.</li>
+            </ul>
+
+            <div class="callout">
+                The two arms share the same $RC$ time constant by design. How that arrangement selects a single
+                frequency is the subject of the next section.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box circuit">
+                    <div class="label">circuit · <b>Wien bridge oscillator</b></div>
+                    <svg class="bode" id="plot-wien-circuit"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 03 · WIEN AS HP + LP ================= -->
+    <section class="scene" id="sec-hp-lp">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>two filters in one network</span></div>
+            <h2>The Wien network as a high-pass and low-pass pair</h2>
+
+            <p class="lead">The bottom of the schematic, taken on its own, is a passive voltage divider made from
+                two RC arms. Each arm is a single-pole filter. The series arm $R_1, C_1$ behaves as a high-pass
+                section; the parallel arm $R_2 \,\|\, C_2$ behaves as a low-pass section. Their cascade produces a
+                band-pass response, and the band-pass peak is what the oscillator runs on.</p>
+
+            <h3>Series arm: high-pass</h3>
+            <p>The series arm has impedance</p>
+
+            <div class="eq-block">$$Z_1(j\omega) = R_1 + \frac{1}{j\omega C_1}.$$</div>
+
+            <p>At low frequencies, $1/(\omega C_1)$ is large, so $Z_1$ is dominated by the capacitor and approaches
+                infinity as $\omega \to 0$. The series arm therefore blocks dc and low-frequency content, exactly as
+                a passive high-pass filter does. At high frequencies $C_1$ behaves as a short circuit and $Z_1 \to
+                R_1$, so high frequencies are passed with negligible attenuation.</p>
+
+            <h3>Parallel arm: low-pass</h3>
+            <p>The parallel arm has impedance</p>
+
+            <div class="eq-block">$$Z_2(j\omega) = R_2 \,\|\, \frac{1}{j\omega C_2}
+                = \frac{R_2}{1 + j\omega R_2 C_2}.$$</div>
+
+            <p>At low frequencies $C_2$ is open and $Z_2 \to R_2$. At high frequencies $C_2$ shunts the parallel arm
+                to ground and $Z_2 \to 0$. Treated as the lower half of a divider, the parallel arm therefore passes
+                low frequencies and shorts out high frequencies, exactly as a passive low-pass filter does.</p>
+
+            <h3>Combined: band-pass with a peak at $\omega_0$</h3>
+            <p>The voltage that reaches the non-inverting input is the divider output</p>
+
+            <div class="eq-block">$$\beta(j\omega) = \frac{Z_2}{Z_1 + Z_2}
+                = \frac{j\omega RC}{1 - (\omega RC)^2 + 3\,j\omega RC},$$</div>
+
+            <p>where the second equality uses $R_1 = R_2 = R$ and $C_1 = C_2 = C$. At low $\omega$ the high-pass arm
+                dominates and $\beta \to 0$. At high $\omega$ the low-pass arm dominates and $\beta \to 0$. Between
+                the two limits there is exactly one frequency at which the rising high-pass response and the falling
+                low-pass response cross. That frequency is</p>
+
+            <div class="eq-block">$$\omega_0 = \frac{1}{RC}, \qquad |\beta(j\omega_0)| = \tfrac{1}{3}.$$</div>
+
+            <div class="callout">
+                The Wien network on its own attenuates the loop frequency by a factor of three. The op-amp must
+                supply a forward gain of three to recover that loss; that constraint is what fixes the design ratio
+                $R_4 = 2 R_3$ in the next section.
+            </div>
+        </div>
+
+        <div>
+            <div id="wien-decomp-wrap">
+                <div class="toolbar wien-toolbar">
+                    <button class="ctrl-btn active" data-wien-mode="high-pass">High-pass</button>
+                    <button class="ctrl-btn" data-wien-mode="low-pass">Low-pass</button>
+                    <button class="ctrl-btn" data-wien-mode="band-pass">Band-pass</button>
+                </div>
+                <div class="wien-decomp-grid">
+                    <div class="plot-box wien-decomp">
+                        <div class="label">circuit · <b>Wien bridge</b></div>
+                        <svg class="bode" id="plot-wien-decomp"></svg>
+                    </div>
+                    <div class="plot-box hp-lp">
+                        <div class="label">filter responses</div>
+                        <svg class="bode" id="plot-wien-filters"></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- ================= SECTION 04 · BARKHAUSEN ================= -->
+    <section class="scene" id="sec-barkhausen">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the Barkhausen criterion</span></div>
+            <h2>When does the loop sustain itself?</h2>
+
+            <p class="lead">A signal that travels once around the loop is multiplied first by the amplifier gain $A$
+                and then by the feedback transfer $\beta(j\omega)$. For a steady oscillation, the signal that returns
+                to the input must be identical to the signal that left it. Identical means the same magnitude and the
+                same phase.</p>
+
+            <p>Plotting $A\beta(j\omega)$ on the complex plane makes the criterion visual. As $\omega$ sweeps from
+                $0$ to $\infty$ the product traces a closed curve. The criterion is satisfied at any frequency where
+                that curve passes through the point $1 + j\,0$, the round-trip identity.</p>
+
+            <div class="eq-block">$$A\,\beta(j\omega_0) \;=\; 1.$$</div>
+
+            <p>For the Wien network the curve crosses the real axis at $\omega = \omega_0 = 1/RC$, where
+                $\beta(j\omega_0) = \tfrac{1}{3}$ is purely real. The phase condition is therefore met automatically
+                at that single frequency, and the magnitude condition reduces to</p>
+
+            <div class="eq-block">$$\tfrac{A}{3} = 1 \;\Longrightarrow\; A = 3 \;\Longrightarrow\; R_4 = 2\,R_3.$$</div>
+
+            <p>Use the slider to move the amplifier gain $A$. The locus scales with $A$: it crosses the real axis at
+                $A/3$. When that crossing falls short of $1$, oscillation decays; when it overshoots, the amplitude
+                grows until the op-amp clips. Only at $A = 3$ does the curve pass cleanly through the Barkhausen
+                point.</p>
+
+            <div class="callout">
+                In practice $A$ is held close to $3$ by an automatic gain control element, often a thermistor or a
+                JFET in the $R_3$ branch, so the loop gain self-regulates to unity and the amplitude is set by the
+                limiter rather than by the resistor ratio alone.
+            </div>
+        </div>
+
+        <div>
+            <div id="barkhausen-wrap">
+                <div class="toolbar bark-toolbar">
+                    <span class="slider-group">
+                        <span class="lab">amp gain $A$</span>
+                        <input type="range" id="bark-A" min="1.0" max="5.0" step="0.05" value="3.00">
+                        <span class="val" id="bark-A-val">3.00 &middot; A&beta;(j&omega;<sub>0</sub>) = 1.000</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group fixed-info">
+                        <span class="lab">fixed</span>
+                        <span class="val">$\beta(j\omega_0) = \tfrac{1}{3}$ &middot; $\angle\beta(j\omega_0) = 0$</span>
+                    </span>
+                </div>
+                <div class="plot-box bark-nyquist">
+                    <div class="label">complex plane &middot; <b>locus of $A\beta(j\omega)$</b></div>
+                    <svg class="bode" id="plot-loop-bode"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · TIME DOMAIN ================= -->
+    <section class="scene" id="sec-time">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>start-up and steady state</span></div>
+            <h2>How the oscillation builds up</h2>
+
+            <p class="lead">When power is first applied, the output of the op-amp contains only thermal noise.
+                Components of that noise at every frequency are recirculated by the loop, but only the component near
+                $\omega_0$ returns in phase and amplified. On every pass the loop gain $A\beta$ multiplies the
+                surviving sinusoid, so its amplitude grows exponentially.</p>
+
+            <p>For loop gain slightly greater than unity the envelope grows as $e^{\sigma t}$ with
+                $\sigma = \tfrac{1}{2}(A\beta - 1)\,\omega_0$. The exponential growth continues until the amplifier
+                output approaches the supply rails or the gain-control element reduces $A$. Steady state is reached
+                when the average loop gain has been pulled down to exactly unity by amplitude-dependent saturation.</p>
+
+            <ul class="bullets">
+                <li>$t < 0$: loop is open, output is at zero;</li>
+                <li>$t \approx 0$: loop closes, thermal noise seeds the resonance;</li>
+                <li>$0 < t < t_\text{settle}$: amplitude grows exponentially;</li>
+                <li>$t > t_\text{settle}$: amplitude is fixed by the limiting mechanism, frequency is set by $RC$.</li>
+            </ul>
+
+            <div class="callout">
+                The oscillator does not need an input. The seed for the oscillation is the small, broadband noise
+                that exists at the input of any active device. Frequency selectivity is what turns that broadband
+                seed into a single coherent tone.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box scope">
+                    <div class="label">time domain · <b>start-up and steady-state output</b></div>
+                    <canvas id="scope-oscillator"></canvas>
+                    <svg class="scope-overlay" id="scope-oscillator-overlay"></svg>
+                </div>
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">amp gain $A$</span>
+                        <input type="range" id="osc-loop" min="2.40" max="3.00" step="0.05" value="3.00">
+                        <span class="val" id="osc-loop-val">3.00 · A&beta;=1.000 · threshold</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">capacitance $C$</span>
+                        <input type="range" id="osc-rc" min="0.1" max="50" step="0.1" value="10">
+                        <span class="val" id="osc-rc-val">10 &micro;F &middot; RC = 0.100 s</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group fixed-info">
+                        <span class="lab">fixed</span>
+                        <span class="val">$\beta = \tfrac{1}{3}$ &middot; $R = 10\,\mathrm{k\Omega}$</span>
+                    </span>
+                    <span class="divider"></span>
+                    <button type="button" id="osc-reset" class="ctrl-btn">restart</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 06 · APPLICATIONS ================= -->
+    <section class="scene wide" id="sec-uses">
+        <div class="copy full">
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>where oscillators are used</span></div>
+            <h2>Applications in instrumentation</h2>
+
+            <p class="lead">Oscillators provide the periodic excitation that many measurement and signal-processing
+                circuits depend on. The role of the oscillator is to supply a known, stable frequency from which the
+                rest of the system derives timing, modulation, or carrier energy.</p>
+
+            <div class="card-row">
+                <div class="card">
+                    <div class="card-num">a</div>
+                    <h3>Carrier generation for AC bridges</h3>
+                    <p>Impedance, capacitance, and conductance bridges require a sinusoidal excitation at a chosen
+                        frequency. A Wien bridge or phase-shift oscillator supplies that excitation with low
+                        harmonic content.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">b</div>
+                    <h3>Bioimpedance and impedance plethysmography</h3>
+                    <p>The injected current used to measure tissue impedance is a small-amplitude sinusoid, typically
+                        in the 10 kHz to 100 kHz range. An op-amp oscillator generates that current and a
+                        synchronous detector recovers the impedance.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">c</div>
+                    <h3>Lock-in amplification</h3>
+                    <p>A lock-in amplifier multiplies a noisy input by a reference sinusoid at the modulation
+                        frequency. The reference is generated by an oscillator phase-locked to the stimulus.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">d</div>
+                    <h3>Function generators and stimulus sources</h3>
+                    <p>Audio-frequency oscillators built around op-amps are the analogue heart of bench function
+                        generators and of the stimulus sources used in nerve and muscle experiments.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">e</div>
+                    <h3>Timing references for sampled systems</h3>
+                    <p>An RC oscillator provides the clock reference for slow-rate analogue-to-digital converters
+                        and for timing in low-power instrumentation where a quartz crystal would be excessive.</p>
+                </div>
+                <div class="card">
+                    <div class="card-num">f</div>
+                    <h3>Carrier for amplitude and frequency modulation</h3>
+                    <p>Telemetry links and isolated medical front-ends modulate a sinusoidal carrier with the
+                        signal of interest. The carrier originates in an oscillator of the type discussed here.</p>
+                </div>
+            </div>
+
+            <div class="callout">
+                The oscillators discussed here are linear oscillators: the steady-state output is a sinusoid set by
+                the resonance of an RC or LC network. Switching oscillators that produce square or triangular
+                waveforms by repeatedly charging and discharging a capacitor through a comparator are covered in the
+                following pages on multivibrators.
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script defer src="../components/katex_label.js"></script>
+    <script defer src="../components/plot_helpers.js"></script>
+    <script defer src="op_amp_oscillator_JS/plot_feedback_block.js"></script>
+    <script defer src="op_amp_oscillator_JS/plot_wien_circuit.js"></script>
+    <script defer src="op_amp_oscillator_JS/plot_wien_filters.js"></script>
+    <script defer src="op_amp_oscillator_JS/plot_wien_decomposition.js"></script>
+    <script defer src="op_amp_oscillator_JS/plot_loop_bode.js"></script>
+    <script defer src="op_amp_oscillator_JS/scope_oscillator.js"></script>
+</body>
+
+</html>

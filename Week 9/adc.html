@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Analog-to-Digital Conversion</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="adc_JS/adc.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 9</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 9 · ANALOG-TO-DIGITAL CONVERSION</div>
+            <h1 class="hero"><em>Analog-to-digital</em> conversion.</h1>
+            <p class="sub">An analog-to-digital converter (ADC) maps a continuous voltage onto a finite set of
+                integer levels. It does so in two stages. <em>Sampling</em> discretises the signal in time;
+                <em>quantisation</em> discretises it in amplitude. The output is a sequence of $N$-bit numbers
+                that downstream digital systems can store, transmit, and process without further loss of fidelity.
+                This page develops both stages, derives the resolution and noise limits they impose, and examines
+                the successive-approximation register (SAR) architecture used in most biomedical instrumentation.
+            </p>
+            <div class="tags">
+                <span class="field-tag">sampling</span>
+                <span class="field-tag">quantisation</span>
+                <span class="field-tag">SAR</span>
+                <span class="field-tag">resolution</span>
+                <span class="field-tag">noise immunity</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= POSITION SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// the ADC in the signal chain</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 01 · CHAIN ================= -->
+    <section class="scene" id="sec-chain">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>placement</span></div>
+            <h2>The ADC as the boundary between <em class="input">analog</em> and <em class="output">digital</em>
+                domains.</h2>
+
+            <p class="lead">In a biomedical instrument the signal traverses several analog stages before any
+                digital processing is possible. An electrode delivers a biopotential of a few millivolts. An
+                instrumentation amplifier raises that signal to a level on the order of volts. An anti-alias
+                filter then limits its bandwidth to below half of the intended sample rate. At every point along
+                this chain the voltage is continuous in both time and amplitude.</p>
+
+            <p>The ADC is the final analog block. It samples the conditioned voltage at regular intervals and
+                assigns each sample an integer code. Once the signal is a sequence of integers, all subsequent
+                processing (filtering, peak detection, heart-rate estimation, logging, transmission) is performed
+                in software on a microcontroller and adds no further analog distortion.</p>
+
+            <p>The comparator and Schmitt trigger described earlier in this week are one-bit decision elements.
+                An ADC generalises the same operation to $N$ bits. A successive-approximation ADC reuses a single
+                comparator over $N$ clock cycles. A flash ADC instead places $2^N - 1$ comparators in parallel
+                and resolves all bits within one clock edge. The trade-off is conversion latency against silicon
+                area and power consumption.</p>
+
+            <div class="callout">
+                The figure on the right traces a single ECG beat through the full instrument. The shaded block
+                is the converter. Everything to its left is analog. Everything to its right is a stream of
+                integer codes.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="plot-box chain-box">
+                    <div class="label">signal chain · <b>electrode → ADC → MCU</b></div>
+                    <svg id="plot-chain" class="chain-svg"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SAMPLING SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// sampling in time</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 02 · SAMPLING ================= -->
+    <section class="scene" id="sec-sample">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>sampling</span></div>
+            <h2>Discretization of <em class="input">continuous waveforms</em> to a discrete <em class="output">set of
+                    levels</em>.</h2>
+
+            <p class="lead">A sampling clock at rate $f_s$ defines the instants at which the converter inspects
+                its input. Voltages between successive clock edges are discarded. The output is a discrete-time
+                sequence $x[n] = v(n / f_s)$, with one sample per period $T_s = 1/f_s$.</p>
+
+            <p>The Nyquist sampling theorem states that a band-limited signal of highest frequency
+                $f_\mathrm{in}$ can be recovered exactly from its samples if and only if $f_s > 2 f_\mathrm{in}$.
+                When $f_s \le 2 f_\mathrm{in}$ the same sample sequence is consistent with at least one
+                lower-frequency signal as well as the original, and the converter cannot distinguish the two. The
+                lower-frequency replica is called an alias. It is what subsequent digital processing receives.</p>
+
+            <p>In the figure on the right, raising $f_\mathrm{in}$ above the dashed Nyquist marker at $f_s/2$
+                folds the sampled trace onto a lower-frequency replica. In practice an anti-alias filter precedes
+                every ADC and removes spectral content above $f_s/2$ to prevent this in advance.</p>
+
+            <div class="callout">
+                Representative sample rates: audio compact discs use $f_s = 44.1\,\mathrm{kHz}$ for content up to
+                $20\,\mathrm{kHz}$. Clinical ECG monitors operate at $250$ to $500\,\mathrm{Hz}$, well above the
+                few-tens-of-hertz bandwidth of the cardiac signal. EMG and EEG fall between these two ranges.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">input freq</span>
+                        <input type="range" id="smp-fin" min="0.5" max="12" step="0.1" value="2.0">
+                        <span class="val" id="smp-fin-val">2.0 Hz</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">sample rate</span>
+                        <input type="range" id="smp-fs" min="3" max="40" step="0.5" value="20">
+                        <span class="val" id="smp-fs-val">20 Hz</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">continuous input · <b>v(t)</b> with samples at <b>f<sub>s</sub></b></div>
+                    <svg id="plot-smp-trace"></svg>
+                </div>
+                <div class="plot-box short-box">
+                    <div class="label">reconstructed · <b>zero-order hold</b> from sample sequence</div>
+                    <svg id="plot-smp-recon"></svg>
+                </div>
+                <div class="readout" id="smp-readout">
+                    <div class="item"><span class="k">Nyquist limit</span><span class="v" id="smp-nyq">10.0 Hz</span>
+                    </div>
+                    <div class="item"><span class="k">f<sub>in</sub> / (f<sub>s</sub>/2)</span><span class="v"
+                            id="smp-ratio">0.20</span></div>
+                    <div class="item"><span class="k">aliasing</span><span class="v on" id="smp-alias">no</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= QUANTISATION SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// quantisation in amplitude</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 03 · QUANTISATION ================= -->
+    <section class="scene" id="sec-quant">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>quantisation</span></div>
+            <h2>Discretising amplitude into <em class="output">$2^N$ levels</em>.</h2>
+
+            <p class="lead">Sampling discretises time. Quantisation discretises amplitude. An $N$-bit converter
+                with full-scale range $V_\mathrm{ref}$ divides that range into $2^N$ equally spaced levels. Each
+                sample is rounded to the nearest level and reported as the integer index of that level. The
+                voltage spacing between adjacent levels is the least-significant bit (LSB):</p>
+
+            <p>$$ \mathrm{LSB} = \frac{V_\mathrm{ref}}{2^N}. $$</p>
+
+            <p>The rounding error is bounded by $\pm \mathrm{LSB}/2$ and is well approximated by an additive
+                uniform noise source. For a full-scale sinusoid the resulting signal-to-quantisation-noise ratio
+                is</p>
+
+            <p>$$ \mathrm{SQNR} \approx 6.02\,N + 1.76\;\mathrm{dB}, $$</p>
+
+            <p>so each additional bit improves the SQNR by approximately $6\,\mathrm{dB}$. A $3$-bit converter
+                produces a visibly stepped output. Eight bits is sufficient for control signals and coarse
+                biomedical recording. Twelve bits is the standard resolution for ECG and EMG. Sixteen to
+                twenty-four bits are reserved for audio and precision measurement.</p>
+
+            <p>In the figure on the right, the bit-depth slider varies $N$. The lower trace shows the residual
+                error $v(t) - v_q(t)$ between the analog input and its quantised version on the same time axis.</p>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">bit depth N</span>
+                        <input type="range" id="q-bits" min="1" max="8" step="1" value="3">
+                        <span class="val" id="q-bits-val">3 bits</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">V<sub>ref</sub></span>
+                        <input type="range" id="q-vref" min="1" max="5" step="0.1" value="2.0">
+                        <span class="val" id="q-vref-val">2.0 V</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">analog vs quantised · <b>v(t)</b> and <b>v<sub>q</sub>(t)</b></div>
+                    <svg id="plot-q-trace"></svg>
+                </div>
+                <div class="plot-box short-box">
+                    <div class="label">quantisation error · <b>v(t) − v<sub>q</sub>(t)</b></div>
+                    <svg id="plot-q-err"></svg>
+                </div>
+                <div class="readout" id="q-readout">
+                    <div class="item"><span class="k">levels</span><span class="v" id="q-levels">8</span></div>
+                    <div class="item"><span class="k">LSB</span><span class="v" id="q-lsb">250 mV</span></div>
+                    <div class="item"><span class="k">SQNR</span><span class="v" id="q-sqnr">19.8 dB</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SAR SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// the successive-approximation architecture</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 04 · SAR OPERATION ================= -->
+    <section class="scene" id="sec-sar">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>SAR algorithm</span></div>
+            <h2>Analog-to-digital conversion via <em class="thresh">binary search</em>.</h2>
+
+            <p class="lead">A successive-approximation register (SAR) ADC consists of a single comparator, an
+                internal digital-to-analog converter (DAC), and an $N$-bit register. The converter resolves a
+                held input voltage by binary search of the reference range, processing one bit per clock cycle
+                starting from the most-significant bit.</p>
+
+            <p>On each cycle the DAC produces a trial voltage $V_\mathrm{DAC}$ and the comparator returns a
+                single binary decision:</p>
+
+            <ul class="bullets">
+                <li>if $V_\mathrm{in} \ge V_\mathrm{DAC}$, the trial bit is retained as $1$ and the next trial
+                    moves upward by half of the previous step;</li>
+                <li>if $V_\mathrm{in} < V_\mathrm{DAC}$, the trial bit is cleared to $0$ and the next trial moves
+                        downward by half of the previous step.</li>
+            </ul>
+
+            <p>After $N$ cycles all bits have been resolved and the register holds the final code. The
+                conversion time is fixed at $N$ clock periods regardless of input value. SAR converters are
+                therefore deterministic in latency and dissipate energy only when their internal switches change
+                state.</p>
+
+            <p>In the figure on the right, varying $V_\mathrm{in}$ shows the convergence of the algorithm. Each
+                step halves the remaining uncertainty until that uncertainty equals one LSB.</p>
+
+            <div class="callout">
+                The comparator described in earlier sections is reused $N$ times within a SAR converter.
+                Hysteresis, which is desirable in a Schmitt trigger, is undesirable here because every decision
+                must reflect the present input rather than a previous one. SAR comparators are therefore
+                optimised for low input-referred offset and fast settling rather than for snap action.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">V<sub>in</sub></span>
+                        <input type="range" id="sar-vin" min="0" max="1" step="0.001" value="0.671">
+                        <span class="val" id="sar-vin-val">0.671 V<sub>ref</sub></span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">step</span>
+                        <input type="range" id="sar-step" min="0" max="8" step="1" value="8">
+                        <span class="val" id="sar-step-val">8 / 8</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill" id="sar-play">play</span>
+                    <span class="pill" id="sar-reset">reset</span>
+                </div>
+                <div class="plot-box tall-box">
+                    <div class="label">DAC trajectory · <b>V<sub>DAC</sub>(k)</b> against bit index k</div>
+                    <svg id="plot-sar-trace"></svg>
+                </div>
+                <div class="sar-bits" id="sar-bits"></div>
+                <div class="readout" id="sar-readout">
+                    <div class="item"><span class="k">target V<sub>in</sub></span><span class="v" id="sar-rd-vin">—
+                            V<sub>ref</sub></span></div>
+                    <div class="item"><span class="k">V<sub>DAC</sub></span><span class="v" id="sar-rd-vdac">—
+                            V<sub>ref</sub></span></div>
+                    <div class="item"><span class="k">code</span><span class="v" id="sar-rd-code">00000000</span></div>
+                    <div class="item"><span class="k">decimal</span><span class="v" id="sar-rd-dec">—</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SECTION 05 · CIRCUIT ================= -->
+    <section class="scene" id="sec-circuit">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>SAR implementation</span>
+            </div>
+            <h2>Circuit-level structure of a <em class="output">SAR ADC</em>.</h2>
+
+            <p class="lead">The figure on the right shows the canonical SAR ADC. The held input $V_\mathrm{in}$
+                drives the non-inverting input of a clocked comparator. The internal DAC drives the inverting
+                input. A control register stores the bits resolved so far and presents them to the DAC. A clock
+                advances the algorithm by one bit per active edge.</p>
+
+            <p>The DAC is typically implemented as a binary-weighted capacitor array because capacitors carry
+                no static current and match well in modern CMOS. The comparator is a clocked latch so that its
+                output is valid by the next rising edge. The control register is a simple shift-and-test state
+                machine that maintains the partial code.</p>
+
+            <p>The reference voltage $V_\mathrm{ref}$ is held constant throughout the conversion. It sets the
+                converter's full-scale range, so the trial voltage at cycle $k$ is
+                $V_\mathrm{DAC}(k) = (\text{code}_k / 2^N)\,V_\mathrm{ref}$. Only the code changes from one
+                cycle to the next. $V_\mathrm{ref}$ does not.</p>
+
+            <p>The capacitors carry binary-weighted shares of the full scale: $V_\mathrm{ref}/2$,
+                $V_\mathrm{ref}/4$, $V_\mathrm{ref}/8$, and so on down to $V_\mathrm{ref}/2^N$. A switch
+                connects each capacitor to either $V_\mathrm{ref}$ or ground according to the current value of
+                its bit. Capacitors whose bits equal $1$ sum their fractions onto the comparator's inverting
+                input. The total of that sum is $V_\mathrm{DAC}$. The comparator therefore tests, on every
+                cycle, whether $V_\mathrm{in}$ lies above or below the present $V_\mathrm{DAC}$. The result
+                becomes the new bit, and the next cycle adjusts the capacitor pattern accordingly.</p>
+
+            <p>The complete loop comprises one comparator, one DAC, $N$ clock cycles, and one register. Power,
+                area, and design complexity are all modest. SAR ADCs are therefore the dominant architecture in
+                biomedical front-ends, spanning from $8$-bit pulse oximeters to $24$-bit electroencephalographs.</p>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">animation speed</span>
+                        <input type="range" id="circuit-speed" min="0.25" max="2" step="0.05" value="1">
+                        <span class="val" id="circuit-speed-val">1.00×</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">step</span>
+                        <input type="range" id="circuit-step" min="0" max="8" step="1" value="0">
+                        <span class="val" id="circuit-step-val">0 / 8</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill" id="circuit-pause">pause</span>
+                    <span class="pill" id="circuit-reset">reset</span>
+                </div>
+                <div class="plot-box circuit-box">
+                    <div class="label">circuit · <b>SAR ADC topology</b></div>
+                    <svg id="plot-circuit" class="chain-svg"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= BENEFITS SECTION HEADER ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// the case for digitisation</span><span class="bar"></span></div>
+    </div>
+
+    <!-- ================= SECTION 06 · NOISE ROBUSTNESS ================= -->
+    <section class="scene" id="sec-noise">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>noise immunity</span></div>
+            <h2>Motivation: <em class="high">regenerable</em> digital signals.</h2>
+
+            <p class="lead">Every analog stage adds noise to the signals that pass through it. When a signal
+                traverses multiple stages (cable, amplifier, filter, transmitter), the noise contributions add
+                and the signal-to-noise ratio degrades monotonically with the number of stages.</p>
+
+            <p>A digital signal admits only two valid states. Provided the noise on a wire remains below the
+                threshold gap separating $0$ from $1$, any subsequent comparator can regenerate a clean copy.
+                The ADC marks the transition into this regime. Once a voltage has been mapped to a bit pattern,
+                that pattern can be transmitted, stored, copied, and processed indefinitely without further
+                degradation.</p>
+
+            <p>In the figure on the right, the same input is processed by three identical noisy stages in two
+                configurations. The upper trace is fully analog. The noise band widens at each stage. The lower
+                trace is digitised after the first stage and the bit pattern is regenerated at every subsequent
+                stage. Its noise band remains bounded by half of an LSB.</p>
+
+            <p>As the per-stage noise is increased, the analog signal sinks into its noise floor while the
+                digital signal remains intact, up to the point at which the noise exceeds the bit-decision
+                threshold and digital errors appear. The transition between graceful analog degradation and
+                abrupt digital failure is itself useful: it tells the system designer unambiguously when the
+                link has stopped functioning.</p>
+
+            <div class="callout">
+                Noise immunity is only one consequence of digitisation. Once a sample is a number it can be
+                filtered with mathematics rather than analog components, shifted in time by an index offset,
+                multiplied by exact constants, and stored without decay. Almost every capability of modern
+                instruments (programmable filters, data logging, networked monitoring, machine learning on
+                biosignals) is a consequence of this single conversion step.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">stage noise σ</span>
+                        <input type="range" id="nse-sigma" min="0" max="0.4" step="0.005" value="0.06">
+                        <span class="val" id="nse-sigma-val">0.06</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">digital threshold</span>
+                        <input type="range" id="nse-thr" min="0.1" max="0.6" step="0.01" value="0.45">
+                        <span class="val" id="nse-thr-val">0.45</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">analog chain · <b>noise accumulates over three stages</b></div>
+                    <svg id="plot-nse-analog"></svg>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">digital chain · <b>regenerated at every stage</b></div>
+                    <svg id="plot-nse-digital"></svg>
+                </div>
+                <div class="readout" id="nse-readout">
+                    <div class="item"><span class="k">analog SNR</span><span class="v" id="nse-asnr">— dB</span></div>
+                    <div class="item"><span class="k">digital errors</span><span class="v on" id="nse-derr">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script src="adc_JS/scene_chain.js"></script>
+    <script src="adc_JS/scene_sampling.js"></script>
+    <script src="adc_JS/scene_quantisation.js"></script>
+    <script src="adc_JS/scene_sar.js"></script>
+    <script src="adc_JS/scene_circuit.js"></script>
+    <script src="adc_JS/scene_noise.js"></script>
+</body>
+
+</html>

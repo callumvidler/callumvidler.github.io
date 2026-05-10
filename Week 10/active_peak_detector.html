@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Active and Precision Peak Detectors</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="passive_peak_detector_JS/passive_peak_detector.css">
+    <link rel="stylesheet" href="active_peak_detector_JS/active_peak_detector.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 10</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <div class="deck" id="deck">
+
+        <!-- ═════════════ SLIDE 0 · TITLE ═════════════ -->
+        <section class="slide title-slide active" data-slide="0">
+            <div class="copy">
+                <div class="meta">BMEN90033 · WEEK 10 · ACTIVE PEAK DETECTORS</div>
+                <h1 class="slide-hero">Active peak <em>detection</em>.</h1>
+                <div class="brief-box">
+                    <div class="brief-label">Overview</div>
+                    <p class="brief-body">The passive peak detector of the preceding chapter is limited by
+                        three properties of its components. The diode forward voltage $V_F$ sets a lower bound
+                        on the smallest input that can produce an output. The source impedance in series with
+                        the diode limits the rate at which the storage capacitor charges to a new peak. Any
+                        finite load impedance at the output discharges the capacitor between successive peaks.
+                        This chapter shows that enclosing the diode and the storage capacitor within the
+                        feedback path of an operational amplifier removes all three limitations. The
+                        development proceeds in four stages: the precision half-wave rectifier; the precision
+                        peak detector; a comparison of passive and active detectors on a common input; and
+                        application to the seizure-detection case study introduced earlier in the week.</p>
+                </div>
+                <div class="tags">
+                    <span class="field-tag">op-amp</span>
+                    <span class="field-tag">super diode</span>
+                    <span class="field-tag">precision rectifier</span>
+                    <span class="field-tag">hold capacitor</span>
+                    <span class="field-tag">buffer</span>
+                    <span class="field-tag">reset</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 1 · PRECISION RECTIFIER ═════════════ -->
+        <section class="slide" data-slide="1" id="sec-precrect">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the precision half-wave rectifier</span></div>
+                <h2>Eliminating $V_F$ with <em class="output">negative feedback</em>.</h2>
+
+                <p class="lead">The active counterpart of the diode rectifier places the diode inside the
+                    feedback path of an operational amplifier. The input drives the non-inverting terminal; the
+                    op-amp output drives the anode of the diode; the cathode forms the output node; and
+                    feedback returns from the output node to the inverting terminal. The resulting circuit is
+                    the precision half-wave rectifier, or super diode.</p>
+
+                <p>For a positive input, the op-amp adjusts its output until $V_\mathrm{out} = V_\mathrm{in}$.
+                    The op-amp output therefore settles at $V_\mathrm{in} + V_F$, and the diode forward voltage
+                    is supplied by the loop rather than subtracted from the signal. Referred to the output, the
+                    residual error is $V_F / A_\mathrm{OL}$, where $A_\mathrm{OL}$ is the open-loop gain. For a
+                    typical op-amp this error is of order microvolts. For a negative input, the op-amp
+                    saturates at its negative supply rail, the diode is reverse biased, and the output is zero.</p>
+
+                <p>Figure 1.2 compares the two rectifiers on a common sinusoidal input. The passive output is
+                    offset below the input by $V_F$ and remains at zero for any input not exceeding $V_F$. The
+                    precision output reproduces the positive half-cycle of the input from zero, independent of
+                    amplitude.</p>
+
+                <div class="callout">
+                    The op-amp has finite slew rate and must recover from negative saturation at every zero
+                    crossing. Near the crossing, the output departs from the ideal half-wave for a short
+                    interval set by the slew rate and the gain-bandwidth product. Connecting a second diode
+                    from the output node to the inverting input clamps the op-amp output one diode drop above
+                    ground during the blocked half-cycle and reduces the recovery interval.
+                </div>
+            </div>
+
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">amplitude</span>
+                            <input type="range" id="ap-r-amp" min="0.1" max="2.5" step="0.05" value="1.4">
+                            <span class="val" id="ap-r-amp-val">1.40 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">V<sub>F</sub></span>
+                            <input type="range" id="ap-r-vf" min="0" max="1.0" step="0.01" value="0.65">
+                            <span class="val" id="ap-r-vf-val">0.65 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">f</span>
+                            <input type="range" id="ap-r-f" min="0.5" max="4" step="0.1" value="1.2">
+                            <span class="val" id="ap-r-f-val">1.2 Hz</span>
+                        </span>
+                    </div>
+                    <div class="plot-box circuit-box">
+                        <div class="label">figure 1.1 · <b>precision half-wave rectifier</b></div>
+                        <svg id="plot-ap-r-circ"></svg>
+                    </div>
+                    <div class="plot-box trace-box">
+                        <div class="label">figure 1.2 · output <b>v<sub>out</sub>(t)</b> of the passive and precision rectifiers for a common input <b>v<sub>in</sub>(t)</b></div>
+                        <svg id="plot-ap-r-trace"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">peak v<sub>in</sub></span><span class="v" id="ap-r-vp">1.40 V</span></div>
+                        <div class="item"><span class="k">passive peak</span><span class="v" id="ap-r-vp-pas">0.75 V</span></div>
+                        <div class="item"><span class="k">precision peak</span><span class="v" id="ap-r-vp-pre">1.40 V</span></div>
+                        <div class="item"><span class="k">small signal</span><span class="v" id="ap-r-small">passes</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 2 · ACTIVE PEAK DETECTOR ═════════════ -->
+        <section class="slide" data-slide="2" id="sec-active">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the precision peak detector</span></div>
+                <h2>Three modes of operation: <em class="output">acquire, hold, reset</em>.</h2>
+
+                <p class="lead">The precision peak detector comprises four functional blocks. The super
+                    diode of Section 01, formed by $A_1$ and $D_1$, drives a storage capacitor $C$ at its
+                    output node. A unity-gain buffer $A_2$ presents the capacitor voltage to the load. An
+                    n-channel MOSFET $M_\mathrm{rst}$ in parallel with $C$ provides a controlled discharge
+                    path. Outer feedback returns from the buffer output to the inverting input of $A_1$,
+                    enclosing the entire signal chain within a single feedback loop.</p>
+
+                <p>Operation reduces to three modes, selected by the relative values of the input
+                    $V_\mathrm{in}$, the capacitor voltage $V_C$, and the reset gate signal
+                    $\phi_\mathrm{rst}$.</p>
+
+                <h3>Acquire: $V_\mathrm{in} > V_C$, $\phi_\mathrm{rst} = 0$</h3>
+                <p>When the input exceeds the held voltage, $A_1$ drives $D_1$ into conduction and the
+                    capacitor charges. The outer feedback loop forces $V_C$ to track $V_\mathrm{in}$; both the
+                    diode forward voltage $V_F$ and the buffer offset are divided by the open-loop gain rather
+                    than subtracted from the signal. The acquisition rate is set by the maximum source current
+                    of $A_1$ and by $C$: $\mathrm{d}V_C / \mathrm{d}t \approx I_\mathrm{src} / C$.</p>
+
+                <h3>Hold: $V_\mathrm{in} < V_C$, $\phi_\mathrm{rst} = 0$</h3>
+                <p>When the input falls below the held voltage, the output of $A_1$ saturates at its negative
+                    supply rail and $D_1$ becomes reverse biased. The capacitor is isolated from the source.
+                    The buffer $A_2$ presents $V_C$ to the load through a high input impedance, so negligible
+                    discharge current flows and $V_C$ remains constant over the measurement window.</p>
+
+                <h3>Reset: $\phi_\mathrm{rst} = 1$</h3>
+                <p>When the gate signal is asserted, $M_\mathrm{rst}$ enters the triode region and discharges
+                    the capacitor through its on-resistance $R_\mathrm{on}$. A short reset pulse applied
+                    before each acquisition window returns $V_C$ to zero, so the value reported during the
+                    window is the maximum of $V_\mathrm{in}$ within that window alone.</p>
+
+                <div class="callout">
+                    The storage capacitor $C$ is the central design parameter. A smaller value shortens the
+                    acquisition time but increases the rate at which $V_C$ droops between peaks, owing to
+                    leakage through the reverse-biased diode and the buffer input. A FET-input op-amp with
+                    bias current of order tens of picoamperes holds a $1\,\mathrm{nF}$ storage capacitor flat
+                    to within $1\,\mathrm{mV}$ over a hundred milliseconds.
+                </div>
+            </div>
+
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">amplitude</span>
+                            <input type="range" id="ap-a-amp" min="0.05" max="2.5" step="0.05" value="0.30">
+                            <span class="val" id="ap-a-amp-val">0.30 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">V<sub>F</sub></span>
+                            <input type="range" id="ap-a-vf" min="0" max="1.0" step="0.01" value="0.60">
+                            <span class="val" id="ap-a-vf-val">0.60 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">window</span>
+                            <input type="range" id="ap-a-win" min="60" max="600" step="5" value="300">
+                            <span class="val" id="ap-a-win-val">300 ms</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">f<sub>carrier</sub></span>
+                            <input type="range" id="ap-a-fc" min="4" max="40" step="0.5" value="14">
+                            <span class="val" id="ap-a-fc-val">14 Hz</span>
+                        </span>
+                    </div>
+                    <div class="plot-box circuit-box">
+                        <div class="label">figure 2.1 · <b>precision peak detector with reset</b></div>
+                        <svg id="plot-ap-a-circ"></svg>
+                    </div>
+                    <div class="plot-box trace-box">
+                        <div class="label">figure 2.2 · held output <b>v<sub>out</sub>(t)</b> of the passive and precision detectors for a common input <b>v<sub>in</sub>(t)</b></div>
+                        <svg id="plot-ap-a-trace"></svg>
+                    </div>
+                    <div class="plot-box short-box">
+                        <div class="label">figure 2.3 · reset waveform <b>φ<sub>rst</sub>(t)</b></div>
+                        <svg id="plot-ap-a-rst"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">peak v<sub>in</sub></span><span class="v" id="ap-a-vp">0.30 V</span></div>
+                        <div class="item"><span class="k">passive output</span><span class="v" id="ap-a-pas">0.00 V</span></div>
+                        <div class="item"><span class="k">precision output</span><span class="v" id="ap-a-pre">0.30 V</span></div>
+                        <div class="item"><span class="k">window</span><span class="v" id="ap-a-w">300 ms</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 3 · COMPARISON ON A REAL SIGNAL ═════════════ -->
+        <section class="slide" data-slide="3" id="sec-cmp">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>comparison on a representative input</span></div>
+                <h2>Three detectors on a <em class="output">common waveform</em>.</h2>
+
+                <p class="lead">The test waveform combines three features common in biopotential
+                    measurement: a slow baseline drift; a sequence of small spikes with amplitude comparable
+                    to the diode forward voltage; and a subsequent sequence of larger spikes whose envelope
+                    rises and then decays. The same waveform is processed by the diode-capacitor detector, the
+                    RC envelope detector, and the precision peak detector with periodic reset. The three
+                    outputs are overlaid for direct comparison.</p>
+
+                <h3>Diode-capacitor detector</h3>
+                <p>This circuit transfers charge to the storage capacitor only when the input exceeds $V_F$,
+                    so the small-spike interval is not registered. After the first large spike, the capacitor
+                    holds the all-time maximum and the output cannot follow the subsequent decay.</p>
+
+                <h3>RC envelope detector</h3>
+                <p>This circuit retains the diode threshold $V_F$ and adds a trade-off between ripple and
+                    envelope lag. With $\tau$ short enough to follow the falling envelope, the output ripples
+                    at the carrier frequency. With $\tau$ long enough to suppress the ripple, the output lags
+                    the envelope. Spikes below $V_F$ remain undetected.</p>
+
+                <h3>Precision peak detector</h3>
+                <p>The active detector reports, for each reset window, the largest value attained by
+                    $V_\mathrm{in}$ within that window. Because the diode is enclosed in the feedback loop,
+                    the small early spikes are captured. Because the storage capacitor is buffered from the
+                    load, the held value does not droop during a window.</p>
+
+                <div class="callout">
+                    The reset window is the only design parameter that must be matched to the input. It must
+                    be short enough that successive peaks of interest fall in different windows, and long
+                    enough that the acquisition time of one peak is small relative to the window. Within these
+                    bounds, the detector output is independent of the carrier frequency, the envelope
+                    frequency, and the diode forward voltage.
+                </div>
+            </div>
+
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">small spike</span>
+                            <input type="range" id="ap-c-sm" min="0.1" max="1.5" step="0.05" value="0.35">
+                            <span class="val" id="ap-c-sm-val">0.35 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">V<sub>F</sub></span>
+                            <input type="range" id="ap-c-vf" min="0" max="1.0" step="0.01" value="0.55">
+                            <span class="val" id="ap-c-vf-val">0.55 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">τ (RC)</span>
+                            <input type="range" id="ap-c-tau" min="20" max="2000" step="10" value="400">
+                            <span class="val" id="ap-c-tau-val">400 ms</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">window</span>
+                            <input type="range" id="ap-c-win" min="100" max="1500" step="10" value="600">
+                            <span class="val" id="ap-c-win-val">600 ms</span>
+                        </span>
+                    </div>
+                    <div class="plot-box trace-box">
+                        <div class="label">figure 3.1 · test input <b>v<sub>in</sub>(t)</b> comprising small spikes followed by a decaying spike train</div>
+                        <svg id="plot-ap-c-input"></svg>
+                    </div>
+                    <div class="plot-box trace-box">
+                        <div class="label">figure 3.2 · output of the diode-capacitor, RC envelope, and precision peak detectors</div>
+                        <svg id="plot-ap-c-out"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">small spikes seen</span><span class="v" id="ap-c-small">0 / 4</span></div>
+                        <div class="item"><span class="k">passive simple</span><span class="v" id="ap-c-simple">latched</span></div>
+                        <div class="item"><span class="k">passive RC</span><span class="v" id="ap-c-rc">lags</span></div>
+                        <div class="item"><span class="k">precision active</span><span class="v" id="ap-c-act">tracking</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 4 · BACK TO THE CASE STUDY ═════════════ -->
+        <section class="slide" data-slide="4" id="sec-casestudy">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>application to the seizure case study</span></div>
+                <h2>Resolving the <em class="output">amplitude branch</em>.</h2>
+
+                <p class="lead">The case study introduced earlier in Week 10 specified a circuit chain that
+                    must <strong>detect</strong>, <strong>measure</strong>, and <strong>track</strong> a
+                    recurring spike in the low-pass filtered electroencephalogram of a seizure-clinic patient.
+                    The clinically relevant feature is the rising envelope of the spikes in the seconds
+                    preceding a seizure, because this envelope is the predictive signature reported by
+                    clinicians.</p>
+
+                <p>The amplitude branch proposed in the case study consisted of a passive peak detector, $D +
+                    C \parallel R_\mathrm{leak}$. Three failure modes of this circuit are pertinent to the
+                    recorded signal:</p>
+
+                <ul class="bullets">
+                    <li><strong>Spikes below $V_F$ are not detected.</strong> Filtered EEG spikes have
+                        amplitudes in the millivolt range, whereas a silicon diode requires $V_F \approx
+                        0.6\,\mathrm{V}$ before conduction begins. The earliest pre-state spikes, which carry
+                        the greatest predictive value, are exactly those the passive circuit discards.</li>
+                    <li><strong>The held value droops between events.</strong> The leak resistor needed to
+                        release the previous hold also discharges the capacitor during the inter-spike
+                        interval. The amplitude reported is the peak minus a time-dependent offset rather than
+                        the peak itself.</li>
+                    <li><strong>A large peak masks subsequent smaller peaks.</strong> Until the leak time
+                        constant returns the held value to a sufficiently low level, no smaller spike can
+                        produce a measurable output. The shape of the rising envelope, the clinical feature of
+                        interest, is therefore lost.</li>
+                </ul>
+
+                <p>The precision peak detector developed in the preceding sections substitutes for the passive
+                    block one-for-one and removes all three failure modes. The diode sits within the op-amp
+                    feedback loop, so a millivolt-scale early spike charges the <em>storage capacitor</em>
+                    without the $V_F$ floor. The unity-gain buffer behind the storage capacitor isolates it
+                    from the downstream load, so the held value remains constant within a measurement window.
+                    The reset MOSFET across the storage capacitor clears the stored charge between windows, so
+                    each new spike is acquired from zero rather than masked by its predecessor.</p>
+
+                <p>The output reported to the clinician is therefore a step staircase: each window holds the
+                    maximum of $V_\mathrm{in}$ within it, and the sequence of held values reproduces the
+                    rising amplitude envelope specified in the brief. Spike counting is performed in parallel
+                    by the Schmitt-trigger and monostable branch; the precision detector replaces only the
+                    amplitude branch.</p>
+
+                <div class="callout">
+                    The storage capacitor is the single component that converts the precision rectifier of
+                    Section 01 into a peak detector. Its placement, on the output of the super diode and
+                    inside the feedback path of the buffer, allows a millivolt-scale EEG spike to register at
+                    the converter without the diode forward drop, and allows the held reading to remain valid
+                    until the next reset pulse arrives.
+                </div>
+
+                <a class="case-link" href="case_study.html">
+                    <span class="cl-eye">// open the case study</span>
+                    <span class="cl-h">Detecting pre-seizure spikes in clinical EEG</span>
+                    <span class="cl-sub">Slides 04 and 05 of the case study specify the passive peak block.
+                        Substituting the precision peak detector developed here for that block satisfies the
+                        brief.</span>
+                    <span class="cl-arr">→</span>
+                </a>
+            </div>
+
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">V<sub>F</sub></span>
+                            <input type="range" id="ap-cs-vf" min="0" max="1.0" step="0.01" value="0.60">
+                            <span class="val" id="ap-cs-vf-val">0.60 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">τ<sub>leak</sub></span>
+                            <input type="range" id="ap-cs-tau" min="200" max="4000" step="20" value="900">
+                            <span class="val" id="ap-cs-tau-val">900 ms</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">window</span>
+                            <input type="range" id="ap-cs-win" min="200" max="2000" step="10" value="900">
+                            <span class="val" id="ap-cs-win-val">900 ms</span>
+                        </span>
+                    </div>
+                    <div class="plot-box trace-box">
+                        <div class="label">figure 4.1 · pre-state input <b>v<sub>in</sub>(t)</b> with rising-amplitude spikes</div>
+                        <svg id="plot-ap-cs-input"></svg>
+                    </div>
+                    <div class="plot-box trace-box">
+                        <div class="label">figure 4.2 · held output of the passive detector (<b>D + C ∥ R<sub>leak</sub></b>) and of the precision detector (<b>storage capacitor, buffer, reset</b>)</div>
+                        <svg id="plot-ap-cs-out"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">spikes presented</span><span class="v" id="ap-cs-pres">8</span></div>
+                        <div class="item"><span class="k">passive captured</span><span class="v warn" id="ap-cs-pas">0 / 8</span></div>
+                        <div class="item"><span class="k">precision captured</span><span class="v on" id="ap-cs-pre">8 / 8</span></div>
+                        <div class="item"><span class="k">envelope on screen</span><span class="v on" id="ap-cs-env">visible</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ═════════════ DECK NAV ═════════════ -->
+    <div class="nav-hint">Use the dots or the arrow keys to advance through the slides.</div>
+    <div class="deck-nav">
+        <span class="arrow" id="nav-prev" aria-label="previous slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </span>
+        <span class="dots" id="nav-dots"></span>
+        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">5</span></span>
+        <span class="arrow" id="nav-next" aria-label="next slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18l6-6-6-6" />
+            </svg>
+        </span>
+    </div>
+
+    <script src="active_peak_detector_JS/scene_precision_rectifier.js"></script>
+    <script src="active_peak_detector_JS/scene_active_peak.js"></script>
+    <script src="active_peak_detector_JS/scene_compare.js"></script>
+    <script src="active_peak_detector_JS/scene_case_study_back.js"></script>
+    <script src="case_study_JS/nav.js"></script>
+</body>
+
+</html>

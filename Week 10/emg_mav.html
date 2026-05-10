@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Case Study · Mean Absolute Value of an EMG Signal</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="case_study_JS/case_study.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+    <style>
+        /* Local tweaks for the equation block on the title slide */
+        .eq-block {
+            margin: 22px auto 0;
+            padding: 18px 22px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-panel);
+            max-width: 640px;
+            text-align: center;
+        }
+        .eq-block .eq-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            color: var(--accent);
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+        .eq-block .eq-line { color: var(--fg); }
+        .eq-block .eq-note {
+            margin-top: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+        }
+
+        /* Side-by-side equations on slide 1 */
+        .eq-row {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-top: 12px;
+        }
+        .eq-row .eq-card {
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-2);
+        }
+        .eq-row .eq-card .ttl {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted); margin-bottom: 6px;
+        }
+        @media (max-width: 1000px) { .eq-row { grid-template-columns: 1fr; } }
+
+        /* Stage cards on the decomposition slide */
+        .stage-grid {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 12px; margin-top: 14px;
+        }
+        .stage-card {
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-2);
+        }
+        .stage-card .step {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px; letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--accent); margin-bottom: 4px;
+        }
+        .stage-card .name {
+            font-size: 15px; font-weight: 600; color: var(--fg);
+            margin-bottom: 6px;
+        }
+        .stage-card .desc { font-size: 13px; color: var(--text-dim); line-height: 1.55; }
+        @media (max-width: 1000px) { .stage-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 10 · Case Study</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <div class="deck" id="deck">
+
+        <!-- ═════════════ SLIDE 0 · TITLE ═════════════ -->
+        <section class="slide title-slide active" data-slide="0">
+            <div class="copy">
+                <div class="meta">BMEN90033 · WEEK 10 · CASE STUDY</div>
+                <h1 class="slide-hero">Mean absolute value of an <em>EMG signal</em>, in real time.</h1>
+                <div class="brief-box">
+                    <div class="brief-label">The brief</div>
+                    <p class="brief-body">As a biomedical engineer, you are designing a wearable EMG device.
+                        One of the functions your device needs to perform is to measure the mean absolute
+                        value of the signal in real time. Assume the input is a sinewave.</p>
+                    <div class="brief-question">
+                        <span class="brief-q-mark" aria-hidden="true">?</span>
+                        <p>What functions would you need to perform on your signal to obtain the mean
+                            absolute value?</p>
+                    </div>
+                </div>
+                <div class="eq-block">
+                    <div class="eq-label">mean absolute value</div>
+                    <div class="eq-line">
+                        $$ \mathrm{MAV} \;=\; \frac{1}{T}\int_{0}^{T} \bigl|\,x(t)\,\bigr|\,\mathrm{d}t $$
+                    </div>
+                    <div class="eq-note">discrete form: $\;\mathrm{MAV} = \tfrac{1}{N}\sum_{n=1}^{N} |x[n]|$</div>
+                </div>
+                <div class="tags">
+                    <span class="field-tag">EMG</span>
+                    <span class="field-tag">wearable</span>
+                    <span class="field-tag">MAV</span>
+                    <span class="field-tag">rectifier</span>
+                    <span class="field-tag">low-pass filter</span>
+                    <span class="field-tag">averaging</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 1 · THE INPUT AND THE TARGET ═════════════ -->
+        <section class="slide" data-slide="1">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the input</span></div>
+                <h2>The signal and the <em class="output2">target value</em>.</h2>
+                <p class="lead">The brief states the input is a sinewave, $x(t) = A\sin(\omega t)$. The mean
+                    absolute value is the time-average of $|x(t)|$ over a window $T$. For a sinewave with
+                    amplitude $A$ and a window that contains a whole number of half-cycles, the integral
+                    closes in form and the MAV settles to a constant.</p>
+
+                <div class="eq-row">
+                    <div class="eq-card">
+                        <div class="ttl">continuous</div>
+                        <div>$ \mathrm{MAV} = \tfrac{1}{T}\!\int_{0}^{T} |x(t)|\,\mathrm{d}t $</div>
+                    </div>
+                    <div class="eq-card">
+                        <div class="ttl">discrete (sampled)</div>
+                        <div>$ \mathrm{MAV} = \tfrac{1}{N}\!\sum_{n=1}^{N} |x[n]| $</div>
+                    </div>
+                </div>
+
+                <p style="margin-top:14px;">For $x(t) = A\sin(\omega t)$, evaluating the integral gives
+                    $\mathrm{MAV} = \tfrac{2A}{\pi} \approx 0.637\,A$. The target value below is plotted as
+                    a dashed line so the chain output in later slides can be read against it.</p>
+
+                <div class="callout">
+                    Two operations are required by the equation: take the absolute value of $x(t)$, then
+                    take the mean of that absolute value. The next slides build each operation from
+                    course primitives.
+                </div>
+            </div>
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">amplitude $A$</span>
+                            <input type="range" id="emg-A" min="0.2" max="2.0" step="0.01" value="1.0">
+                            <span class="val" id="emg-A-val">1.00 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">frequency</span>
+                            <input type="range" id="emg-f" min="20" max="200" step="1" value="80">
+                            <span class="val" id="emg-f-val">80 Hz</span>
+                        </span>
+                    </div>
+                    <div class="plot-box trace-box tall">
+                        <div class="label">input signal · <b>x(t) = A·sin(ωt)</b> with target MAV = 2A/π</div>
+                        <svg id="plot-emg-input"></svg>
+                    </div>
+                    <div class="readout" id="emg-input-readout">
+                        <div class="item"><span class="k">amplitude $A$</span><span class="v" id="emg-A-out">1.00 V</span></div>
+                        <div class="item"><span class="k">target MAV</span><span class="v" id="emg-mav-target">— V</span></div>
+                        <div class="item"><span class="k">2A/π</span><span class="v" id="emg-mav-coef">0.637·A</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 2 · DECOMPOSITION ═════════════ -->
+        <section class="slide" data-slide="2">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>two operations</span></div>
+                <h2>Split the equation into <em class="input">two stages</em>.</h2>
+                <p class="lead">The MAV equation is the composition of two operators: an absolute value
+                    on the instantaneous signal, and an integral over a finite window. Each maps to a
+                    standard analog block.</p>
+
+                <div class="stage-grid">
+                    <div class="stage-card">
+                        <div class="step">step 1 · |·|</div>
+                        <div class="name">Take the absolute value</div>
+                        <div class="desc">$\,y_1(t) = |x(t)|$. A negative half-cycle is reflected upwards.
+                            Implemented in hardware as a <strong>full-wave rectifier</strong>.</div>
+                    </div>
+                    <div class="stage-card">
+                        <div class="step">step 2 · ⟨·⟩</div>
+                        <div class="name">Take the running mean</div>
+                        <div class="desc">$\,y_2(t) = \tfrac{1}{T}\!\int_{t-T}^{t} y_1(\tau)\,\mathrm{d}\tau$.
+                            The DC component of $y_1$ is the MAV; the AC ripple at $2\omega$ is rejected
+                            by a <strong>low-pass filter</strong>.</div>
+                    </div>
+                </div>
+
+                <p style="margin-top:14px;">A rectified sinewave is a sum of a DC term equal to
+                    $\tfrac{2A}{\pi}$ and a Fourier series of even harmonics of $\omega$. Averaging,
+                    or low-pass filtering with cutoff well below $2\omega$, isolates that DC term.</p>
+
+                <div class="callout">
+                    The plot on the right marks the two stages on the same time axis: the input, the
+                    rectified signal, and the running mean. Slide 3 builds the rectifier; slide 4 builds
+                    the averaging stage; slide 5 connects them.
+                </div>
+            </div>
+            <div>
+                <div class="plot-stack">
+                    <div class="plot-box trace-box tall">
+                        <div class="label">input · <b>|x(t)|</b> · running mean ⟨|x|⟩</div>
+                        <svg id="plot-decomp"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">stage 1</span><span class="v">full-wave rectify</span></div>
+                        <div class="item"><span class="k">stage 2</span><span class="v">low-pass / average</span></div>
+                        <div class="item"><span class="k">output</span><span class="v" id="decomp-mav">2A/π</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 3 · RECTIFIER ═════════════ -->
+        <section class="slide" data-slide="3">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>stage 1 · full-wave rectifier</span></div>
+                <h2>A <em class="thresh">precision rectifier</em> implements $|x(t)|$.</h2>
+                <p class="lead">A passive bridge of four diodes will rectify a sinewave, but each diode
+                    drop subtracts $V_D \approx 0.6$ V from the signal. EMG amplitudes are millivolts, so
+                    the diodes never turn on. A <strong>precision rectifier</strong> places the diode
+                    inside an op-amp feedback loop, dividing the diode drop by the open-loop gain so the
+                    output follows $|x(t)|$ down to nearly zero.</p>
+
+                <p>For a sinewave input $x(t) = A\sin(\omega t)$, the rectified output is</p>
+                <p style="text-align:center;margin:10px 0 14px;">
+                    $|x(t)| \;=\; A\bigl|\sin(\omega t)\bigr| \;=\; \dfrac{2A}{\pi} \;-\; \dfrac{4A}{\pi}\!\sum_{k=1}^{\infty}\!\dfrac{\cos(2k\omega t)}{4k^{2}-1}$
+                </p>
+                <p>The first term is the DC value the next stage must extract. The remaining terms are
+                    harmonics of $2\omega$, the lowest of which is at $2\omega$ itself. A low-pass
+                    filter with cutoff well below $2\omega$ removes them.</p>
+
+                <div class="pros-cons">
+                    <div class="pc-card pros">
+                        <div class="ttl">// strengths</div>
+                        <ul>
+                            <li>Reflects negative half-cycles upwards exactly, with no diode-drop offset.</li>
+                            <li>Works on signals as small as a few millivolts, which a passive bridge cannot.</li>
+                            <li>Output is a continuous function, so the next stage averages without gating.</li>
+                        </ul>
+                    </div>
+                    <div class="pc-card cons">
+                        <div class="ttl">// weaknesses</div>
+                        <ul>
+                            <li>Requires a dual-supply op-amp with adequate slew rate at the EMG bandwidth.</li>
+                            <li>Output contains harmonics of $2\omega$ that must be filtered before display.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="callout">
+                    Slide the input amplitude to confirm that the rectified output tracks $A|\sin(\omega t)|$
+                    even at small amplitudes. The dashed line marks $2A/\pi$, the DC level the next stage
+                    will recover.
+                </div>
+            </div>
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">amplitude $A$</span>
+                            <input type="range" id="rect-A" min="0.05" max="2.0" step="0.01" value="1.0">
+                            <span class="val" id="rect-A-val">1.00 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">frequency</span>
+                            <input type="range" id="rect-f" min="20" max="200" step="1" value="80">
+                            <span class="val" id="rect-f-val">80 Hz</span>
+                        </span>
+                    </div>
+                    <div class="plot-box trace-box tall">
+                        <div class="label">input <b>x(t)</b> · rectified output <b>|x(t)|</b> · DC level 2A/π</div>
+                        <svg id="plot-rect"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">peak |x|</span><span class="v" id="rect-peak">— V</span></div>
+                        <div class="item"><span class="k">DC component</span><span class="v" id="rect-dc">— V</span></div>
+                        <div class="item"><span class="k">lowest harmonic</span><span class="v" id="rect-h1">— Hz</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 4 · AVERAGING ═════════════ -->
+        <section class="slide" data-slide="4">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>stage 2 · averaging</span></div>
+                <h2>A <em class="output">low-pass filter</em> extracts the mean.</h2>
+                <p class="lead">Averaging in continuous time is integration over a window. A first-order
+                    RC low-pass filter is the analog approximation: the output is a weighted moving
+                    average of the input with an exponential window of time constant
+                    $\tau = RC$ and cutoff $f_c = 1/(2\pi\tau)$.</p>
+
+                <p>The rectified signal is a DC term at $\tfrac{2A}{\pi}$ plus harmonics at $2\omega,
+                    4\omega, \dots$. A first-order low-pass filter at cutoff $f_c$ has magnitude
+                    $|H(f)| = 1/\sqrt{1 + (f/f_c)^2}$. Choosing $f_c \ll 2f_\mathrm{sig}$ attenuates
+                    every harmonic; the DC term passes unchanged, so the filter output settles to
+                    $\tfrac{2A}{\pi}$, which is the MAV.</p>
+
+                <div class="pros-cons">
+                    <div class="pc-card pros">
+                        <div class="ttl">// strengths</div>
+                        <ul>
+                            <li>Single resistor and capacitor; trivially small on a wearable PCB.</li>
+                            <li>Cutoff $f_c$ trades off ripple against settling time directly via $\tau = RC$.</li>
+                            <li>DC gain is unity, so the output reads the MAV in volts without a calibration constant.</li>
+                        </ul>
+                    </div>
+                    <div class="pc-card cons">
+                        <div class="ttl">// weaknesses</div>
+                        <ul>
+                            <li>Lower $f_c$ means slower response: the device cannot follow sudden envelope changes.</li>
+                            <li>First-order roll-off is gentle ($-20$ dB/decade); residual $2\omega$ ripple is
+                                always present unless cascaded.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="callout">
+                    Lower the cutoff to suppress ripple but watch the output take longer to settle. The
+                    dashed line marks the analytic target $\tfrac{2A}{\pi}$, so any offset visible at
+                    steady state is residual ripple, not bias.
+                </div>
+            </div>
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">cutoff $f_c$</span>
+                            <input type="range" id="avg-fc" min="0.5" max="40" step="0.1" value="5">
+                            <span class="val" id="avg-fc-val">5.0 Hz</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">frequency</span>
+                            <input type="range" id="avg-f" min="20" max="200" step="1" value="80">
+                            <span class="val" id="avg-f-val">80 Hz</span>
+                        </span>
+                    </div>
+                    <div class="plot-box trace-box tall">
+                        <div class="label">rectified <b>|x(t)|</b> · low-pass output <b>y(t)</b> · target 2A/π</div>
+                        <svg id="plot-avg"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">cutoff</span><span class="v" id="avg-fc-out">5.0 Hz</span></div>
+                        <div class="item"><span class="k">τ = RC</span><span class="v" id="avg-tau">— ms</span></div>
+                        <div class="item"><span class="k">steady-state</span><span class="v" id="avg-ss">— V</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 5 · FULL CHAIN ═════════════ -->
+        <section class="slide" data-slide="5">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the full chain</span></div>
+                <h2>The <em class="high">block diagram</em> that computes MAV.</h2>
+                <p class="lead">The two stages connect in series. The EMG sinewave enters the precision
+                    rectifier, the rectified signal feeds a first-order low-pass filter, and the filter
+                    output is the running mean absolute value. The chain is purely analog and runs
+                    continuously, so the output is available in real time without sampling or
+                    accumulation in software.</p>
+
+                <ul class="bullets">
+                    <li><strong>Pre-amp</strong> (instrumentation amplifier) lifts the millivolt EMG to a
+                        level that drives the rectifier's op-amp safely above its input-referred noise.</li>
+                    <li><strong>Precision rectifier</strong> outputs $|x(t)|$ with no diode-drop offset.</li>
+                    <li><strong>Low-pass filter</strong> at cutoff $f_c \ll 2f_\mathrm{sig}$ extracts the
+                        DC component, which equals $\tfrac{2A}{\pi}$ and is the MAV.</li>
+                </ul>
+
+                <div class="callout">
+                    The plot shows the input sinewave, the rectified signal, and the filter output on
+                    a shared time axis. Adjust the cutoff to confirm the output approaches
+                    $\tfrac{2A}{\pi}$ marked by the dashed line.
+                </div>
+            </div>
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">amplitude $A$</span>
+                            <input type="range" id="chain-A" min="0.2" max="2.0" step="0.01" value="1.0">
+                            <span class="val" id="chain-A-val">1.00 V</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">frequency</span>
+                            <input type="range" id="chain-f" min="20" max="200" step="1" value="80">
+                            <span class="val" id="chain-f-val">80 Hz</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">cutoff $f_c$</span>
+                            <input type="range" id="chain-fc" min="0.5" max="40" step="0.1" value="5">
+                            <span class="val" id="chain-fc-val">5.0 Hz</span>
+                        </span>
+                    </div>
+                    <div class="plot-box trace-box tall">
+                        <div class="label">input <b>x(t)</b> · rectified <b>|x(t)|</b> · MAV output <b>y(t)</b></div>
+                        <svg id="plot-mav-chain"></svg>
+                    </div>
+                    <div class="plot-box trace-box schematic-box">
+                        <div class="label">block diagram · EMG input → precision rectifier → low-pass filter → MAV</div>
+                        <svg id="plot-mav-chain-circuit"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">target 2A/π</span><span class="v" id="mav-target">— V</span></div>
+                        <div class="item"><span class="k">measured MAV</span><span class="v" id="mav-out">— V</span></div>
+                        <div class="item"><span class="k">error</span><span class="v" id="mav-err">— %</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 6 · APPLICATION · MYOELECTRIC PROSTHESIS ═════════════ -->
+        <section class="slide" data-slide="6">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>application · myoelectric prosthesis</span></div>
+                <h2>MAV drives a <em class="output2">prosthetic gripper</em>.</h2>
+                <p class="lead">A myoelectric prosthetic hand is controlled by surface EMG from the
+                    residual limb. The raw signal is bipolar and noisy; the controller cannot use it
+                    directly. The MAV envelope is the quantity that correlates with voluntary
+                    contraction force, so the chain from the previous slide is what the device runs in
+                    real time.</p>
+
+                <ul class="bullets">
+                    <li><strong>Detection</strong> — a threshold on the MAV separates a voluntary
+                        contraction from baseline activity, so the gripper only engages when the user
+                        intends to grip.</li>
+                    <li><strong>Proportional control</strong> — once above threshold, the MAV value
+                        sets motor drive, so a stronger contraction produces a firmer grip.</li>
+                    <li><strong>Smoother choice</strong> — three options for the averaging stage are
+                        provided. The first-order LPF is the analog default; the moving-window average
+                        is the literal $\tfrac{1}{T}\!\int|x|\,\mathrm{d}t$; a 1-D Kalman filter
+                        adapts its gain as the variance evolves and gives the cleanest envelope.</li>
+                    <li><strong>Latency vs. smoothness</strong> — the smoothing parameter $f_c$ sets
+                        the bandwidth of all three. Lower $f_c$ rejects more EMG burst noise but
+                        lengthens the delay between intent and grip. $f_c = 0$ is the limit of pure
+                        averaging.</li>
+                </ul>
+
+                <div class="callout">
+                    Drag the effort slider to simulate a contraction. Switch between the three
+                    smoothers and lower $f_c$ toward zero to see the trace flatten. The Kalman option
+                    gives the smoothest envelope at the same response time, because it weights new
+                    measurements against the running variance instead of using a fixed time constant.
+                </div>
+            </div>
+            <div>
+                <div class="plot-stack">
+                    <div class="toolbar">
+                        <span class="slider-group">
+                            <span class="lab">muscle effort</span>
+                            <input type="range" id="prst-effort" min="0" max="1" step="0.01" value="0">
+                            <span class="val" id="prst-effort-val">0 %</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="pill active" id="prst-mode-lpf">1st-order LPF</span>
+                        <span class="pill" id="prst-mode-mavg">moving avg</span>
+                        <span class="pill" id="prst-mode-kalman">kalman</span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">smoothing $f_c$</span>
+                            <input type="range" id="prst-fc" min="0" max="20" step="0.1" value="2">
+                            <span class="val" id="prst-fc-val">2.0 Hz</span>
+                        </span>
+                        <span class="divider"></span>
+                        <span class="slider-group">
+                            <span class="lab">threshold</span>
+                            <input type="range" id="prst-thr" min="0.05" max="0.6" step="0.01" value="0.18">
+                            <span class="val" id="prst-thr-val">0.18 V</span>
+                        </span>
+                    </div>
+                    <div class="plot-box trace-box tall">
+                        <div class="label">live EMG <b>x(t)</b> · MAV envelope <b>y(t)</b> · threshold</div>
+                        <svg id="plot-prst-emg"></svg>
+                    </div>
+                    <div class="plot-box trace-box schematic-box">
+                        <div class="label">prosthetic gripper · jaw angle ∝ grip force ∝ MAV</div>
+                        <svg id="plot-prst-hand"></svg>
+                    </div>
+                    <div class="readout">
+                        <div class="item"><span class="k">MAV</span><span class="v" id="prst-mav">— V</span></div>
+                        <div class="item"><span class="k">grip force</span><span class="v" id="prst-grip">0 %</span></div>
+                        <div class="item"><span class="k">state</span><span class="v off" id="prst-state">RELAXED</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ═════════════ DECK NAV ═════════════ -->
+    <div class="nav-hint">Use the dots or the arrow keys to advance through the slides.</div>
+    <div class="deck-nav">
+        <span class="arrow" id="nav-prev" aria-label="previous slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </span>
+        <span class="dots" id="nav-dots"></span>
+        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">7</span></span>
+        <span class="arrow" id="nav-next" aria-label="next slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18l6-6-6-6" />
+            </svg>
+        </span>
+    </div>
+
+    <script src="emg_mav_JS/scene_input.js"></script>
+    <script src="emg_mav_JS/scene_decomp.js"></script>
+    <script src="emg_mav_JS/scene_rect.js"></script>
+    <script src="emg_mav_JS/scene_avg.js"></script>
+    <script src="emg_mav_JS/scene_chain.js"></script>
+    <script src="emg_mav_JS/scene_chain_circuit.js"></script>
+    <script src="emg_mav_JS/scene_prosthesis.js"></script>
+    <script src="case_study_JS/nav.js"></script>
+</body>
+
+</html>

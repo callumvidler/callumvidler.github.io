@@ -1,0 +1,424 @@
+/* ══════════════════════════════════════════════════════════
+   emg_robotic_arm.html  ·  page-specific styles
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Common stack used on slides 1 and 2 ─── */
+.assemble-stack,
+.arm-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    max-width: 920px;
+    padding-top: 18px;
+}
+
+.tray-wrap,
+.chain-wrap {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-panel);
+    padding: 12px 14px;
+}
+
+.tray-label,
+.chain-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+/* ─── Tray of source blocks (slide 1) ─── */
+.block-tray {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 56px;
+}
+
+/* ─── Chain of slots ─── */
+.block-chain {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 72px;
+}
+
+.chain-slot {
+    flex: 0 0 auto;
+    min-width: 100px;
+    height: 64px;
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    background: var(--bg-2);
+    display: grid;
+    place-items: center;
+    text-align: center;
+    position: relative;
+    transition: border-color 0.12s, background 0.12s;
+}
+.chain-slot.over {
+    border-color: var(--accent);
+    background: var(--accent-soft-faint);
+}
+.chain-slot .slot-num {
+    position: absolute;
+    top: 4px;
+    left: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.10em;
+}
+.chain-slot.filled {
+    border-style: solid;
+}
+.chain-slot.correct {
+    border-color: var(--c-correct);
+    background: color-mix(in srgb, var(--c-correct) 12%, var(--bg-2));
+}
+.chain-slot.wrong {
+    border-color: var(--c-wrong);
+    background: color-mix(in srgb, var(--c-wrong) 10%, var(--bg-2));
+}
+
+.chain-arrow {
+    flex: 0 0 auto;
+    width: 14px;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    text-align: center;
+    user-select: none;
+}
+
+/* ─── Endcap chips that bracket the chain ─── */
+.chain-endcap {
+    flex: 0 0 auto;
+    min-width: 84px;
+    height: 64px;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-2);
+    display: grid;
+    place-items: center;
+    text-align: center;
+}
+.chain-endcap .top {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2px;
+}
+.chain-endcap .name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fg);
+    line-height: 1.15;
+}
+
+/* ─── Block tile (in tray, in slot, or in editable chain) ─── */
+.block-tile {
+    flex: 0 0 auto;
+    min-width: 96px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-2);
+    cursor: grab;
+    user-select: none;
+    text-align: center;
+    transition: border-color 0.12s, background 0.12s, transform 0.08s;
+}
+.block-tile:hover {
+    border-color: var(--border-hover);
+}
+.block-tile:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+.block-tile.dragging {
+    opacity: 0.4;
+}
+.block-tile .ttl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+}
+.block-tile .name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--fg);
+    line-height: 1.2;
+}
+
+/* In-slot tile takes the slot's full size */
+.chain-slot .block-tile {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    border: none;
+    background: transparent;
+    display: grid;
+    place-items: center;
+    padding: 4px 8px;
+}
+
+/* ─── Lab dashboard (slide 2) ─── */
+.slide.lab {
+    grid-template-columns: 1fr;
+    padding: 56px 18px 72px;
+    overflow-y: auto;
+    max-width: none;
+    align-items: stretch;
+}
+.slide.lab > .lab-view {
+    width: 100%;
+    min-height: calc(100vh - 128px);
+    height: 100%;
+}
+.lab-view {
+    display: grid;
+    grid-template-columns: minmax(300px, 24%) minmax(0, 1fr) minmax(280px, 22%);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+        "toolbar toolbar  toolbar"
+        "plots   hand     sidebar"
+        "chain   chain    chain";
+    gap: 12px;
+}
+.lab-toolbar { grid-area: toolbar; justify-content: center; }
+.lab-plots {
+    grid-area: plots;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+.lab-plots .lab-plot {
+    flex: 1 1 0;
+    min-height: 140px;
+    aspect-ratio: auto;
+}
+.lab-hand {
+    grid-area: hand;
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-2);
+    overflow: hidden;
+    min-height: 0;
+}
+.lab-hand #arm-three {
+    position: absolute;
+    inset: 0;
+}
+.lab-hand #arm-three canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+}
+.lab-sidebar {
+    grid-area: sidebar;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+}
+.lab-sidebar .webcam-panel { flex: 0 0 auto; }
+.lab-sidebar .finger-controls { flex: 1 1 0; min-height: 0; }
+.lab-chain {
+    grid-area: chain;
+    display: grid;
+    grid-template-columns: minmax(240px, 0.85fr) minmax(0, 2fr);
+    gap: 10px;
+}
+.lab-chain .tray-wrap,
+.lab-chain .chain-wrap {
+    margin: 0;
+}
+.lab-chain .block-tray { min-height: 56px; }
+.lab-chain .block-chain { min-height: 64px; }
+
+@media (max-width: 1100px) {
+    .lab-view {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "toolbar"
+            "hand"
+            "plots"
+            "sidebar"
+            "chain";
+    }
+    .lab-plots .lab-plot { aspect-ratio: 3 / 1; }
+    .lab-chain { grid-template-columns: 1fr; }
+}
+
+/* ─── Per-finger trace colours ─── */
+svg.ov .trace.f-thumb  { stroke: var(--c-input); }
+svg.ov .trace.f-index  { stroke: var(--c-output); }
+svg.ov .trace.f-middle { stroke: var(--c-output2); }
+svg.ov .trace.f-ring   { stroke: var(--c-thresh); }
+svg.ov .trace.f-pinky  { stroke: var(--c-pre); }
+
+/* ─── Sensor row + webcam panel ─── */
+.sensor-panel {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(0, 1.05fr);
+    gap: 14px;
+    align-items: stretch;
+}
+.finger-controls {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-panel);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.finger-row {
+    display: grid;
+    grid-template-columns: 18px 12px 56px 1fr 44px;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.12s, opacity 0.12s;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+}
+.finger-row:hover { background: var(--pill-bg); }
+.finger-row.disabled { opacity: 0.4; }
+.finger-row input[type="checkbox"] {
+    accent-color: var(--accent);
+    margin: 0;
+}
+.finger-row .swatch {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--muted);
+    box-shadow: 0 0 0 1px var(--bg-2) inset;
+}
+.finger-row.f-thumb  .swatch { background: var(--c-input); }
+.finger-row.f-index  .swatch { background: var(--c-output); }
+.finger-row.f-middle .swatch { background: var(--c-output2); }
+.finger-row.f-ring   .swatch { background: var(--c-thresh); }
+.finger-row.f-pinky  .swatch { background: var(--c-pre); }
+.finger-row .name {
+    color: var(--fg);
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    font-size: 10.5px;
+}
+.finger-row .bar {
+    position: relative;
+    height: 6px;
+    background: var(--slider-track);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.finger-row .bar .fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 0%;
+    background: var(--muted);
+    transition: width 0.05s linear;
+}
+.finger-row.f-thumb  .bar .fill { background: var(--c-input); }
+.finger-row.f-index  .bar .fill { background: var(--c-output); }
+.finger-row.f-middle .bar .fill { background: var(--c-output2); }
+.finger-row.f-ring   .bar .fill { background: var(--c-thresh); }
+.finger-row.f-pinky  .bar .fill { background: var(--c-pre); }
+.finger-row .val { color: var(--fg); text-align: right; font-size: 11px; }
+
+.finger-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 4px;
+}
+.finger-row.finger-row-rot .swatch { background: var(--accent); }
+.finger-row.finger-row-rot .bar .fill { background: var(--accent); width: 0%; }
+.finger-row.finger-row-rot .name { color: var(--accent); }
+.finger-row.finger-row-rot.disabled { opacity: 0.55; }
+.finger-row.finger-row-rot:not(.disabled) .bar .fill { width: 100%; }
+
+.webcam-panel {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-panel);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+}
+.webcam-panel .header {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+}
+.webcam-panel .header .status { color: var(--accent); }
+.webcam-panel .frame {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+.webcam-panel .frame .placeholder {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.10em;
+    text-transform: uppercase;
+}
+.webcam-panel .frame canvas.handpose-canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+}
+
+@media (max-width: 1100px) {
+    .sensor-panel { grid-template-columns: 1fr; }
+}
+
+/* The editable chain on slide 2 hides the slot numbers and uses solid borders */
+.block-chain.editable .chain-slot {
+    border-style: solid;
+}
+.block-chain.editable .chain-slot .slot-num {
+    display: none;
+}
+
+/* Use a wider plot column on slide 2 so the arm canvas reads well */
+.slide:has(.arm-three-box) {
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.7fr);
+}
+.slide:has(.arm-three-box) .arm-stack {
+    max-width: 1080px;
+}
+
+@media (max-width: 1000px) {
+    .slide:has(.arm-three-box) {
+        grid-template-columns: 1fr;
+    }
+    .chain-slot,
+    .chain-endcap {
+        min-width: 90px;
+    }
+}

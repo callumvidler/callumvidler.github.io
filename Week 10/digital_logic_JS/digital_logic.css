@@ -1,0 +1,232 @@
+/* digital_logic.html  ·  page-specific overrides
+   Inherits base tokens and layout rules from passive_peak_detector.css.
+   Adds a digital colour palette (logic-high green, logic-low grey, bus
+   accent), bit-toggle button styling, and a wider gate-grid aspect ratio. */
+
+:root {
+    --c-hi:        #34d399;
+    --c-lo:        #4a4f5f;
+    --c-bus:       #58a6ff;
+    --c-pmos:      #f5c451;
+    --c-nmos:      #5cd6ff;
+    --c-formula:   #b58df1;
+    --c-row-hl:    rgba(52, 211, 153, 0.10);
+    --c-row-bd:    rgba(52, 211, 153, 0.32);
+    --c-cell-bd:   rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] {
+    --c-hi:        #059669;
+    --c-lo:        #b3b8c4;
+    --c-bus:       #1d4ed8;
+    --c-pmos:      #b8801f;
+    --c-nmos:      #1474a8;
+    --c-formula:   #7d3cdc;
+    --c-row-hl:    rgba(5, 150, 105, 0.08);
+    --c-row-bd:    rgba(5, 150, 105, 0.30);
+    --c-cell-bd:   rgba(0, 0, 0, 0.08);
+}
+
+/* ---------- bit-toggle buttons ---------- */
+.bit-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 32px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--pill-bg);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    margin: 0 2px;
+    user-select: none;
+    letter-spacing: 0.04em;
+}
+.bit-btn:hover { border-color: var(--border-hover); }
+.bit-btn[data-on="1"] {
+    background: var(--c-hi);
+    color: var(--bg);
+    border-color: var(--c-hi);
+    font-weight: 600;
+}
+.bit-btn.mode-btn { width: auto; padding: 0 10px; }
+.bit-btn.mode-btn[data-on="0"]::after { content: ""; }
+
+.bit-row {
+    display: inline-flex; align-items: center; gap: 0;
+    padding: 4px 8px;
+}
+.bit-row .lab {
+    color: var(--muted); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    margin-right: 8px;
+}
+
+.readout-inline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--text-dim);
+    padding: 0 8px;
+}
+.readout-inline span { color: var(--c-hi); font-weight: 600; }
+
+/* ---------- formula stack on copy side ---------- */
+.formula-stack {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 12px 14px; margin: 10px 0 14px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--fg);
+    font-size: var(--math-size);
+}
+
+/* ---------- bullet list of gate operations ---------- */
+.gate-list {
+    list-style: none;
+    padding: 0; margin: 12px 0 16px;
+    display: flex; flex-direction: column; gap: 6px;
+}
+.gate-list li {
+    position: relative;
+    padding-left: 18px;
+    line-height: 1.55;
+}
+.gate-list li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: 0.62em;
+    width: 6px; height: 6px;
+    background: var(--c-hi);
+    border-radius: 1px;
+}
+.gate-list li b {
+    color: var(--fg);
+    font-weight: 600;
+}
+
+/* ---------- aspect ratios for digital diagrams ---------- */
+.plot-box.gate-grid-box { aspect-ratio: 0.85 / 1; }
+.plot-box.gate-box      { aspect-ratio: 2.6 / 1; }
+.plot-box.cmos-box      { aspect-ratio: 1.6 / 1; }
+.plot-box.ripple-box    { aspect-ratio: 2.4 / 1; }
+.plot-box.mux-box       { aspect-ratio: 1.9 / 1; }
+.plot-box.dec-box       { aspect-ratio: 1.4 / 1; }
+
+/* ---------- shared digital classes for SVG drawing ---------- */
+svg.dig text {
+    font-family: 'JetBrains Mono', monospace;
+    fill: var(--text-dim);
+    font-size: 12px;
+}
+svg.dig .wire        { stroke: var(--text-dim); stroke-width: 1.6; fill: none; }
+svg.dig .wire.hi     { stroke: var(--c-hi); stroke-width: 2.2; }
+svg.dig .wire.lo     { stroke: var(--c-lo); stroke-width: 1.6; }
+svg.dig .wire.bus    { stroke: var(--c-bus); stroke-width: 1.8; }
+svg.dig .gate        { stroke: var(--text-dim); stroke-width: 1.6; fill: var(--bg-panel); }
+svg.dig .gate.hi     { stroke: var(--c-hi); fill: var(--accent-soft-faint); }
+svg.dig .bubble      { stroke: var(--text-dim); stroke-width: 1.4; fill: var(--bg-2); }
+svg.dig .bubble.hi   { stroke: var(--c-hi); }
+svg.dig .lbl         { fill: var(--muted); font-size: 11px; }
+svg.dig .lbl.lit     { fill: var(--c-hi); font-weight: 600; }
+svg.dig .pin-dot     { fill: var(--text-dim); }
+svg.dig .pin-dot.hi  { fill: var(--c-hi); }
+
+svg.dig .truth-cell { font-size: 11px; }
+svg.dig .truth-cell.hi { fill: var(--c-hi); font-weight: 600; }
+svg.dig .truth-row-hl { fill: var(--c-row-hl); stroke: var(--c-row-bd); stroke-width: 1; }
+svg.dig .truth-grid line { stroke: var(--c-cell-bd); stroke-width: 1; }
+svg.dig .gate-title  { fill: var(--fg); font-size: 13px; font-weight: 600;
+                       letter-spacing: 0.04em; }
+svg.dig .gate-expr   { fill: var(--c-formula); font-size: 11px; }
+
+svg.dig .mos-body { fill: var(--bg-panel); stroke: var(--text-dim); stroke-width: 1.4; }
+svg.dig .mos-body.pmos { stroke: var(--c-pmos); }
+svg.dig .mos-body.nmos { stroke: var(--c-nmos); }
+svg.dig .rail { stroke: var(--text-dim); stroke-width: 2; }
+svg.dig .rail-lbl { fill: var(--muted); font-size: 11px; }
+
+/* ---------- slide deck shell ---------- */
+body { overflow: hidden; height: 100vh; }
+
+.deck {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+}
+
+.slide {
+    position: absolute; inset: 0;
+    padding: 78px 56px 90px;
+    overflow-y: auto;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(40px);
+    transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0.32s;
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
+    gap: 32px;
+    align-items: start;
+    max-width: 1500px; margin: 0 auto;
+}
+.slide.full { grid-template-columns: 1fr; }
+.slide.active {
+    opacity: 1; visibility: visible; transform: translateX(0);
+    transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0s;
+}
+.slide.prev { transform: translateX(-40px); }
+
+.slide .copy { max-width: 600px; }
+
+.slide.title-slide {
+    grid-template-columns: 1fr;
+    place-items: center;
+    text-align: center;
+}
+.slide.title-slide .copy { max-width: 760px; }
+.slide.title-slide h1.hero { font-size: 60px; }
+.slide.title-slide .tags { justify-content: center; }
+
+/* ---------- slide nav ---------- */
+.deck-nav {
+    position: fixed; bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+.deck-nav .arrow {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--pill-bg);
+    color: var(--text-dim);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+}
+.deck-nav .arrow:hover:not(.disabled) { color: var(--accent); border-color: var(--accent); }
+.deck-nav .arrow.disabled { opacity: 0.3; cursor: not-allowed; }
+.deck-nav .dots { display: flex; gap: 8px; }
+.deck-nav .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.deck-nav .dot:hover { background: var(--border-hover); }
+.deck-nav .dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.deck-nav .counter {
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    min-width: 48px;
+    text-align: center;
+}

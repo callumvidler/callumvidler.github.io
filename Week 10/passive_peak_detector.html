@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Passive Peak Detection</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="passive_peak_detector_JS/passive_peak_detector.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 10</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 10 · PASSIVE PEAK DETECTION</div>
+            <h1 class="hero">Peak detection with <em>passive</em> components.</h1>
+            <p class="sub">A peak detector is a circuit whose output equals the maximum value attained by its
+                input over some interval of observation. This chapter constructs three implementations using
+                only diodes, capacitors, resistors, and switching transistors. Each variant is analysed under
+                sinusoidal and pulse-train inputs, and the operating regimes in which the output ceases to
+                represent the true peak are identified. Active peak detectors based on operational amplifiers
+                are deferred to a later chapter.</p>
+            <div class="tags">
+                <span class="field-tag">diode</span>
+                <span class="field-tag">capacitor</span>
+                <span class="field-tag">envelope</span>
+                <span class="field-tag">RC discharge</span>
+                <span class="field-tag">transistor reset</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SCENE 01 · SIMPLE DIODE + CAPACITOR ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// 01 · the diode-capacitor circuit</span><span class="bar"></span></div>
+    </div>
+
+    <section class="scene" id="sec-simple">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the diode-capacitor circuit</span></div>
+            <h2>Charging a capacitor through a <em class="output">diode</em>.</h2>
+
+            <p class="lead">Consider a diode placed in series with a capacitor whose far terminal is grounded.
+                The output is taken at the node between the diode cathode and the capacitor. When the input
+                voltage exceeds the capacitor voltage by more than the diode forward drop $V_F$, the diode is
+                forward-biased and the capacitor charges toward $V_\mathrm{in} - V_F$. When the input falls
+                below this value, the diode becomes reverse-biased and isolates the capacitor from the source.
+                In the absence of any other discharge path, the capacitor retains the largest value to which it
+                has been charged.</p>
+
+            <p>The output is therefore equal to the running maximum of $V_\mathrm{in} - V_F$ since the last
+                reset of the capacitor. For a silicon junction diode, $V_F$ lies between approximately
+                $0.6\,\mathrm{V}$ and $0.7\,\mathrm{V}$; a Schottky diode reduces this value to between
+                $0.2\,\mathrm{V}$ and $0.3\,\mathrm{V}$. Two consequences follow immediately. First, the output
+                is offset below the true peak by a constant $V_F$. Second, any input excursion smaller than
+                $V_F$ does not forward-bias the diode and is therefore not registered.</p>
+
+            <p>The interactive panel demonstrates these properties. As the amplitude $A$ is varied, the held
+                output settles at $A - V_F$ provided $A > V_F$. For $A \le V_F$, the output remains at zero
+                indefinitely.</p>
+
+            <div class="callout">
+                The held voltage does not decay in the idealised analysis. Real capacitors exhibit finite
+                leakage, and a reverse-biased diode passes a small reverse-saturation current. The output
+                therefore droops slowly in practice even when no deliberate discharge path is provided. Section
+                02 introduces such a path, so that the detector can follow a slowly varying envelope rather
+                than holding the all-time maximum.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">amplitude</span>
+                        <input type="range" id="pp-s-amp" min="0.1" max="2.5" step="0.05" value="1.6">
+                        <span class="val" id="pp-s-amp-val">1.60 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">V<sub>F</sub></span>
+                        <input type="range" id="pp-s-vf" min="0" max="1.2" step="0.01" value="0.7">
+                        <span class="val" id="pp-s-vf-val">0.70 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill" id="pp-s-reset">reset</span>
+                </div>
+                <div class="plot-box circuit-box">
+                    <div class="label">circuit · <b>diode and capacitor</b></div>
+                    <svg id="plot-pp-s-circ"></svg>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">input and output · <b>v<sub>in</sub>(t), v<sub>out</sub>(t)</b></div>
+                    <svg id="plot-pp-s-trace"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">peak v<sub>in</sub></span><span class="v" id="pp-s-vp">1.60 V</span></div>
+                    <div class="item"><span class="k">v<sub>out</sub> (held)</span><span class="v" id="pp-s-vo">0.90 V</span></div>
+                    <div class="item"><span class="k">drop V<sub>F</sub></span><span class="v" id="pp-s-vd">0.70 V</span></div>
+                    <div class="item"><span class="k">status</span><span class="v" id="pp-s-st">conducting</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SCENE 02 · RC ENVELOPE ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// 02 · the rc envelope detector</span><span class="bar"></span></div>
+    </div>
+
+    <section class="scene" id="sec-rc">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the rc envelope detector</span></div>
+            <h2>Adding a discharge path with a <em class="thresh">parallel resistor</em>.</h2>
+
+            <p class="lead">Place a resistor $R$ in parallel with the storage capacitor. Between conduction
+                intervals of the diode, the capacitor discharges exponentially through $R$ with time constant
+                $\tau = RC$. The resulting circuit is known as an envelope detector: it follows the slowly
+                varying amplitude (the envelope) of an amplitude-modulated input, rather than holding the
+                all-time peak.</p>
+
+            <p>The choice of $\tau$ involves a fundamental compromise. If $\tau$ is much shorter than the
+                carrier period, the capacitor discharges substantially within a single carrier cycle and the
+                output exhibits ripple at the carrier frequency. If $\tau$ is much longer than the timescale
+                of the modulation, the capacitor cannot discharge fast enough to follow a decreasing envelope
+                and a lag develops between the true envelope and the detector output. The standard design
+                criterion is</p>
+
+            <p style="text-align:center;">$$ \tfrac{1}{f_\mathrm{in}} \;\ll\; \tau \;\ll\; \tfrac{1}{f_\mathrm{env}}, $$</p>
+
+            <p>where $f_\mathrm{in}$ denotes the carrier frequency and $f_\mathrm{env}$ the highest frequency
+                component of the envelope. When the carrier spectrum and the envelope spectrum overlap, the
+                two inequalities cannot be simultaneously satisfied, and faithful envelope recovery with a
+                single passive RC stage is not possible.</p>
+
+            <p>The interactive panel allows $\tau$, the carrier frequency and the envelope frequency to be
+                varied independently. For small $\tau$, the output exhibits ripple synchronous with the
+                carrier. For large $\tau$, the output lags the true envelope, particularly during its falling
+                portions.</p>
+
+            <div class="callout">
+                The diode forward drop $V_F$ continues to offset the output below the true peak. When $V_F$ is
+                comparable to the smallest peak value of interest, this offset is no longer a small constant
+                correction. The diode then turns on progressively later in each cycle, and the captured value
+                departs nonlinearly from the true peak amplitude.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">τ = RC</span>
+                        <input type="range" id="pp-r-tau" min="5" max="600" step="1" value="120">
+                        <span class="val" id="pp-r-tau-val">120 ms</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">f<sub>carrier</sub></span>
+                        <input type="range" id="pp-r-fc" min="2" max="40" step="0.5" value="12">
+                        <span class="val" id="pp-r-fc-val">12 Hz</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">f<sub>env</sub></span>
+                        <input type="range" id="pp-r-fe" min="0.2" max="4" step="0.1" value="1.0">
+                        <span class="val" id="pp-r-fe-val">1.0 Hz</span>
+                    </span>
+                </div>
+                <div class="plot-box circuit-box">
+                    <div class="label">circuit · <b>diode, capacitor, bleed resistor</b></div>
+                    <svg id="plot-pp-r-circ"></svg>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">input and output · <b>v<sub>in</sub>(t), v<sub>out</sub>(t)</b></div>
+                    <svg id="plot-pp-r-trace"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">τ / T<sub>carrier</sub></span><span class="v" id="pp-r-ratio">1.4</span></div>
+                    <div class="item"><span class="k">ripple</span><span class="v" id="pp-r-ripple">0.18 V</span></div>
+                    <div class="item"><span class="k">envelope lag</span><span class="v" id="pp-r-lag">low</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SCENE 03 · TRANSISTOR RESET ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// 03 · the transistor-reset peak detector</span><span class="bar"></span></div>
+    </div>
+
+    <section class="scene" id="sec-active">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>switched discharge with a transistor</span></div>
+            <h2>Replacing the resistor with a <em class="output">controlled switch</em>.</h2>
+
+            <p class="lead">A continuous bleed resistor enforces an exponential discharge whose time constant
+                is fixed by the choice of $R$. In many measurement contexts, a different behaviour is required:
+                the peak is to be held over a defined acquisition window, the capacitor reset to zero at the
+                end of the window, and a new window started. This behaviour is obtained by replacing the
+                discharge resistor with a transistor switch that connects the capacitor to ground only when
+                commanded by an external logic signal.</p>
+
+            <p>A common implementation uses an n-channel enhancement-mode MOSFET with its drain at the
+                capacitor node, its source at ground, and its gate driven by a logic-level reset signal
+                $\phi_\mathrm{rst}$. While $\phi_\mathrm{rst}$ is low, the MOSFET is off and presents a high
+                impedance, so the capacitor holds its charge. When $\phi_\mathrm{rst}$ is high, the MOSFET
+                enters its triode region and discharges the capacitor through its on-resistance $R_\mathrm{on}$
+                with time constant $R_\mathrm{on} C$. A bipolar transistor driven into saturation through a
+                base resistor performs the same function. The choice between MOSFET and BJT affects the
+                on-resistance, the off-state leakage, and the gate or base drive requirements; the operating
+                principle is identical.</p>
+
+            <p>The output is therefore piecewise. During each acquisition window, the output rises
+                monotonically and captures the running maximum within that window. At the end of the window,
+                the reset pulse forces the output to zero before the next window begins. The detector reports
+                the largest value of $V_\mathrm{in} - V_F$ encountered in the most recent window, rather than
+                tracking a continuous envelope.</p>
+
+            <div class="callout">
+                The discharge path is independent of the input source. The reset time constant is fixed by
+                $R_\mathrm{on}$ and $C$, while the charging time constant is fixed by the source impedance and
+                $C$. The two timescales are decoupled, which is the principal advantage over the bleed-resistor
+                variant in which a single $\tau$ governs both.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">window</span>
+                        <input type="range" id="pp-a-win" min="60" max="600" step="5" value="240">
+                        <span class="val" id="pp-a-win-val">240 ms</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">reset width</span>
+                        <input type="range" id="pp-a-rst" min="2" max="40" step="0.5" value="10">
+                        <span class="val" id="pp-a-rst-val">10 ms</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">f<sub>carrier</sub></span>
+                        <input type="range" id="pp-a-fc" min="6" max="80" step="0.5" value="20">
+                        <span class="val" id="pp-a-fc-val">20 Hz</span>
+                    </span>
+                </div>
+                <div class="plot-box circuit-box">
+                    <div class="label">circuit · <b>diode, capacitor, MOSFET reset</b></div>
+                    <svg id="plot-pp-a-circ"></svg>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">input and output · <b>v<sub>in</sub>(t), v<sub>out</sub>(t)</b></div>
+                    <svg id="plot-pp-a-trace"></svg>
+                </div>
+                <div class="plot-box short-box">
+                    <div class="label">reset signal · <b>φ<sub>rst</sub>(t)</b></div>
+                    <svg id="plot-pp-a-rst"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">window</span><span class="v" id="pp-a-w">240 ms</span></div>
+                    <div class="item"><span class="k">peak captured</span><span class="v" id="pp-a-pk">0.00 V</span></div>
+                    <div class="item"><span class="k">switch</span><span class="v" id="pp-a-sw">off</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SCENE 04 · WHERE PASSIVE PEAK DETECTION FAILS ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// 04 · failure modes of passive peak detection</span><span class="bar"></span></div>
+    </div>
+
+    <section class="scene" id="sec-fail">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>limitations and failure modes</span></div>
+            <h2>Failure modes of <em class="thresh">passive peak detection</em>.</h2>
+
+            <p class="lead">Each of the three passive detectors developed above has specific operating regimes
+                in which its output ceases to represent the true peak of the input. To exhibit these regimes
+                simultaneously, a test waveform is constructed that combines three features encountered in
+                biopotential measurement: a slow baseline drift, a sequence of small spikes whose amplitude is
+                comparable to the diode forward drop $V_F$, and a subsequent sequence of larger spikes whose
+                envelope rises and then decays. The same waveform is processed by all three detectors and the
+                outputs are overlaid for direct comparison.</p>
+
+            <h3>Loss of small-signal spikes due to the diode drop</h3>
+            <p>Both the diode-capacitor detector and the RC envelope detector require the input to exceed
+                $V_F$ before any charge transfer to the capacitor occurs. A typical electroencephalographic
+                spike measured at the scalp has an amplitude of order $50\,\mathrm{\mu V}$. Direct application
+                of a passive peak detector at this amplitude produces no output. Recovery of the spike
+                requires a preamplifier of gain at least $10^4$ to be placed ahead of the detector. No choice
+                of capacitor or resistor restores the lost information; the loss is set by the diode physics.</p>
+
+            <h3>Latching of the diode-capacitor detector</h3>
+            <p>The diode-capacitor circuit has no discharge path and therefore captures the supremum of
+                $V_\mathrm{in} - V_F$ over all past time. Once the input has approached its all-time maximum,
+                the output ceases to convey new information. If the quantity of clinical interest is the
+                time-evolution of the spike amplitude rather than its all-time maximum, this circuit is
+                unsuitable.</p>
+
+            <h3>Trade-off between ripple and envelope lag</h3>
+            <p>The envelope detector is governed by a single time constant. With $\tau$ chosen short enough to
+                avoid envelope lag, the output exhibits ripple at the carrier frequency. With $\tau$ chosen
+                long enough to suppress this ripple, the output lags any decrease in the envelope. When the
+                carrier and envelope timescales are not well separated, both errors are present simultaneously
+                and cannot be removed by any choice of $\tau$.</p>
+
+            <h3>Dependence on an external clock</h3>
+            <p>The transistor-reset detector is the most accurate of the three variants, but it is no longer
+                purely passive: a logic-level clock and a gate (or base) driver must be supplied. The choice
+                of window length is itself a design parameter. A window shorter than the duration of a single
+                spike causes the spike to be split between two consecutive windows and reported as two smaller
+                peaks. A window much longer than the inter-spike interval averages the amplitudes of
+                consecutive spikes into a single output value.</p>
+
+            <div class="callout">
+                Each of the failure modes described above is removed in the active, op-amp-based peak detector
+                treated in a later chapter. The operational amplifier eliminates the diode drop from the
+                signal path by enclosing the diode within a feedback loop, and provides a low-impedance output
+                that does not load the storage capacitor. The remaining design parameters are then the value
+                of the storage capacitor and the chosen reset mechanism.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">spike size</span>
+                        <input type="range" id="pp-f-amp" min="0.2" max="2.5" step="0.05" value="0.45">
+                        <span class="val" id="pp-f-amp-val">0.45 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">V<sub>F</sub></span>
+                        <input type="range" id="pp-f-vf" min="0" max="1.0" step="0.01" value="0.55">
+                        <span class="val" id="pp-f-vf-val">0.55 V</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">τ (RC)</span>
+                        <input type="range" id="pp-f-tau" min="20" max="2000" step="10" value="400">
+                        <span class="val" id="pp-f-tau-val">400 ms</span>
+                    </span>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">input · <b>v<sub>in</sub>(t)</b> with small early spikes and a decaying spike train</div>
+                    <svg id="plot-pp-f-input"></svg>
+                </div>
+                <div class="plot-box trace-box">
+                    <div class="label">three passive detectors · <b>simple, RC, transistor-reset</b></div>
+                    <svg id="plot-pp-f-out"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">small spikes seen</span><span class="v" id="pp-f-small">0 / 4</span></div>
+                    <div class="item"><span class="k">simple detector</span><span class="v" id="pp-f-simple">latched</span></div>
+                    <div class="item"><span class="k">RC tracking</span><span class="v" id="pp-f-rc">lags</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne</footer>
+
+    <script src="passive_peak_detector_JS/scene_simple.js"></script>
+    <script src="passive_peak_detector_JS/scene_rc_reset.js"></script>
+    <script src="passive_peak_detector_JS/scene_active_reset.js"></script>
+    <script src="passive_peak_detector_JS/scene_failure.js"></script>
+</body>
+
+</html>

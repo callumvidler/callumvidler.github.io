@@ -1,0 +1,244 @@
+/* active_peak_detector.html  ·  page-specific overrides
+   Inherits all base tokens and layout rules from passive_peak_detector.css.
+   This file holds only the colour swatches that are specific to this page,
+   namely a third trace colour for the precision detector output, and a
+   slightly narrower circuit aspect ratio used by scene 02. */
+
+:root {
+    --c-precision: var(--c-output);
+    --c-passive:   var(--c-amber);
+    --c-rc:        #b58df1;
+    --c-buffer:    #5cd6ff;
+}
+
+[data-theme="light"] {
+    --c-precision: #059669;
+    --c-passive:   #b8801f;
+    --c-rc:        #7d3cdc;
+    --c-buffer:    #1474a8;
+}
+
+svg.ov .trace.precision { stroke: var(--c-precision); stroke-width: 2.4; }
+svg.ov .trace.passive-simple { stroke: var(--c-passive); stroke-width: 1.8; }
+svg.ov .trace.passive-rc { stroke: var(--c-rc); stroke-width: 1.8; stroke-dasharray: 5 4; }
+
+.plot-box.tall-circuit { aspect-ratio: 1.55 / 1; }
+
+/* Bulleted list used in the case-study back-reference scene. Mirrors the
+   styling used on case_study.html so the two pages read as one continuous
+   argument. */
+ul.bullets { margin: 0 0 14px; padding-left: 18px; color: var(--text-dim); }
+ul.bullets li { margin-bottom: 5px; font-size: 15px; }
+
+/* CTA card linking back to the Week 10 case study. */
+.case-link {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    grid-column-gap: 16px;
+    grid-row-gap: 4px;
+    margin-top: 22px;
+    padding: 18px 22px;
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    background: var(--bg-2);
+    text-decoration: none;
+    color: var(--fg);
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+.case-link:hover {
+    background: var(--accent-soft-faint);
+    border-color: var(--accent);
+    transform: translateX(2px);
+}
+.case-link .cl-eye {
+    grid-column: 1 / 2;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+.case-link .cl-h {
+    grid-column: 1 / 2;
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--fg);
+}
+.case-link .cl-sub {
+    grid-column: 1 / 2;
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.55;
+}
+.case-link .cl-arr {
+    grid-column: 2 / 3;
+    grid-row: 1 / 4;
+    align-self: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    color: var(--accent);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Slide-deck layout. Mirrors the structure used on
+   case_study.html so this page can be navigated as a deck
+   rather than scrolled. The colour palette and the existing
+   .plot-stack / .toolbar / .readout rules are inherited from
+   passive_peak_detector.css; only the deck shell, slide
+   transitions and deck navigation are defined here.
+   ══════════════════════════════════════════════════════════ */
+html, body { overflow: hidden; height: 100vh; min-height: 0; }
+
+.deck {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+}
+
+.slide {
+    position: absolute; inset: 0;
+    padding: 78px 56px 90px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(40px);
+    transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0.32s;
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
+    gap: 32px;
+    align-items: start;
+    max-width: 1500px; margin: 0 auto;
+}
+.slide::-webkit-scrollbar { display: none; }
+.slide.full { grid-template-columns: 1fr; }
+.slide.active {
+    opacity: 1; visibility: visible; transform: translateX(0);
+    transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0s;
+}
+.slide.prev { transform: translateX(-40px); }
+
+.slide .copy { max-width: 600px; }
+
+h1.slide-hero {
+    font-size: 46px; line-height: 1.08;
+    font-weight: 600; letter-spacing: -0.02em;
+    margin: 0 0 22px;
+}
+h1.slide-hero em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--c-input), var(--c-output));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.slide.title-slide { grid-template-columns: 1fr; place-items: center; text-align: center; }
+.slide.title-slide .copy { max-width: 760px; }
+.slide.title-slide h1.slide-hero { font-size: 60px; }
+.slide.title-slide .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 26px;
+}
+.slide.title-slide .tags {
+    margin-top: 32px; display: flex; gap: 10px;
+    justify-content: center; flex-wrap: wrap;
+}
+
+.brief-box {
+    margin: 28px auto 8px;
+    max-width: 720px;
+    padding: 22px 26px 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-panel);
+    text-align: left;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
+}
+.brief-box .brief-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--accent);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+.brief-box .brief-body {
+    font-size: 15.5px;
+    color: var(--fg);
+    line-height: 1.65;
+    margin: 0;
+}
+
+.nav-hint {
+    position: fixed;
+    bottom: 78px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+.nav-hint.hidden { opacity: 0; visibility: hidden; }
+
+.deck-nav {
+    position: fixed; bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+.deck-nav .arrow {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--pill-bg);
+    color: var(--text-dim);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+}
+.deck-nav .arrow:hover:not(.disabled) { color: var(--accent); border-color: var(--accent); }
+.deck-nav .arrow.disabled { opacity: 0.3; cursor: not-allowed; }
+.deck-nav .dots { display: flex; gap: 8px; }
+.deck-nav .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.deck-nav .dot:hover { background: var(--border-hover); }
+.deck-nav .dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.deck-nav .counter {
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    min-width: 48px;
+    text-align: center;
+}
+.deck-nav .counter b { color: var(--fg); }
+
+.plot-stack { padding-top: 36px; }
+
+@media (max-width: 1000px) {
+    .slide { grid-template-columns: 1fr; padding: 70px 24px 100px; }
+    .slide.title-slide h1.slide-hero { font-size: 40px; }
+    h1.slide-hero { font-size: 32px; }
+}

@@ -1,0 +1,2532 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Apple 1 CPU · The MOS 6502</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="passive_peak_detector_JS/passive_peak_detector.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            ignoredClasses: ['terminal', 'terminal-hint', 'memtable-wrap', 'memmap', 'sim-meta'],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <style>
+        :root {
+            --c-acc:    #f5c451;
+            --c-reg:    #58a6ff;
+            --c-mem:    #34d399;
+            --c-bus:    #b58df1;
+        }
+        [data-theme="light"] {
+            --c-acc:    #b8801f;
+            --c-reg:    #1d4ed8;
+            --c-mem:    #059669;
+            --c-bus:    #7d3cdc;
+        }
+
+        h2 em.acc { color: var(--c-acc); }
+        h2 em.reg { color: var(--c-reg); }
+        h2 em.mem { color: var(--c-mem); }
+        h2 em.bus { color: var(--c-bus); }
+
+        /* Single-column scene used for the embedded simulator. */
+        section.scene.full {
+            grid-template-columns: 1fr;
+            max-width: 1400px;
+        }
+        section.scene.full .copy { max-width: 900px; margin: 0 auto; }
+        section.scene.full .sim-wrap { width: 100%; margin: 24px auto 0; }
+
+        /* ------------------------------------------------------------
+           Themed wrapper around the visual6502 transistor simulator.
+           The simulator's JS pans/zooms by writing top/left/width/height
+           directly onto the four canvases. The viewport is square so its
+           aspect ratio matches the rendered chip schematic; the upstream
+           recenter() / mouseMove() are patched at runtime to the new
+           viewport width (the originals assume 800 wide).
+           ------------------------------------------------------------ */
+        .v6502 {
+            display: grid;
+            grid-template-columns: 800px minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+            margin: 0 auto;
+            max-width: 1320px;
+        }
+        @media (max-width: 1380px) {
+            .v6502 { grid-template-columns: 1fr; justify-items: center; }
+        }
+
+        .v6502 .chip-viewport {
+            position: relative;
+            width: 800px;
+            height: 800px;
+            overflow: hidden;
+            background: #050608;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        [data-theme="light"] .v6502 .chip-viewport { background: #1a1c24; }
+
+        .v6502 .chip-viewport canvas.chip {
+            position: absolute;
+            width: 800px;
+            height: 800px;
+            top: 0;
+            left: 0;
+            image-rendering: pixelated;
+        }
+        /* The dimmer canvas sits on top of the click-receiving #hilite
+           canvas (DOM order). It is purely a visual overlay, so let
+           mouse events fall through to the layer below. Without this
+           panning and node-click hit-testing both stop working. */
+        .v6502 .chip-viewport #dimmer {
+            pointer-events: none;
+        }
+        /* In 3D view all the 2D chip canvases and overlays are hidden;
+           the Three.js renderer takes the full viewport. */
+        .v6502 .chip-viewport.view-3d canvas.chip,
+        .v6502 .chip-viewport.view-3d .regions-overlay,
+        .v6502 .chip-viewport.view-3d #waiting-label { display: none; }
+
+        /* 3D scene container. Fills the chip viewport and contains the
+           Three.js renderer's canvas. Hidden until the user activates
+           the 3D toggle the first time. */
+        .v6502 .chip-viewport .scene-3d {
+            position: absolute;
+            inset: 0;
+            display: none;
+            background: radial-gradient(ellipse at center, #0d1118 0%, #050608 75%);
+        }
+        .v6502 .chip-viewport.view-3d .scene-3d { display: block; }
+        .v6502 .chip-viewport .scene-3d canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .v6502 .chip-viewport .scene-3d .scene-hint {
+            position: absolute;
+            top: 12px;
+            left: 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.42);
+            pointer-events: none;
+        }
+        .v6502 .chip-viewport #waiting-label {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.55);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .v6502 .side {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+            width: 100%;
+            max-width: 460px;
+        }
+
+        .v6502 .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+        .v6502 .ctl {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: var(--pill-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.12s;
+            user-select: none;
+        }
+        .v6502 .ctl:hover { border-color: var(--border-hover); color: var(--fg); }
+        .v6502 .ctl.run    { color: var(--c-output); border-color: rgba(52,211,153,0.35); }
+        .v6502 .ctl.run:hover { background: rgba(52,211,153,0.10); }
+        .v6502 .ctl.stop   { color: var(--c-thresh); border-color: rgba(255,92,122,0.35); }
+        .v6502 .ctl.stop:hover { background: rgba(255,92,122,0.10); }
+        .v6502 .ctl.reset  { color: var(--c-amber); border-color: rgba(245,196,81,0.35); }
+        .v6502 .ctl.reset:hover { background: rgba(245,196,81,0.10); }
+
+        /* Inline speed slider, sits in the same row as the chip
+           controls. Slider value is "speed", left = slow, right = fast. */
+        .v6502 .speed-control {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 10px 4px 12px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: var(--pill-bg);
+        }
+        .v6502 .speed-control .speed-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .v6502 .speed-control input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 110px;
+            height: 4px;
+            background: var(--slider-track);
+            border-radius: 999px;
+            outline: none;
+            cursor: pointer;
+        }
+        .v6502 .speed-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: var(--c-output);
+            border: 2px solid var(--bg-2);
+            cursor: pointer;
+            box-shadow: 0 0 6px rgba(52, 211, 153, 0.45);
+        }
+        .v6502 .speed-control input[type="range"]::-moz-range-thumb {
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: var(--c-output);
+            border: 2px solid var(--bg-2);
+            cursor: pointer;
+        }
+        .v6502 .speed-control .speed-readout {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            color: var(--text-dim);
+            min-width: 4ch;
+            text-align: right;
+        }
+
+        .v6502 #status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: var(--text-dim);
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            min-height: 76px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        .v6502 .status-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .v6502 .memtable-wrap {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .v6502 #memtable {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            border-spacing: 0;
+            color: var(--text-dim);
+        }
+        .v6502 #memtable td {
+            padding: 1px 4px;
+            text-align: right;
+            min-width: 18px;
+        }
+        .v6502 #memtable tr td:first-child {
+            color: var(--c-mem);
+            text-align: left;
+            padding-right: 8px;
+        }
+
+        /* CRT-style terminal pane connected to $D010-$D013. */
+        .v6502 .terminal {
+            background: #050608;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.35;
+            color: #6dffaf;
+            min-height: 220px;
+            max-height: 320px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            outline: none;
+            cursor: text;
+            box-shadow: inset 0 0 24px rgba(109, 255, 175, 0.06);
+            text-shadow: 0 0 6px rgba(109, 255, 175, 0.35);
+        }
+        .v6502 .terminal:focus { border-color: rgba(109, 255, 175, 0.5); }
+        [data-theme="light"] .v6502 .terminal {
+            background: #0c0e15;
+            color: #4be08e;
+        }
+        .v6502 .terminal .cursor {
+            display: inline-block;
+            width: 0.55em;
+            background: #6dffaf;
+            color: #050608;
+            animation: caret-blink 1.05s steps(1) infinite;
+        }
+        @keyframes caret-blink {
+            50% { background: transparent; color: inherit; }
+        }
+        .v6502 .terminal-hint {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 6px;
+        }
+        .v6502 .terminal-hint b { color: var(--text-dim); font-weight: 500; }
+
+        /* Hidden stub buttons that the upstream JS toggles via id #start / #stop */
+        #v6502-stubs { position: absolute; left: -10000px; top: -10000px; visibility: hidden; }
+
+        /* Hover tooltip used by the "labels" overlay. Floats with the cursor. */
+        #labelTip {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            display: none;
+            background: rgba(10, 10, 16, 0.96);
+            border: 1px solid var(--border-hover);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.45;
+            color: var(--text-dim);
+            max-width: 320px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+        }
+        #labelTip b {
+            display: block;
+            color: var(--c-bus);
+            font-weight: 600;
+            font-size: 10.5px;
+            letter-spacing: 0.06em;
+            margin-bottom: 3px;
+        }
+        #labelTip span.cat {
+            display: inline-block;
+            color: var(--c-acc);
+            font-size: 9.5px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        [data-theme="light"] #labelTip {
+            background: rgba(255, 255, 255, 0.97);
+            color: var(--fg);
+        }
+        .v6502 .chip-viewport.labels-on { cursor: help; }
+
+        /* High-level "regions" overlay. Sits on top of the chip canvas
+           layer, sized exactly the same as the canvases (top/left/width
+           /height kept in sync via the patched setChipStyle). Region
+           rectangles use percentage coordinates so they scale with zoom. */
+        .regions-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 800px; height: 800px;
+            display: none;
+            pointer-events: none;       /* hover handled on the viewport */
+            z-index: 4;                 /* above chipbg/overlay/hilite */
+        }
+        .v6502 .chip-viewport.regions-on .regions-overlay { display: block; }
+        .regions-overlay .region {
+            position: absolute;
+            border: 1px solid currentColor;
+            background: currentColor;
+            opacity: 0.18;
+            box-sizing: border-box;
+            transition: opacity 0.15s, border-width 0.15s;
+        }
+        .regions-overlay .region.active {
+            opacity: 0.42;
+            border-width: 2px;
+        }
+        .regions-overlay .rlabel {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.85), 0 0 8px rgba(0,0,0,0.6);
+            text-align: center;
+            line-height: 1.2;
+            padding: 6px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Per-pin labels placed on the bonding pads. Visible only in
+           regions mode (.regions-on enables display via the parent). */
+        .regions-overlay .pin-label {
+            position: absolute;
+            display: none;
+            transform: translate(-50%, -50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9.5px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+            color: #ffffff;
+            background: rgba(10, 10, 16, 0.88);
+            border: 1px solid currentColor;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.85);
+            pointer-events: auto;
+            cursor: help;
+            z-index: 3;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .regions-overlay .pin-label:hover {
+            transform: translate(-50%, -50%) scale(1.18);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.55);
+            z-index: 4;
+        }
+        .v6502 .chip-viewport.regions-on .regions-overlay .pin-label { display: block; }
+
+        /* The chip viewport and the per-layer pill stack vertically
+           in the left grid column so the chip stays 800x800 and the
+           layer toggles sit beneath it as a separate row. */
+        .v6502 .chip-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 800px;
+        }
+
+        /* Floating labels control. A single white pill, compact when
+           off; clicking the toggle expands it to reveal a
+           regions / detailed segmented switch on the right. Anchored
+           to the bottom centre of the chip viewport, on top of the
+           schematic. */
+        .v6502 .chip-viewport .labels-bar {
+            position: absolute;
+            left: 50%;
+            bottom: 16px;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: inline-flex;
+            align-items: stretch;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 999px;
+            padding: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #14151c;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+            user-select: none;
+        }
+        .v6502 .chip-viewport .labels-bar button {
+            appearance: none;
+            -webkit-appearance: none;
+            margin: 0;
+            background: none;
+            border: none;
+            font: inherit;
+            color: inherit;
+            letter-spacing: inherit;
+            text-transform: inherit;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        /* The on/off toggle (left side, always visible). */
+        .v6502 .chip-viewport .labels-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            color: #14151c;
+            white-space: nowrap;
+            transition: background 0.15s;
+        }
+        .v6502 .chip-viewport .labels-toggle:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .v6502 .chip-viewport .labels-toggle .dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: rgba(0, 0, 0, 0.28);
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .v6502 .chip-viewport .labels-bar.expanded .labels-toggle .dot {
+            background: #2f8f3f;
+            box-shadow: 0 0 6px rgba(47, 143, 63, 0.55);
+        }
+
+        /* 2D / 3D view toggle (sits next to the labels toggle in the
+           same pill). Two segmented buttons; the active one fills with
+           a coloured pill. */
+        .v6502 .chip-viewport .view-toggle {
+            display: inline-flex;
+            align-items: center;
+            margin-left: 4px;
+        }
+        .v6502 .chip-viewport .view-toggle::before {
+            content: '';
+            width: 1px;
+            background: rgba(0, 0, 0, 0.16);
+            margin: 4px 6px;
+            align-self: stretch;
+        }
+        .v6502 .chip-viewport .view-toggle button {
+            padding: 6px 11px;
+            border-radius: 999px;
+            color: rgba(20, 21, 28, 0.55);
+            transition: background 0.15s, color 0.15s;
+        }
+        .v6502 .chip-viewport .view-toggle button:hover:not(.active) {
+            color: rgba(20, 21, 28, 0.95);
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .v6502 .chip-viewport .view-toggle button.active {
+            background: #14151c;
+            color: #ffffff;
+        }
+        .v6502 .chip-viewport .view-toggle button[data-view="3d"].active {
+            background: #b58df1;
+            color: #14151c;
+        }
+        /* In 3D view the labels controls don't apply, so collapse them
+           cleanly even if labels were on before the user switched. */
+        .v6502 .chip-viewport.view-3d .labels-bar .mode-switch,
+        .v6502 .chip-viewport.view-3d .labels-bar .dim-control,
+        .v6502 .chip-viewport.view-3d .labels-bar .labels-toggle {
+            display: none;
+        }
+
+        /* Layer-visibility pill. Sits below the labels bar and shows
+           one chip per visual6502 layer; clicking toggles whether the
+           layer is rendered (in 3D the mesh is hidden, in 2D the chip
+           background is redrawn with that layer skipped). */
+        .v6502 .chip-column .layers-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: #ffffff;
+            border: 1px solid rgba(0, 0, 0, 0.12);
+            border-radius: 999px;
+            padding: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #14151c;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+        }
+        .v6502 .chip-column .layers-bar .layer-btn {
+            appearance: none;
+            -webkit-appearance: none;
+            border: 1px solid transparent;
+            background: rgba(0, 0, 0, 0.04);
+            color: rgba(20, 21, 28, 0.5);
+            margin: 0;
+            padding: 5px 10px;
+            border-radius: 999px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font: inherit;
+            letter-spacing: inherit;
+            text-transform: inherit;
+            line-height: 1;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .v6502 .chip-column .layers-bar .layer-btn:hover {
+            color: rgba(20, 21, 28, 0.95);
+            background: rgba(0, 0, 0, 0.08);
+        }
+        .v6502 .chip-column .layers-bar .layer-btn .swatch {
+            width: 9px;
+            height: 9px;
+            border-radius: 2px;
+            background: var(--swatch);
+            border: 1px solid rgba(0, 0, 0, 0.18);
+            flex-shrink: 0;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .v6502 .chip-column .layers-bar .layer-btn.active {
+            background: var(--swatch);
+            color: #14151c;
+            border-color: rgba(0, 0, 0, 0.16);
+        }
+        /* Use white text on darker swatches (poly purple, pink diode). */
+        .v6502 .chip-column .layers-bar .layer-btn.active[data-layer="2"],
+        .v6502 .chip-column .layers-bar .layer-btn.active[data-layer="5"] {
+            color: #ffffff;
+        }
+        .v6502 .chip-column .layers-bar .layer-btn.active .swatch {
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(0, 0, 0, 0.25);
+        }
+        /* Vertical divider between fab layers and the logic-state
+           toggle, since the latter is conceptually separate. */
+        .v6502 .chip-column .layers-bar .layers-divider {
+            width: 1px;
+            background: rgba(0, 0, 0, 0.16);
+            align-self: stretch;
+            margin: 4px 4px;
+        }
+        /* The logic-state button uses a multi-colour swatch to signal
+           that the overlay is colour-coded per signal class. */
+        .v6502 .chip-column .layers-bar .layer-btn.logic-btn .swatch {
+            background: conic-gradient(
+                from 90deg,
+                #ffc850 0deg,
+                #50c8ff 60deg,
+                #50ffb4 120deg,
+                #8cff64 180deg,
+                #c882ff 240deg,
+                #ff82c8 300deg,
+                #ffc850 360deg
+            );
+            border-color: rgba(0, 0, 0, 0.32);
+        }
+        .v6502 .chip-column .layers-bar .layer-btn.logic-btn.active {
+            background: linear-gradient(90deg,
+                rgba(255, 200,  80, 0.28),
+                rgba( 80, 200, 255, 0.28),
+                rgba(140, 255, 100, 0.28),
+                rgba(200, 130, 255, 0.28));
+            color: #14151c;
+            border-color: rgba(0, 0, 0, 0.20);
+        }
+        .v6502 .chip-column .layers-bar .layer-btn.logic-btn.active .swatch {
+            background: conic-gradient(
+                from 90deg,
+                #ffc850 0deg,
+                #50c8ff 60deg,
+                #50ffb4 120deg,
+                #8cff64 180deg,
+                #c882ff 240deg,
+                #ff82c8 300deg,
+                #ffc850 360deg
+            );
+        }
+
+        /* Segmented mode switch. Collapsed (max-width 0) by default;
+           when .expanded is set on the bar it slides open. */
+        .v6502 .chip-viewport .mode-switch {
+            display: flex;
+            align-items: center;
+            max-width: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-width 0.28s ease, opacity 0.18s ease 0.04s;
+        }
+        .v6502 .chip-viewport .labels-bar.expanded .mode-switch {
+            max-width: 260px;
+            opacity: 1;
+        }
+        .v6502 .chip-viewport .mode-switch::before {
+            content: '';
+            width: 1px;
+            background: rgba(0, 0, 0, 0.16);
+            margin: 4px 4px 4px 6px;
+            align-self: stretch;
+        }
+        .v6502 .chip-viewport .mode-switch button {
+            padding: 6px 12px;
+            border-radius: 999px;
+            color: rgba(20, 21, 28, 0.55);
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+        }
+        .v6502 .chip-viewport .mode-switch button:hover:not(.active) {
+            color: rgba(20, 21, 28, 0.95);
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .v6502 .chip-viewport .mode-switch button[data-mode="regions"].active {
+            background: #58a6ff;
+            color: #ffffff;
+        }
+        .v6502 .chip-viewport .mode-switch button[data-mode="detailed"].active {
+            background: #f5c451;
+            color: #14151c;
+        }
+
+        /* Opacity slider, third pill segment. Same expand/collapse
+           transition as the mode switch. */
+        .v6502 .chip-viewport .dim-control {
+            display: flex;
+            align-items: center;
+            max-width: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-width 0.28s ease, opacity 0.18s ease 0.04s;
+        }
+        .v6502 .chip-viewport .labels-bar.expanded .dim-control {
+            max-width: 200px;
+            opacity: 1;
+        }
+        .v6502 .chip-viewport .dim-control::before {
+            content: '';
+            width: 1px;
+            background: rgba(0, 0, 0, 0.16);
+            margin: 4px 8px 4px 4px;
+            align-self: stretch;
+        }
+        .v6502 .chip-viewport .dim-control .dc-label {
+            font-size: 10px;
+            color: rgba(20, 21, 28, 0.65);
+            letter-spacing: 0.14em;
+            margin-right: 8px;
+        }
+        .v6502 .chip-viewport .dim-control input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 90px;
+            height: 4px;
+            background: rgba(20, 21, 28, 0.16);
+            border-radius: 999px;
+            outline: none;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .v6502 .chip-viewport .dim-control input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: #14151c;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        }
+        .v6502 .chip-viewport .dim-control input[type="range"]::-moz-range-thumb {
+            width: 13px; height: 13px;
+            border-radius: 50%;
+            background: #14151c;
+            cursor: pointer;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        }
+        /* Direction colour-coding. */
+        .regions-overlay .pin-label.kind-in   { color: #58a6ff; }   /* inputs */
+        .regions-overlay .pin-label.kind-out  { color: #ff8e6e; }   /* outputs */
+        .regions-overlay .pin-label.kind-io   { color: #34d399; }   /* bidirectional */
+        .regions-overlay .pin-label.kind-pwr  { color: #f5c451; }   /* power */
+
+        .sim-meta {
+            display: flex; flex-wrap: wrap; gap: 14px 22px;
+            padding: 12px 16px; margin-bottom: 14px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border); border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: var(--text-dim); letter-spacing: 0.04em;
+        }
+        .sim-meta b { color: var(--fg); font-weight: 600; }
+        .sim-meta a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+
+        /* Specification table for register / signal summaries. */
+        .spec-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 14px 0 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            color: var(--text-dim);
+        }
+        .spec-table th, .spec-table td {
+            text-align: left;
+            padding: 9px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        .spec-table th {
+            color: var(--muted);
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-size: 10.5px;
+            border-bottom: 1px solid var(--border-hover);
+        }
+        .spec-table td:first-child { color: var(--c-reg); white-space: nowrap; }
+        .spec-table tr:last-child td { border-bottom: none; }
+
+        /* Memory map block. */
+        .memmap {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            display: grid;
+            grid-template-columns: 1fr;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 14px 0;
+            background: var(--bg-2);
+        }
+        .memmap .row {
+            display: grid;
+            grid-template-columns: 170px 1fr;
+            padding: 10px 14px;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim);
+        }
+        .memmap .row:first-child { border-top: none; }
+        .memmap .row .addr { color: var(--c-mem); }
+        .memmap .row .what { color: var(--fg); }
+
+        code.inline {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: var(--pill-bg);
+            border: 1px solid var(--border);
+            color: var(--fg);
+        }
+
+        /* Status flag list. */
+        .flags {
+            display: flex; flex-wrap: wrap; gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            margin: 10px 0 4px;
+        }
+        .flags .flag {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-panel);
+            color: var(--text-dim);
+        }
+        .flags .flag b { color: var(--c-acc); margin-right: 6px; }
+
+        /* Image stack used in the historical Apple 1 section. */
+        .image-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+        .image-stack figure {
+            margin: 0;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--bg-2);
+        }
+        .image-stack figure img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .image-stack figcaption {
+            padding: 10px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            letter-spacing: 0.04em;
+            color: var(--text-dim);
+            border-top: 1px solid var(--border);
+        }
+        .image-stack figcaption b {
+            color: var(--fg);
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        /* Designers row: a small "me&woz" portrait callout sits to the
+           LEFT of the designers figure, with a small arrow connecting
+           the two. On the wide layout the callout is positioned
+           absolutely so the designers figure keeps the same width as
+           the other figures in the stack; the callout overhangs into
+           the empty space left of the image column. On narrow layouts
+           the row falls back to a normal in-flow flex strip. */
+        .image-stack .designers-row {
+            position: relative;
+            margin: 0;
+        }
+        .image-stack .designers-figure {
+            margin: 0;
+            width: 100%;
+        }
+        .image-stack .me-woz-callout {
+            position: absolute;
+            /* Sit slightly above the vertical centre of the designers
+               figure so the curved arrow can swoop down-right into it. */
+            top: 32%;
+            right: calc(100% + 136px);
+            transform: translateY(-50%);
+            width: 320px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.95;
+            /* Override the square-frame styling inherited from
+               .image-stack figure so the round portrait sits free. */
+            border: none;
+            background: none;
+            border-radius: 0;
+            overflow: visible;
+        }
+        .image-stack .me-woz-callout img {
+            width: 320px;
+            height: 320px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            display: block;
+        }
+        .image-stack .me-woz-callout figcaption {
+            padding: 0;
+            border: none;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            line-height: 1.35;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .image-stack .designers-arrow {
+            position: absolute;
+            /* The arrow sits entirely in the gap between the portrait
+               and the designers image. Right edge ~12 px to the left
+               of the figure; left edge ~12 px to the right of the
+               portrait. The curve sags from the portrait's vertical
+               centre down to the figure's vertical middle. */
+            top: 30%;
+            right: calc(100% + 12px);
+            width: 112px;
+            height: 90px;
+            color: var(--fg);
+            pointer-events: none;
+            overflow: visible;
+        }
+        @media (max-width: 1100px) {
+            /* Not enough horizontal room for the overhang; collapse to
+               an in-flow row so nothing crashes into adjacent content. */
+            .image-stack .designers-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+            .image-stack .me-woz-callout,
+            .image-stack .designers-arrow {
+                position: static;
+                transform: none;
+            }
+            .image-stack .me-woz-callout { flex: 0 0 180px; width: 180px; }
+            .image-stack .me-woz-callout img { width: 180px; height: 180px; }
+            .image-stack .designers-arrow { flex: 0 0 80px; width: 80px; height: 64px; overflow: visible; }
+            .image-stack .designers-figure { flex: 1 1 auto; min-width: 0; }
+        }
+
+        /* Inline explainer figure used under each section heading.
+           A small SVG plot, themed via window.T, with a tight caption
+           strip beneath it. Sits inside the .copy column. */
+        .inline-figure {
+            margin: 8px 0 18px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-2);
+            overflow: hidden;
+        }
+        .inline-figure svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        .inline-figure .cap {
+            padding: 8px 12px 10px;
+            border-top: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10.5px;
+            line-height: 1.5;
+            letter-spacing: 0.04em;
+            color: var(--text-dim);
+        }
+        .inline-figure .cap b { color: var(--fg); font-weight: 600; }
+        .inline-figure .label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            fill: var(--text-dim);
+        }
+        .inline-figure .label-strong { fill: var(--fg); font-weight: 600; }
+        p.simple {
+            font-size: 14.5px;
+            line-height: 1.65;
+            color: var(--fg);
+            margin: 0 0 12px;
+            padding: 12px 14px;
+            border-left: 2px solid var(--accent-soft, var(--accent));
+            background: var(--accent-soft-faint);
+            border-radius: 0 6px 6px 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 10 · Apple 1 CPU</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <!-- ================= LANDING ================= -->
+    <section class="landing">
+        <div>
+            <div class="meta">BMEN90033 · WEEK 10 · FROM GATES TO A MICROPROCESSOR</div>
+            <h1 class="hero">From logic gates to a working <em>CPU</em>.</h1>
+            <p class="sub">The previous page built the primitives of digital electronics: gates, adders, multiplexers
+                and decoders. A microprocessor is what those primitives become once they are wired together at scale.
+                The MOS Technology 6502, the processor at the centre of the Apple 1 (1976), is built from 3,510 NMOS
+                transistors arranged into a register file, an arithmetic logic unit, an instruction decoder and a
+                control sequencer. This page maps each block onto the gate-level primitives already covered and then
+                exposes the underlying silicon through a transistor-level simulator of the actual die.</p>
+            <div class="tags">
+                <span class="field-tag">gates → cpu</span>
+                <span class="field-tag">registers</span>
+                <span class="field-tag">alu</span>
+                <span class="field-tag">control unit</span>
+                <span class="field-tag">mos 6502</span>
+            </div>
+        </div>
+        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+    </section>
+
+    <!-- ================= SCENE 01 · THE APPLE 1 ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// 01 · the apple 1</span><span class="bar"></span></div>
+    </div>
+
+    <section class="scene">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>historical context</span></div>
+            <h2>A single-board computer from <em class="acc">1976</em>.</h2>
+
+            <p class="lead">The Apple 1 was the first product of the Apple Computer Company, designed by Steve
+                Wozniak and offered for sale in July 1976 at a list price of USD 666.66. It shipped as a populated
+                printed circuit board only. The user supplied a power supply, an ASCII keyboard and a video
+                monitor. About two hundred units were built between July 1976 and September 1977.</p>
+
+            <p>The board carried four kinds of integrated circuit. The MOS Technology 6502 microprocessor handled
+                computation. A Motorola 6820 Peripheral Interface Adapter (PIA) connected the processor's bus to
+                the keyboard and the video output. Eight 4-kbit DRAM chips provided 4 kB of system memory. A small
+                PROM held the 256-byte Wozniak Monitor, the only system software the machine had on power-up.</p>
+
+            <p>The choice of CPU was driven by price. The Intel 8080 and Motorola 6800 of the same era sold for
+                roughly USD 300 each. MOS Technology introduced the 6502 in September 1975 at USD 25 per unit,
+                cutting the cost of a microprocessor by an order of magnitude and making a personal computer
+                commercially viable for the first time.</p>
+
+            <div class="callout">
+                The Apple 1 ran the 6502 at 1.0 MHz, generated by dividing down the same crystal oscillator that
+                produced the video timing. The successor machine, the Apple II (1977), retained both the 6502 and
+                the 1.0 MHz clock and used the processor's predictable bus timing to share DRAM access between
+                the CPU and the video generator without contention.
+            </div>
+        </div>
+
+        <div>
+            <div class="image-stack">
+                <figure>
+                    <img src="apple_1_images/apple_1_image.jpg" alt="Apple 1 in a wooden case with a Panasonic monitor and ASCII keyboard.">
+                    <figcaption><b>Apple 1.</b> The populated board mounted in an after-market wooden case, with a small Panasonic monitor and a parallel ASCII keyboard. Apple supplied only the bare board; the case, display and keyboard were the user's responsibility.</figcaption>
+                </figure>
+                <figure>
+                    <img src="apple_1_images/apple_1_PCB.jpg" alt="Apple 1 PCB with the 6820 PIA and 6502 microprocessor labelled.">
+                    <figcaption><b>Printed circuit board.</b> The MOS 6502 microprocessor (right, in red) and the Motorola 6820 Peripheral Interface Adapter (left, in blue) sit at the centre of the board. The surrounding sockets hold eight 4-kbit DRAM chips that make up the 4 kB of system memory.</figcaption>
+                </figure>
+                <div class="designers-row">
+                    <figure class="me-woz-callout" aria-label="The author with Steve Wozniak at Apple Park.">
+                        <img src="apple_1_images/me&woz.png" alt="The author seated with Steve Wozniak at Apple Park.">
+                        <figcaption>Me and Steve at Caffè Macs<br>circa ~2015</figcaption>
+                    </figure>
+                    <svg class="designers-arrow" viewBox="0 0 112 90" aria-hidden="true">
+                        <defs>
+                            <!-- Plain filled-triangle arrowhead. -->
+                            <marker id="dz-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+                            </marker>
+                        </defs>
+                        <!-- Single smooth Bezier from the right edge of
+                             the circular portrait to the left edge of
+                             the designers image. The tail starts in
+                             the lower part of the portrait so the
+                             curve enters the gap from below the
+                             vertical centre of the round image. -->
+                        <path d="M 0 50 C 28 78, 70 68, 110 82"
+                              stroke="currentColor" stroke-width="2"
+                              fill="none" stroke-linecap="round"
+                              marker-end="url(#dz-arr)"/>
+                    </svg>
+                    <figure class="designers-figure">
+                        <img src="apple_1_images/steve&woz.png" alt="Steve Wozniak and Steve Jobs seated next to an Apple 1.">
+                        <figcaption><b>The designers.</b> Steve Wozniak (left) designed the hardware. Steve Jobs (right) co-founded the Apple Computer Company and arranged the first commercial order, of fifty boards from the Byte Shop in Mountain View, California.</figcaption>
+                    </figure>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SCENE 05 · TRANSISTOR-LEVEL SIMULATOR ================= -->
+    <div class="section-divider">
+        <div class="lab"><span>// 05 · transistor-level simulation of the die</span><span class="bar"></span></div>
+    </div>
+
+    <section class="scene full">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>visual6502</span></div>
+            <h2>Transistor-level simulation of the <em class="bus">6502 die</em>.</h2>
+
+            <p class="lead">The simulator below is <a href="https://github.com/trebonian/visual6502" target="_blank" rel="noopener">Visual 6502</a>, by Greg James, Brian Silverman and Barry Silverman. A real chip was decapsulated, photographed and traced into its 3,510 transistors. The simulator propagates logic levels through that network one half-cycle at a time, so registers, ALU, decoder and control all emerge from the underlying transistors rather than from an abstract instruction-set model.</p>
+
+            <p>A small "Hello World" routine is loaded at $\$0000$. Each iteration writes a character to the display register at $\$\text{D012}$ (forwarded to the terminal pane), saves the raw character at $\$\text{E1}$, and increments a counter at $\$\text{E0}$ so the zero-page memtable shows live activity.</p>
+
+            <p>Use the controls under the chip to run, stop, step or change speed. With <i>animate</i> on, the logic-state overlay updates every half-cycle, colour-coding clocks, address bus, data bus, registers and decoder. Clicking a polygon names the underlying node in the status panel.</p>
+
+            <div class="callout">
+                Every half-cycle re-evaluates the full transistor network until logic levels settle, so the simulation is slower than a register-transfer-level emulator. Allow several seconds for the chip layout to render on first load. Everything runs locally in the browser.
+            </div>
+        </div>
+
+        <div class="sim-wrap">
+            <div class="sim-meta">
+                <span><b>Program</b> &nbsp; "Hello World" routine prints to the display register</span>
+                <span><b>Controls</b> &nbsp; scroll to zoom, drag to pan, slider to change speed</span>
+            </div>
+
+            <div class="v6502" id="frame">
+                <div class="chip-column">
+                    <div class="chip-viewport" id="chip" tabindex="0">
+                        <span id="waiting-label">loading 6502 layout...</span>
+                        <canvas class="chip" id="chipbg"></canvas>
+                        <canvas class="chip" id="overlay"></canvas>
+                        <canvas class="chip" id="hilite"></canvas>
+                        <canvas class="chip" id="hitbuffer"></canvas>
+                        <canvas class="chip" id="dimmer"></canvas>
+                        <div class="regions-overlay" id="regions"></div>
+                        <div class="scene-3d" id="scene3d"><div class="scene-hint">drag to rotate · scroll to zoom · right-drag to pan</div></div>
+                        <div class="labels-bar" id="labelsBar">
+                            <button type="button" class="labels-toggle" id="labelsToggle" onclick="setLabelsOn(!labelsOn)">
+                                <span class="dot"></span>
+                                <span class="txt">labels off</span>
+                            </button>
+                            <div class="view-toggle" id="viewToggle">
+                                <button type="button" data-view="2d" class="active" onclick="setView('2d')">2D</button>
+                                <button type="button" data-view="3d"                onclick="setView('3d')">3D</button>
+                            </div>
+                            <div class="mode-switch" id="modeSwitch">
+                                <button type="button" data-mode="regions"  class="active" onclick="setLabelMode('regions')">regions</button>
+                                <button type="button" data-mode="detailed"                onclick="setLabelMode('detailed')">detailed</button>
+                            </div>
+                            <div class="dim-control">
+                                <span class="dc-label">dim</span>
+                                <input type="range" id="dimSlider" min="0" max="80" step="1" value="45"
+                                       oninput="setDimOpacity(parseInt(this.value, 10))"
+                                       title="dim opacity for non-highlighted parts of the chip">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layers-bar" id="layersBar">
+                        <button type="button" class="layer-btn active" data-layer="1" style="--swatch:#f5c451;" onclick="toggleLayer(1)"><span class="swatch"></span>diff·s</button>
+                        <button type="button" class="layer-btn active" data-layer="3" style="--swatch:#34d399;" onclick="toggleLayer(3)"><span class="swatch"></span>diff·g</button>
+                        <button type="button" class="layer-btn active" data-layer="4" style="--swatch:#ff7070;" onclick="toggleLayer(4)"><span class="swatch"></span>diff·p</button>
+                        <button type="button" class="layer-btn active" data-layer="2" style="--swatch:#ff5cdc;" onclick="toggleLayer(2)"><span class="swatch"></span>diode</button>
+                        <button type="button" class="layer-btn active" data-layer="5" style="--swatch:#a55eff;" onclick="toggleLayer(5)"><span class="swatch"></span>poly</button>
+                        <button type="button" class="layer-btn active" data-layer="0" style="--swatch:#cfd3ff;" onclick="toggleLayer(0)"><span class="swatch"></span>metal</button>
+                        <span class="layers-divider"></span>
+                        <button type="button" class="layer-btn logic-btn active" data-layer="logic"
+                                onclick="toggleLogicOverlay(this)"
+                                title="logic-state overlay · clocks=amber · addr bus=cyan · data bus=teal · registers=green · decode=purple · interrupts=pink · control=cream"><span class="swatch"></span>logic</button>
+                    </div>
+                </div>
+
+                <div class="side">
+                    <div class="controls">
+                        <button type="button" class="ctl run"   onclick="runChip()">▶ run</button>
+                        <button type="button" class="ctl stop"  onclick="stopChip()">■ stop</button>
+                        <button type="button" class="ctl reset" onclick="resetChip()">↺ reset</button>
+                        <button type="button" class="ctl"       onclick="stepBack()">‹ back</button>
+                        <button type="button" class="ctl"       onclick="stepForward()">step ›</button>
+                        <button type="button" class="ctl"       id="animateBtn" onclick="toggleAnimate(this)">animate · on</button>
+                        <span class="speed-control" title="simulation speed">
+                            <span class="speed-label">speed</span>
+                            <input type="range" id="speedSlider" min="0" max="100" step="1" value="100"
+                                   oninput="setSimSpeed(this.value)">
+                            <span id="speedReadout" class="speed-readout">100%</span>
+                        </span>
+                    </div>
+
+                    <div>
+                        <div class="status-label">// apple 1 terminal · hello world demo</div>
+                        <div class="terminal" id="terminal" tabindex="0"><span class="boot-msg" style="color: var(--muted); text-shadow: none;">// reset asserted · 6502 fetching $FFFC/$FFFD · waiting for output
+// each character is fetched, OR-ed with $80, and written to $D012
+</span><span class="cursor">&nbsp;</span></div>
+                        <div class="terminal-hint">the program at <b>$0000</b> prints the string at <b>$0020</b> to the memory-mapped display register · press <b>reset</b> to run it again</div>
+                    </div>
+
+                    <div>
+                        <div class="status-label">// processor state</div>
+                        <div id="status"><p>halfcyc:0 phi0:0 AB:0000 D:00 RnW:1<br>PC:0000 A:00 X:00 Y:00 SP:00 nv-bdizc<br>Hz: 0.0</p></div>
+                    </div>
+
+                    <div>
+                        <div class="status-label">// zero page · stack page</div>
+                        <div class="memtable-wrap"><table id="memtable"></table></div>
+                    </div>
+                </div>
+
+                <!-- The upstream JS reads getElementById('start' | 'stop' | 'updateShow').
+                     Provide hidden stubs so the bundled scripts can toggle them without errors. -->
+                <div id="v6502-stubs">
+                    <a id="start"></a>
+                    <a id="stop"></a>
+                    <div id="updateShow"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>BMEN90033 · The University of Melbourne · Apple 1 CPU</footer>
+
+    <!-- ============================================================
+         Visual 6502 transistor-level simulator (kiosk mode).
+         Loaded directly into this page (no iframe, no upstream CSS)
+         so the simulator inherits the page theme. The required DOM
+         IDs (frame, chip, chipbg, overlay, hilite, hitbuffer, status,
+         memtable, start, stop, updateShow) are provided above.
+         ============================================================ -->
+    <script src="visual6502/segdefs.js"></script>
+    <script src="visual6502/transdefs.js"></script>
+    <script src="visual6502/nodenames.js"></script>
+    <script src="visual6502/kioskWires.js"></script>
+    <script src="visual6502/wires.js"></script>
+    <script src="visual6502/chipsim.js"></script>
+    <script src="visual6502/memtable.js"></script>
+    <script src="visual6502/macros.js"></script>
+    <script src="visual6502/hello-program.js"></script>
+    <script>
+        // ------------------------------------------------------------
+        // Apple 1 terminal pane.
+        // The chip drives $D012 (DSP) writes via the trigger in
+        // wozmon-program.js, which calls appendApple1Char(byte). The
+        // chip reads pending keystrokes through appleKeyQueue, which
+        // we push into from a keydown listener on the terminal element.
+        // The Apple 1 hardware uses 7-bit ASCII with bit 7 forced high
+        // on input, and only carriage-return (no LF) for line ends.
+        // ------------------------------------------------------------
+        var appleKeyQueue = [];
+        var apple1Booted = false;
+        function appendApple1Char(byte) {
+            var term = document.getElementById('terminal');
+            if (!term) return;
+            // The first real character means WozMon has finished its reset
+            // sequence. Clear the boot placeholder before printing it.
+            if (!apple1Booted) {
+                var ph = term.querySelector('.boot-msg');
+                if (ph) ph.remove();
+                apple1Booted = true;
+            }
+            var cursor = term.querySelector('.cursor');
+            var text;
+            if (byte === 0x0D) {            // CR begins a new line
+                text = '\n';
+            } else if (byte < 0x20 || byte === 0x7F) {
+                return;                     // ignore other control codes
+            } else {
+                text = String.fromCharCode(byte);
+            }
+            var node = document.createTextNode(text);
+            if (cursor) term.insertBefore(node, cursor);
+            else term.appendChild(node);
+            term.scrollTop = term.scrollHeight;
+        }
+        function pushApple1Key(byte) {
+            appleKeyQueue.push(byte & 0x7F);
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            var term = document.getElementById('terminal');
+            if (!term) return;
+            term.addEventListener('keydown', function (e) {
+                // Apple 1 expects upper-case ASCII. Translate Enter to CR,
+                // Backspace to underscore (the WozMon backspace glyph),
+                // and ignore anything not representable.
+                var code = null;
+                if (e.key === 'Enter')              code = 0x0D;
+                else if (e.key === 'Backspace')     code = 0x5F;     // '_'
+                else if (e.key === 'Escape')        code = 0x1B;
+                else if (e.key.length === 1) {
+                    var c = e.key.charCodeAt(0);
+                    if (c >= 0x20 && c < 0x7F) {
+                        if (c >= 0x61 && c <= 0x7A) c -= 0x20;       // upper-case
+                        code = c;
+                    }
+                }
+                if (code !== null) {
+                    pushApple1Key(code);
+                    e.preventDefault();
+                }
+            });
+            // A click on the terminal focuses it and gives a visual prompt.
+            term.addEventListener('click', function () { term.focus(); });
+        });
+
+        // The kiosk setup_part3 clears writeTriggers (it assumes no I/O).
+        // WozMon needs the PIA hooks defined in wozmon-program.js to
+        // remain in place, so override setup_part3 to skip that line.
+        // Animation is also disabled by default; refreshing the overlay
+        // every half-cycle makes the chip run at single-digit Hz, which
+        // would leave the user waiting tens of seconds for the first
+        // prompt. The animate button below re-enables it on demand.
+        window.setup_part3 = function () {
+            loadProgram();
+            animateChipLayout = true;
+            initChip();
+            var stop = document.getElementById('stop');
+            if (stop) stop.style.visibility = 'hidden';
+            // Build the floorplan + pin labels now that nodes[] is fully
+            // populated by setupNodes, and prepare the dim-overlay
+            // canvas buffer at the same grCanvasSize resolution as the
+            // upstream canvases.
+            buildRegionOverlay();
+            placePinLabels();
+            setupDimmerCanvas();
+            go();
+        };
+
+        function toggleAnimate(btn) {
+            if (typeof animateChipLayout === 'undefined') return;
+            animateChipLayout = !animateChipLayout;
+            btn.textContent = 'animate · ' + (animateChipLayout ? 'on' : 'off');
+        }
+
+        // ------------------------------------------------------------
+        // Labels overlay. Two independent controls in the floating bar
+        // at the bottom of the chip viewport:
+        //   labelsOn   - master on/off. When off, no overlay, no hover.
+        //   labelMode  - 'regions' or 'detailed'. Selects which kind
+        //                of tooltip the hover handler shows when on.
+        // 'regions'  -> floorplan rectangles painted on the chip plus
+        //               per-pin labels; hover gives the block role.
+        // 'detailed' -> findNodeNumber + describeNode for per-node info.
+        // ------------------------------------------------------------
+        var labelsOn  = false;
+        var labelMode = 'regions';
+
+        // Approximate 6502 floorplan annotations. Coordinates are in
+        // percent of the (square) chip canvas so they track zoom and
+        // pan without further bookkeeping. The boxes are deliberately
+        // coarse: the 6502 die layout is irregular and most lecture
+        // students benefit from a "where is the ALU" overview rather
+        // than transistor-precise outlines. For exact node positions,
+        // use the detailed mode.
+        var chipRegions = [
+            { id:'predec',  label:'predecode<br>+ IR',     color:'#ff5c7a',
+              x:6, y:4, w:18, h:11,
+              body:'Pre-decodes the byte just fetched from memory and latches it into the instruction register IR. Drives the decode PLA.' },
+            { id:'pla',     label:'decode PLA',            color:'#58a6ff',
+              x:24, y:4, w:69, h:24,
+              body:'Programmable logic array. Translates the 8-bit opcode together with the timing state into the dozens of internal control lines that gate registers onto the buses each cycle.' },
+            { id:'control', label:'random control logic',  color:'#b58df1',
+              x:6, y:28, w:87, h:14,
+              body:'The "random" control block: combinational gates that turn the PLA outputs into the actual register-load, ALU-mode, and bus-driver enables for the current cycle.' },
+            { id:'timing',  label:'timing<br>chain',       color:'#f5c451',
+              x:6, y:42, w:14, h:14,
+              body:'Six-state instruction timing FSM (T1–T6). Sequences the cycles of every opcode and tells the PLA which cycle of the instruction is currently running.' },
+            { id:'alu',     label:'ALU',                   color:'#7be089',
+              x:20, y:42, w:30, h:14,
+              body:'8-bit arithmetic and logic unit. Handles add, subtract (with carry), AND, OR, EOR, shifts and rotates. Also computes branch target addresses and the +1 increment for the program counter.' },
+            { id:'flags',   label:'P · flags',             color:'#f97066',
+              x:50, y:42, w:13, h:14,
+              body:'Status register P. Holds the seven flags N, V, B, D, I, Z, C. Updated by ALU operations, branches, BIT, CLC/SEC and friends.' },
+            { id:'pc',      label:'program counter<br>PCL · PCH',  color:'#58a6ff',
+              x:63, y:42, w:30, h:14,
+              body:'16-bit program counter. PCL and PCH are two 8-bit halves with a small adder for the +1 increment after each fetch and for relative-branch offset addition.' },
+            { id:'regs',    label:'registers<br>A · X · Y · S',    color:'#34d399',
+              x:6, y:56, w:65, h:24,
+              body:'The programmer-visible register file: accumulator A, index registers X and Y, and the 8-bit stack pointer S whose upper byte is fixed at $01.' },
+            { id:'addr',    label:'address bus drivers',   color:'#ff8e6e',
+              x:71, y:56, w:22, h:24,
+              body:'Output latches that drive the 16 address pins A0–A15. Multiplex between the program counter, the operand address from the addressing-mode hardware, and the stack pointer during pushes/pops.' },
+            { id:'pads',    label:'pad ring',              color:'#8b90a3',
+              x:6, y:80, w:87, h:14,
+              body:'The bonding pads and pin drivers around the perimeter of the die: data bus, address bus, clock inputs, IRQ/NMI/RESET, R/W, SYNC and the supply rails.' }
+        ];
+
+        function buildRegionOverlay() {
+            var rg = document.getElementById('regions');
+            if (!rg || rg.childNodes.length) return;
+            chipRegions.forEach(function (r) {
+                var box = document.createElement('div');
+                box.className = 'region';
+                box.dataset.id = r.id;
+                box.style.left   = r.x + '%';
+                box.style.top    = r.y + '%';
+                box.style.width  = r.w + '%';
+                box.style.height = r.h + '%';
+                box.style.color  = r.color;
+                var lbl = document.createElement('span');
+                lbl.className = 'rlabel';
+                lbl.innerHTML = r.label;
+                box.appendChild(lbl);
+                rg.appendChild(box);
+            });
+        }
+
+        // Pin labels for the 40-pin DIP package. Each entry is the
+        // visual6502 node name, direction (in/out/io/pwr), the short
+        // tag printed on the chip, and a one-line description.
+        var pinDefs = [
+            ['ab0','out','A0',  'address bus bit 0 · selects byte in 64 KB · output, valid during phi2'],
+            ['ab1','out','A1',  'address bus bit 1 · output'],
+            ['ab2','out','A2',  'address bus bit 2 · output'],
+            ['ab3','out','A3',  'address bus bit 3 · output'],
+            ['ab4','out','A4',  'address bus bit 4 · output'],
+            ['ab5','out','A5',  'address bus bit 5 · output'],
+            ['ab6','out','A6',  'address bus bit 6 · output'],
+            ['ab7','out','A7',  'address bus bit 7 · output'],
+            ['ab8','out','A8',  'address bus bit 8 · output'],
+            ['ab9','out','A9',  'address bus bit 9 · output'],
+            ['ab10','out','A10','address bus bit 10 · output'],
+            ['ab11','out','A11','address bus bit 11 · output'],
+            ['ab12','out','A12','address bus bit 12 · output'],
+            ['ab13','out','A13','address bus bit 13 · output'],
+            ['ab14','out','A14','address bus bit 14 · output'],
+            ['ab15','out','A15','address bus bit 15 · output · MSB of the 16-bit address'],
+            ['db0','io','D0',   'data bus bit 0 · bidirectional · driven by CPU on writes, by memory on reads'],
+            ['db1','io','D1',   'data bus bit 1 · bidirectional'],
+            ['db2','io','D2',   'data bus bit 2 · bidirectional'],
+            ['db3','io','D3',   'data bus bit 3 · bidirectional'],
+            ['db4','io','D4',   'data bus bit 4 · bidirectional'],
+            ['db5','io','D5',   'data bus bit 5 · bidirectional'],
+            ['db6','io','D6',   'data bus bit 6 · bidirectional'],
+            ['db7','io','D7',   'data bus bit 7 · bidirectional'],
+            ['rw',  'out','R/W','read/write · high = CPU is reading memory, low = CPU is writing'],
+            ['sync','out','SYNC','asserted high during the opcode-fetch cycle of every instruction'],
+            ['irq', 'in','IRQ', 'maskable interrupt request input · vectored through $FFFE/$FFFF when I flag is clear'],
+            ['nmi', 'in','NMI', 'non-maskable interrupt input · edge-triggered · vectored through $FFFA/$FFFB'],
+            ['res', 'in','RES', 'external reset · holds the chip in reset for ~7 cycles after release · vector $FFFC/$FFFD'],
+            ['rdy', 'in','RDY', 'ready · pulled low to pause the processor (used for single-stepping and slow memory)'],
+            ['so',  'in','SO',  'set-overflow input · sets the V flag on a falling edge'],
+            ['clk0','in', 'phi0','phi-zero clock input · divided internally to produce phi1 and phi2'],
+            ['clk1out','out','phi1','phi-one clock output · derived from phi0'],
+            ['clk2out','out','phi2','phi-two clock output · memory access valid during this phase']
+        ];
+
+        // For each pin node, find the polygon farthest from the chip
+        // centre (5000, 5000) — that is reliably the bonding pad rather
+        // than the routing wire. Convert its centroid into the same
+        // percentage coordinates the regions overlay uses.
+        function placePinLabels() {
+            var rg = document.getElementById('regions');
+            if (!rg || typeof nodes === 'undefined' || typeof nodenames === 'undefined') return;
+            if (rg.querySelector('.pin-label')) return;   // already done
+
+            pinDefs.forEach(function (p) {
+                var num = nodenames[p[0]];
+                if (num === undefined) return;
+                var node = nodes[num];
+                if (!node || !node.segs || !node.segs.length) return;
+
+                var bestDist = -1;
+                var bestCx = 5000, bestCy = 5000;
+                node.segs.forEach(function (seg) {
+                    var sx = 0, sy = 0, count = 0;
+                    for (var i = 0; i < seg.length; i += 2) {
+                        sx += seg[i];
+                        sy += seg[i + 1];
+                        count++;
+                    }
+                    if (!count) return;
+                    var cx = sx / count, cy = sy / count;
+                    var dxC = cx - 5000, dyC = cy - 5000;
+                    var d = dxC * dxC + dyC * dyC;
+                    if (d > bestDist) { bestDist = d; bestCx = cx; bestCy = cy; }
+                });
+
+                // chip-coords -> canvas-display percentage:
+                //   xpct = (chip_x + grChipOffsetX) / 100
+                //   ypct = 100 - chip_y / 100        (visual y is flipped)
+                var xpct = (bestCx + 400) / 100;
+                var ypct = 100 - bestCy / 100;
+                if (xpct < -2 || xpct > 102 || ypct < -2 || ypct > 102) return;
+
+                var dot = document.createElement('div');
+                dot.className = 'pin-label kind-' + p[1];
+                dot.style.left = xpct + '%';
+                dot.style.top  = ypct + '%';
+                dot.textContent = p[2];
+                dot.dataset.name = p[0];
+                dot.dataset.kind = p[1];
+                dot.dataset.body = p[3];
+                dot.addEventListener('mouseenter', function (e) {
+                    e.stopPropagation();
+                    showPinTip(e, p);
+                    if (typeof nodenames !== 'undefined' && nodenames[p[0]] !== undefined) {
+                        dimExceptNode(nodenames[p[0]]);
+                    }
+                });
+                dot.addEventListener('mousemove',  function (e) { e.stopPropagation(); showPinTip(e, p); });
+                dot.addEventListener('mouseleave', function (e) {
+                    e.stopPropagation();
+                    hideLabelTip();
+                    clearDimmer();
+                });
+                rg.appendChild(dot);
+            });
+        }
+
+        function showPinTip(ev, p) {
+            var tip = ensureLabelTip();
+            var kindLabel = { 'in': 'input pin', 'out': 'output pin', 'io': 'bidirectional pin', 'pwr': 'supply rail' }[p[1]] || 'pin';
+            var kindColor = { 'in': '#58a6ff', 'out': '#ff8e6e', 'io': '#34d399', 'pwr': '#f5c451' }[p[1]] || '#fff';
+            tip.innerHTML =
+                '<span class="cat" style="color:' + kindColor + ';">' + kindLabel + '</span>' +
+                '<b>' + p[2] + '</b>' +
+                p[3] +
+                '<div style="margin-top:4px; opacity:0.55; font-size:9.5px; letter-spacing:0.1em;">' +
+                    'visual6502 node: ' + p[0] +
+                '</div>';
+            tip.style.display = 'block';
+            var tipRect = tip.getBoundingClientRect();
+            var px = ev.clientX + 14;
+            var py = ev.clientY + 14;
+            if (px + tipRect.width  > window.innerWidth)  px = ev.clientX - tipRect.width  - 14;
+            if (py + tipRect.height > window.innerHeight) py = ev.clientY - tipRect.height - 14;
+            tip.style.left = px + 'px';
+            tip.style.top  = py + 'px';
+        }
+
+        // Patch setChipStyle so the regions overlay AND the dimmer
+        // canvas are moved/scaled in lockstep with the four upstream
+        // canvases. Done after the upstream function exists, so wrap
+        // whatever the current binding is.
+        (function () {
+            var origSet = window.setChipStyle;
+            window.setChipStyle = function (props) {
+                if (typeof origSet === 'function') origSet(props);
+                var rg = document.getElementById('regions');
+                if (rg) for (var a in props) rg.style[a] = props[a];
+                var dimmer = document.getElementById('dimmer');
+                if (dimmer) for (var b in props) dimmer.style[b] = props[b];
+            };
+        })();
+
+        // ------------------------------------------------------------
+        // Dim-everything-else overlay. The dimmer canvas sits on top of
+        // chipbg/overlay/hilite/hitbuffer (DOM order) and below the
+        // regions overlay (which has a higher z-index). When idle it is
+        // empty, fully transparent, so the chip is fully visible. When
+        // a component is hovered, we fill the canvas with translucent
+        // black and then use the 'destination-out' composite operator
+        // to erase the dim where the active polygons or the active
+        // region rectangle sit. The result: the active geometry shows
+        // through at full brightness, everything else fades.
+        // ------------------------------------------------------------
+        // Current dim alpha. Backed by the slider in the labels pill.
+        // Range 0 (no dim) to 0.8 (heavy). 0 effectively disables the
+        // dim while leaving the rest of the labels machinery active.
+        var dimOpacity = 0.45;
+        // Track what is currently being dimmed so the slider can
+        // re-apply the dim with the new alpha live, without waiting
+        // for the user to move the cursor.
+        var lastDimArgs = null;   // ['node', num] | ['region', r] | null
+        function setDimOpacity(percent) {
+            dimOpacity = Math.max(0, Math.min(80, percent)) / 100;
+            reapplyDim();
+        }
+        function reapplyDim() {
+            if (!lastDimArgs) return;
+            if (dimOpacity <= 0) { var c = getDimmerCtx(); if (c) { c.globalCompositeOperation='source-over'; c.clearRect(0,0,grCanvasSize,grCanvasSize); } return; }
+            if (lastDimArgs[0] === 'node')   dimExceptNode(lastDimArgs[1]);
+            if (lastDimArgs[0] === 'region') dimExceptRegion(lastDimArgs[1]);
+        }
+        function setupDimmerCanvas() {
+            var c = document.getElementById('dimmer');
+            if (!c || typeof grCanvasSize === 'undefined') return;
+            c.width  = grCanvasSize;
+            c.height = grCanvasSize;
+        }
+        function getDimmerCtx() {
+            var c = document.getElementById('dimmer');
+            return c ? c.getContext('2d') : null;
+        }
+        function clearDimmer() {
+            lastDimArgs = null;
+            var ctx = getDimmerCtx();
+            if (!ctx) return;
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.clearRect(0, 0, grCanvasSize, grCanvasSize);
+        }
+        function fillDimBackdrop(ctx) {
+            // IMPORTANT: clear before filling. mousemove is rAF-throttled
+            // to ~60 Hz, and each translucent fillRect stacks alpha on
+            // top of the previous frame's. Without the clearRect the
+            // canvas accumulates to fully opaque black within a fraction
+            // of a second and the surrounding chip vanishes.
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.clearRect(0, 0, grCanvasSize, grCanvasSize);
+            if (dimOpacity <= 0) return;       // slider at zero = dim off
+            ctx.fillStyle = 'rgba(0, 0, 0, ' + dimOpacity + ')';
+            ctx.fillRect(0, 0, grCanvasSize, grCanvasSize);
+        }
+        function dimExceptNode(nodeNum) {
+            var ctx = getDimmerCtx();
+            if (!ctx || typeof nodes === 'undefined') return;
+            var node = nodes[nodeNum];
+            if (!node || !node.segs || !node.segs.length) { clearDimmer(); return; }
+            lastDimArgs = ['node', nodeNum];
+            fillDimBackdrop(ctx);
+            if (dimOpacity <= 0) return;       // nothing to punch through
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+            for (var i = 0; i < node.segs.length; i++) {
+                drawSeg(ctx, node.segs[i]);
+                ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+        }
+        function dimExceptRegion(region) {
+            var ctx = getDimmerCtx();
+            if (!ctx || !region) return;
+            lastDimArgs = ['region', region];
+            fillDimBackdrop(ctx);
+            if (dimOpacity <= 0) return;
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+            // Region coords are in percentage of the canvas. Convert to
+            // grCanvasSize buffer pixels.
+            var bx = region.x * grCanvasSize / 100;
+            var by = region.y * grCanvasSize / 100;
+            var bw = region.w * grCanvasSize / 100;
+            var bh = region.h * grCanvasSize / 100;
+            ctx.fillRect(bx, by, bw, bh);
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function setActiveRegion(id) {
+            var rg = document.getElementById('regions');
+            if (!rg) return;
+            var nodes = rg.querySelectorAll('.region');
+            for (var i = 0; i < nodes.length; i++) {
+                nodes[i].classList.toggle('active', nodes[i].dataset.id === id);
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Logic-state overlay. The upstream refresh() paints every
+        // node currently at logic high in a single dim red. We override
+        // it to colour-code each high node by its functional role:
+        // clocks/timing in amber, address bus in cyan, data bus in
+        // teal, register file in green, decode PLA in purple, etc.
+        // The chip then communicates *what* is firing, not just that
+        // something is. Toggleable via the "logic" button in the
+        // layers pill.
+        // ------------------------------------------------------------
+        var logicOverlayOn = true;
+        var nodeCategoryMap = null;       // built lazily when refresh runs
+        var categoryStyles = {
+            'clock':        'rgba(255, 200,  80, 0.55)',
+            'addr':         'rgba( 80, 200, 255, 0.50)',
+            'data':         'rgba( 80, 255, 180, 0.55)',
+            'internal-bus': 'rgba(140, 180, 255, 0.45)',
+            'register':     'rgba(140, 255, 100, 0.55)',
+            'decode':       'rgba(200, 130, 255, 0.50)',
+            'interrupt':    'rgba(255, 130, 200, 0.55)',
+            'control':      'rgba(255, 240, 180, 0.50)',
+            'other':        'rgba(255, 110, 130, 0.32)'
+        };
+
+        function classifyForLogic(name) {
+            if (!name) return 'other';
+            if (/^clk|^cclk|^clock|^t[1-6]$|^fetch$/.test(name))               return 'clock';
+            if (/^ab\d+$/.test(name))                                          return 'addr';
+            if (/^db\d+$|^idb\d+$|^idl\d+$|^dor\d+$|^pd\d+$/.test(name))       return 'data';
+            if (/^sb\d+$|^adl\d+$|^adh\d+$|^abl\d+$|^abh\d+$/.test(name))      return 'internal-bus';
+            if (/^[axy][0-7]$|^s[0-7]$|^p[0-7]$|^pcl[0-7]$|^pch[0-7]$|^ir[0-7]$/.test(name))
+                                                                                return 'register';
+            if (/^dpc/.test(name))                                              return 'decode';
+            if (/^IRQ|^NMI|^RES|^INTG|^pipe/.test(name) ||
+                name === 'irq' || name === 'nmi' || name === 'res')             return 'interrupt';
+            if (name === 'rw' || name === 'sync' || name === 'rdy' || name === 'so')
+                                                                                return 'control';
+            return 'other';
+        }
+        function buildNodeCategoryMap() {
+            if (nodeCategoryMap || typeof nodenames === 'undefined') return;
+            nodeCategoryMap = {};
+            for (var name in nodenames) {
+                nodeCategoryMap[nodenames[name]] = classifyForLogic(name);
+            }
+        }
+        function clearOverlayCanvas() {
+            if (typeof overlay === 'undefined' || !overlay) return;
+            var c = overlay.getContext('2d');
+            c.save();
+            c.globalCompositeOperation = 'source-over';
+            c.clearRect(0, 0, grCanvasSize, grCanvasSize);
+            c.restore();
+        }
+        // Override the upstream refresh() — same trigger points, same
+        // call sites (setup_part2 and step()) — but with the new
+        // colour-by-class rendering and the logicOverlayOn gate.
+        window.refresh = function () {
+            if (typeof chipLayoutIsVisible !== 'undefined' && !chipLayoutIsVisible) return;
+            if (typeof overlay === 'undefined' || !overlay) return;
+            var c = overlay.getContext('2d');
+            // Use 'source-over' to clear cleanly each frame, then
+            // 'lighter' for the fill so overlapping high nets glow.
+            c.save();
+            c.globalCompositeOperation = 'source-over';
+            c.clearRect(0, 0, grCanvasSize, grCanvasSize);
+            if (!logicOverlayOn) { c.restore(); return; }
+            c.globalCompositeOperation = 'lighter';
+            buildNodeCategoryMap();
+            for (var i in nodes) {
+                if (typeof isNodeHigh !== 'function' || !isNodeHigh(i)) continue;
+                var cat = (nodeCategoryMap && nodeCategoryMap[i]) || 'other';
+                c.fillStyle = categoryStyles[cat];
+                var segs = nodes[i].segs;
+                for (var j in segs) {
+                    drawSeg(c, segs[j]);
+                    c.fill();
+                }
+            }
+            c.restore();
+            if (typeof hiliteNode === 'function' && typeof hilited !== 'undefined') {
+                hiliteNode(hilited);
+            }
+        };
+
+        function toggleLogicOverlay(btn) {
+            logicOverlayOn = !logicOverlayOn;
+            btn.classList.toggle('active', logicOverlayOn);
+            if (logicOverlayOn) {
+                if (typeof refresh === 'function') refresh();
+            } else {
+                clearOverlayCanvas();
+            }
+        }
+
+        // ------------------------------------------------------------
+        // Per-layer visibility. Each visual6502 layer index maps to a
+        // mesh in the 3D scene and a slot in the upstream `drawlayers`
+        // array used by setupBackground when re-rendering the 2D
+        // chipbg. Toggling the corresponding pill button updates both.
+        // ------------------------------------------------------------
+        function toggleLayer(idx) {
+            var btn = document.querySelector('.layer-btn[data-layer="' + idx + '"]');
+            if (!btn) return;
+            var nowVisible = !btn.classList.contains('active');
+            btn.classList.toggle('active', nowVisible);
+
+            // 3D scene: hide / show the merged mesh for this layer.
+            if (typeof window.setLayerVisible3D === 'function') {
+                window.setLayerVisible3D(idx, nowVisible);
+            }
+            // 2D chipbg: drawlayers gates which layer indices the
+            // upstream setupBackground renders. Toggle the slot and
+            // ask the simulator to redraw if it has been initialised.
+            if (typeof drawlayers !== 'undefined') {
+                drawlayers[idx] = nowVisible;
+                if (typeof setupBackground === 'function' && typeof chipbg !== 'undefined' && chipbg) {
+                    setupBackground();
+                }
+            }
+        }
+
+        // ------------------------------------------------------------
+        // 2D / 3D view toggle. The 3D view is provided by a Three.js
+        // scene built in the module script at the bottom of the page;
+        // start3DScene / stop3DScene are exposed on window from there.
+        // The first call lazy-builds the scene from segdefs (rendering
+        // each layer to a CanvasTexture and stacking the planes); the
+        // toggle then just shows/hides the .scene-3d container.
+        // ------------------------------------------------------------
+        var currentView = '2d';
+        function setView(view) {
+            if (view !== '2d' && view !== '3d') return;
+            currentView = view;
+            var vp = document.getElementById('chip');
+            if (vp) {
+                vp.classList.toggle('view-3d', view === '3d');
+            }
+            var vt = document.getElementById('viewToggle');
+            if (vt) {
+                vt.querySelectorAll('button').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.view === view);
+                });
+            }
+            if (view === '3d') {
+                // Labels are 2D-only; clean up before hiding the chip.
+                if (labelsOn) { labelsOn = false; applyLabelState(); }
+                hideLabelTip();
+                clearDimmer();
+                tryStart3D();
+            } else {
+                if (typeof window.stop3DScene === 'function') window.stop3DScene();
+            }
+        }
+        function tryStart3D() {
+            if (typeof window.start3DScene === 'function') {
+                window.start3DScene();
+                return;
+            }
+            // The module script that defines start3DScene loads via
+            // CDN; if the user clicks 3D before it lands, poll briefly.
+            var tries = 0;
+            var iv = setInterval(function () {
+                if (typeof window.start3DScene === 'function') {
+                    clearInterval(iv);
+                    window.start3DScene();
+                } else if (++tries > 80) {        // ~16 s ceiling
+                    clearInterval(iv);
+                }
+            }, 200);
+        }
+
+        function setLabelsOn(on) {
+            labelsOn = !!on;
+            applyLabelState();
+        }
+        function setLabelMode(mode) {
+            if (mode !== 'regions' && mode !== 'detailed') return;
+            labelMode = mode;
+            // Selecting a mode while labels are off implicitly turns
+            // them on, which is the more discoverable behaviour.
+            if (!labelsOn) labelsOn = true;
+            applyLabelState();
+        }
+        function applyLabelState() {
+            var vp = document.getElementById('chip');
+            if (vp) {
+                vp.classList.toggle('labels-on',  labelsOn);
+                vp.classList.toggle('regions-on', labelsOn && labelMode === 'regions');
+            }
+            var bar = document.getElementById('labelsBar');
+            if (bar) bar.classList.toggle('expanded', labelsOn);
+            var toggle = document.getElementById('labelsToggle');
+            if (toggle) {
+                var txt = toggle.querySelector('.txt');
+                if (txt) txt.textContent = labelsOn ? 'labels on' : 'labels off';
+            }
+            var modeSwitch = document.getElementById('modeSwitch');
+            if (modeSwitch) {
+                modeSwitch.querySelectorAll('button').forEach(function (b) {
+                    b.classList.toggle('active', b.dataset.mode === labelMode);
+                });
+            }
+            if (labelsOn && labelMode === 'regions') buildRegionOverlay();
+            if (!labelsOn) { setActiveRegion(null); clearDimmer(); }
+            hideLabelTip();
+        }
+        function ensureLabelTip() {
+            var tip = document.getElementById('labelTip');
+            if (tip) return tip;
+            tip = document.createElement('div');
+            tip.id = 'labelTip';
+            document.body.appendChild(tip);
+            return tip;
+        }
+        function hideLabelTip() {
+            var tip = document.getElementById('labelTip');
+            if (tip) tip.style.display = 'none';
+        }
+
+        // Map a raw node name (e.g. "alu3", "ir5", "dpc12_0ADD") to a
+        // student-friendly description with a short category tag.
+        function describeNode(name) {
+            if (!name) return null;
+            var n = name;
+            var pin = function (label, body) { return { cat: 'package pin', label: label, body: body }; };
+            var reg = function (label, body) { return { cat: 'register',   label: label, body: body }; };
+            var bus = function (label, body) { return { cat: 'bus',        label: label, body: body }; };
+            var alu = function (label, body) { return { cat: 'alu',        label: label, body: body }; };
+            var ctl = function (label, body) { return { cat: 'control',    label: label, body: body }; };
+            var pwr = function (label, body) { return { cat: 'rail',       label: label, body: body }; };
+            var int_ = function (label, body){ return { cat: 'internal',   label: label, body: body }; };
+
+            // Inverted-signal wrappers: peel "not" prefix and re-describe.
+            if (/^not[a-z]/i.test(n)) {
+                var inner = describeNode(n.slice(3));
+                if (inner) return { cat: inner.cat, label: '!' + inner.label, body: 'inverted: ' + inner.body };
+            }
+
+            // External pins
+            if (/^db[0-7]$/.test(n))  return pin('D' + n.slice(2), 'data bus pin · bidirectional 8-bit data line shared with memory');
+            if (/^ab\d+$/.test(n))    return pin('A' + n.slice(2), 'address bus pin · selects a byte in the 64 KB address space');
+            if (n === 'rw')           return pin('R/W', 'read when high, write when low · valid during phi2');
+            if (n === 'sync')         return pin('SYNC', 'asserted high during the opcode-fetch cycle of every instruction');
+            if (n === 'irq')          return pin('IRQ', 'maskable interrupt request input · vector at $FFFE/$FFFF');
+            if (n === 'nmi')          return pin('NMI', 'non-maskable interrupt input · vector at $FFFA/$FFFB');
+            if (n === 'res')          return pin('RES', 'external reset input · vector at $FFFC/$FFFD');
+            if (n === 'rdy')          return pin('RDY', 'pause the processor in the current cycle when held low');
+            if (n === 'so')           return pin('SO', 'external set-overflow input · sets the V flag on a falling edge');
+            if (n === 'clk0')         return pin('phi0', 'input clock · divided internally to produce phi1 and phi2');
+            if (n === 'clk1out')      return pin('phi1', 'phase-1 clock output');
+            if (n === 'clk2out')      return pin('phi2', 'phase-2 clock output · memory access valid during this phase');
+            if (n === 'vcc' || n === 'pwr') return pwr('VCC', 'positive supply rail (+5 V on the Apple 1)');
+            if (n === 'vss' || n === 'gnd') return pwr('VSS', 'ground rail');
+
+            // Programmer-visible registers
+            if (/^a[0-7]$/.test(n))   return reg('A' + n.slice(1), 'accumulator · primary destination for arithmetic and logical operations');
+            if (/^x[0-7]$/.test(n))   return reg('X' + n.slice(1), 'X index register · used by indexed addressing modes and as a counter');
+            if (/^y[0-7]$/.test(n))   return reg('Y' + n.slice(1), 'Y index register · used by indirect-indexed addressing in particular');
+            if (/^s[0-7]$/.test(n))   return reg('S' + n.slice(1), 'stack pointer (low byte) · stack lives in page $01');
+            if (/^p[0-7]$/.test(n)) {
+                var flagMap = { '0':'C carry', '1':'Z zero', '2':'I interrupt-disable', '3':'D decimal', '4':'B break', '6':'V overflow', '7':'N negative' };
+                return reg('P.' + n.slice(1), 'status register · ' + (flagMap[n.slice(1)] || 'flag bit ' + n.slice(1)));
+            }
+            if (/^pcl[0-7]$/.test(n)) return reg('PCL.' + n.slice(3), 'program counter · low byte · address of the next opcode to fetch');
+            if (/^pch[0-7]$/.test(n)) return reg('PCH.' + n.slice(3), 'program counter · high byte');
+            if (/^pcl?p[0-7]$/.test(n)) return reg(n, 'program counter pre-increment latch');
+
+            // Instruction register (the currently-executing opcode)
+            if (/^ir[0-7]$/.test(n))  return reg('IR.' + n.slice(2), 'instruction register · holds the opcode driving the decode PLA');
+            if (n === 'clearIR')      return ctl('clearIR', 'clears the instruction register at the start of an interrupt');
+
+            // ALU
+            if (/^alu[0-7]$/.test(n))   return alu('ALU.' + n.slice(3), '8-bit ALU output bit');
+            if (/^alua[0-7]$/.test(n))  return alu('ALU.A' + n.slice(4), 'ALU operand A input bit');
+            if (/^alub[0-7]$/.test(n))  return alu('ALU.B' + n.slice(4), 'ALU operand B input bit');
+            if (n === 'alucin')         return alu('ALU.Cin', 'ALU carry-in (from the C flag for ADC, set high for SBC)');
+            if (n === 'alucout' || n === 'alurawcout') return alu('ALU.Cout', 'ALU carry-out · drives the new C flag');
+            if (n === 'aluvout')        return alu('ALU.V',  'ALU overflow detection · drives the V flag for ADC/SBC');
+
+            // Internal buses (the three internal data paths inside the chip)
+            if (/^db[0-7]$/.test(n))    return bus('DB.' + n.slice(2), 'internal data bus · shared with the external data pins');
+            if (/^idb[0-7]$/.test(n))   return bus('IDB.' + n.slice(3), 'internal data bus (decoupled by pad drivers from DB)');
+            if (/^idl[0-7]$/.test(n))   return bus('IDL.' + n.slice(3), 'input data latch · captures the data bus at phi1');
+            if (/^sb[0-7]$/.test(n))    return bus('SB.' + n.slice(2), 'special bus · routes register-to-register and ALU-to-register transfers');
+            if (/^adl[0-7]$/.test(n))   return bus('ADL.' + n.slice(3), 'address bus low (internal) · feeds the ABL output latch');
+            if (/^adh[0-7]$/.test(n))   return bus('ADH.' + n.slice(3), 'address bus high (internal) · feeds the ABH output latch');
+            if (/^abl[0-7]$/.test(n))   return bus('ABL.' + n.slice(3), 'output address latch low · drives the A0–A7 pins');
+            if (/^abh[0-7]$/.test(n))   return bus('ABH.' + n.slice(3), 'output address latch high · drives the A8–A15 pins');
+            if (/^dor[0-7]$/.test(n))   return bus('DOR.' + n.slice(3), 'data output register · drives the data pins on writes');
+            if (/^pd[0-7]$/.test(n))    return bus('PD.' + n.slice(2), 'pre-decode register · the just-fetched opcode byte');
+
+            // Decode PLA · the wide-OR plane that translates opcode + state
+            // into individual control lines. Names like dpc12_0ADD encode
+            // the line number and what it activates.
+            if (/^dpc/.test(n))          return ctl(n, 'decode PLA control line · asserts a register-to-bus or ALU control during the current cycle');
+
+            // Timing FSM
+            if (/^t[1-6]$/.test(n))      return ctl('T' + n.slice(1), 'instruction timing state · cycle ' + n.toUpperCase() + ' of the current opcode');
+            if (/^clock[12]$/.test(n))   return ctl('phi' + n.slice(5), 'internal phase ' + n.slice(5) + ' clock');
+            if (n === 'cclk')            return ctl('cclk', 'clock distribution node feeding the timing chain');
+            if (n === 'fetch')           return ctl('fetch', 'asserted during opcode-fetch cycles · drives SYNC');
+
+            // Pipeline / interrupt sequencer nodes
+            if (/^pipe/.test(n))         return ctl(n, 'control pipeline · part of the multi-cycle interrupt and reset sequencer');
+            if (/^IRQP$|^IRQ/.test(n))   return ctl(n, 'IRQ sequencer · samples the IRQ pin and routes the interrupt vector');
+            if (/^NMIP$|^NMI/.test(n))   return ctl(n, 'NMI sequencer · edge-triggered, latches NMI for the current instruction');
+            if (/^RESP$|^RES/.test(n))   return ctl(n, 'reset sequencer · holds the chip in reset for ~7 cycles after !RES is released');
+            if (n === 'INTG')            return ctl('INTG', 'interrupt sequence in progress · forces BRK-like behaviour');
+
+            // Anything else: name verbatim.
+            return int_(n, 'internal logic node');
+        }
+
+        // ------------------------------------------------------------
+        // Run-speed control. The upstream go() loop schedules itself
+        // with setTimeout(go, 0), running the simulator as fast as the
+        // browser allows. We override it to pause for simSpeedDelay ms
+        // between half-cycles, so the speed slider in the controls
+        // panel can take the chip from full speed (delay = 0) to a
+        // crawl that lets students follow the colour-coded overlay.
+        // ------------------------------------------------------------
+        var simSpeedDelay = 0;
+        function setSimSpeed(percent) {
+            // Slider is 0..100. Map to a 0..200 ms delay where higher
+            // slider value = less delay = faster simulation.
+            var v = Math.max(0, Math.min(100, parseInt(percent, 10)));
+            simSpeedDelay = (100 - v) * 2;
+            var label = document.getElementById('speedReadout');
+            if (label) label.textContent = v + '%';
+        }
+        window.go = function () {
+            if (typeof userSteps !== 'undefined') {
+                if (--userSteps === 0) {
+                    running = false;
+                    userSteps = undefined;
+                }
+            }
+            if (running) {
+                step();
+                setTimeout(window.go, simSpeedDelay);
+            }
+        };
+
+        // ------------------------------------------------------------
+        // Upstream kiosk math assumes an 800x600 viewport with a 600px
+        // canvas inside it; constants 600, 800, 300, 400 are hard-coded
+        // throughout kioskWires.js (recenter, mouseMove, setZoom,
+        // handleClick) and wires.js (findNodeNumber). We use a square
+        // VxV viewport sized so the container matches the schematic's
+        // aspect ratio while filling more of the page. Override every
+        // function that bakes in 600 before setup() runs.
+        // ------------------------------------------------------------
+        var V = 800;        // canvas display size at zoom=1 (px)
+        var V2 = V / 2;     // half-viewport, used by recenter/clamps
+        centerx = V2; centery = V2;
+
+        window.recenter = function () {
+            var top  = -centery * zoom + V2;
+            top  = Math.min(top,  0);
+            top  = Math.max(top,  -V * (zoom - 1));
+            var left = -centerx * zoom + V2;
+            left = Math.min(left, 0);
+            left = Math.max(left, -V * (zoom - 1));
+            setChipStyle({ top: top + 'px', left: left + 'px' });
+        };
+
+        window.setZoom = function (n) {
+            zoom = n;
+            setChipStyle({ width: V * n + 'px', height: V * n + 'px' });
+            recenter();
+        };
+
+        window.mouseMove = function (e) {
+            moved = true;
+            if (zoom == 1) return;
+            var dx = e.clientX - dragMouseX;
+            var dy = e.clientY - dragMouseY;
+            dragMouseX = e.clientX;
+            dragMouseY = e.clientY;
+            centerx -= dx / zoom;
+            centerx = Math.max(centerx, V2 / zoom);
+            centerx = Math.min(centerx, V - V2 / zoom);
+            centery -= dy / zoom;
+            centery = Math.max(centery, V2 / zoom);
+            centery = Math.min(centery, V - V2 / zoom);
+            recenter();
+        };
+
+        // findNodeNumber maps display pixels (0..V) to the underlying
+        // grCanvasSize buffer so it can sample the hitbuffer canvas.
+        window.findNodeNumber = function (x, y) {
+            var ctx = hitbuffer.getContext('2d');
+            var pixels = ctx.getImageData(x * grCanvasSize / V, y * grCanvasSize / V, 2, 2).data;
+            if (pixels[0] == 0) return -1;
+            var high = pixels[0] >> 4;
+            var mid  = pixels[1] >> 4;
+            var low  = pixels[2] >> 4;
+            return (high << 8) + (mid << 4) + low;
+        };
+
+        // handleClick converts display pixels to chip coordinates for
+        // the status readout, so the /600 there must also become /V.
+        window.handleClick = function (e) {
+            var x = localx(hilite, e.clientX) / zoom;
+            var y = localy(hilite, e.clientY) / zoom;
+            var w = findNodeNumber(x, y);
+            if (e.shiftKey) {
+                getNodeGroup(w);
+                hiliteNode(group);
+            } else {
+                var a = []; a.push(w); hiliteNode(a);
+            }
+            var cx = Math.round(x * grChipSize / V);
+            var cy = Math.round(y * grChipSize / V);
+            if (w == -1) {
+                setStatus('x:', cx, '<br>', 'y:', cy);
+            } else {
+                setStatus('x: ' + cx + ' y: ' + cy, 'node: ' + w + ' ' + nodeName(w));
+            }
+        };
+
+        // Kick off the simulator after the bundled scripts have parsed.
+        // setup() comes from kioskWires.js. It chains setup_part2 / part3
+        // via setTimeout so the loading message has time to render.
+        window.addEventListener('load', function () {
+            if (typeof setup === 'function') {
+                setTimeout(setup, 60);
+            }
+            // Hide the placeholder once the chip background has been drawn.
+            var hideWait = function () {
+                var w = document.getElementById('waiting-label');
+                if (w && typeof chipbg !== 'undefined' && chipbg && chipbg.width > 300) {
+                    w.style.display = 'none';
+                    return;
+                }
+                setTimeout(hideWait, 200);
+            };
+            setTimeout(hideWait, 400);
+
+            // Mouse-wheel zoom, centred on the cursor. The chip viewport is
+            // 800x600 by design (recenter() in kioskWires.js bakes in those
+            // constants); this handler keeps the chip coordinate under the
+            // cursor stationary across zoom changes, then defers to setZoom()
+            // which redraws via recenter().
+            var viewport = document.getElementById('chip');
+            if (viewport) {
+                viewport.addEventListener('wheel', function (e) {
+                    if (typeof zoom === 'undefined' || typeof setZoom !== 'function') return;
+                    e.preventDefault();
+
+                    var rect = viewport.getBoundingClientRect();
+                    var vx = e.clientX - rect.left;   // viewport x, 0..V
+                    var vy = e.clientY - rect.top;    // viewport y, 0..V
+
+                    var oldZoom = zoom;
+                    var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+                    var maxZ = (typeof grMaxZoom !== 'undefined') ? grMaxZoom : 12;
+                    var newZoom = Math.max(1, Math.min(maxZ, oldZoom * factor));
+                    if (Math.abs(newZoom - oldZoom) < 1e-4) return;
+
+                    // Chip coord under the cursor before the zoom change.
+                    var chipX = centerx + (vx - V2) / oldZoom;
+                    var chipY = centery + (vy - V2) / oldZoom;
+
+                    // Choose the new centre so the same chip coord stays
+                    // under the cursor at the new zoom level.
+                    centerx = chipX - (vx - V2) / newZoom;
+                    centery = chipY - (vy - V2) / newZoom;
+
+                    // Match the clamps used by mouseMove so recenter()
+                    // does not snap the centre away from the cursor.
+                    if (newZoom > 1) {
+                        centerx = Math.max(V2 / newZoom, Math.min(V - V2 / newZoom, centerx));
+                        centery = Math.max(V2 / newZoom, Math.min(V - V2 / newZoom, centery));
+                    }
+
+                    setZoom(newZoom);
+                }, { passive: false });
+
+                // Hover-to-identify overlay. Dispatches on labelMode:
+                // 'regions' does a percentage-coord rectangle hit test
+                // against chipRegions; 'detailed' uses the same
+                // coordinate transform as handleClick (real-pixel
+                // cursor minus hilite's bounding rect, divided by
+                // zoom) and calls findNodeNumber. The handler is
+                // rAF-throttled so dragging across the chip does not
+                // flood findNodeNumber's getImageData call.
+                var labelTickPending = false;
+                var lastLabelEvent = null;
+                function positionLabelTip(tip, ev) {
+                    var tipRect = tip.getBoundingClientRect();
+                    var px = ev.clientX + 16;
+                    var py = ev.clientY + 16;
+                    if (px + tipRect.width  > window.innerWidth)  px = ev.clientX - tipRect.width  - 16;
+                    if (py + tipRect.height > window.innerHeight) py = ev.clientY - tipRect.height - 16;
+                    tip.style.left = px + 'px';
+                    tip.style.top  = py + 'px';
+                }
+                viewport.addEventListener('mousemove', function (e) {
+                    if (!labelsOn) return;
+                    // Cursor is over the floating control bar (or any
+                    // of its children): don't run a chip-position
+                    // lookup, that would just produce phantom tooltips.
+                    if (e.target && e.target.closest && e.target.closest('.labels-bar')) {
+                        hideLabelTip();
+                        setActiveRegion(null);
+                        return;
+                    }
+                    lastLabelEvent = e;
+                    if (labelTickPending) return;
+                    labelTickPending = true;
+                    requestAnimationFrame(function () {
+                        labelTickPending = false;
+                        if (!labelsOn || !lastLabelEvent) return;
+                        var ev = lastLabelEvent;
+
+                        if (labelMode === 'regions') {
+                            // Percentage of the chip-display area, not the
+                            // viewport: regions are defined in 0–100% of
+                            // the canvas which is V×V at zoom 1 and pans
+                            // around the same hilite reference.
+                            if (typeof hilite === 'undefined' || !hilite) return;
+                            var rect = hilite.getBoundingClientRect();
+                            var x = (ev.clientX - rect.left) / zoom;
+                            var y = (ev.clientY - rect.top)  / zoom;
+                            if (x < 0 || y < 0 || x >= V || y >= V) {
+                                setActiveRegion(null); clearDimmer(); hideLabelTip(); return;
+                            }
+                            var px = x / V * 100;
+                            var py = y / V * 100;
+                            // Iterate in reverse so later (more specific)
+                            // regions can overlay earlier ones if needed.
+                            var hit = null;
+                            for (var i = chipRegions.length - 1; i >= 0; i--) {
+                                var r = chipRegions[i];
+                                if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) {
+                                    hit = r; break;
+                                }
+                            }
+                            if (!hit) { setActiveRegion(null); clearDimmer(); hideLabelTip(); return; }
+                            setActiveRegion(hit.id);
+                            dimExceptRegion(hit);
+                            var tip = ensureLabelTip();
+                            tip.innerHTML =
+                                '<span class="cat" style="color:' + hit.color + ';">functional region</span>' +
+                                '<b>' + hit.label.replace(/<br>/g,' ') + '</b>' +
+                                hit.body +
+                                '<div style="margin-top:4px; opacity:0.55; font-size:9.5px; letter-spacing:0.1em;">' +
+                                    'switch labels to "detailed" for per-node info' +
+                                '</div>';
+                            tip.style.display = 'block';
+                            positionLabelTip(tip, ev);
+                            return;
+                        }
+
+                        // Detailed mode
+                        if (typeof findNodeNumber !== 'function' || typeof hilite === 'undefined' || !hilite) return;
+                        var rect2 = hilite.getBoundingClientRect();
+                        var dx = (ev.clientX - rect2.left) / zoom;
+                        var dy = (ev.clientY - rect2.top)  / zoom;
+                        if (dx < 0 || dy < 0 || dx >= V || dy >= V) { clearDimmer(); hideLabelTip(); return; }
+                        var w = findNodeNumber(dx, dy);
+                        if (w === -1) { clearDimmer(); hideLabelTip(); return; }
+                        dimExceptNode(w);
+                        var name = (typeof nodeName === 'function') ? nodeName(w) : ('node ' + w);
+                        var d = describeNode(name);
+                        var tip2 = ensureLabelTip();
+                        var label = d ? d.label : name;
+                        var cat   = d ? d.cat   : 'node';
+                        var body  = d ? d.body  : '';
+                        tip2.innerHTML =
+                            '<span class="cat">' + cat + '</span>' +
+                            '<b>' + label + '</b>' +
+                            (body ? body : '') +
+                            '<div style="margin-top:4px; opacity:0.55; font-size:9.5px; letter-spacing:0.1em;">' +
+                                'raw: ' + name + ' · #' + w +
+                            '</div>';
+                        tip2.style.display = 'block';
+                        positionLabelTip(tip2, ev);
+                    });
+                });
+                viewport.addEventListener('mouseleave', function () {
+                    setActiveRegion(null);
+                    clearDimmer();
+                    hideLabelTip();
+                });
+            }
+        });
+    </script>
+
+    <!-- ============================================================
+         3D view of the chip layout. Each of the six visual6502 layers
+         (metal, polysilicon, switched / grounded / powered diffusion,
+         inputdiode) is rendered to its own CanvasTexture and applied
+         to a transparent plane stacked above a substrate slab. The
+         user rotates with OrbitControls. The scene is lazy-built the
+         first time setView('3d') runs so users who never open 3D pay
+         no startup cost.
+         ============================================================ -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls }   from 'three/addons/controls/OrbitControls.js';
+        import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+        var scene, camera, renderer, controls;
+        var initialised = false;
+        var running = false;
+        // Layer index -> Three.js mesh, populated during init3D so the
+        // host page can flip mesh.visible from the layers pill.
+        var layerMeshes = {};
+
+        // Each visual6502 layer becomes a real extruded mesh: every
+        // polygon in segdefs that targets the layer is converted to a
+        // THREE.Shape, run through ExtrudeGeometry with a small depth,
+        // then all of them are merged into a single BufferGeometry per
+        // layer for cheap rendering.
+        //
+        // Stack-up follows the actual NMOS process the 6502 was built
+        // with. From bottom to top:
+        //
+        //   substrate (p-type silicon, the slab below z = 0)
+        //     diffusion regions are doped INTO the substrate surface,
+        //     so the diffusion extrusions sit at the top of the slab
+        //     (baseZ = 0) and are thin.
+        //   field/gate oxide (not modelled; visual gap between layers)
+        //     polysilicon is deposited on the gate oxide, so it sits
+        //     a little above the diffusions with a small visible gap.
+        //   inter-layer dielectric (visual gap between poly and metal)
+        //     metal is the top routing layer, thicker than poly because
+        //     in real silicon Al routing is roughly 1 µm vs ~0.5 µm for
+        //     poly.
+        //
+        // Values are world-space units; the die is PLANE_W = 2 wide.
+        // baseZ is the bottom of the extrusion, depth is its thickness.
+        var layerSpec = [
+            { idx: 1, colour: '#f5c451', baseZ: 0.000, depth: 0.008, opacity: 0.95, name: 'switched diffusion' },
+            { idx: 3, colour: '#34d399', baseZ: 0.000, depth: 0.008, opacity: 0.95, name: 'grounded diffusion' },
+            { idx: 4, colour: '#ff7070', baseZ: 0.000, depth: 0.008, opacity: 0.95, name: 'powered diffusion'  },
+            { idx: 2, colour: '#ff5cdc', baseZ: 0.010, depth: 0.006, opacity: 0.95, name: 'input diode'        },
+            { idx: 5, colour: '#a55eff', baseZ: 0.020, depth: 0.012, opacity: 0.92, name: 'polysilicon'        },
+            { idx: 0, colour: '#cfd3ff', baseZ: 0.044, depth: 0.018, opacity: 0.78, name: 'metal'              }
+        ];
+
+        // Plane dimensions in world units, chosen to match the actual
+        // chip aspect ratio (~0.91:1, slightly taller than wide).
+        var PLANE_W = 2.0;
+        var PLANE_H = 2.2;
+
+        function buildExtrudedLayer(layerIdx, colour, baseZ, depth, opacity) {
+            if (typeof segdefs === 'undefined') return null;
+
+            // visual6502 chip-coords -> centred plane-local coords.
+            // The chip data spans roughly chip_x [216, 8983] (after
+            // the +400 offset, [616, 9383] / 10000 = 6.16% – 93.83%)
+            // and chip_y [179, 9807]. Map [0,10000] to [-W/2, +W/2]
+            // for x and [+H/2, -H/2] for y (chip y is inverted vs
+            // canvas y).
+            var sx = function (x) { return ((x + 400) / 10000 - 0.5) * PLANE_W; };
+            var sy = function (y) { return ((10000 - y) / 10000 - 0.5) * PLANE_H; };
+
+            var settings = {
+                depth: depth,
+                bevelEnabled: false,
+                steps: 1,
+                curveSegments: 1
+            };
+
+            var geos = [];
+            for (var i in segdefs) {
+                var seg = segdefs[i];
+                if (seg[2] !== layerIdx) continue;
+                var poly = seg.slice(3);
+                if (poly.length < 6) continue;        // need >=3 points
+
+                try {
+                    var shape = new THREE.Shape();
+                    shape.moveTo(sx(poly[0]), sy(poly[1]));
+                    for (var j = 2; j < poly.length; j += 2) {
+                        shape.lineTo(sx(poly[j]), sy(poly[j + 1]));
+                    }
+                    var geo = new THREE.ExtrudeGeometry(shape, settings);
+                    geos.push(geo);
+                } catch (err) {
+                    // Skip degenerate or self-intersecting polygons
+                    // that the triangulator can't handle.
+                }
+            }
+            if (geos.length === 0) return null;
+
+            var merged = mergeGeometries(geos, false);
+            geos.forEach(function (g) { g.dispose(); });
+            if (!merged) return null;
+            merged.computeVertexNormals();
+
+            var mat = new THREE.MeshStandardMaterial({
+                color: colour,
+                roughness: 0.55,
+                metalness: 0.18,
+                transparent: opacity < 1,
+                opacity: opacity,
+                side: THREE.FrontSide
+            });
+
+            var mesh = new THREE.Mesh(merged, mat);
+            mesh.position.z = baseZ;
+            return mesh;
+        }
+
+        function init3D() {
+            if (initialised) return;
+            var container = document.getElementById('scene3d');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            // No fog — just a dark gradient background already drawn
+            // by the container CSS, so the renderer keeps alpha:true.
+
+            var w = container.clientWidth || 800;
+            var h = container.clientHeight || 800;
+            camera = new THREE.PerspectiveCamera(40, w / h, 0.05, 50);
+            camera.up.set(0, 0, 1);
+            camera.position.set(1.6, -2.2, 1.4);
+            camera.lookAt(0, 0, 0.03);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+            container.appendChild(renderer.domElement);
+
+            // Lighting: a warm key light from upper right, a cool fill
+            // from the opposite side, and gentle ambient.
+            scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+            var key = new THREE.DirectionalLight(0xfff1d6, 0.85);
+            key.position.set(2.5, -1.5, 3); scene.add(key);
+            var fill = new THREE.DirectionalLight(0x6699ff, 0.35);
+            fill.position.set(-2, 2, 2); scene.add(fill);
+
+            // Substrate slab beneath all layers. Its top sits at z=0
+            // so the bottom of the diffusion extrusions rests on it.
+            var subThickness = 0.022;
+            var subGeo = new THREE.BoxGeometry(PLANE_W * 1.02, PLANE_H * 1.02, subThickness);
+            var subMat = new THREE.MeshStandardMaterial({
+                color: 0x161821, roughness: 0.95, metalness: 0.05
+            });
+            var sub = new THREE.Mesh(subGeo, subMat);
+            sub.position.z = -subThickness / 2;
+            scene.add(sub);
+
+            // Faint outline around the die top edge.
+            var edges = new THREE.LineSegments(
+                new THREE.EdgesGeometry(new THREE.BoxGeometry(PLANE_W, PLANE_H, 0.001)),
+                new THREE.LineBasicMaterial({ color: 0x444a5e })
+            );
+            scene.add(edges);
+
+            // Build an extruded mesh for each layer. Each layer becomes
+            // a single merged BufferGeometry containing every polygon
+            // from segdefs that lives on that layer, raised to baseZ
+            // and extruded upward by `depth`.
+            layerSpec.forEach(function (L) {
+                var mesh = buildExtrudedLayer(L.idx, L.colour, L.baseZ, L.depth, L.opacity);
+                if (mesh) {
+                    mesh.userData.name = L.name;
+                    layerMeshes[L.idx] = mesh;
+                    if (pendingLayerVisibility[L.idx] === false) mesh.visible = false;
+                    scene.add(mesh);
+                }
+            });
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.09;
+            controls.target.set(0, 0, 0.03);
+            controls.minDistance = 1.3;
+            controls.maxDistance = 6;
+
+            // Resize listener — viewport size doesn't change in this
+            // page, but DPR / orientation can.
+            window.addEventListener('resize', onResize);
+
+            initialised = true;
+        }
+
+        function onResize() {
+            var container = document.getElementById('scene3d');
+            if (!container || !renderer || !camera) return;
+            var w = container.clientWidth || 800;
+            var h = container.clientHeight || 800;
+            renderer.setSize(w, h);
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+        }
+
+        function frame() {
+            if (!running) return;
+            requestAnimationFrame(frame);
+            if (controls) controls.update();
+            if (renderer && scene && camera) renderer.render(scene, camera);
+        }
+
+        window.start3DScene = function () {
+            init3D();
+            if (running) return;
+            running = true;
+            // The container only got its real width once .view-3d was
+            // applied; recompute size on the next frame so the camera
+            // aspect is correct.
+            requestAnimationFrame(function () { onResize(); frame(); });
+        };
+        window.stop3DScene = function () {
+            running = false;
+        };
+        // Toggle an individual layer's visibility (called from the
+        // layers pill in the host page). Safe to call before init3D
+        // has run; the desired state will apply once the mesh exists.
+        var pendingLayerVisibility = {};
+        window.setLayerVisible3D = function (idx, visible) {
+            if (layerMeshes[idx]) {
+                layerMeshes[idx].visible = visible;
+            } else {
+                pendingLayerVisibility[idx] = visible;
+            }
+        };
+    </script>
+
+
+</body>
+
+</html>

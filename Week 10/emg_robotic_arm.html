@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Case Study · Strain-Sensing Robotic Hand</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="case_study_JS/case_study.css">
+    <link rel="stylesheet" href="emg_arm_JS/style.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 10 · Case Study</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <div class="deck" id="deck">
+
+        <!-- ═════════════ SLIDE 0 · TITLE ═════════════ -->
+        <section class="slide title-slide active" data-slide="0">
+            <div class="copy">
+                <div class="meta">BMEN90033 · WEEK 10 · CASE STUDY</div>
+                <h1 class="slide-hero">Driving a <em>five-finger robotic hand</em> from glove-mounted strain gauges.</h1>
+                <div class="brief-box">
+                    <div class="brief-label">The brief</div>
+                    <p class="brief-body">A wearable glove carries one strain gauge across each finger,
+                        wired into a Wheatstone bridge. The clinical team asks for a benchtop
+                        demonstrator: five bridge channels in the millivolt range, conditioned to
+                        produce a per-finger drive that closes a corresponding finger on a desktop
+                        robotic hand. Live finger-curl data is captured from a webcam using ML5
+                        hand-pose tracking and treated as the simulated transducer input for each
+                        of the five sensors.</p>
+                    <div class="brief-question">
+                        <span class="brief-q-mark" aria-hidden="true">?</span>
+                        <p>Which of the blocks you have studied so far would you place between the
+                            strain gauge and the servo, and in what order?</p>
+                    </div>
+                </div>
+                <div class="tags">
+                    <span class="field-tag">strain gauge</span>
+                    <span class="field-tag">Wheatstone bridge</span>
+                    <span class="field-tag">instrumentation amp</span>
+                    <span class="field-tag">filter chain</span>
+                    <span class="field-tag">rectifier</span>
+                    <span class="field-tag">comparator</span>
+                    <span class="field-tag">PWM</span>
+                    <span class="field-tag">servo</span>
+                    <span class="field-tag">hand pose</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═════════════ SLIDE 1 · HAND SIMULATION (LAB VIEW) ═════════ -->
+        <section class="slide lab" data-slide="2">
+            <div class="lab-view">
+                <div class="lab-toolbar toolbar">
+                    <span class="pill" id="hand-cam-btn">enable camera</span>
+                    <span class="lab" style="color: var(--accent); font-family:'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.10em;" id="hand-cam-status">camera off</span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">strain f<sub>c</sub></span>
+                        <input type="range" id="arm-fc" min="40" max="200" step="1" value="100">
+                        <span class="val" id="arm-fc-val">100 Hz</span>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="pill" id="arm-pause">pause</span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">order</span>
+                        <span class="val" id="arm-orderok">empty</span>
+                    </span>
+                </div>
+
+                <div class="lab-plots">
+                    <div class="plot-box trace-box lab-plot">
+                        <div class="label">raw bridge inputs · five strain sensors</div>
+                        <svg id="plot-hand-input"></svg>
+                    </div>
+                    <div class="plot-box trace-box lab-plot">
+                        <div class="label">post-chain outputs · five servo drives</div>
+                        <svg id="plot-hand-output"></svg>
+                    </div>
+                </div>
+
+                <div class="lab-hand plot-box">
+                    <div class="label">five-finger robotic hand</div>
+                    <div id="arm-three"></div>
+                </div>
+
+                <div class="lab-sidebar">
+                    <div class="webcam-panel">
+                        <div class="header">
+                            <span>webcam · hand pose</span>
+                            <span class="status" id="hand-cam-status-2"></span>
+                        </div>
+                        <div class="frame" id="hand-webcam">
+                            <div class="placeholder">enable camera to capture finger curl</div>
+                        </div>
+                    </div>
+                    <div class="finger-controls" id="finger-controls"></div>
+                </div>
+
+                <div class="lab-chain">
+                    <div class="tray-wrap">
+                        <div class="tray-label">block tray · drag from here</div>
+                        <div id="arm-tray" class="block-tray"></div>
+                    </div>
+                    <div class="chain-wrap arm-chain">
+                        <div class="chain-label">live chain · drag tiles between the tray and the slots</div>
+                        <div id="arm-chain" class="block-chain editable"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- ═════════════ DECK NAV ═════════════ -->
+    <div class="nav-hint">Use the dots or the arrow keys to advance through the slides.</div>
+    <div class="deck-nav">
+        <span class="arrow" id="nav-prev" aria-label="previous slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </span>
+        <span class="dots" id="nav-dots"></span>
+        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">3</span></span>
+        <span class="arrow" id="nav-next" aria-label="next slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18l6-6-6-6" />
+            </svg>
+        </span>
+    </div>
+
+    <script src="emg_arm_JS/blocks.js"></script>
+    <script src="emg_arm_JS/signal.js"></script>
+    <script src="emg_arm_JS/handpose.js"></script>
+    <script src="emg_arm_JS/slide_assemble.js"></script>
+    <script src="emg_arm_JS/slide_arm_trace.js"></script>
+    <script type="module" src="emg_arm_JS/slide_arm_three.js"></script>
+    <script src="case_study_JS/nav.js"></script>
+</body>
+
+</html>

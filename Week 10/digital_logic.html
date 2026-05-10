@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033 · Digital Logic, Adders, Multiplexers, Decoders</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="../theme.css">
+    <link rel="stylesheet" href="passive_peak_detector_JS/passive_peak_detector.css">
+    <link rel="stylesheet" href="digital_logic_JS/digital_logic.css">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+
+    <script src="../theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+
+<body>
+
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 10</span></div>
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
+
+    <div class="deck" id="deck">
+
+    <!-- ================= TITLE SLIDE ================= -->
+    <section class="slide title-slide active" data-slide="0">
+        <div class="copy">
+            <div class="meta">BMEN90033 · WEEK 10 · DIGITAL LOGIC BUILDING BLOCKS</div>
+            <h1 class="hero">From transistor pairs to digital <em>arithmetic logic</em></h1>
+            <p class="sub">After digitisation, signals are processed by combinational networks of two-state
+                devices. Two complementary MOSFETs form an inverter; an inverter and a series pair form NAND;
+                NAND alone is functionally complete. Structured NAND networks yield the four primitives that
+                route, combine and select digital signals: adders, subtractors, multiplexers, decoders.</p>
+            <p class="dim">Use the dots or the arrow keys to advance through the slides.</p>
+            <div class="tags">
+                <span class="field-tag">cmos</span>
+                <span class="field-tag">boolean algebra</span>
+                <span class="field-tag">adder</span>
+                <span class="field-tag">subtractor</span>
+                <span class="field-tag">multiplexer</span>
+                <span class="field-tag">decoder</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 1 · LOGIC GATES ================= -->
+    <section class="slide" data-slide="1" id="sec-gates">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>boolean primitives</span></div>
+            <h2>Logic gates and the <em class="output">Boolean primitives</em></h2>
+
+            <p class="lead">A bit is encoded as one of two voltage levels: low near ground for $0$, high
+                near the supply for $1$. A gate maps its inputs to its output through a Boolean function.
+                The eight primitives below underlie every later construction.</p>
+
+            <ul class="gate-list">
+                <li><b>NOT.</b> Output is the complement of the input.</li>
+                <li><b>BUF.</b> Output equals the input; used for fan-out and signal restoration.</li>
+                <li><b>AND.</b> Output is $1$ only when every input is $1$.</li>
+                <li><b>OR.</b> Output is $1$ when at least one input is $1$.</li>
+                <li><b>NAND.</b> Negation of AND. Functionally complete: any Boolean function can be built from NAND alone.</li>
+                <li><b>NOR.</b> Negation of OR. Also functionally complete.</li>
+                <li><b>XOR.</b> Output is $1$ when the inputs differ. Addition modulo two.</li>
+                <li><b>XNOR.</b> Negation of XOR. Output is $1$ when the inputs agree.</li>
+            </ul>
+
+            <p>Each gate is fully specified by its truth table. NAND and NOR dominate CMOS layouts
+                because they need fewer transistors than AND or OR and remain functionally complete.
+                Two-input expressions, with overbar denoting negation:</p>
+
+            <div class="formula-stack">
+                <div>$Y_{\text{AND}} = A \cdot B$</div>
+                <div>$Y_{\text{OR}}  = A + B$</div>
+                <div>$Y_{\text{NAND}} = \overline{A \cdot B}$</div>
+                <div>$Y_{\text{NOR}}  = \overline{A + B}$</div>
+                <div>$Y_{\text{XOR}}  = A \oplus B = A\bar B + \bar A B$</div>
+                <div>$Y_{\text{XNOR}} = \overline{A \oplus B}$</div>
+            </div>
+
+            <div class="callout">
+                Symbol convention: AND is a flat-back D, OR a curved shield, NOT a triangle. A bubble at any
+                input or output denotes negation, so NAND is AND with an output bubble and NOR is OR with one.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">A</span>
+                        <button class="bit-btn" id="dl-g-a" data-on="0">0</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">B</span>
+                        <button class="bit-btn" id="dl-g-b" data-on="0">0</button>
+                    </span>
+                </div>
+                <div class="plot-box gate-grid-box">
+                    <div class="label">seven gates · <b>symbol, expression, truth row</b></div>
+                    <svg id="plot-dl-gates"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 2 · CMOS CONSTRUCTION ================= -->
+    <section class="slide" data-slide="2" id="sec-cmos">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>cmos construction</span></div>
+            <h2>CMOS construction of <em class="output">logic gates</em></h2>
+
+            <p class="lead">A CMOS process places a p-channel and an n-channel MOSFET on the same substrate.
+                PMOS conducts when its gate is low; NMOS conducts when its gate is high. Tying the two gates
+                together, with the PMOS source at $V_{DD}$ and the NMOS source at ground, gives the inverter
+                at the common drain.</p>
+
+            <p>For a low input the PMOS pulls the output to $V_{DD}$; for a high input the NMOS pulls it to
+                ground. At every static input one device is off, so no DC current flows. Power is dissipated
+                only during the switching transient, which is the origin of CMOS's low static power.</p>
+
+            <p>NAND stacks two NMOS in series to ground and two PMOS in parallel to $V_{DD}$: the output is
+                pulled low only when both inputs are high. NOR is the dual: NMOS in parallel, PMOS in series.
+                AND and OR are NAND and NOR followed by an inverter. XOR and memory storage cells follow the
+                same patterns.</p>
+
+            <div class="callout">
+                NAND alone, and NOR alone, are functionally complete. Fabs therefore lay down a sea of
+                identical NAND or NOR cells and route them to realise arbitrary logic, rather than fabricate a
+                distinct cell per operation.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">input</span>
+                        <button class="bit-btn" id="dl-c-a" data-on="0">0</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="readout-inline">V<sub>out</sub> = <span id="dl-c-vout">V<sub>DD</sub></span></span>
+                </div>
+                <div class="plot-box cmos-box">
+                    <div class="label">cmos inverter · <b>PMOS pull-up, NMOS pull-down</b></div>
+                    <svg id="plot-dl-cmos-inv"></svg>
+                </div>
+                <div class="plot-box cmos-box">
+                    <div class="label">cmos NAND · <b>two PMOS in parallel, two NMOS in series</b></div>
+                    <svg id="plot-dl-cmos-nand"></svg>
+                </div>
+                <div class="plot-box short-box">
+                    <div class="label">universality · <b>NOT, AND, OR built from NAND only</b></div>
+                    <svg id="plot-dl-universal"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 3 · ADDERS ================= -->
+    <section class="slide" data-slide="3" id="sec-add">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>half, full and ripple-carry adders</span></div>
+            <h2>Binary adders: <em class="output">half, full</em> and <em class="output">ripple-carry</em></h2>
+
+            <p class="lead">Adding two single bits $A$ and $B$ produces a sum $S$ and carry $C_{\text{out}}$.
+                $S$ is $1$ when the inputs differ (XOR); $C_{\text{out}}$ is $1$ when both are $1$ (AND).
+                The two-gate circuit is the half adder.</p>
+
+            <div class="formula-stack">
+                <div>$S = A \oplus B$</div>
+                <div>$C_{\text{out}} = A \cdot B$</div>
+            </div>
+
+            <p>Multi-bit operands require each column to accept a carry-in. A full adder takes
+                $A$, $B$, $C_{\text{in}}$ and outputs $S$ and $C_{\text{out}}$. It is built from two half
+                adders and an OR:</p>
+
+            <div class="formula-stack">
+                <div>$S = A \oplus B \oplus C_{\text{in}}$</div>
+                <div>$C_{\text{out}} = A \cdot B + C_{\text{in}} \cdot (A \oplus B)$</div>
+            </div>
+
+            <p>Cascading $n$ full adders, with each $C_{\text{out}}$ feeding the next $C_{\text{in}}$,
+                gives the ripple-carry adder. The first $C_{\text{in}}$ is tied to zero. The panel toggles
+                two 4-bit operands and shows the carry propagating across the four stages.</p>
+
+            <div class="callout">
+                Propagation delay grows linearly with operand width because each stage waits on its
+                carry-in. Carry-lookahead and carry-select adders compute the carries in parallel from group
+                functions, trading area for speed; the output function is the same.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar" id="dl-add-bits">
+                    <span class="bit-row"><span class="lab">A</span>
+                        <button class="bit-btn" data-key="a3" data-on="0">0</button>
+                        <button class="bit-btn" data-key="a2" data-on="0">0</button>
+                        <button class="bit-btn" data-key="a1" data-on="1">1</button>
+                        <button class="bit-btn" data-key="a0" data-on="1">1</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="bit-row"><span class="lab">B</span>
+                        <button class="bit-btn" data-key="b3" data-on="0">0</button>
+                        <button class="bit-btn" data-key="b2" data-on="1">1</button>
+                        <button class="bit-btn" data-key="b1" data-on="1">1</button>
+                        <button class="bit-btn" data-key="b0" data-on="0">0</button>
+                    </span>
+                </div>
+                <div class="plot-box gate-box">
+                    <div class="label">half adder · <b>S = A⊕B, C = A·B</b></div>
+                    <svg id="plot-dl-half"></svg>
+                </div>
+                <div class="plot-box gate-box">
+                    <div class="label">full adder · <b>two half adders + OR</b></div>
+                    <svg id="plot-dl-full"></svg>
+                </div>
+                <div class="plot-box ripple-box">
+                    <div class="label">4-bit ripple-carry adder · <b>A + B</b></div>
+                    <svg id="plot-dl-ripple"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">A</span><span class="v" id="dl-add-a">0011</span></div>
+                    <div class="item"><span class="k">B</span><span class="v" id="dl-add-b">0110</span></div>
+                    <div class="item"><span class="k">sum</span><span class="v" id="dl-add-s">01001</span></div>
+                    <div class="item"><span class="k">decimal</span><span class="v" id="dl-add-dec">3 + 6 = 9</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 4 · SUBTRACTOR ================= -->
+    <section class="slide" data-slide="4" id="sec-sub">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>two's-complement arithmetic</span></div>
+            <h2>Subtraction by <em class="output">two's-complement</em> addition</h2>
+
+            <p class="lead">Dedicated subtractor circuits are rarely fabricated. In two's-complement
+                representation, the negation of an $n$-bit operand $B$ is $\bar B + 1$, so</p>
+
+            <div class="formula-stack">
+                <div>$A - B = A + \bar B + 1$</div>
+            </div>
+
+            <p>and a ripple-carry adder performs subtraction by inverting $B$ and asserting the lowest
+                carry-in. A mode bit $M$ controls the operation: each $B_i$ passes through an XOR gate whose
+                other input is $M$, and $M$ also drives $C_{\text{in,0}}$.</p>
+
+            <p>For $M = 0$ the XORs pass $B$ unchanged and $C_{\text{in,0}} = 0$, computing $A + B$. For
+                $M = 1$ the XORs invert $B$ and $C_{\text{in,0}} = 1$, computing $A + \bar B + 1 = A - B$.
+                The same lattice serves both; only the interpretation of the result changes.</p>
+
+            <p>Under two's-complement arithmetic the carry-out of the most significant stage is not the
+                sign bit. Overflow is detected as the XOR of the carry into and out of the highest stage.</p>
+
+            <div class="callout">
+                Two's complement is the only signed representation in which the unsigned addition circuit
+                also performs signed addition unmodified. Sign-magnitude and one's-complement need a separate
+                subtractor or end-around carry; neither is used in modern processors.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar" id="dl-sub-bits">
+                    <span class="bit-row"><span class="lab">A</span>
+                        <button class="bit-btn" data-key="a3" data-on="0">0</button>
+                        <button class="bit-btn" data-key="a2" data-on="1">1</button>
+                        <button class="bit-btn" data-key="a1" data-on="0">0</button>
+                        <button class="bit-btn" data-key="a0" data-on="1">1</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="bit-row"><span class="lab">B</span>
+                        <button class="bit-btn" data-key="b3" data-on="0">0</button>
+                        <button class="bit-btn" data-key="b2" data-on="0">0</button>
+                        <button class="bit-btn" data-key="b1" data-on="1">1</button>
+                        <button class="bit-btn" data-key="b0" data-on="1">1</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="bit-row"><span class="lab">mode</span>
+                        <button class="bit-btn mode-btn" data-key="m" data-on="1">SUB</button>
+                    </span>
+                </div>
+                <div class="plot-box ripple-box">
+                    <div class="label">4-bit adder/subtractor · <b>M = 0 add, M = 1 sub</b></div>
+                    <svg id="plot-dl-addsub"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">A</span><span class="v" id="dl-sub-a">0101</span></div>
+                    <div class="item"><span class="k">B</span><span class="v" id="dl-sub-b">0011</span></div>
+                    <div class="item"><span class="k">B XOR M</span><span class="v" id="dl-sub-bx">1100</span></div>
+                    <div class="item"><span class="k">result</span><span class="v" id="dl-sub-r">0010</span></div>
+                    <div class="item"><span class="k">decimal</span><span class="v" id="dl-sub-dec">5 − 3 = 2</span></div>
+                    <div class="item"><span class="k">overflow</span><span class="v" id="dl-sub-ov">no</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 5 · MULTIPLEXER ================= -->
+    <section class="slide" data-slide="5" id="sec-mux">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>data routing</span></div>
+            <h2>Multiplexers: routing one of <em class="output">$2^k$ inputs</em></h2>
+
+            <p class="lead">A multiplexer routes one of $2^k$ data inputs to a single output, selected by a
+                $k$-bit code. The 2:1 mux takes $D_0$, $D_1$ and select line $S$, with</p>
+
+            <div class="formula-stack">
+                <div>$Y = \bar S \cdot D_0 + S \cdot D_1$</div>
+            </div>
+
+            <p>An inverter forms $\bar S$; two AND gates form the products $\bar S \cdot D_0$ and
+                $S \cdot D_1$; an OR combines them. Exactly one AND is enabled at a time, so exactly one
+                input reaches $Y$.</p>
+
+            <p>A 4:1 mux uses two select lines $S_1 S_0$ with three-input ANDs, gating each $D_i$ with the
+                matching combination of $S_1$, $S_0$ and their negations:</p>
+
+            <div class="formula-stack">
+                <div>$Y = \bar S_1 \bar S_0 D_0 + \bar S_1 S_0 D_1 + S_1 \bar S_0 D_2 + S_1 S_0 D_3$</div>
+            </div>
+
+            <p>The inverse block is the demultiplexer: one input routed to one of $2^k$ outputs.
+                Structurally it is a decoder whose output ANDs each take an extra data input.</p>
+
+            <div class="callout">
+                In instrumentation front ends, a multiplexer shares a single ADC across many electrodes. The
+                select code is the channel address, generated by a microcontroller or by a counter clocked at
+                the per-channel sampling rate.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar" id="dl-mux-bits">
+                    <span class="bit-row"><span class="lab">D</span>
+                        <button class="bit-btn" data-key="d3" data-on="1">1</button>
+                        <button class="bit-btn" data-key="d2" data-on="0">0</button>
+                        <button class="bit-btn" data-key="d1" data-on="1">1</button>
+                        <button class="bit-btn" data-key="d0" data-on="0">0</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="bit-row"><span class="lab">S<sub>1</sub>S<sub>0</sub></span>
+                        <button class="bit-btn" data-key="s1" data-on="1">1</button>
+                        <button class="bit-btn" data-key="s0" data-on="0">0</button>
+                    </span>
+                </div>
+                <div class="plot-box gate-box">
+                    <div class="label">2:1 mux · <b>Y = ¬S·D₀ + S·D₁</b></div>
+                    <svg id="plot-dl-mux2"></svg>
+                </div>
+                <div class="plot-box mux-box">
+                    <div class="label">4:1 mux · <b>two select lines, four data inputs</b></div>
+                    <svg id="plot-dl-mux4"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">select code</span><span class="v" id="dl-mux-sel">10</span></div>
+                    <div class="item"><span class="k">routed input</span><span class="v" id="dl-mux-route">D₂</span></div>
+                    <div class="item"><span class="k">Y</span><span class="v" id="dl-mux-y">0</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 6 · DECODER ================= -->
+    <section class="slide" data-slide="6" id="sec-dec">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>address decoding</span></div>
+            <h2>Decoders: an $n$-bit code to a <em class="output">one-hot</em> output</h2>
+
+            <p class="lead">A binary decoder maps an $n$-bit code to a one-hot bus of $2^n$ lines: exactly
+                one line is high, corresponding to the integer represented by the input. For a 2-to-4
+                decoder with inputs $A_1 A_0$,</p>
+
+            <div class="formula-stack">
+                <div>$Y_0 = \bar A_1 \bar A_0$,
+                     $Y_1 = \bar A_1 A_0$,
+                     $Y_2 = A_1 \bar A_0$,
+                     $Y_3 = A_1 A_0$</div>
+            </div>
+
+            <p>Each output is an AND of the input bits or their inverses, with the inversion pattern
+                matching the binary form of the output index. A 3-to-8 decoder uses three-input ANDs and an
+                extra inverter stage.</p>
+
+            <p>Most decoders expose an active-low enable $\bar E$. Deasserting it forces every output to
+                zero. Enables allow hierarchical composition: a 4-to-16 decoder is built from five 2-to-4
+                decoders, with one feeding the enables of the others. The same scaling reaches memory
+                address decoders with twenty or more bits.</p>
+
+            <div class="callout">
+                A decoder followed by an OR-tree implements an arbitrary truth table directly: the decoder
+                expands the $n$ inputs into all $2^n$ minterms, and the OR-tree selects those that yield a
+                one. This underlies ROMs and the lookup-table logic of FPGAs.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar" id="dl-dec-bits">
+                    <span class="bit-row"><span class="lab">A<sub>2</sub>A<sub>1</sub>A<sub>0</sub></span>
+                        <button class="bit-btn" data-key="a2" data-on="1">1</button>
+                        <button class="bit-btn" data-key="a1" data-on="0">0</button>
+                        <button class="bit-btn" data-key="a0" data-on="1">1</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="bit-row"><span class="lab">enable</span>
+                        <button class="bit-btn" data-key="en" data-on="1">EN</button>
+                    </span>
+                </div>
+                <div class="plot-box gate-box">
+                    <div class="label">2-to-4 decoder · <b>four AND gates with inverter pattern</b></div>
+                    <svg id="plot-dl-dec24"></svg>
+                </div>
+                <div class="plot-box dec-box">
+                    <div class="label">3-to-8 decoder · <b>one-hot output bus</b></div>
+                    <svg id="plot-dl-dec38"></svg>
+                </div>
+                <div class="readout">
+                    <div class="item"><span class="k">address</span><span class="v" id="dl-dec-addr">101</span></div>
+                    <div class="item"><span class="k">decimal</span><span class="v" id="dl-dec-int">5</span></div>
+                    <div class="item"><span class="k">asserted line</span><span class="v" id="dl-dec-line">Y₅</span></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 7 · APPLICATIONS ================= -->
+    <section class="slide full" data-slide="7" id="sec-apps">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>applications in instrumentation</span></div>
+            <h2>Applications in <em class="output">bioinstrumentation</em></h2>
+
+            <p class="lead">Adders, subtractors, multiplexers and decoders compose every datapath that
+                processes a digitised signal. The role of each primitive in a typical instrumentation
+                system:</p>
+
+            <h3>Multi-channel ADC front ends</h3>
+            <p>An analog multiplexer in front of a single ADC shares the converter across many electrodes.
+                The select code, generated by a counter or by software, selects the channel for the current
+                conversion and may also feed a decoder that drives per-channel calibration lines.</p>
+
+            <h3>Digital filter accumulators</h3>
+            <p>FIR filters compute a sum of products between past samples and fixed coefficients. Each tap
+                product is formed by a multiplier; the running sum across taps is formed by a chain of
+                two's-complement adders.</p>
+
+            <h3>Address decoding in microcontrollers</h3>
+            <p>A microcontroller's address bus selects between memory regions, peripheral registers and
+                external chip-select lines through one or more decoders. High-order address bits drive the
+                decoder; each output enables one peripheral or memory bank.</p>
+
+            <h3>Successive-approximation register</h3>
+            <p>The SAR ADC of Week 9 contains a trial-code register, a comparator, and combinational logic
+                that updates the register from the comparator output. The update is a multiplexer: the bit
+                either keeps its trial value or is cleared, depending on the decision.</p>
+
+            <h3>Encoder in a flash ADC</h3>
+            <p>A flash ADC produces a thermometer code from $2^n - 1$ comparators. A priority encoder,
+                structurally a decoder run in reverse, maps this code to an $n$-bit binary output. It is
+                the only block whose latency depends on the bit count.</p>
+
+            <div class="callout">
+                Whenever a digital circuit must combine, route, select, count or compare signals, one of
+                these four primitives sits at its centre. Implementations vary; the Boolean function does
+                not. A NAND lattice realises every digital block on this page.
+            </div>
+        </div>
+    </section>
+
+    </div>
+
+    <!-- ================= DECK NAV ================= -->
+    <div class="deck-nav">
+        <span class="arrow" id="nav-prev" aria-label="previous slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </span>
+        <span class="dots" id="nav-dots"></span>
+        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">8</span></span>
+        <span class="arrow" id="nav-next" aria-label="next slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18l6-6-6-6" />
+            </svg>
+        </span>
+    </div>
+
+    <script src="digital_logic_JS/scene_gates.js"></script>
+    <script src="digital_logic_JS/scene_cmos.js"></script>
+    <script src="digital_logic_JS/scene_adder.js"></script>
+    <script src="digital_logic_JS/scene_subtractor.js"></script>
+    <script src="digital_logic_JS/scene_mux.js"></script>
+    <script src="digital_logic_JS/scene_decoder.js"></script>
+    <script src="digital_logic_JS/nav.js"></script>
+</body>
+
+</html>

@@ -17,15 +17,14 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
-        onload="renderMathInElement(document.body, {
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {
             delimiters: [
                 { left: '$$', right: '$$', display: true },
                 { left: '\\[', right: '\\]', display: true },
                 { left: '$',  right: '$',  display: false },
                 { left: '\\(', right: '\\)', display: false }
             ],
-            ignoredClasses: ['terminal', 'terminal-hint', 'memtable-wrap', 'memmap', 'sim-meta'],
+            ignoredClasses: ['terminal', 'terminal-hint', 'memtable-wrap', 'memmap', 'sim-meta', 'pla-truth', 'pla-toolbar', 'pla-readout', 'pla-legend'],
             throwOnError: false
         });"></script>
 
@@ -43,30 +42,50 @@
 
     <style>
         :root {
-            --c-acc:    #f5c451;
-            --c-reg:    #58a6ff;
-            --c-mem:    #34d399;
-            --c-bus:    #b58df1;
-        }
-        [data-theme="light"] {
-            --c-acc:    #b8801f;
-            --c-reg:    #1d4ed8;
-            --c-mem:    #059669;
-            --c-bus:    #7d3cdc;
+            --c-acc: #f5c451;
+            --c-reg: #58a6ff;
+            --c-mem: #34d399;
+            --c-bus: #b58df1;
         }
 
-        h2 em.acc { color: var(--c-acc); }
-        h2 em.reg { color: var(--c-reg); }
-        h2 em.mem { color: var(--c-mem); }
-        h2 em.bus { color: var(--c-bus); }
+        [data-theme="light"] {
+            --c-acc: #b8801f;
+            --c-reg: #1d4ed8;
+            --c-mem: #059669;
+            --c-bus: #7d3cdc;
+        }
+
+        h2 em.acc {
+            color: var(--c-acc);
+        }
+
+        h2 em.reg {
+            color: var(--c-reg);
+        }
+
+        h2 em.mem {
+            color: var(--c-mem);
+        }
+
+        h2 em.bus {
+            color: var(--c-bus);
+        }
 
         /* Single-column scene used for the embedded simulator. */
         section.scene.full {
             grid-template-columns: 1fr;
             max-width: 1400px;
         }
-        section.scene.full .copy { max-width: 900px; margin: 0 auto; }
-        section.scene.full .sim-wrap { width: 100%; margin: 24px auto 0; }
+
+        section.scene.full .copy {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        section.scene.full .sim-wrap {
+            width: 100%;
+            margin: 24px auto 0;
+        }
 
         /* ------------------------------------------------------------
            Themed wrapper around the visual6502 transistor simulator.
@@ -84,8 +103,12 @@
             margin: 0 auto;
             max-width: 1320px;
         }
+
         @media (max-width: 1380px) {
-            .v6502 { grid-template-columns: 1fr; justify-items: center; }
+            .v6502 {
+                grid-template-columns: 1fr;
+                justify-items: center;
+            }
         }
 
         .v6502 .chip-viewport {
@@ -97,7 +120,10 @@
             border: 1px solid var(--border);
             border-radius: 12px;
         }
-        [data-theme="light"] .v6502 .chip-viewport { background: #1a1c24; }
+
+        [data-theme="light"] .v6502 .chip-viewport {
+            background: #1a1c24;
+        }
 
         .v6502 .chip-viewport canvas.chip {
             position: absolute;
@@ -107,6 +133,7 @@
             left: 0;
             image-rendering: pixelated;
         }
+
         /* The dimmer canvas sits on top of the click-receiving #hilite
            canvas (DOM order). It is purely a visual overlay, so let
            mouse events fall through to the layer below. Without this
@@ -114,11 +141,14 @@
         .v6502 .chip-viewport #dimmer {
             pointer-events: none;
         }
+
         /* In 3D view all the 2D chip canvases and overlays are hidden;
            the Three.js renderer takes the full viewport. */
         .v6502 .chip-viewport.view-3d canvas.chip,
         .v6502 .chip-viewport.view-3d .regions-overlay,
-        .v6502 .chip-viewport.view-3d #waiting-label { display: none; }
+        .v6502 .chip-viewport.view-3d #waiting-label {
+            display: none;
+        }
 
         /* 3D scene container. Fills the chip viewport and contains the
            Three.js renderer's canvas. Hidden until the user activates
@@ -129,7 +159,11 @@
             display: none;
             background: radial-gradient(ellipse at center, #0d1118 0%, #050608 75%);
         }
-        .v6502 .chip-viewport.view-3d .scene-3d { display: block; }
+
+        .v6502 .chip-viewport.view-3d .scene-3d {
+            display: block;
+        }
+
         .v6502 .chip-viewport .scene-3d canvas {
             position: absolute;
             inset: 0;
@@ -137,6 +171,7 @@
             height: 100%;
             display: block;
         }
+
         .v6502 .chip-viewport .scene-3d .scene-hint {
             position: absolute;
             top: 12px;
@@ -148,13 +183,14 @@
             color: rgba(255, 255, 255, 0.42);
             pointer-events: none;
         }
+
         .v6502 .chip-viewport #waiting-label {
             position: absolute;
             inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: rgba(255,255,255,0.55);
+            color: rgba(255, 255, 255, 0.55);
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             letter-spacing: 0.18em;
@@ -181,6 +217,7 @@
             border: 1px solid var(--border);
             border-radius: 10px;
         }
+
         .v6502 .ctl {
             font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
@@ -195,13 +232,38 @@
             transition: all 0.12s;
             user-select: none;
         }
-        .v6502 .ctl:hover { border-color: var(--border-hover); color: var(--fg); }
-        .v6502 .ctl.run    { color: var(--c-output); border-color: rgba(52,211,153,0.35); }
-        .v6502 .ctl.run:hover { background: rgba(52,211,153,0.10); }
-        .v6502 .ctl.stop   { color: var(--c-thresh); border-color: rgba(255,92,122,0.35); }
-        .v6502 .ctl.stop:hover { background: rgba(255,92,122,0.10); }
-        .v6502 .ctl.reset  { color: var(--c-amber); border-color: rgba(245,196,81,0.35); }
-        .v6502 .ctl.reset:hover { background: rgba(245,196,81,0.10); }
+
+        .v6502 .ctl:hover {
+            border-color: var(--border-hover);
+            color: var(--fg);
+        }
+
+        .v6502 .ctl.run {
+            color: var(--c-output);
+            border-color: rgba(52, 211, 153, 0.35);
+        }
+
+        .v6502 .ctl.run:hover {
+            background: rgba(52, 211, 153, 0.10);
+        }
+
+        .v6502 .ctl.stop {
+            color: var(--c-thresh);
+            border-color: rgba(255, 92, 122, 0.35);
+        }
+
+        .v6502 .ctl.stop:hover {
+            background: rgba(255, 92, 122, 0.10);
+        }
+
+        .v6502 .ctl.reset {
+            color: var(--c-amber);
+            border-color: rgba(245, 196, 81, 0.35);
+        }
+
+        .v6502 .ctl.reset:hover {
+            background: rgba(245, 196, 81, 0.10);
+        }
 
         /* Inline speed slider, sits in the same row as the chip
            controls. Slider value is "speed", left = slow, right = fast. */
@@ -214,6 +276,7 @@
             border-radius: 999px;
             background: var(--pill-bg);
         }
+
         .v6502 .speed-control .speed-label {
             font-family: 'JetBrains Mono', monospace;
             font-size: 10px;
@@ -221,6 +284,7 @@
             text-transform: uppercase;
             color: var(--muted);
         }
+
         .v6502 .speed-control input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -231,23 +295,28 @@
             outline: none;
             cursor: pointer;
         }
+
         .v6502 .speed-control input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 13px; height: 13px;
+            width: 13px;
+            height: 13px;
             border-radius: 50%;
             background: var(--c-output);
             border: 2px solid var(--bg-2);
             cursor: pointer;
             box-shadow: 0 0 6px rgba(52, 211, 153, 0.45);
         }
+
         .v6502 .speed-control input[type="range"]::-moz-range-thumb {
-            width: 13px; height: 13px;
+            width: 13px;
+            height: 13px;
             border-radius: 50%;
             background: var(--c-output);
             border: 2px solid var(--bg-2);
             cursor: pointer;
         }
+
         .v6502 .speed-control .speed-readout {
             font-family: 'JetBrains Mono', monospace;
             font-size: 10px;
@@ -269,6 +338,7 @@
             white-space: pre-wrap;
             overflow-x: auto;
         }
+
         .v6502 .status-label {
             font-family: 'JetBrains Mono', monospace;
             font-size: 10px;
@@ -285,17 +355,20 @@
             padding: 10px;
             overflow-x: auto;
         }
+
         .v6502 #memtable {
             font-family: 'JetBrains Mono', monospace;
             font-size: 10.5px;
             border-spacing: 0;
             color: var(--text-dim);
         }
+
         .v6502 #memtable td {
             padding: 1px 4px;
             text-align: right;
             min-width: 18px;
         }
+
         .v6502 #memtable tr td:first-child {
             color: var(--c-mem);
             text-align: left;
@@ -322,11 +395,16 @@
             box-shadow: inset 0 0 24px rgba(109, 255, 175, 0.06);
             text-shadow: 0 0 6px rgba(109, 255, 175, 0.35);
         }
-        .v6502 .terminal:focus { border-color: rgba(109, 255, 175, 0.5); }
+
+        .v6502 .terminal:focus {
+            border-color: rgba(109, 255, 175, 0.5);
+        }
+
         [data-theme="light"] .v6502 .terminal {
             background: #0c0e15;
             color: #4be08e;
         }
+
         .v6502 .terminal .cursor {
             display: inline-block;
             width: 0.55em;
@@ -334,9 +412,14 @@
             color: #050608;
             animation: caret-blink 1.05s steps(1) infinite;
         }
+
         @keyframes caret-blink {
-            50% { background: transparent; color: inherit; }
+            50% {
+                background: transparent;
+                color: inherit;
+            }
         }
+
         .v6502 .terminal-hint {
             font-family: 'JetBrains Mono', monospace;
             font-size: 10px;
@@ -345,10 +428,19 @@
             color: var(--muted);
             margin-top: 6px;
         }
-        .v6502 .terminal-hint b { color: var(--text-dim); font-weight: 500; }
+
+        .v6502 .terminal-hint b {
+            color: var(--text-dim);
+            font-weight: 500;
+        }
 
         /* Hidden stub buttons that the upstream JS toggles via id #start / #stop */
-        #v6502-stubs { position: absolute; left: -10000px; top: -10000px; visibility: hidden; }
+        #v6502-stubs {
+            position: absolute;
+            left: -10000px;
+            top: -10000px;
+            visibility: hidden;
+        }
 
         /* Hover tooltip used by the "labels" overlay. Floats with the cursor. */
         #labelTip {
@@ -368,6 +460,7 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
             backdrop-filter: blur(6px);
         }
+
         #labelTip b {
             display: block;
             color: var(--c-bus);
@@ -376,6 +469,7 @@
             letter-spacing: 0.06em;
             margin-bottom: 3px;
         }
+
         #labelTip span.cat {
             display: inline-block;
             color: var(--c-acc);
@@ -384,11 +478,15 @@
             text-transform: uppercase;
             margin-bottom: 4px;
         }
+
         [data-theme="light"] #labelTip {
             background: rgba(255, 255, 255, 0.97);
             color: var(--fg);
         }
-        .v6502 .chip-viewport.labels-on { cursor: help; }
+
+        .v6502 .chip-viewport.labels-on {
+            cursor: help;
+        }
 
         /* High-level "regions" overlay. Sits on top of the chip canvas
            layer, sized exactly the same as the canvases (top/left/width
@@ -396,13 +494,21 @@
            rectangles use percentage coordinates so they scale with zoom. */
         .regions-overlay {
             position: absolute;
-            top: 0; left: 0;
-            width: 800px; height: 800px;
+            top: 0;
+            left: 0;
+            width: 800px;
+            height: 800px;
             display: none;
-            pointer-events: none;       /* hover handled on the viewport */
-            z-index: 4;                 /* above chipbg/overlay/hilite */
+            pointer-events: none;
+            /* hover handled on the viewport */
+            z-index: 4;
+            /* above chipbg/overlay/hilite */
         }
-        .v6502 .chip-viewport.regions-on .regions-overlay { display: block; }
+
+        .v6502 .chip-viewport.regions-on .regions-overlay {
+            display: block;
+        }
+
         .regions-overlay .region {
             position: absolute;
             border: 1px solid currentColor;
@@ -411,10 +517,12 @@
             box-sizing: border-box;
             transition: opacity 0.15s, border-width 0.15s;
         }
+
         .regions-overlay .region.active {
             opacity: 0.42;
             border-width: 2px;
         }
+
         .regions-overlay .rlabel {
             position: absolute;
             inset: 0;
@@ -426,7 +534,7 @@
             letter-spacing: 0.06em;
             text-transform: uppercase;
             color: #ffffff;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.85), 0 0 8px rgba(0,0,0,0.6);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85), 0 0 8px rgba(0, 0, 0, 0.6);
             text-align: center;
             line-height: 1.2;
             padding: 6px;
@@ -450,19 +558,23 @@
             color: #ffffff;
             background: rgba(10, 10, 16, 0.88);
             border: 1px solid currentColor;
-            text-shadow: 0 1px 1px rgba(0,0,0,0.85);
+            text-shadow: 0 1px 1px rgba(0, 0, 0, 0.85);
             pointer-events: auto;
             cursor: help;
             z-index: 3;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
             transition: transform 0.1s, box-shadow 0.1s;
         }
+
         .regions-overlay .pin-label:hover {
             transform: translate(-50%, -50%) scale(1.18);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.55);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
             z-index: 4;
         }
-        .v6502 .chip-viewport.regions-on .regions-overlay .pin-label { display: block; }
+
+        .v6502 .chip-viewport.regions-on .regions-overlay .pin-label {
+            display: block;
+        }
 
         /* The chip viewport and the per-layer pill stack vertically
            in the left grid column so the chip stays 800x800 and the
@@ -501,6 +613,7 @@
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
             user-select: none;
         }
+
         .v6502 .chip-viewport .labels-bar button {
             appearance: none;
             -webkit-appearance: none;
@@ -526,14 +639,19 @@
             white-space: nowrap;
             transition: background 0.15s;
         }
+
         .v6502 .chip-viewport .labels-toggle:hover {
             background: rgba(0, 0, 0, 0.05);
         }
+
         .v6502 .chip-viewport .labels-toggle .dot {
-            width: 7px; height: 7px; border-radius: 50%;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
             background: rgba(0, 0, 0, 0.28);
             transition: background 0.15s, box-shadow 0.15s;
         }
+
         .v6502 .chip-viewport .labels-bar.expanded .labels-toggle .dot {
             background: #2f8f3f;
             box-shadow: 0 0 6px rgba(47, 143, 63, 0.55);
@@ -547,6 +665,7 @@
             align-items: center;
             margin-left: 4px;
         }
+
         .v6502 .chip-viewport .view-toggle::before {
             content: '';
             width: 1px;
@@ -554,24 +673,29 @@
             margin: 4px 6px;
             align-self: stretch;
         }
+
         .v6502 .chip-viewport .view-toggle button {
             padding: 6px 11px;
             border-radius: 999px;
             color: rgba(20, 21, 28, 0.55);
             transition: background 0.15s, color 0.15s;
         }
+
         .v6502 .chip-viewport .view-toggle button:hover:not(.active) {
             color: rgba(20, 21, 28, 0.95);
             background: rgba(0, 0, 0, 0.05);
         }
+
         .v6502 .chip-viewport .view-toggle button.active {
             background: #14151c;
             color: #ffffff;
         }
+
         .v6502 .chip-viewport .view-toggle button[data-view="3d"].active {
             background: #b58df1;
             color: #14151c;
         }
+
         /* In 3D view the labels controls don't apply, so collapse them
            cleanly even if labels were on before the user switched. */
         .v6502 .chip-viewport.view-3d .labels-bar .mode-switch,
@@ -600,6 +724,7 @@
             color: #14151c;
             box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
         }
+
         .v6502 .chip-column .layers-bar .layer-btn {
             appearance: none;
             -webkit-appearance: none;
@@ -619,10 +744,12 @@
             line-height: 1;
             transition: background 0.15s, color 0.15s, border-color 0.15s;
         }
+
         .v6502 .chip-column .layers-bar .layer-btn:hover {
             color: rgba(20, 21, 28, 0.95);
             background: rgba(0, 0, 0, 0.08);
         }
+
         .v6502 .chip-column .layers-bar .layer-btn .swatch {
             width: 9px;
             height: 9px;
@@ -632,20 +759,24 @@
             flex-shrink: 0;
             transition: background 0.15s, border-color 0.15s;
         }
+
         .v6502 .chip-column .layers-bar .layer-btn.active {
             background: var(--swatch);
             color: #14151c;
             border-color: rgba(0, 0, 0, 0.16);
         }
+
         /* Use white text on darker swatches (poly purple, pink diode). */
         .v6502 .chip-column .layers-bar .layer-btn.active[data-layer="2"],
         .v6502 .chip-column .layers-bar .layer-btn.active[data-layer="5"] {
             color: #ffffff;
         }
+
         .v6502 .chip-column .layers-bar .layer-btn.active .swatch {
             background: rgba(255, 255, 255, 0.85);
             border-color: rgba(0, 0, 0, 0.25);
         }
+
         /* Vertical divider between fab layers and the logic-state
            toggle, since the latter is conceptually separate. */
         .v6502 .chip-column .layers-bar .layers-divider {
@@ -654,41 +785,88 @@
             align-self: stretch;
             margin: 4px 4px;
         }
+
+        /* Static legend listing the meaning of each fab-layer button.
+           Sits below the layers-bar in the chip-column. */
+        .v6502 .chip-column .layers-legend {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 4px 18px;
+            margin-top: 2px;
+            padding: 10px 14px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--text-dim);
+        }
+
+        .v6502 .chip-column .layers-legend .row {
+            display: grid;
+            grid-template-columns: 12px 56px 1fr;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .v6502 .chip-column .layers-legend .sw {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            background: var(--swatch);
+            border: 1px solid rgba(0, 0, 0, 0.25);
+            transform: translateY(1px);
+        }
+
+        .v6502 .chip-column .layers-legend .key {
+            color: var(--fg);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            font-size: 10.5px;
+        }
+
+        @media (max-width: 720px) {
+            .v6502 .chip-column .layers-legend {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* The logic-state button uses a multi-colour swatch to signal
            that the overlay is colour-coded per signal class. */
         .v6502 .chip-column .layers-bar .layer-btn.logic-btn .swatch {
-            background: conic-gradient(
-                from 90deg,
-                #ffc850 0deg,
-                #50c8ff 60deg,
-                #50ffb4 120deg,
-                #8cff64 180deg,
-                #c882ff 240deg,
-                #ff82c8 300deg,
-                #ffc850 360deg
-            );
+            background: conic-gradient(from 90deg,
+                    #ffc850 0deg,
+                    #50c8ff 60deg,
+                    #50ffb4 120deg,
+                    #8cff64 180deg,
+                    #c882ff 240deg,
+                    #ff82c8 300deg,
+                    #ffc850 360deg);
             border-color: rgba(0, 0, 0, 0.32);
         }
+
         .v6502 .chip-column .layers-bar .layer-btn.logic-btn.active {
             background: linear-gradient(90deg,
-                rgba(255, 200,  80, 0.28),
-                rgba( 80, 200, 255, 0.28),
-                rgba(140, 255, 100, 0.28),
-                rgba(200, 130, 255, 0.28));
+                    rgba(255, 200, 80, 0.28),
+                    rgba(80, 200, 255, 0.28),
+                    rgba(140, 255, 100, 0.28),
+                    rgba(200, 130, 255, 0.28));
             color: #14151c;
             border-color: rgba(0, 0, 0, 0.20);
         }
+
         .v6502 .chip-column .layers-bar .layer-btn.logic-btn.active .swatch {
-            background: conic-gradient(
-                from 90deg,
-                #ffc850 0deg,
-                #50c8ff 60deg,
-                #50ffb4 120deg,
-                #8cff64 180deg,
-                #c882ff 240deg,
-                #ff82c8 300deg,
-                #ffc850 360deg
-            );
+            background: conic-gradient(from 90deg,
+                    #ffc850 0deg,
+                    #50c8ff 60deg,
+                    #50ffb4 120deg,
+                    #8cff64 180deg,
+                    #c882ff 240deg,
+                    #ff82c8 300deg,
+                    #ffc850 360deg);
         }
 
         /* Segmented mode switch. Collapsed (max-width 0) by default;
@@ -701,10 +879,12 @@
             opacity: 0;
             transition: max-width 0.28s ease, opacity 0.18s ease 0.04s;
         }
+
         .v6502 .chip-viewport .labels-bar.expanded .mode-switch {
             max-width: 260px;
             opacity: 1;
         }
+
         .v6502 .chip-viewport .mode-switch::before {
             content: '';
             width: 1px;
@@ -712,6 +892,7 @@
             margin: 4px 4px 4px 6px;
             align-self: stretch;
         }
+
         .v6502 .chip-viewport .mode-switch button {
             padding: 6px 12px;
             border-radius: 999px;
@@ -719,14 +900,17 @@
             white-space: nowrap;
             transition: background 0.15s, color 0.15s;
         }
+
         .v6502 .chip-viewport .mode-switch button:hover:not(.active) {
             color: rgba(20, 21, 28, 0.95);
             background: rgba(0, 0, 0, 0.05);
         }
+
         .v6502 .chip-viewport .mode-switch button[data-mode="regions"].active {
             background: #58a6ff;
             color: #ffffff;
         }
+
         .v6502 .chip-viewport .mode-switch button[data-mode="detailed"].active {
             background: #f5c451;
             color: #14151c;
@@ -742,10 +926,12 @@
             opacity: 0;
             transition: max-width 0.28s ease, opacity 0.18s ease 0.04s;
         }
+
         .v6502 .chip-viewport .labels-bar.expanded .dim-control {
             max-width: 200px;
             opacity: 1;
         }
+
         .v6502 .chip-viewport .dim-control::before {
             content: '';
             width: 1px;
@@ -753,12 +939,14 @@
             margin: 4px 8px 4px 4px;
             align-self: stretch;
         }
+
         .v6502 .chip-viewport .dim-control .dc-label {
             font-size: 10px;
             color: rgba(20, 21, 28, 0.65);
             letter-spacing: 0.14em;
             margin-right: 8px;
         }
+
         .v6502 .chip-viewport .dim-control input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -770,40 +958,158 @@
             cursor: pointer;
             margin-right: 10px;
         }
+
         .v6502 .chip-viewport .dim-control input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 13px; height: 13px;
+            width: 13px;
+            height: 13px;
             border-radius: 50%;
             background: #14151c;
             cursor: pointer;
             border: 2px solid #ffffff;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
         }
+
         .v6502 .chip-viewport .dim-control input[type="range"]::-moz-range-thumb {
-            width: 13px; height: 13px;
+            width: 13px;
+            height: 13px;
             border-radius: 50%;
             background: #14151c;
             cursor: pointer;
             border: 2px solid #ffffff;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
         }
+
         /* Direction colour-coding. */
-        .regions-overlay .pin-label.kind-in   { color: #58a6ff; }   /* inputs */
-        .regions-overlay .pin-label.kind-out  { color: #ff8e6e; }   /* outputs */
-        .regions-overlay .pin-label.kind-io   { color: #34d399; }   /* bidirectional */
-        .regions-overlay .pin-label.kind-pwr  { color: #f5c451; }   /* power */
+        .regions-overlay .pin-label.kind-in {
+            color: #58a6ff;
+        }
+
+        /* inputs */
+        .regions-overlay .pin-label.kind-out {
+            color: #ff8e6e;
+        }
+
+        /* outputs */
+        .regions-overlay .pin-label.kind-io {
+            color: #34d399;
+        }
+
+        /* bidirectional */
+        .regions-overlay .pin-label.kind-pwr {
+            color: #f5c451;
+        }
+
+        /* power */
 
         .sim-meta {
-            display: flex; flex-wrap: wrap; gap: 14px 22px;
-            padding: 12px 16px; margin-bottom: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 22px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
             background: var(--bg-panel);
-            border: 1px solid var(--border); border-radius: 10px;
-            font-family: 'JetBrains Mono', monospace; font-size: 11px;
-            color: var(--text-dim); letter-spacing: 0.04em;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 0.04em;
         }
-        .sim-meta b { color: var(--fg); font-weight: 600; }
-        .sim-meta a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+
+        .sim-meta b {
+            color: var(--fg);
+            font-weight: 600;
+        }
+
+        .sim-meta a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px dashed var(--accent);
+        }
+
+        /* Collapsible assembly listing for the Hello World program.
+           Sits at the bottom of the .copy column on the simulator
+           slide, between the descriptive copy and the simulator. */
+        .asm-listing {
+            margin: 18px 0 22px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+        }
+
+        .asm-listing > summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 11px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 11.5px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            user-select: none;
+            transition: color 0.12s;
+        }
+
+        .asm-listing > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .asm-listing > summary:hover {
+            color: var(--fg);
+        }
+
+        .asm-listing > summary .chev {
+            display: inline-block;
+            width: 9px;
+            height: 9px;
+            border-right: 1.5px solid currentColor;
+            border-bottom: 1.5px solid currentColor;
+            transform: rotate(-45deg);
+            transition: transform 0.18s ease;
+            margin-right: 2px;
+        }
+
+        .asm-listing[open] > summary .chev {
+            transform: rotate(45deg);
+        }
+
+        .asm-listing > summary b {
+            color: var(--fg);
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: 0.02em;
+        }
+
+        .asm-listing > summary .meta {
+            margin-left: auto;
+            color: var(--text-dim);
+            text-transform: none;
+            letter-spacing: 0.02em;
+            font-size: 11px;
+        }
+
+        .asm-listing pre {
+            margin: 0;
+            padding: 14px 18px 16px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-2, var(--bg-panel));
+            font-size: 12.5px;
+            line-height: 1.55;
+            color: var(--fg);
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .asm-listing pre .c { color: var(--text-dim); }
+        .asm-listing pre .a { color: var(--accent); }
+        .asm-listing pre .l { color: var(--accent); font-weight: 600; }
+        .asm-listing pre .o { color: var(--fg); font-weight: 600; }
 
         /* Specification table for register / signal summaries. */
         .spec-table {
@@ -814,12 +1120,15 @@
             font-size: 12.5px;
             color: var(--text-dim);
         }
-        .spec-table th, .spec-table td {
+
+        .spec-table th,
+        .spec-table td {
             text-align: left;
             padding: 9px 12px;
             border-bottom: 1px solid var(--border);
             vertical-align: top;
         }
+
         .spec-table th {
             color: var(--muted);
             font-weight: 500;
@@ -828,8 +1137,15 @@
             font-size: 10.5px;
             border-bottom: 1px solid var(--border-hover);
         }
-        .spec-table td:first-child { color: var(--c-reg); white-space: nowrap; }
-        .spec-table tr:last-child td { border-bottom: none; }
+
+        .spec-table td:first-child {
+            color: var(--c-reg);
+            white-space: nowrap;
+        }
+
+        .spec-table tr:last-child td {
+            border-bottom: none;
+        }
 
         /* Memory map block. */
         .memmap {
@@ -843,6 +1159,7 @@
             margin: 14px 0;
             background: var(--bg-2);
         }
+
         .memmap .row {
             display: grid;
             grid-template-columns: 170px 1fr;
@@ -850,9 +1167,18 @@
             border-top: 1px solid var(--border);
             color: var(--text-dim);
         }
-        .memmap .row:first-child { border-top: none; }
-        .memmap .row .addr { color: var(--c-mem); }
-        .memmap .row .what { color: var(--fg); }
+
+        .memmap .row:first-child {
+            border-top: none;
+        }
+
+        .memmap .row .addr {
+            color: var(--c-mem);
+        }
+
+        .memmap .row .what {
+            color: var(--fg);
+        }
 
         code.inline {
             font-family: 'JetBrains Mono', monospace;
@@ -866,11 +1192,14 @@
 
         /* Status flag list. */
         .flags {
-            display: flex; flex-wrap: wrap; gap: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             margin: 10px 0 4px;
         }
+
         .flags .flag {
             padding: 6px 10px;
             border: 1px solid var(--border);
@@ -878,7 +1207,11 @@
             background: var(--bg-panel);
             color: var(--text-dim);
         }
-        .flags .flag b { color: var(--c-acc); margin-right: 6px; }
+
+        .flags .flag b {
+            color: var(--c-acc);
+            margin-right: 6px;
+        }
 
         /* Image stack used in the historical Apple 1 section. */
         .image-stack {
@@ -887,6 +1220,7 @@
             gap: 16px;
             width: 100%;
         }
+
         .image-stack figure {
             margin: 0;
             border: 1px solid var(--border);
@@ -894,11 +1228,13 @@
             overflow: hidden;
             background: var(--bg-2);
         }
+
         .image-stack figure img {
             display: block;
             width: 100%;
             height: auto;
         }
+
         .image-stack figcaption {
             padding: 10px 14px;
             font-family: 'JetBrains Mono', monospace;
@@ -908,11 +1244,13 @@
             color: var(--text-dim);
             border-top: 1px solid var(--border);
         }
+
         .image-stack figcaption b {
             color: var(--fg);
             font-weight: 600;
             margin-right: 6px;
         }
+
         /* Designers row: a small "me&woz" portrait callout sits to the
            LEFT of the designers figure, with a small arrow connecting
            the two. On the wide layout the callout is positioned
@@ -924,10 +1262,12 @@
             position: relative;
             margin: 0;
         }
+
         .image-stack .designers-figure {
             margin: 0;
             width: 100%;
         }
+
         .image-stack .me-woz-callout {
             position: absolute;
             /* Sit slightly above the vertical centre of the designers
@@ -949,6 +1289,7 @@
             border-radius: 0;
             overflow: visible;
         }
+
         .image-stack .me-woz-callout img {
             width: 320px;
             height: 320px;
@@ -957,6 +1298,7 @@
             border: 1px solid var(--border);
             display: block;
         }
+
         .image-stack .me-woz-callout figcaption {
             padding: 0;
             border: none;
@@ -968,6 +1310,7 @@
             text-align: center;
             text-transform: uppercase;
         }
+
         .image-stack .designers-arrow {
             position: absolute;
             /* The arrow sits entirely in the gap between the portrait
@@ -983,7 +1326,9 @@
             pointer-events: none;
             overflow: visible;
         }
+
         @media (max-width: 1100px) {
+
             /* Not enough horizontal room for the overhang; collapse to
                an in-flow row so nothing crashes into adjacent content. */
             .image-stack .designers-row {
@@ -991,15 +1336,34 @@
                 align-items: center;
                 gap: 12px;
             }
+
             .image-stack .me-woz-callout,
             .image-stack .designers-arrow {
                 position: static;
                 transform: none;
             }
-            .image-stack .me-woz-callout { flex: 0 0 180px; width: 180px; }
-            .image-stack .me-woz-callout img { width: 180px; height: 180px; }
-            .image-stack .designers-arrow { flex: 0 0 80px; width: 80px; height: 64px; overflow: visible; }
-            .image-stack .designers-figure { flex: 1 1 auto; min-width: 0; }
+
+            .image-stack .me-woz-callout {
+                flex: 0 0 180px;
+                width: 180px;
+            }
+
+            .image-stack .me-woz-callout img {
+                width: 180px;
+                height: 180px;
+            }
+
+            .image-stack .designers-arrow {
+                flex: 0 0 80px;
+                width: 80px;
+                height: 64px;
+                overflow: visible;
+            }
+
+            .image-stack .designers-figure {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
         }
 
         /* Inline explainer figure used under each section heading.
@@ -1012,11 +1376,13 @@
             background: var(--bg-2);
             overflow: hidden;
         }
+
         .inline-figure svg {
             display: block;
             width: 100%;
             height: auto;
         }
+
         .inline-figure .cap {
             padding: 8px 12px 10px;
             border-top: 1px solid var(--border);
@@ -1026,13 +1392,23 @@
             letter-spacing: 0.04em;
             color: var(--text-dim);
         }
-        .inline-figure .cap b { color: var(--fg); font-weight: 600; }
+
+        .inline-figure .cap b {
+            color: var(--fg);
+            font-weight: 600;
+        }
+
         .inline-figure .label {
             font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             fill: var(--text-dim);
         }
-        .inline-figure .label-strong { fill: var(--fg); font-weight: 600; }
+
+        .inline-figure .label-strong {
+            fill: var(--fg);
+            font-weight: 600;
+        }
+
         p.simple {
             font-size: 14.5px;
             line-height: 1.65;
@@ -1042,6 +1418,633 @@
             border-left: 2px solid var(--accent-soft, var(--accent));
             background: var(--accent-soft-faint);
             border-radius: 0 6px 6px 0;
+        }
+
+        /* ------------------------------------------------------------
+           Slide-deck shell. Mirrors the pattern used by digital_logic,
+           active_peak_detector and case_study in this same Week 10
+           directory: each top-level section becomes a full-viewport
+           slide; only the active slide is visible; prev/next + dots +
+           keyboard arrows drive navigation.
+           ------------------------------------------------------------ */
+        body {
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        .deck {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .slide {
+            position: absolute;
+            inset: 0;
+            padding: 78px 56px 90px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(40px);
+            transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0.32s;
+            display: grid;
+            grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
+            gap: 32px;
+            align-items: start;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .slide.full {
+            grid-template-columns: 1fr;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0s;
+        }
+
+        .slide.prev {
+            transform: translateX(-40px);
+        }
+
+        .slide .copy {
+            max-width: 600px;
+        }
+
+        .slide.title-slide {
+            grid-template-columns: 1fr;
+            place-items: center;
+            text-align: center;
+        }
+
+        .slide.title-slide .copy {
+            max-width: 760px;
+        }
+
+        .slide.title-slide h1.hero {
+            font-size: 60px;
+        }
+
+        .slide.title-slide .tags {
+            justify-content: center;
+        }
+
+        .slide.title-slide .nav-hint {
+            margin-top: 36px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        /* The transistor-level simulator slide carries its own internal
+           layout (800 px chip viewport beside a controls column). Keep
+           the slide's own padding minimal so the sim has room. */
+        .slide.full.sim-slide {
+            padding: 60px 32px 90px;
+        }
+
+        .slide.full.sim-slide .copy {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        /* ---------- slide nav ---------- */
+        .deck-nav {
+            position: fixed;
+            bottom: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 8px 16px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            backdrop-filter: blur(10px);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+        }
+
+        .deck-nav .arrow {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--pill-bg);
+            color: var(--text-dim);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: all 0.12s;
+            user-select: none;
+        }
+
+        .deck-nav .arrow:hover:not(.disabled) {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .deck-nav .arrow.disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .deck-nav .dots {
+            display: flex;
+            gap: 8px;
+        }
+
+        .deck-nav .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--border);
+            cursor: pointer;
+            transition: all 0.12s;
+        }
+
+        .deck-nav .dot:hover {
+            background: var(--border-hover);
+        }
+
+        .deck-nav .dot.active {
+            background: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+        }
+
+        .deck-nav .counter {
+            color: var(--muted);
+            letter-spacing: 0.08em;
+            min-width: 48px;
+            text-align: center;
+        }
+
+        /* The footer doesn't fit in the slide-deck layout (each slide
+           occupies the full viewport). Hide it; the brand strip in the
+           top-left already identifies the page. */
+        body>footer {
+            display: none;
+        }
+
+        /* ------------------------------------------------------------
+           Section 02 · Programmable Logic Array widget.
+           A 4-input, 8-product-term, 4-output PLA rendered with D3.
+           Click any AND-plane or OR-plane cross-point to toggle a
+           connection. Toggle the input switches to drive the array.
+           ------------------------------------------------------------ */
+        .pla-widget {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .pla-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .pla-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .pla-group .pla-group-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-right: 4px;
+        }
+
+        .pla-btn {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: var(--pill-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: all 0.12s;
+            user-select: none;
+        }
+
+        .pla-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--fg);
+        }
+
+        .pla-btn.preset {
+            color: var(--text-dim);
+        }
+
+        .pla-btn.preset.clear {
+            color: var(--c-thresh);
+            border-color: rgba(255, 92, 122, 0.30);
+        }
+
+        .pla-btn.preset.clear:hover {
+            background: rgba(255, 92, 122, 0.10);
+        }
+
+        .pla-btn.preset.active {
+            color: var(--c-acc);
+            border-color: rgba(245, 196, 81, 0.55);
+            background: rgba(245, 196, 81, 0.10);
+            box-shadow: inset 0 0 0 1px rgba(245, 196, 81, 0.25);
+        }
+
+        .pla-input {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            background: var(--pill-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: all 0.12s;
+            user-select: none;
+        }
+
+        .pla-input:hover {
+            border-color: var(--border-hover);
+            color: var(--fg);
+        }
+
+        .pla-input .bit {
+            display: inline-block;
+            min-width: 12px;
+            text-align: center;
+            color: var(--muted);
+            font-weight: 600;
+        }
+
+        .pla-input.on {
+            color: var(--c-reg);
+            border-color: rgba(88, 166, 255, 0.45);
+            background: rgba(88, 166, 255, 0.10);
+        }
+
+        .pla-input.on .bit {
+            color: var(--c-reg);
+        }
+
+        /* Explanation strip above the SVG. Sits flush against the SVG
+           wrapper (shared border, square inner corners) so the two read
+           as one figure. Title and body update with the active preset. */
+        .pla-explainer {
+            padding: 10px 14px;
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--text-dim);
+        }
+
+        .pla-explainer .ex-title {
+            display: block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.20em;
+            text-transform: uppercase;
+            color: var(--c-acc);
+            margin-bottom: 4px;
+        }
+
+        .pla-explainer.is-default .ex-title {
+            color: var(--muted);
+        }
+
+        .pla-explainer .ex-body {
+            color: var(--text-dim);
+        }
+
+        .pla-svg-wrap {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-2);
+            padding: 8px;
+        }
+
+        /* When the explainer is shown directly above, square the
+           wrapper's top corners so the two boxes merge cleanly. */
+        .pla-explainer+.pla-svg-wrap {
+            border-radius: 0 0 10px 10px;
+            border-top: none;
+        }
+
+        #pla-svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        #pla-svg text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.06em;
+            fill: var(--text-dim);
+            user-select: none;
+        }
+
+        #pla-svg text.lbl-strong {
+            fill: var(--fg);
+        }
+
+        #pla-svg .pla-frame {
+            fill: none;
+            stroke: var(--border);
+            stroke-dasharray: 3 4;
+        }
+
+        #pla-svg .pla-band-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.20em;
+            text-transform: uppercase;
+            fill: var(--muted);
+        }
+
+        #pla-svg .vline,
+        #pla-svg .hline {
+            stroke: var(--border);
+            stroke-width: 1.2;
+        }
+
+        #pla-svg .vline.input.lit {
+            stroke: var(--c-reg);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 1.5px var(--c-reg));
+        }
+
+        #pla-svg .hline.product.lit {
+            stroke: var(--c-acc);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 1.5px var(--c-acc));
+        }
+
+        #pla-svg .vline.output.lit {
+            stroke: var(--c-mem);
+            stroke-width: 2;
+            filter: drop-shadow(0 0 1.5px var(--c-mem));
+        }
+
+        /* Cross-point: a clickable group at every wire crossing.
+           Empty crossings are nearly invisible so the schematic
+           convention (dot = wires fused together) reads correctly.
+           A faint preview pip appears on hover. When toggled on, a
+           filled colored disc covers the intersection, making the dot
+           look physically welded to both crossing wires. */
+        #pla-svg .xpoint {
+            cursor: pointer;
+        }
+
+        #pla-svg .xpoint .hit {
+            fill: transparent;
+        }
+
+        #pla-svg .xpoint .mark {
+            fill: transparent;
+            stroke: transparent;
+            transition: fill 0.12s, stroke 0.12s, opacity 0.12s;
+            pointer-events: none;
+        }
+
+        #pla-svg .xpoint:hover .mark {
+            fill: var(--border-hover);
+            stroke: var(--border-hover);
+            fill-opacity: 0.20;
+            stroke-opacity: 0.55;
+        }
+
+        #pla-svg .xpoint.and.on .mark {
+            fill: var(--c-acc);
+            stroke: var(--c-acc);
+            fill-opacity: 1;
+            stroke-opacity: 1;
+        }
+
+        #pla-svg .xpoint.or.on .mark {
+            fill: var(--c-mem);
+            stroke: var(--c-mem);
+            fill-opacity: 1;
+            stroke-opacity: 1;
+        }
+
+        #pla-svg .ibit {
+            fill: var(--muted);
+            font-weight: 600;
+        }
+
+        #pla-svg .ibit.lit {
+            fill: var(--c-reg);
+        }
+
+        #pla-svg .obit {
+            fill: var(--muted);
+            font-weight: 600;
+        }
+
+        #pla-svg .obit.lit {
+            fill: var(--c-mem);
+        }
+
+        #pla-svg .plabel.lit {
+            fill: var(--c-acc);
+        }
+
+        /* Compact legend explaining colour roles and the click action.
+           Sits between the SVG and the per-term readout. */
+        .pla-legend {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px 18px;
+            padding: 8px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+        }
+
+        .pla-legend .leg-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-dim);
+        }
+
+        .pla-legend .leg-swatch {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--muted);
+            box-shadow: 0 0 4px currentColor;
+        }
+
+        .pla-legend .leg-swatch.in {
+            background: var(--c-reg);
+            color: var(--c-reg);
+        }
+
+        .pla-legend .leg-swatch.prod {
+            background: var(--c-acc);
+            color: var(--c-acc);
+        }
+
+        .pla-legend .leg-swatch.out {
+            background: var(--c-mem);
+            color: var(--c-mem);
+        }
+
+        .pla-legend .leg-hint {
+            color: var(--muted);
+        }
+
+        /* Per-product-term readout: shows the boolean expression each
+           product line currently carries and its evaluated value. Lets
+           the abstract Pi line read as a concrete sum-of-products term. */
+        .pla-readout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px 22px;
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-2);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .pla-readout .pterm {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .pla-readout .pterm .lab {
+            color: var(--muted);
+            min-width: 22px;
+            font-weight: 600;
+        }
+
+        .pla-readout .pterm .eq {
+            color: var(--muted);
+        }
+
+        .pla-readout .pterm .expr {
+            flex: 1;
+            color: var(--fg);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pla-readout .pterm .val {
+            color: var(--muted);
+            min-width: 12px;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .pla-readout .pterm.unused .lab,
+        .pla-readout .pterm.unused .expr,
+        .pla-readout .pterm.unused .eq,
+        .pla-readout .pterm.unused .val {
+            color: var(--muted);
+            opacity: 0.55;
+        }
+
+        .pla-readout .pterm.unused .expr {
+            font-style: italic;
+        }
+
+        .pla-readout .pterm.lit .lab {
+            color: var(--c-acc);
+        }
+
+        .pla-readout .pterm.lit .val {
+            color: var(--c-acc);
+        }
+
+        .pla-truth {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-2);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: 0.10em;
+        }
+
+        .pla-truth .lab {
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-right: 8px;
+        }
+
+        .pla-truth .nibble {
+            color: var(--fg);
+            font-weight: 600;
+        }
+
+        .pla-truth .nibble.in {
+            color: var(--c-reg);
+        }
+
+        .pla-truth .nibble.out {
+            color: var(--c-mem);
+        }
+
+        .pla-truth .arrow {
+            color: var(--muted);
+            margin: 0 6px;
+        }
+
+        @media (max-width: 1100px) {
+            .pla-widget {
+                max-width: 100%;
+            }
         }
     </style>
 </head>
@@ -1058,221 +2061,431 @@
         Back
     </a>
 
-    <!-- ================= LANDING ================= -->
-    <section class="landing">
-        <div>
-            <div class="meta">BMEN90033 · WEEK 10 · FROM GATES TO A MICROPROCESSOR</div>
-            <h1 class="hero">From logic gates to a working <em>CPU</em>.</h1>
-            <p class="sub">The previous page built the primitives of digital electronics: gates, adders, multiplexers
-                and decoders. A microprocessor is what those primitives become once they are wired together at scale.
-                The MOS Technology 6502, the processor at the centre of the Apple 1 (1976), is built from 3,510 NMOS
-                transistors arranged into a register file, an arithmetic logic unit, an instruction decoder and a
-                control sequencer. This page maps each block onto the gate-level primitives already covered and then
-                exposes the underlying silicon through a transistor-level simulator of the actual die.</p>
-            <div class="tags">
-                <span class="field-tag">gates → cpu</span>
-                <span class="field-tag">registers</span>
-                <span class="field-tag">alu</span>
-                <span class="field-tag">control unit</span>
-                <span class="field-tag">mos 6502</span>
+    <div class="deck" id="deck" data-next="emg_mav.html" data-prev="digital_logic.html">
+
+        <!-- ================= SLIDE 0 · TITLE ================= -->
+        <section class="slide title-slide active" data-slide="0">
+            <div class="copy">
+                <div class="meta">BMEN90033 · WEEK 10 · FROM GATES TO A MICROPROCESSOR</div>
+                <h1 class="hero">From logic gates to a working <em>CPU</em>.</h1>
+                <p class="sub">The previous page built the primitives of digital electronics: gates, adders,
+                    multiplexers
+                    and decoders. A microprocessor is what those primitives become once they are wired together at
+                    scale.
+                    The MOS Technology 6502, the processor at the centre of the Apple 1 (1976), is built from 3,510 NMOS
+                    transistors arranged into a register file, an arithmetic logic unit, an instruction decoder and a
+                    control sequencer. This page maps each block onto the gate-level primitives already covered and then
+                    exposes the underlying silicon through a transistor-level simulator of the actual die.</p>
+                <div class="tags">
+                    <span class="field-tag">gates → cpu</span>
+                    <span class="field-tag">registers</span>
+                    <span class="field-tag">alu</span>
+                    <span class="field-tag">control unit</span>
+                    <span class="field-tag">mos 6502</span>
+                </div>
+                <div class="nav-hint">Use the dots or the arrow keys to advance through the slides.</div>
             </div>
-        </div>
-        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
-    </section>
+        </section>
 
-    <!-- ================= SCENE 01 · THE APPLE 1 ================= -->
-    <div class="section-divider">
-        <div class="lab"><span>// 01 · the apple 1</span><span class="bar"></span></div>
-    </div>
+        <!-- ================= SLIDE 1 · THE APPLE 1 ================= -->
+        <section class="slide" data-slide="1" id="sec-apple1">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>historical context</span>
+                </div>
+                <h2>A single-board computer from <em class="acc">1976</em>.</h2>
 
-    <section class="scene">
-        <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>historical context</span></div>
-            <h2>A single-board computer from <em class="acc">1976</em>.</h2>
+                <p class="lead">The Apple 1 was the first product of the Apple Computer Company, designed by Steve
+                    Wozniak and offered for sale in July 1976 at a list price of USD 666.66. It shipped as a populated
+                    printed circuit board only. The user supplied a power supply, an ASCII keyboard and a video
+                    monitor. About two hundred units were built between July 1976 and September 1977.</p>
 
-            <p class="lead">The Apple 1 was the first product of the Apple Computer Company, designed by Steve
-                Wozniak and offered for sale in July 1976 at a list price of USD 666.66. It shipped as a populated
-                printed circuit board only. The user supplied a power supply, an ASCII keyboard and a video
-                monitor. About two hundred units were built between July 1976 and September 1977.</p>
+                <p>The board carried four kinds of integrated circuit. The MOS Technology 6502 microprocessor handled
+                    computation. A Motorola 6820 Peripheral Interface Adapter (PIA) connected the processor's bus to
+                    the keyboard and the video output. Eight 4-kbit DRAM chips provided 4 kB of system memory. A small
+                    PROM held the 256-byte Wozniak Monitor, the only system software the machine had on power-up.</p>
 
-            <p>The board carried four kinds of integrated circuit. The MOS Technology 6502 microprocessor handled
-                computation. A Motorola 6820 Peripheral Interface Adapter (PIA) connected the processor's bus to
-                the keyboard and the video output. Eight 4-kbit DRAM chips provided 4 kB of system memory. A small
-                PROM held the 256-byte Wozniak Monitor, the only system software the machine had on power-up.</p>
+                <p>The choice of CPU was driven by price. The Intel 8080 and Motorola 6800 of the same era sold for
+                    roughly USD 300 each. MOS Technology introduced the 6502 in September 1975 at USD 25 per unit,
+                    cutting the cost of a microprocessor by an order of magnitude and making a personal computer
+                    commercially viable for the first time.</p>
 
-            <p>The choice of CPU was driven by price. The Intel 8080 and Motorola 6800 of the same era sold for
-                roughly USD 300 each. MOS Technology introduced the 6502 in September 1975 at USD 25 per unit,
-                cutting the cost of a microprocessor by an order of magnitude and making a personal computer
-                commercially viable for the first time.</p>
-
-            <div class="callout">
-                The Apple 1 ran the 6502 at 1.0 MHz, generated by dividing down the same crystal oscillator that
-                produced the video timing. The successor machine, the Apple II (1977), retained both the 6502 and
-                the 1.0 MHz clock and used the processor's predictable bus timing to share DRAM access between
-                the CPU and the video generator without contention.
+                <div class="callout">
+                    The Apple 1 ran the 6502 at 1.0 MHz, generated by dividing down the same crystal oscillator that
+                    produced the video timing. The successor machine, the Apple II (1977), retained both the 6502 and
+                    the 1.0 MHz clock and used the processor's predictable bus timing to share DRAM access between
+                    the CPU and the video generator without contention.
+                </div>
             </div>
-        </div>
 
-        <div>
-            <div class="image-stack">
-                <figure>
-                    <img src="apple_1_images/apple_1_image.jpg" alt="Apple 1 in a wooden case with a Panasonic monitor and ASCII keyboard.">
-                    <figcaption><b>Apple 1.</b> The populated board mounted in an after-market wooden case, with a small Panasonic monitor and a parallel ASCII keyboard. Apple supplied only the bare board; the case, display and keyboard were the user's responsibility.</figcaption>
-                </figure>
-                <figure>
-                    <img src="apple_1_images/apple_1_PCB.jpg" alt="Apple 1 PCB with the 6820 PIA and 6502 microprocessor labelled.">
-                    <figcaption><b>Printed circuit board.</b> The MOS 6502 microprocessor (right, in red) and the Motorola 6820 Peripheral Interface Adapter (left, in blue) sit at the centre of the board. The surrounding sockets hold eight 4-kbit DRAM chips that make up the 4 kB of system memory.</figcaption>
-                </figure>
-                <div class="designers-row">
-                    <figure class="me-woz-callout" aria-label="The author with Steve Wozniak at Apple Park.">
-                        <img src="apple_1_images/me&woz.png" alt="The author seated with Steve Wozniak at Apple Park.">
-                        <figcaption>Me and Steve at Caffè Macs<br>circa ~2015</figcaption>
+            <div>
+                <div class="image-stack">
+                    <figure>
+                        <img src="apple_1_images/apple_1_image.jpg"
+                            alt="Apple 1 in a wooden case with a Panasonic monitor and ASCII keyboard.">
+                        <figcaption><b>Apple 1.</b> The populated board mounted in an after-market wooden case, with a
+                            small Panasonic monitor and a parallel ASCII keyboard. Apple supplied only the bare board;
+                            the case, display and keyboard were the user's responsibility.</figcaption>
                     </figure>
-                    <svg class="designers-arrow" viewBox="0 0 112 90" aria-hidden="true">
-                        <defs>
-                            <!-- Plain filled-triangle arrowhead. -->
-                            <marker id="dz-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-                                <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
-                            </marker>
-                        </defs>
-                        <!-- Single smooth Bezier from the right edge of
+                    <figure>
+                        <img src="apple_1_images/apple_1_PCB.jpg"
+                            alt="Apple 1 PCB with the 6820 PIA and 6502 microprocessor labelled.">
+                        <figcaption><b>Printed circuit board.</b> The MOS 6502 microprocessor (right, in red) and the
+                            Motorola 6820 Peripheral Interface Adapter (left, in blue) sit at the centre of the board.
+                            The surrounding sockets hold eight 4-kbit DRAM chips that make up the 4 kB of system memory.
+                        </figcaption>
+                    </figure>
+                    <div class="designers-row">
+                        <figure class="me-woz-callout" aria-label="The author with Steve Wozniak at Apple Park.">
+                            <img src="apple_1_images/me&woz.png"
+                                alt="The author seated with Steve Wozniak at Apple Park.">
+                            <figcaption>Me and Steve at Caffè Macs<br>circa ~2015</figcaption>
+                        </figure>
+                        <svg class="designers-arrow" viewBox="0 0 112 90" aria-hidden="true">
+                            <defs>
+                                <!-- Plain filled-triangle arrowhead. -->
+                                <marker id="dz-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6"
+                                    markerHeight="6" orient="auto">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+                                </marker>
+                            </defs>
+                            <!-- Single smooth Bezier from the right edge of
                              the circular portrait to the left edge of
                              the designers image. The tail starts in
                              the lower part of the portrait so the
                              curve enters the gap from below the
                              vertical centre of the round image. -->
-                        <path d="M 0 50 C 28 78, 70 68, 110 82"
-                              stroke="currentColor" stroke-width="2"
-                              fill="none" stroke-linecap="round"
-                              marker-end="url(#dz-arr)"/>
-                    </svg>
-                    <figure class="designers-figure">
-                        <img src="apple_1_images/steve&woz.png" alt="Steve Wozniak and Steve Jobs seated next to an Apple 1.">
-                        <figcaption><b>The designers.</b> Steve Wozniak (left) designed the hardware. Steve Jobs (right) co-founded the Apple Computer Company and arranged the first commercial order, of fifty boards from the Byte Shop in Mountain View, California.</figcaption>
-                    </figure>
+                            <path d="M 0 50 C 28 78, 70 68, 110 82" stroke="currentColor" stroke-width="2" fill="none"
+                                stroke-linecap="round" marker-end="url(#dz-arr)" />
+                        </svg>
+                        <figure class="designers-figure">
+                            <img src="apple_1_images/steve&woz.png"
+                                alt="Steve Wozniak and Steve Jobs seated next to an Apple 1.">
+                            <figcaption><b>The designers.</b> Steve Wozniak (left) designed the hardware. Steve Jobs
+                                (right) co-founded the Apple Computer Company and arranged the first commercial order,
+                                of fifty boards from the Byte Shop in Mountain View, California.</figcaption>
+                        </figure>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- ================= SCENE 05 · TRANSISTOR-LEVEL SIMULATOR ================= -->
-    <div class="section-divider">
-        <div class="lab"><span>// 05 · transistor-level simulation of the die</span><span class="bar"></span></div>
-    </div>
+        <!-- ================= SLIDE 2 · PROGRAMMABLE LOGIC ARRAYS ================= -->
+        <section class="slide" data-slide="2" id="sec-pla">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>combinational
+                        logic</span></div>
+                <h2>Decoding instructions with a <em class="bus">programmable logic array</em>.</h2>
 
-    <section class="scene full">
-        <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>visual6502</span></div>
-            <h2>Transistor-level simulation of the <em class="bus">6502 die</em>.</h2>
+                <p class="lead">A programmable logic array, or PLA, is a two-level combinational circuit that realises
+                    any boolean function as a sum of products. The first level (the AND-plane) forms product terms from
+                    the inputs and their complements. The second level (the OR-plane) sums chosen product terms onto
+                    each output. Both planes are programmable: a connection placed at any cross-point selects which
+                    signals participate.</p>
 
-            <p class="lead">The simulator below is <a href="https://github.com/trebonian/visual6502" target="_blank" rel="noopener">Visual 6502</a>, by Greg James, Brian Silverman and Barry Silverman. A real chip was decapsulated, photographed and traced into its 3,510 transistors. The simulator propagates logic levels through that network one half-cycle at a time, so registers, ALU, decoder and control all emerge from the underlying transistors rather than from an abstract instruction-set model.</p>
+                <p>The widget on the right is a small PLA with four inputs, eight product-term lines and four outputs.
+                    The vertical rail at the top carries each input and its complement, so eight signals enter the
+                    AND-plane. Each horizontal product line sees a dot at every input it is connected to; the value on
+                    that line is the AND of those signals. A product line with dots on $A_1$ and $\overline{A_0}$, for
+                    example, evaluates to $A_1 \cdot \overline{A_0}$. The OR-plane below works the same way: each output
+                    line reads the OR of the product lines that have dots on it.</p>
 
-            <p>A small "Hello World" routine is loaded at $\$0000$. Each iteration writes a character to the display register at $\$\text{D012}$ (forwarded to the terminal pane), saves the raw character at $\$\text{E1}$, and increments a counter at $\$\text{E0}$ so the zero-page memtable shows live activity.</p>
+                <p>The instruction decoder of the MOS 6502 is a PLA of exactly this shape, only larger. The eight bits
+                    of the opcode register feed the AND-plane, around 130 product terms decode the legal opcodes, and
+                    the OR-plane drives the control lines that sequence each instruction. The same primitive that lights
+                    one of four outputs in the demo to the right lights, one of more than a hundred control signals on
+                    the real chip.</p>
 
-            <p>Use the controls under the chip to run, stop, step or change speed. With <i>animate</i> on, the logic-state overlay updates every half-cycle, colour-coding clocks, address bus, data bus, registers and decoder. Clicking a polygon names the underlying node in the status panel.</p>
-
-            <div class="callout">
-                Every half-cycle re-evaluates the full transistor network until logic levels settle, so the simulation is slower than a register-transfer-level emulator. Allow several seconds for the chip layout to render on first load. Everything runs locally in the browser.
+                <div class="callout">
+                    Click any cross-point in either plane to toggle a connection. Toggle the input switches at any time
+                    to drive the array. Three presets load real functions: a 2-to-4 decoder, a dual 2:1 multiplexer that
+                    uses $A_2$ and $A_3$ as independent select bits over the same data pair, and a fragment of a 6502
+                    opcode decoder that recognises the low nibbles of <code>LDA #</code>, <code>STA zp</code> and
+                    <code>NOP</code>. The same physical PLA appears in the lower-left of the 6502 die in Section 03.
+                </div>
             </div>
-        </div>
 
-        <div class="sim-wrap">
-            <div class="sim-meta">
-                <span><b>Program</b> &nbsp; "Hello World" routine prints to the display register</span>
-                <span><b>Controls</b> &nbsp; scroll to zoom, drag to pan, slider to change speed</span>
+            <div>
+                <div class="pla-widget" id="pla-widget">
+                    <div class="pla-toolbar">
+                        <div class="pla-group" id="pla-inputs">
+                            <span class="pla-group-label">inputs</span>
+                            <!-- input switches injected by script -->
+                        </div>
+                        <div class="pla-group" id="pla-presets">
+                            <span class="pla-group-label">preset</span>
+                            <button type="button" class="pla-btn preset" data-preset="decoder">2-to-4 decoder</button>
+                            <button type="button" class="pla-btn preset" data-preset="mux">2:1 mux</button>
+                            <button type="button" class="pla-btn preset" data-preset="opcode">opcode</button>
+                            <button type="button" class="pla-btn preset clear" data-preset="clear">clear</button>
+                        </div>
+                    </div>
+                    <div class="pla-explainer is-default" id="pla-explainer">
+                        <span class="ex-title" id="pla-explainer-title">no preset</span>
+                        <span class="ex-body" id="pla-explainer-body">Click a preset above to load a real function, or
+                            build one yourself by clicking crossings in either plane.</span>
+                    </div>
+                    <div class="pla-svg-wrap">
+                        <svg id="pla-svg" viewBox="0 0 640 440" preserveAspectRatio="xMidYMid meet"
+                            aria-label="Programmable logic array diagram"></svg>
+                    </div>
+                    <div class="pla-legend">
+                        <span class="leg-item"><span class="leg-swatch in"></span>inputs</span>
+                        <span class="leg-item"><span class="leg-swatch prod"></span>product terms</span>
+                        <span class="leg-item"><span class="leg-swatch out"></span>outputs</span>
+                        <span class="leg-hint">click any crossing to weld a connection &middot; lit lines carry a
+                            1</span>
+                    </div>
+                    <div class="pla-readout" id="pla-readout"></div>
+                    <div class="pla-truth" id="pla-truth">
+                        <span><span class="lab">inputs A3..A0</span><span class="nibble in"
+                                id="pla-in-bits">0000</span></span>
+                        <span class="arrow">&rarr;</span>
+                        <span><span class="lab">outputs Y3..Y0</span><span class="nibble out"
+                                id="pla-out-bits">0000</span></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SLIDE 3 · TRANSISTOR-LEVEL SIMULATOR ================= -->
+        <section class="slide full sim-slide" data-slide="3" id="sec-sim">
+            <div class="copy">
+                <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>visual6502</span></div>
+                <h2>Transistor-level simulation of the <em class="bus">6502 die</em>.</h2>
+
+                <p class="lead">The simulator below is <a href="https://github.com/trebonian/visual6502" target="_blank"
+                        rel="noopener">Visual 6502</a>, by Greg James, Brian Silverman and Barry Silverman. A real chip
+                    was decapsulated, photographed and traced into its 3,510 transistors. The simulator propagates logic
+                    levels through that network one half-cycle at a time, so registers, ALU, decoder and control all
+                    emerge from the underlying transistors rather than from an abstract instruction-set model.</p>
+
+                <p>I've written a small "Hello World" routine as an example, which is loaded at $\$0000$. Each iteration
+                    writes a character to the display
+                    register at $\$\text{D012}$ (forwarded to the terminal pane), saves the raw character at
+                    $\$\text{E1}$, and increments a counter at $\$\text{E0}$ so the zero-page memtable shows live
+                    activity.</p>
+
+                <p>Use the controls under the chip to run, stop, step or change speed. With <i>animate</i> on, the
+                    logic-state overlay updates every half-cycle, colour-coding clocks, address bus, data bus, registers
+                    and decoder. Clicking a polygon names the underlying node in the status panel.</p>
+
+                <div class="callout">
+                    Every half-cycle re-evaluates the full transistor network until logic levels settle, so the
+                    simulation is slower than a register-transfer-level emulator. Allow several seconds for the chip
+                    layout to render on first load. Everything runs locally in the browser.
+                </div>
+
+                <details class="asm-listing">
+                    <summary>
+                        <span class="chev" aria-hidden="true"></span>
+                        <b>Assembly listing</b>
+                        <span>&middot; "HELLO, WORLD!" routine, 6502 source</span>
+                        <span class="meta">loaded at $0000</span>
+                    </summary>
+<pre><span class="c">; Apple 1 "Hello World" demo program.
+; Walks a null-terminated string at $0020, ORs each byte with $80
+; (Apple 1 high-bit ASCII), writes it to the display register at
+; $D012, and halts in an infinite loop once the terminator is reached.
+; $E0 holds a byte counter; $E1 holds the most recent raw character.</span>
+
+         <span class="o">*=</span> <span class="a">$0000</span>
+
+<span class="o">$0000</span>  A2 00            <span class="o">LDX</span> <span class="a">#$00</span>
+<span class="o">$0002</span>  B5 20      <span class="l">LOOP:</span> <span class="o">LDA</span> <span class="a">$20,X</span>         <span class="c">; load string[X]</span>
+<span class="o">$0004</span>  F0 0C            <span class="o">BEQ</span> <span class="l">DONE</span>          <span class="c">; null terminator -> exit</span>
+<span class="o">$0006</span>  85 E1            <span class="o">STA</span> <span class="a">$E1</span>           <span class="c">; save raw char to zero page</span>
+<span class="o">$0008</span>  09 80            <span class="o">ORA</span> <span class="a">#$80</span>          <span class="c">; force hi-bit (Apple 1 ASCII)</span>
+<span class="o">$000A</span>  8D 12 D0         <span class="o">STA</span> <span class="a">$D012</span>         <span class="c">; output character to display</span>
+<span class="o">$000D</span>  E6 E0            <span class="o">INC</span> <span class="a">$E0</span>           <span class="c">; bump byte counter</span>
+<span class="o">$000F</span>  E8               <span class="o">INX</span>
+<span class="o">$0010</span>  D0 F0            <span class="o">BNE</span> <span class="l">LOOP</span>
+<span class="o">$0012</span>  4C 12 00   <span class="l">DONE:</span> <span class="o">JMP</span> <span class="l">DONE</span>          <span class="c">; halt</span>
+
+<span class="o">$0020</span>  <span class="a">"HELLO, WORLD!"</span> $0D $00      <span class="c">; CR + null terminator</span></pre>
+                </details>
             </div>
 
-            <div class="v6502" id="frame">
-                <div class="chip-column">
-                    <div class="chip-viewport" id="chip" tabindex="0">
-                        <span id="waiting-label">loading 6502 layout...</span>
-                        <canvas class="chip" id="chipbg"></canvas>
-                        <canvas class="chip" id="overlay"></canvas>
-                        <canvas class="chip" id="hilite"></canvas>
-                        <canvas class="chip" id="hitbuffer"></canvas>
-                        <canvas class="chip" id="dimmer"></canvas>
-                        <div class="regions-overlay" id="regions"></div>
-                        <div class="scene-3d" id="scene3d"><div class="scene-hint">drag to rotate · scroll to zoom · right-drag to pan</div></div>
-                        <div class="labels-bar" id="labelsBar">
-                            <button type="button" class="labels-toggle" id="labelsToggle" onclick="setLabelsOn(!labelsOn)">
-                                <span class="dot"></span>
-                                <span class="txt">labels off</span>
-                            </button>
-                            <div class="view-toggle" id="viewToggle">
-                                <button type="button" data-view="2d" class="active" onclick="setView('2d')">2D</button>
-                                <button type="button" data-view="3d"                onclick="setView('3d')">3D</button>
+            <div class="sim-wrap">
+                <div class="sim-meta">
+                    <span><b>Program</b> &nbsp; "Hello World" routine prints to the display register</span>
+                    <span><b>Controls</b> &nbsp; scroll to zoom, drag to pan, slider to change speed</span>
+                </div>
+
+                <div class="v6502" id="frame">
+                    <div class="chip-column">
+                        <div class="chip-viewport" id="chip" tabindex="0">
+                            <span id="waiting-label">loading 6502 layout...</span>
+                            <canvas class="chip" id="chipbg"></canvas>
+                            <canvas class="chip" id="overlay"></canvas>
+                            <canvas class="chip" id="hilite"></canvas>
+                            <canvas class="chip" id="hitbuffer"></canvas>
+                            <canvas class="chip" id="dimmer"></canvas>
+                            <div class="regions-overlay" id="regions"></div>
+                            <div class="scene-3d" id="scene3d">
+                                <div class="scene-hint">drag to rotate · scroll to zoom · right-drag to pan</div>
                             </div>
-                            <div class="mode-switch" id="modeSwitch">
-                                <button type="button" data-mode="regions"  class="active" onclick="setLabelMode('regions')">regions</button>
-                                <button type="button" data-mode="detailed"                onclick="setLabelMode('detailed')">detailed</button>
+                            <div class="labels-bar" id="labelsBar">
+                                <button type="button" class="labels-toggle" id="labelsToggle"
+                                    onclick="setLabelsOn(!labelsOn)">
+                                    <span class="dot"></span>
+                                    <span class="txt">labels off</span>
+                                </button>
+                                <div class="view-toggle" id="viewToggle">
+                                    <button type="button" data-view="2d" class="active"
+                                        onclick="setView('2d')">2D</button>
+                                    <button type="button" data-view="3d" onclick="setView('3d')">3D</button>
+                                </div>
+                                <div class="mode-switch" id="modeSwitch">
+                                    <button type="button" data-mode="regions" class="active"
+                                        onclick="setLabelMode('regions')">regions</button>
+                                    <button type="button" data-mode="detailed"
+                                        onclick="setLabelMode('detailed')">detailed</button>
+                                </div>
+                                <div class="dim-control">
+                                    <span class="dc-label">dim</span>
+                                    <input type="range" id="dimSlider" min="0" max="80" step="1" value="45"
+                                        oninput="setDimOpacity(parseInt(this.value, 10))"
+                                        title="dim opacity for non-highlighted parts of the chip">
+                                </div>
                             </div>
-                            <div class="dim-control">
-                                <span class="dc-label">dim</span>
-                                <input type="range" id="dimSlider" min="0" max="80" step="1" value="45"
-                                       oninput="setDimOpacity(parseInt(this.value, 10))"
-                                       title="dim opacity for non-highlighted parts of the chip">
+                        </div>
+                        <div class="layers-bar" id="layersBar">
+                            <button type="button" class="layer-btn active" data-layer="1" style="--swatch:#f5c451;"
+                                onclick="toggleLayer(1)"
+                                title="signal diffusion · n-doped silicon that carries logic signals between transistors (transistor source/drain regions)"><span
+                                    class="swatch"></span>diff·s</button>
+                            <button type="button" class="layer-btn active" data-layer="3" style="--swatch:#34d399;"
+                                onclick="toggleLayer(3)"
+                                title="grounded diffusion · n-doped silicon tied permanently to Vss (0 V), forming the chip's ground rails"><span
+                                    class="swatch"></span>diff·g</button>
+                            <button type="button" class="layer-btn active" data-layer="4" style="--swatch:#ff7070;"
+                                onclick="toggleLayer(4)"
+                                title="powered diffusion · n-doped silicon tied permanently to Vdd (+5 V), forming the chip's supply rails"><span
+                                    class="swatch"></span>diff·p</button>
+                            <button type="button" class="layer-btn active" data-layer="2" style="--swatch:#ff5cdc;"
+                                onclick="toggleLayer(2)"
+                                title="protection diode · ESD/clamp diodes around the I/O pads that shunt over-voltage to the supply rails"><span
+                                    class="swatch"></span>diode</button>
+                            <button type="button" class="layer-btn active" data-layer="5" style="--swatch:#a55eff;"
+                                onclick="toggleLayer(5)"
+                                title="polysilicon · the gate material; where poly crosses diffusion, an NMOS transistor is formed"><span
+                                    class="swatch"></span>poly</button>
+                            <button type="button" class="layer-btn active" data-layer="0" style="--swatch:#cfd3ff;"
+                                onclick="toggleLayer(0)"
+                                title="metal · the top aluminium interconnect layer that wires transistors together and distributes power"><span
+                                    class="swatch"></span>metal</button>
+                            <span class="layers-divider"></span>
+                            <button type="button" class="layer-btn logic-btn active" data-layer="logic"
+                                onclick="toggleLogicOverlay(this)"
+                                title="logic-state overlay · clocks=amber · addr bus=cyan · data bus=teal · registers=green · decode=purple · interrupts=pink · control=cream"><span
+                                    class="swatch"></span>logic</button>
+                        </div>
+                        <div class="layers-legend" aria-label="layer legend">
+                            <div class="row" style="--swatch:#f5c451;">
+                                <span class="sw"></span><span class="key">diff&middot;s</span>
+                                <span>signal diffusion: n-doped silicon carrying logic signals (transistor source/drain regions).</span>
+                            </div>
+                            <div class="row" style="--swatch:#34d399;">
+                                <span class="sw"></span><span class="key">diff&middot;g</span>
+                                <span>grounded diffusion: silicon tied permanently to Vss (0 V), forming the ground rails.</span>
+                            </div>
+                            <div class="row" style="--swatch:#ff7070;">
+                                <span class="sw"></span><span class="key">diff&middot;p</span>
+                                <span>powered diffusion: silicon tied permanently to Vdd (+5 V), forming the supply rails.</span>
+                            </div>
+                            <div class="row" style="--swatch:#ff5cdc;">
+                                <span class="sw"></span><span class="key">diode</span>
+                                <span>protection diodes around the I/O pads, clamping ESD and over-voltage to the supply rails.</span>
+                            </div>
+                            <div class="row" style="--swatch:#a55eff;">
+                                <span class="sw"></span><span class="key">poly</span>
+                                <span>polysilicon gate material; where poly crosses diffusion, an NMOS transistor is formed.</span>
+                            </div>
+                            <div class="row" style="--swatch:#cfd3ff;">
+                                <span class="sw"></span><span class="key">metal</span>
+                                <span>top aluminium interconnect that wires transistors together and distributes power.</span>
+                            </div>
+                            <div class="row"
+                                style="--swatch:conic-gradient(from 90deg,#ffc850 0deg,#50c8ff 60deg,#50ffb4 120deg,#8cff64 180deg,#c882ff 240deg,#ff82c8 300deg,#ffc850 360deg);">
+                                <span class="sw"></span><span class="key">logic</span>
+                                <span>logic-state overlay: clocks amber, address bus cyan, data bus teal, registers green, decode purple, interrupts pink, control cream.</span>
                             </div>
                         </div>
                     </div>
-                    <div class="layers-bar" id="layersBar">
-                        <button type="button" class="layer-btn active" data-layer="1" style="--swatch:#f5c451;" onclick="toggleLayer(1)"><span class="swatch"></span>diff·s</button>
-                        <button type="button" class="layer-btn active" data-layer="3" style="--swatch:#34d399;" onclick="toggleLayer(3)"><span class="swatch"></span>diff·g</button>
-                        <button type="button" class="layer-btn active" data-layer="4" style="--swatch:#ff7070;" onclick="toggleLayer(4)"><span class="swatch"></span>diff·p</button>
-                        <button type="button" class="layer-btn active" data-layer="2" style="--swatch:#ff5cdc;" onclick="toggleLayer(2)"><span class="swatch"></span>diode</button>
-                        <button type="button" class="layer-btn active" data-layer="5" style="--swatch:#a55eff;" onclick="toggleLayer(5)"><span class="swatch"></span>poly</button>
-                        <button type="button" class="layer-btn active" data-layer="0" style="--swatch:#cfd3ff;" onclick="toggleLayer(0)"><span class="swatch"></span>metal</button>
-                        <span class="layers-divider"></span>
-                        <button type="button" class="layer-btn logic-btn active" data-layer="logic"
-                                onclick="toggleLogicOverlay(this)"
-                                title="logic-state overlay · clocks=amber · addr bus=cyan · data bus=teal · registers=green · decode=purple · interrupts=pink · control=cream"><span class="swatch"></span>logic</button>
-                    </div>
-                </div>
 
-                <div class="side">
-                    <div class="controls">
-                        <button type="button" class="ctl run"   onclick="runChip()">▶ run</button>
-                        <button type="button" class="ctl stop"  onclick="stopChip()">■ stop</button>
-                        <button type="button" class="ctl reset" onclick="resetChip()">↺ reset</button>
-                        <button type="button" class="ctl"       onclick="stepBack()">‹ back</button>
-                        <button type="button" class="ctl"       onclick="stepForward()">step ›</button>
-                        <button type="button" class="ctl"       id="animateBtn" onclick="toggleAnimate(this)">animate · on</button>
-                        <span class="speed-control" title="simulation speed">
-                            <span class="speed-label">speed</span>
-                            <input type="range" id="speedSlider" min="0" max="100" step="1" value="100"
-                                   oninput="setSimSpeed(this.value)">
-                            <span id="speedReadout" class="speed-readout">100%</span>
-                        </span>
+                    <div class="side">
+                        <div class="controls">
+                            <button type="button" class="ctl run" onclick="runChip()">▶ run</button>
+                            <button type="button" class="ctl stop" onclick="stopChip()">■ stop</button>
+                            <button type="button" class="ctl reset" onclick="resetChip()">↺ reset</button>
+                            <button type="button" class="ctl" onclick="stepBack()">‹ back</button>
+                            <button type="button" class="ctl" onclick="stepForward()">step ›</button>
+                            <button type="button" class="ctl" id="animateBtn" onclick="toggleAnimate(this)">animate ·
+                                on</button>
+                            <span class="speed-control" title="simulation speed">
+                                <span class="speed-label">speed</span>
+                                <input type="range" id="speedSlider" min="0" max="100" step="1" value="100"
+                                    oninput="setSimSpeed(this.value)">
+                                <span id="speedReadout" class="speed-readout">100%</span>
+                            </span>
+                        </div>
+
+                        <div>
+                            <div class="status-label">// apple 1 terminal · hello world demo</div>
+                            <div class="terminal" id="terminal" tabindex="0"><span class="boot-msg"
+                                    style="color: var(--muted); text-shadow: none;">// reset asserted · 6502 fetching
+                                    $FFFC/$FFFD · waiting for output
+                                    // each character is fetched, OR-ed with $80, and written to $D012
+                                </span><span class="cursor">&nbsp;</span></div>
+                            <div class="terminal-hint">the program at <b>$0000</b> prints the string at <b>$0020</b> to
+                                the memory-mapped display register · press <b>reset</b> to run it again</div>
+                        </div>
+
+                        <div>
+                            <div class="status-label">// processor state</div>
+                            <div id="status">
+                                <p>halfcyc:0 phi0:0 AB:0000 D:00 RnW:1<br>PC:0000 A:00 X:00 Y:00 SP:00 nv-bdizc<br>Hz:
+                                    0.0</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="status-label">// zero page · stack page</div>
+                            <div class="memtable-wrap">
+                                <table id="memtable"></table>
+                            </div>
+                        </div>
                     </div>
 
-                    <div>
-                        <div class="status-label">// apple 1 terminal · hello world demo</div>
-                        <div class="terminal" id="terminal" tabindex="0"><span class="boot-msg" style="color: var(--muted); text-shadow: none;">// reset asserted · 6502 fetching $FFFC/$FFFD · waiting for output
-// each character is fetched, OR-ed with $80, and written to $D012
-</span><span class="cursor">&nbsp;</span></div>
-                        <div class="terminal-hint">the program at <b>$0000</b> prints the string at <b>$0020</b> to the memory-mapped display register · press <b>reset</b> to run it again</div>
-                    </div>
-
-                    <div>
-                        <div class="status-label">// processor state</div>
-                        <div id="status"><p>halfcyc:0 phi0:0 AB:0000 D:00 RnW:1<br>PC:0000 A:00 X:00 Y:00 SP:00 nv-bdizc<br>Hz: 0.0</p></div>
-                    </div>
-
-                    <div>
-                        <div class="status-label">// zero page · stack page</div>
-                        <div class="memtable-wrap"><table id="memtable"></table></div>
-                    </div>
-                </div>
-
-                <!-- The upstream JS reads getElementById('start' | 'stop' | 'updateShow').
+                    <!-- The upstream JS reads getElementById('start' | 'stop' | 'updateShow').
                      Provide hidden stubs so the bundled scripts can toggle them without errors. -->
-                <div id="v6502-stubs">
-                    <a id="start"></a>
-                    <a id="stop"></a>
-                    <div id="updateShow"></div>
+                    <div id="v6502-stubs">
+                        <a id="start"></a>
+                        <a id="stop"></a>
+                        <div id="updateShow"></div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+    </div>
+    <!-- ================= DECK NAV ================= -->
+    <div class="deck-nav">
+        <span class="arrow" id="nav-prev" aria-label="previous slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </span>
+        <span class="dots" id="nav-dots"></span>
+        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">4</span></span>
+        <span class="arrow" id="nav-next" aria-label="next slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18l6-6-6-6" />
+            </svg>
+        </span>
+    </div>
 
     <footer>BMEN90033 · The University of Melbourne · Apple 1 CPU</footer>
 
@@ -1339,9 +2552,9 @@
                 // Backspace to underscore (the WozMon backspace glyph),
                 // and ignore anything not representable.
                 var code = null;
-                if (e.key === 'Enter')              code = 0x0D;
-                else if (e.key === 'Backspace')     code = 0x5F;     // '_'
-                else if (e.key === 'Escape')        code = 0x1B;
+                if (e.key === 'Enter') code = 0x0D;
+                else if (e.key === 'Backspace') code = 0x5F;     // '_'
+                else if (e.key === 'Escape') code = 0x1B;
                 else if (e.key.length === 1) {
                     var c = e.key.charCodeAt(0);
                     if (c >= 0x20 && c < 0x7F) {
@@ -1397,7 +2610,7 @@
         //               per-pin labels; hover gives the block role.
         // 'detailed' -> findNodeNumber + describeNode for per-node info.
         // ------------------------------------------------------------
-        var labelsOn  = false;
+        var labelsOn = false;
         var labelMode = 'regions';
 
         // Approximate 6502 floorplan annotations. Coordinates are in
@@ -1408,36 +2621,56 @@
         // than transistor-precise outlines. For exact node positions,
         // use the detailed mode.
         var chipRegions = [
-            { id:'predec',  label:'predecode<br>+ IR',     color:'#ff5c7a',
-              x:6, y:4, w:18, h:11,
-              body:'Pre-decodes the byte just fetched from memory and latches it into the instruction register IR. Drives the decode PLA.' },
-            { id:'pla',     label:'decode PLA',            color:'#58a6ff',
-              x:24, y:4, w:69, h:24,
-              body:'Programmable logic array. Translates the 8-bit opcode together with the timing state into the dozens of internal control lines that gate registers onto the buses each cycle.' },
-            { id:'control', label:'random control logic',  color:'#b58df1',
-              x:6, y:28, w:87, h:14,
-              body:'The "random" control block: combinational gates that turn the PLA outputs into the actual register-load, ALU-mode, and bus-driver enables for the current cycle.' },
-            { id:'timing',  label:'timing<br>chain',       color:'#f5c451',
-              x:6, y:42, w:14, h:14,
-              body:'Six-state instruction timing FSM (T1–T6). Sequences the cycles of every opcode and tells the PLA which cycle of the instruction is currently running.' },
-            { id:'alu',     label:'ALU',                   color:'#7be089',
-              x:20, y:42, w:30, h:14,
-              body:'8-bit arithmetic and logic unit. Handles add, subtract (with carry), AND, OR, EOR, shifts and rotates. Also computes branch target addresses and the +1 increment for the program counter.' },
-            { id:'flags',   label:'P · flags',             color:'#f97066',
-              x:50, y:42, w:13, h:14,
-              body:'Status register P. Holds the seven flags N, V, B, D, I, Z, C. Updated by ALU operations, branches, BIT, CLC/SEC and friends.' },
-            { id:'pc',      label:'program counter<br>PCL · PCH',  color:'#58a6ff',
-              x:63, y:42, w:30, h:14,
-              body:'16-bit program counter. PCL and PCH are two 8-bit halves with a small adder for the +1 increment after each fetch and for relative-branch offset addition.' },
-            { id:'regs',    label:'registers<br>A · X · Y · S',    color:'#34d399',
-              x:6, y:56, w:65, h:24,
-              body:'The programmer-visible register file: accumulator A, index registers X and Y, and the 8-bit stack pointer S whose upper byte is fixed at $01.' },
-            { id:'addr',    label:'address bus drivers',   color:'#ff8e6e',
-              x:71, y:56, w:22, h:24,
-              body:'Output latches that drive the 16 address pins A0–A15. Multiplex between the program counter, the operand address from the addressing-mode hardware, and the stack pointer during pushes/pops.' },
-            { id:'pads',    label:'pad ring',              color:'#8b90a3',
-              x:6, y:80, w:87, h:14,
-              body:'The bonding pads and pin drivers around the perimeter of the die: data bus, address bus, clock inputs, IRQ/NMI/RESET, R/W, SYNC and the supply rails.' }
+            {
+                id: 'predec', label: 'predecode<br>+ IR', color: '#ff5c7a',
+                x: 6, y: 4, w: 18, h: 11,
+                body: 'Pre-decodes the byte just fetched from memory and latches it into the instruction register IR. Drives the decode PLA.'
+            },
+            {
+                id: 'pla', label: 'decode PLA', color: '#58a6ff',
+                x: 24, y: 4, w: 69, h: 24,
+                body: 'Programmable logic array. Translates the 8-bit opcode together with the timing state into the dozens of internal control lines that gate registers onto the buses each cycle.'
+            },
+            {
+                id: 'control', label: 'random control logic', color: '#b58df1',
+                x: 6, y: 28, w: 87, h: 14,
+                body: 'The "random" control block: combinational gates that turn the PLA outputs into the actual register-load, ALU-mode, and bus-driver enables for the current cycle.'
+            },
+            {
+                id: 'timing', label: 'timing<br>chain', color: '#f5c451',
+                x: 6, y: 42, w: 14, h: 14,
+                body: 'Six-state instruction timing FSM (T1–T6). Sequences the cycles of every opcode and tells the PLA which cycle of the instruction is currently running.'
+            },
+            {
+                id: 'alu', label: 'ALU', color: '#7be089',
+                x: 20, y: 42, w: 30, h: 14,
+                body: '8-bit arithmetic and logic unit. Handles add, subtract (with carry), AND, OR, EOR, shifts and rotates. Also computes branch target addresses and the +1 increment for the program counter.'
+            },
+            {
+                id: 'flags', label: 'P · flags', color: '#f97066',
+                x: 50, y: 42, w: 13, h: 14,
+                body: 'Status register P. Holds the seven flags N, V, B, D, I, Z, C. Updated by ALU operations, branches, BIT, CLC/SEC and friends.'
+            },
+            {
+                id: 'pc', label: 'program counter<br>PCL · PCH', color: '#58a6ff',
+                x: 63, y: 42, w: 30, h: 14,
+                body: '16-bit program counter. PCL and PCH are two 8-bit halves with a small adder for the +1 increment after each fetch and for relative-branch offset addition.'
+            },
+            {
+                id: 'regs', label: 'registers<br>A · X · Y · S', color: '#34d399',
+                x: 6, y: 56, w: 65, h: 24,
+                body: 'The programmer-visible register file: accumulator A, index registers X and Y, and the 8-bit stack pointer S whose upper byte is fixed at $01.'
+            },
+            {
+                id: 'addr', label: 'address bus drivers', color: '#ff8e6e',
+                x: 71, y: 56, w: 22, h: 24,
+                body: 'Output latches that drive the 16 address pins A0–A15. Multiplex between the program counter, the operand address from the addressing-mode hardware, and the stack pointer during pushes/pops.'
+            },
+            {
+                id: 'pads', label: 'pad ring', color: '#8b90a3',
+                x: 6, y: 80, w: 87, h: 14,
+                body: 'The bonding pads and pin drivers around the perimeter of the die: data bus, address bus, clock inputs, IRQ/NMI/RESET, R/W, SYNC and the supply rails.'
+            }
         ];
 
         function buildRegionOverlay() {
@@ -1447,11 +2680,11 @@
                 var box = document.createElement('div');
                 box.className = 'region';
                 box.dataset.id = r.id;
-                box.style.left   = r.x + '%';
-                box.style.top    = r.y + '%';
-                box.style.width  = r.w + '%';
+                box.style.left = r.x + '%';
+                box.style.top = r.y + '%';
+                box.style.width = r.w + '%';
                 box.style.height = r.h + '%';
-                box.style.color  = r.color;
+                box.style.color = r.color;
                 var lbl = document.createElement('span');
                 lbl.className = 'rlabel';
                 lbl.innerHTML = r.label;
@@ -1464,40 +2697,40 @@
         // visual6502 node name, direction (in/out/io/pwr), the short
         // tag printed on the chip, and a one-line description.
         var pinDefs = [
-            ['ab0','out','A0',  'address bus bit 0 · selects byte in 64 KB · output, valid during phi2'],
-            ['ab1','out','A1',  'address bus bit 1 · output'],
-            ['ab2','out','A2',  'address bus bit 2 · output'],
-            ['ab3','out','A3',  'address bus bit 3 · output'],
-            ['ab4','out','A4',  'address bus bit 4 · output'],
-            ['ab5','out','A5',  'address bus bit 5 · output'],
-            ['ab6','out','A6',  'address bus bit 6 · output'],
-            ['ab7','out','A7',  'address bus bit 7 · output'],
-            ['ab8','out','A8',  'address bus bit 8 · output'],
-            ['ab9','out','A9',  'address bus bit 9 · output'],
-            ['ab10','out','A10','address bus bit 10 · output'],
-            ['ab11','out','A11','address bus bit 11 · output'],
-            ['ab12','out','A12','address bus bit 12 · output'],
-            ['ab13','out','A13','address bus bit 13 · output'],
-            ['ab14','out','A14','address bus bit 14 · output'],
-            ['ab15','out','A15','address bus bit 15 · output · MSB of the 16-bit address'],
-            ['db0','io','D0',   'data bus bit 0 · bidirectional · driven by CPU on writes, by memory on reads'],
-            ['db1','io','D1',   'data bus bit 1 · bidirectional'],
-            ['db2','io','D2',   'data bus bit 2 · bidirectional'],
-            ['db3','io','D3',   'data bus bit 3 · bidirectional'],
-            ['db4','io','D4',   'data bus bit 4 · bidirectional'],
-            ['db5','io','D5',   'data bus bit 5 · bidirectional'],
-            ['db6','io','D6',   'data bus bit 6 · bidirectional'],
-            ['db7','io','D7',   'data bus bit 7 · bidirectional'],
-            ['rw',  'out','R/W','read/write · high = CPU is reading memory, low = CPU is writing'],
-            ['sync','out','SYNC','asserted high during the opcode-fetch cycle of every instruction'],
-            ['irq', 'in','IRQ', 'maskable interrupt request input · vectored through $FFFE/$FFFF when I flag is clear'],
-            ['nmi', 'in','NMI', 'non-maskable interrupt input · edge-triggered · vectored through $FFFA/$FFFB'],
-            ['res', 'in','RES', 'external reset · holds the chip in reset for ~7 cycles after release · vector $FFFC/$FFFD'],
-            ['rdy', 'in','RDY', 'ready · pulled low to pause the processor (used for single-stepping and slow memory)'],
-            ['so',  'in','SO',  'set-overflow input · sets the V flag on a falling edge'],
-            ['clk0','in', 'phi0','phi-zero clock input · divided internally to produce phi1 and phi2'],
-            ['clk1out','out','phi1','phi-one clock output · derived from phi0'],
-            ['clk2out','out','phi2','phi-two clock output · memory access valid during this phase']
+            ['ab0', 'out', 'A0', 'address bus bit 0 · selects byte in 64 KB · output, valid during phi2'],
+            ['ab1', 'out', 'A1', 'address bus bit 1 · output'],
+            ['ab2', 'out', 'A2', 'address bus bit 2 · output'],
+            ['ab3', 'out', 'A3', 'address bus bit 3 · output'],
+            ['ab4', 'out', 'A4', 'address bus bit 4 · output'],
+            ['ab5', 'out', 'A5', 'address bus bit 5 · output'],
+            ['ab6', 'out', 'A6', 'address bus bit 6 · output'],
+            ['ab7', 'out', 'A7', 'address bus bit 7 · output'],
+            ['ab8', 'out', 'A8', 'address bus bit 8 · output'],
+            ['ab9', 'out', 'A9', 'address bus bit 9 · output'],
+            ['ab10', 'out', 'A10', 'address bus bit 10 · output'],
+            ['ab11', 'out', 'A11', 'address bus bit 11 · output'],
+            ['ab12', 'out', 'A12', 'address bus bit 12 · output'],
+            ['ab13', 'out', 'A13', 'address bus bit 13 · output'],
+            ['ab14', 'out', 'A14', 'address bus bit 14 · output'],
+            ['ab15', 'out', 'A15', 'address bus bit 15 · output · MSB of the 16-bit address'],
+            ['db0', 'io', 'D0', 'data bus bit 0 · bidirectional · driven by CPU on writes, by memory on reads'],
+            ['db1', 'io', 'D1', 'data bus bit 1 · bidirectional'],
+            ['db2', 'io', 'D2', 'data bus bit 2 · bidirectional'],
+            ['db3', 'io', 'D3', 'data bus bit 3 · bidirectional'],
+            ['db4', 'io', 'D4', 'data bus bit 4 · bidirectional'],
+            ['db5', 'io', 'D5', 'data bus bit 5 · bidirectional'],
+            ['db6', 'io', 'D6', 'data bus bit 6 · bidirectional'],
+            ['db7', 'io', 'D7', 'data bus bit 7 · bidirectional'],
+            ['rw', 'out', 'R/W', 'read/write · high = CPU is reading memory, low = CPU is writing'],
+            ['sync', 'out', 'SYNC', 'asserted high during the opcode-fetch cycle of every instruction'],
+            ['irq', 'in', 'IRQ', 'maskable interrupt request input · vectored through $FFFE/$FFFF when I flag is clear'],
+            ['nmi', 'in', 'NMI', 'non-maskable interrupt input · edge-triggered · vectored through $FFFA/$FFFB'],
+            ['res', 'in', 'RES', 'external reset · holds the chip in reset for ~7 cycles after release · vector $FFFC/$FFFD'],
+            ['rdy', 'in', 'RDY', 'ready · pulled low to pause the processor (used for single-stepping and slow memory)'],
+            ['so', 'in', 'SO', 'set-overflow input · sets the V flag on a falling edge'],
+            ['clk0', 'in', 'phi0', 'phi-zero clock input · divided internally to produce phi1 and phi2'],
+            ['clk1out', 'out', 'phi1', 'phi-one clock output · derived from phi0'],
+            ['clk2out', 'out', 'phi2', 'phi-two clock output · memory access valid during this phase']
         ];
 
         // For each pin node, find the polygon farthest from the chip
@@ -1541,7 +2774,7 @@
                 var dot = document.createElement('div');
                 dot.className = 'pin-label kind-' + p[1];
                 dot.style.left = xpct + '%';
-                dot.style.top  = ypct + '%';
+                dot.style.top = ypct + '%';
                 dot.textContent = p[2];
                 dot.dataset.name = p[0];
                 dot.dataset.kind = p[1];
@@ -1553,7 +2786,7 @@
                         dimExceptNode(nodenames[p[0]]);
                     }
                 });
-                dot.addEventListener('mousemove',  function (e) { e.stopPropagation(); showPinTip(e, p); });
+                dot.addEventListener('mousemove', function (e) { e.stopPropagation(); showPinTip(e, p); });
                 dot.addEventListener('mouseleave', function (e) {
                     e.stopPropagation();
                     hideLabelTip();
@@ -1572,16 +2805,16 @@
                 '<b>' + p[2] + '</b>' +
                 p[3] +
                 '<div style="margin-top:4px; opacity:0.55; font-size:9.5px; letter-spacing:0.1em;">' +
-                    'visual6502 node: ' + p[0] +
+                'visual6502 node: ' + p[0] +
                 '</div>';
             tip.style.display = 'block';
             var tipRect = tip.getBoundingClientRect();
             var px = ev.clientX + 14;
             var py = ev.clientY + 14;
-            if (px + tipRect.width  > window.innerWidth)  px = ev.clientX - tipRect.width  - 14;
+            if (px + tipRect.width > window.innerWidth) px = ev.clientX - tipRect.width - 14;
             if (py + tipRect.height > window.innerHeight) py = ev.clientY - tipRect.height - 14;
             tip.style.left = px + 'px';
-            tip.style.top  = py + 'px';
+            tip.style.top = py + 'px';
         }
 
         // Patch setChipStyle so the regions overlay AND the dimmer
@@ -1624,14 +2857,14 @@
         }
         function reapplyDim() {
             if (!lastDimArgs) return;
-            if (dimOpacity <= 0) { var c = getDimmerCtx(); if (c) { c.globalCompositeOperation='source-over'; c.clearRect(0,0,grCanvasSize,grCanvasSize); } return; }
-            if (lastDimArgs[0] === 'node')   dimExceptNode(lastDimArgs[1]);
+            if (dimOpacity <= 0) { var c = getDimmerCtx(); if (c) { c.globalCompositeOperation = 'source-over'; c.clearRect(0, 0, grCanvasSize, grCanvasSize); } return; }
+            if (lastDimArgs[0] === 'node') dimExceptNode(lastDimArgs[1]);
             if (lastDimArgs[0] === 'region') dimExceptRegion(lastDimArgs[1]);
         }
         function setupDimmerCanvas() {
             var c = document.getElementById('dimmer');
             if (!c || typeof grCanvasSize === 'undefined') return;
-            c.width  = grCanvasSize;
+            c.width = grCanvasSize;
             c.height = grCanvasSize;
         }
         function getDimmerCtx() {
@@ -1713,30 +2946,30 @@
         var logicOverlayOn = true;
         var nodeCategoryMap = null;       // built lazily when refresh runs
         var categoryStyles = {
-            'clock':        'rgba(255, 200,  80, 0.55)',
-            'addr':         'rgba( 80, 200, 255, 0.50)',
-            'data':         'rgba( 80, 255, 180, 0.55)',
+            'clock': 'rgba(255, 200,  80, 0.55)',
+            'addr': 'rgba( 80, 200, 255, 0.50)',
+            'data': 'rgba( 80, 255, 180, 0.55)',
             'internal-bus': 'rgba(140, 180, 255, 0.45)',
-            'register':     'rgba(140, 255, 100, 0.55)',
-            'decode':       'rgba(200, 130, 255, 0.50)',
-            'interrupt':    'rgba(255, 130, 200, 0.55)',
-            'control':      'rgba(255, 240, 180, 0.50)',
-            'other':        'rgba(255, 110, 130, 0.32)'
+            'register': 'rgba(140, 255, 100, 0.55)',
+            'decode': 'rgba(200, 130, 255, 0.50)',
+            'interrupt': 'rgba(255, 130, 200, 0.55)',
+            'control': 'rgba(255, 240, 180, 0.50)',
+            'other': 'rgba(255, 110, 130, 0.32)'
         };
 
         function classifyForLogic(name) {
             if (!name) return 'other';
-            if (/^clk|^cclk|^clock|^t[1-6]$|^fetch$/.test(name))               return 'clock';
-            if (/^ab\d+$/.test(name))                                          return 'addr';
-            if (/^db\d+$|^idb\d+$|^idl\d+$|^dor\d+$|^pd\d+$/.test(name))       return 'data';
-            if (/^sb\d+$|^adl\d+$|^adh\d+$|^abl\d+$|^abh\d+$/.test(name))      return 'internal-bus';
+            if (/^clk|^cclk|^clock|^t[1-6]$|^fetch$/.test(name)) return 'clock';
+            if (/^ab\d+$/.test(name)) return 'addr';
+            if (/^db\d+$|^idb\d+$|^idl\d+$|^dor\d+$|^pd\d+$/.test(name)) return 'data';
+            if (/^sb\d+$|^adl\d+$|^adh\d+$|^abl\d+$|^abh\d+$/.test(name)) return 'internal-bus';
             if (/^[axy][0-7]$|^s[0-7]$|^p[0-7]$|^pcl[0-7]$|^pch[0-7]$|^ir[0-7]$/.test(name))
-                                                                                return 'register';
-            if (/^dpc/.test(name))                                              return 'decode';
+                return 'register';
+            if (/^dpc/.test(name)) return 'decode';
             if (/^IRQ|^NMI|^RES|^INTG|^pipe/.test(name) ||
-                name === 'irq' || name === 'nmi' || name === 'res')             return 'interrupt';
+                name === 'irq' || name === 'nmi' || name === 'res') return 'interrupt';
             if (name === 'rw' || name === 'sync' || name === 'rdy' || name === 'so')
-                                                                                return 'control';
+                return 'control';
             return 'other';
         }
         function buildNodeCategoryMap() {
@@ -1887,7 +3120,7 @@
         function applyLabelState() {
             var vp = document.getElementById('chip');
             if (vp) {
-                vp.classList.toggle('labels-on',  labelsOn);
+                vp.classList.toggle('labels-on', labelsOn);
                 vp.classList.toggle('regions-on', labelsOn && labelMode === 'regions');
             }
             var bar = document.getElementById('labelsBar');
@@ -1926,12 +3159,12 @@
             if (!name) return null;
             var n = name;
             var pin = function (label, body) { return { cat: 'package pin', label: label, body: body }; };
-            var reg = function (label, body) { return { cat: 'register',   label: label, body: body }; };
-            var bus = function (label, body) { return { cat: 'bus',        label: label, body: body }; };
-            var alu = function (label, body) { return { cat: 'alu',        label: label, body: body }; };
-            var ctl = function (label, body) { return { cat: 'control',    label: label, body: body }; };
-            var pwr = function (label, body) { return { cat: 'rail',       label: label, body: body }; };
-            var int_ = function (label, body){ return { cat: 'internal',   label: label, body: body }; };
+            var reg = function (label, body) { return { cat: 'register', label: label, body: body }; };
+            var bus = function (label, body) { return { cat: 'bus', label: label, body: body }; };
+            var alu = function (label, body) { return { cat: 'alu', label: label, body: body }; };
+            var ctl = function (label, body) { return { cat: 'control', label: label, body: body }; };
+            var pwr = function (label, body) { return { cat: 'rail', label: label, body: body }; };
+            var int_ = function (label, body) { return { cat: 'internal', label: label, body: body }; };
 
             // Inverted-signal wrappers: peel "not" prefix and re-describe.
             if (/^not[a-z]/i.test(n)) {
@@ -1940,28 +3173,28 @@
             }
 
             // External pins
-            if (/^db[0-7]$/.test(n))  return pin('D' + n.slice(2), 'data bus pin · bidirectional 8-bit data line shared with memory');
-            if (/^ab\d+$/.test(n))    return pin('A' + n.slice(2), 'address bus pin · selects a byte in the 64 KB address space');
-            if (n === 'rw')           return pin('R/W', 'read when high, write when low · valid during phi2');
-            if (n === 'sync')         return pin('SYNC', 'asserted high during the opcode-fetch cycle of every instruction');
-            if (n === 'irq')          return pin('IRQ', 'maskable interrupt request input · vector at $FFFE/$FFFF');
-            if (n === 'nmi')          return pin('NMI', 'non-maskable interrupt input · vector at $FFFA/$FFFB');
-            if (n === 'res')          return pin('RES', 'external reset input · vector at $FFFC/$FFFD');
-            if (n === 'rdy')          return pin('RDY', 'pause the processor in the current cycle when held low');
-            if (n === 'so')           return pin('SO', 'external set-overflow input · sets the V flag on a falling edge');
-            if (n === 'clk0')         return pin('phi0', 'input clock · divided internally to produce phi1 and phi2');
-            if (n === 'clk1out')      return pin('phi1', 'phase-1 clock output');
-            if (n === 'clk2out')      return pin('phi2', 'phase-2 clock output · memory access valid during this phase');
+            if (/^db[0-7]$/.test(n)) return pin('D' + n.slice(2), 'data bus pin · bidirectional 8-bit data line shared with memory');
+            if (/^ab\d+$/.test(n)) return pin('A' + n.slice(2), 'address bus pin · selects a byte in the 64 KB address space');
+            if (n === 'rw') return pin('R/W', 'read when high, write when low · valid during phi2');
+            if (n === 'sync') return pin('SYNC', 'asserted high during the opcode-fetch cycle of every instruction');
+            if (n === 'irq') return pin('IRQ', 'maskable interrupt request input · vector at $FFFE/$FFFF');
+            if (n === 'nmi') return pin('NMI', 'non-maskable interrupt input · vector at $FFFA/$FFFB');
+            if (n === 'res') return pin('RES', 'external reset input · vector at $FFFC/$FFFD');
+            if (n === 'rdy') return pin('RDY', 'pause the processor in the current cycle when held low');
+            if (n === 'so') return pin('SO', 'external set-overflow input · sets the V flag on a falling edge');
+            if (n === 'clk0') return pin('phi0', 'input clock · divided internally to produce phi1 and phi2');
+            if (n === 'clk1out') return pin('phi1', 'phase-1 clock output');
+            if (n === 'clk2out') return pin('phi2', 'phase-2 clock output · memory access valid during this phase');
             if (n === 'vcc' || n === 'pwr') return pwr('VCC', 'positive supply rail (+5 V on the Apple 1)');
             if (n === 'vss' || n === 'gnd') return pwr('VSS', 'ground rail');
 
             // Programmer-visible registers
-            if (/^a[0-7]$/.test(n))   return reg('A' + n.slice(1), 'accumulator · primary destination for arithmetic and logical operations');
-            if (/^x[0-7]$/.test(n))   return reg('X' + n.slice(1), 'X index register · used by indexed addressing modes and as a counter');
-            if (/^y[0-7]$/.test(n))   return reg('Y' + n.slice(1), 'Y index register · used by indirect-indexed addressing in particular');
-            if (/^s[0-7]$/.test(n))   return reg('S' + n.slice(1), 'stack pointer (low byte) · stack lives in page $01');
+            if (/^a[0-7]$/.test(n)) return reg('A' + n.slice(1), 'accumulator · primary destination for arithmetic and logical operations');
+            if (/^x[0-7]$/.test(n)) return reg('X' + n.slice(1), 'X index register · used by indexed addressing modes and as a counter');
+            if (/^y[0-7]$/.test(n)) return reg('Y' + n.slice(1), 'Y index register · used by indirect-indexed addressing in particular');
+            if (/^s[0-7]$/.test(n)) return reg('S' + n.slice(1), 'stack pointer (low byte) · stack lives in page $01');
             if (/^p[0-7]$/.test(n)) {
-                var flagMap = { '0':'C carry', '1':'Z zero', '2':'I interrupt-disable', '3':'D decimal', '4':'B break', '6':'V overflow', '7':'N negative' };
+                var flagMap = { '0': 'C carry', '1': 'Z zero', '2': 'I interrupt-disable', '3': 'D decimal', '4': 'B break', '6': 'V overflow', '7': 'N negative' };
                 return reg('P.' + n.slice(1), 'status register · ' + (flagMap[n.slice(1)] || 'flag bit ' + n.slice(1)));
             }
             if (/^pcl[0-7]$/.test(n)) return reg('PCL.' + n.slice(3), 'program counter · low byte · address of the next opcode to fetch');
@@ -1969,46 +3202,46 @@
             if (/^pcl?p[0-7]$/.test(n)) return reg(n, 'program counter pre-increment latch');
 
             // Instruction register (the currently-executing opcode)
-            if (/^ir[0-7]$/.test(n))  return reg('IR.' + n.slice(2), 'instruction register · holds the opcode driving the decode PLA');
-            if (n === 'clearIR')      return ctl('clearIR', 'clears the instruction register at the start of an interrupt');
+            if (/^ir[0-7]$/.test(n)) return reg('IR.' + n.slice(2), 'instruction register · holds the opcode driving the decode PLA');
+            if (n === 'clearIR') return ctl('clearIR', 'clears the instruction register at the start of an interrupt');
 
             // ALU
-            if (/^alu[0-7]$/.test(n))   return alu('ALU.' + n.slice(3), '8-bit ALU output bit');
-            if (/^alua[0-7]$/.test(n))  return alu('ALU.A' + n.slice(4), 'ALU operand A input bit');
-            if (/^alub[0-7]$/.test(n))  return alu('ALU.B' + n.slice(4), 'ALU operand B input bit');
-            if (n === 'alucin')         return alu('ALU.Cin', 'ALU carry-in (from the C flag for ADC, set high for SBC)');
+            if (/^alu[0-7]$/.test(n)) return alu('ALU.' + n.slice(3), '8-bit ALU output bit');
+            if (/^alua[0-7]$/.test(n)) return alu('ALU.A' + n.slice(4), 'ALU operand A input bit');
+            if (/^alub[0-7]$/.test(n)) return alu('ALU.B' + n.slice(4), 'ALU operand B input bit');
+            if (n === 'alucin') return alu('ALU.Cin', 'ALU carry-in (from the C flag for ADC, set high for SBC)');
             if (n === 'alucout' || n === 'alurawcout') return alu('ALU.Cout', 'ALU carry-out · drives the new C flag');
-            if (n === 'aluvout')        return alu('ALU.V',  'ALU overflow detection · drives the V flag for ADC/SBC');
+            if (n === 'aluvout') return alu('ALU.V', 'ALU overflow detection · drives the V flag for ADC/SBC');
 
             // Internal buses (the three internal data paths inside the chip)
-            if (/^db[0-7]$/.test(n))    return bus('DB.' + n.slice(2), 'internal data bus · shared with the external data pins');
-            if (/^idb[0-7]$/.test(n))   return bus('IDB.' + n.slice(3), 'internal data bus (decoupled by pad drivers from DB)');
-            if (/^idl[0-7]$/.test(n))   return bus('IDL.' + n.slice(3), 'input data latch · captures the data bus at phi1');
-            if (/^sb[0-7]$/.test(n))    return bus('SB.' + n.slice(2), 'special bus · routes register-to-register and ALU-to-register transfers');
-            if (/^adl[0-7]$/.test(n))   return bus('ADL.' + n.slice(3), 'address bus low (internal) · feeds the ABL output latch');
-            if (/^adh[0-7]$/.test(n))   return bus('ADH.' + n.slice(3), 'address bus high (internal) · feeds the ABH output latch');
-            if (/^abl[0-7]$/.test(n))   return bus('ABL.' + n.slice(3), 'output address latch low · drives the A0–A7 pins');
-            if (/^abh[0-7]$/.test(n))   return bus('ABH.' + n.slice(3), 'output address latch high · drives the A8–A15 pins');
-            if (/^dor[0-7]$/.test(n))   return bus('DOR.' + n.slice(3), 'data output register · drives the data pins on writes');
-            if (/^pd[0-7]$/.test(n))    return bus('PD.' + n.slice(2), 'pre-decode register · the just-fetched opcode byte');
+            if (/^db[0-7]$/.test(n)) return bus('DB.' + n.slice(2), 'internal data bus · shared with the external data pins');
+            if (/^idb[0-7]$/.test(n)) return bus('IDB.' + n.slice(3), 'internal data bus (decoupled by pad drivers from DB)');
+            if (/^idl[0-7]$/.test(n)) return bus('IDL.' + n.slice(3), 'input data latch · captures the data bus at phi1');
+            if (/^sb[0-7]$/.test(n)) return bus('SB.' + n.slice(2), 'special bus · routes register-to-register and ALU-to-register transfers');
+            if (/^adl[0-7]$/.test(n)) return bus('ADL.' + n.slice(3), 'address bus low (internal) · feeds the ABL output latch');
+            if (/^adh[0-7]$/.test(n)) return bus('ADH.' + n.slice(3), 'address bus high (internal) · feeds the ABH output latch');
+            if (/^abl[0-7]$/.test(n)) return bus('ABL.' + n.slice(3), 'output address latch low · drives the A0–A7 pins');
+            if (/^abh[0-7]$/.test(n)) return bus('ABH.' + n.slice(3), 'output address latch high · drives the A8–A15 pins');
+            if (/^dor[0-7]$/.test(n)) return bus('DOR.' + n.slice(3), 'data output register · drives the data pins on writes');
+            if (/^pd[0-7]$/.test(n)) return bus('PD.' + n.slice(2), 'pre-decode register · the just-fetched opcode byte');
 
             // Decode PLA · the wide-OR plane that translates opcode + state
             // into individual control lines. Names like dpc12_0ADD encode
             // the line number and what it activates.
-            if (/^dpc/.test(n))          return ctl(n, 'decode PLA control line · asserts a register-to-bus or ALU control during the current cycle');
+            if (/^dpc/.test(n)) return ctl(n, 'decode PLA control line · asserts a register-to-bus or ALU control during the current cycle');
 
             // Timing FSM
-            if (/^t[1-6]$/.test(n))      return ctl('T' + n.slice(1), 'instruction timing state · cycle ' + n.toUpperCase() + ' of the current opcode');
-            if (/^clock[12]$/.test(n))   return ctl('phi' + n.slice(5), 'internal phase ' + n.slice(5) + ' clock');
-            if (n === 'cclk')            return ctl('cclk', 'clock distribution node feeding the timing chain');
-            if (n === 'fetch')           return ctl('fetch', 'asserted during opcode-fetch cycles · drives SYNC');
+            if (/^t[1-6]$/.test(n)) return ctl('T' + n.slice(1), 'instruction timing state · cycle ' + n.toUpperCase() + ' of the current opcode');
+            if (/^clock[12]$/.test(n)) return ctl('phi' + n.slice(5), 'internal phase ' + n.slice(5) + ' clock');
+            if (n === 'cclk') return ctl('cclk', 'clock distribution node feeding the timing chain');
+            if (n === 'fetch') return ctl('fetch', 'asserted during opcode-fetch cycles · drives SYNC');
 
             // Pipeline / interrupt sequencer nodes
-            if (/^pipe/.test(n))         return ctl(n, 'control pipeline · part of the multi-cycle interrupt and reset sequencer');
-            if (/^IRQP$|^IRQ/.test(n))   return ctl(n, 'IRQ sequencer · samples the IRQ pin and routes the interrupt vector');
-            if (/^NMIP$|^NMI/.test(n))   return ctl(n, 'NMI sequencer · edge-triggered, latches NMI for the current instruction');
-            if (/^RESP$|^RES/.test(n))   return ctl(n, 'reset sequencer · holds the chip in reset for ~7 cycles after !RES is released');
-            if (n === 'INTG')            return ctl('INTG', 'interrupt sequence in progress · forces BRK-like behaviour');
+            if (/^pipe/.test(n)) return ctl(n, 'control pipeline · part of the multi-cycle interrupt and reset sequencer');
+            if (/^IRQP$|^IRQ/.test(n)) return ctl(n, 'IRQ sequencer · samples the IRQ pin and routes the interrupt vector');
+            if (/^NMIP$|^NMI/.test(n)) return ctl(n, 'NMI sequencer · edge-triggered, latches NMI for the current instruction');
+            if (/^RESP$|^RES/.test(n)) return ctl(n, 'reset sequencer · holds the chip in reset for ~7 cycles after !RES is released');
+            if (n === 'INTG') return ctl('INTG', 'interrupt sequence in progress · forces BRK-like behaviour');
 
             // Anything else: name verbatim.
             return int_(n, 'internal logic node');
@@ -2058,9 +3291,9 @@
         centerx = V2; centery = V2;
 
         window.recenter = function () {
-            var top  = -centery * zoom + V2;
-            top  = Math.min(top,  0);
-            top  = Math.max(top,  -V * (zoom - 1));
+            var top = -centery * zoom + V2;
+            top = Math.min(top, 0);
+            top = Math.max(top, -V * (zoom - 1));
             var left = -centerx * zoom + V2;
             left = Math.min(left, 0);
             left = Math.max(left, -V * (zoom - 1));
@@ -2096,8 +3329,8 @@
             var pixels = ctx.getImageData(x * grCanvasSize / V, y * grCanvasSize / V, 2, 2).data;
             if (pixels[0] == 0) return -1;
             var high = pixels[0] >> 4;
-            var mid  = pixels[1] >> 4;
-            var low  = pixels[2] >> 4;
+            var mid = pixels[1] >> 4;
+            var low = pixels[2] >> 4;
             return (high << 8) + (mid << 4) + low;
         };
 
@@ -2194,10 +3427,10 @@
                     var tipRect = tip.getBoundingClientRect();
                     var px = ev.clientX + 16;
                     var py = ev.clientY + 16;
-                    if (px + tipRect.width  > window.innerWidth)  px = ev.clientX - tipRect.width  - 16;
+                    if (px + tipRect.width > window.innerWidth) px = ev.clientX - tipRect.width - 16;
                     if (py + tipRect.height > window.innerHeight) py = ev.clientY - tipRect.height - 16;
                     tip.style.left = px + 'px';
-                    tip.style.top  = py + 'px';
+                    tip.style.top = py + 'px';
                 }
                 viewport.addEventListener('mousemove', function (e) {
                     if (!labelsOn) return;
@@ -2225,7 +3458,7 @@
                             if (typeof hilite === 'undefined' || !hilite) return;
                             var rect = hilite.getBoundingClientRect();
                             var x = (ev.clientX - rect.left) / zoom;
-                            var y = (ev.clientY - rect.top)  / zoom;
+                            var y = (ev.clientY - rect.top) / zoom;
                             if (x < 0 || y < 0 || x >= V || y >= V) {
                                 setActiveRegion(null); clearDimmer(); hideLabelTip(); return;
                             }
@@ -2246,10 +3479,10 @@
                             var tip = ensureLabelTip();
                             tip.innerHTML =
                                 '<span class="cat" style="color:' + hit.color + ';">functional region</span>' +
-                                '<b>' + hit.label.replace(/<br>/g,' ') + '</b>' +
+                                '<b>' + hit.label.replace(/<br>/g, ' ') + '</b>' +
                                 hit.body +
                                 '<div style="margin-top:4px; opacity:0.55; font-size:9.5px; letter-spacing:0.1em;">' +
-                                    'switch labels to "detailed" for per-node info' +
+                                'switch labels to "detailed" for per-node info' +
                                 '</div>';
                             tip.style.display = 'block';
                             positionLabelTip(tip, ev);
@@ -2260,7 +3493,7 @@
                         if (typeof findNodeNumber !== 'function' || typeof hilite === 'undefined' || !hilite) return;
                         var rect2 = hilite.getBoundingClientRect();
                         var dx = (ev.clientX - rect2.left) / zoom;
-                        var dy = (ev.clientY - rect2.top)  / zoom;
+                        var dy = (ev.clientY - rect2.top) / zoom;
                         if (dx < 0 || dy < 0 || dx >= V || dy >= V) { clearDimmer(); hideLabelTip(); return; }
                         var w = findNodeNumber(dx, dy);
                         if (w === -1) { clearDimmer(); hideLabelTip(); return; }
@@ -2269,14 +3502,14 @@
                         var d = describeNode(name);
                         var tip2 = ensureLabelTip();
                         var label = d ? d.label : name;
-                        var cat   = d ? d.cat   : 'node';
-                        var body  = d ? d.body  : '';
+                        var cat = d ? d.cat : 'node';
+                        var body = d ? d.body : '';
                         tip2.innerHTML =
                             '<span class="cat">' + cat + '</span>' +
                             '<b>' + label + '</b>' +
                             (body ? body : '') +
                             '<div style="margin-top:4px; opacity:0.55; font-size:9.5px; letter-spacing:0.1em;">' +
-                                'raw: ' + name + ' · #' + w +
+                            'raw: ' + name + ' · #' + w +
                             '</div>';
                         tip2.style.display = 'block';
                         positionLabelTip(tip2, ev);
@@ -2302,7 +3535,7 @@
          ============================================================ -->
     <script type="module">
         import * as THREE from 'three';
-        import { OrbitControls }   from 'three/addons/controls/OrbitControls.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
         var scene, camera, renderer, controls;
@@ -2338,10 +3571,10 @@
         var layerSpec = [
             { idx: 1, colour: '#f5c451', baseZ: 0.000, depth: 0.008, opacity: 0.95, name: 'switched diffusion' },
             { idx: 3, colour: '#34d399', baseZ: 0.000, depth: 0.008, opacity: 0.95, name: 'grounded diffusion' },
-            { idx: 4, colour: '#ff7070', baseZ: 0.000, depth: 0.008, opacity: 0.95, name: 'powered diffusion'  },
-            { idx: 2, colour: '#ff5cdc', baseZ: 0.010, depth: 0.006, opacity: 0.95, name: 'input diode'        },
-            { idx: 5, colour: '#a55eff', baseZ: 0.020, depth: 0.012, opacity: 0.92, name: 'polysilicon'        },
-            { idx: 0, colour: '#cfd3ff', baseZ: 0.044, depth: 0.018, opacity: 0.78, name: 'metal'              }
+            { idx: 4, colour: '#ff7070', baseZ: 0.000, depth: 0.008, opacity: 0.95, name: 'powered diffusion' },
+            { idx: 2, colour: '#ff5cdc', baseZ: 0.010, depth: 0.006, opacity: 0.95, name: 'input diode' },
+            { idx: 5, colour: '#a55eff', baseZ: 0.020, depth: 0.012, opacity: 0.92, name: 'polysilicon' },
+            { idx: 0, colour: '#cfd3ff', baseZ: 0.044, depth: 0.018, opacity: 0.78, name: 'metal' }
         ];
 
         // Plane dimensions in world units, chosen to match the actual
@@ -2524,6 +3757,636 @@
                 pendingLayerVisibility[idx] = visible;
             }
         };
+    </script>
+
+    <!-- ================= SCENE 02 · PROGRAMMABLE LOGIC ARRAY SCRIPT ================= -->
+    <script>
+        (function () {
+            // 4 inputs, 8 product terms, 4 outputs.
+            // Signal index in the AND-plane: 2*i = A_i, 2*i + 1 = NOT A_i.
+            var N_IN = 4, N_SIG = 8, N_PROD = 8, N_OUT = 4;
+
+            // State.
+            var inputs = [false, false, false, false];
+            var andM = makeMatrix(N_PROD, N_SIG);   // andM[row][sig]
+            var orM = makeMatrix(N_PROD, N_OUT);   // orM [row][out]
+
+            function makeMatrix(rows, cols) {
+                var m = new Array(rows);
+                for (var r = 0; r < rows; r++) {
+                    m[r] = new Array(cols);
+                    for (var c = 0; c < cols; c++) m[r][c] = false;
+                }
+                return m;
+            }
+
+            function clearMatrices() {
+                for (var r = 0; r < N_PROD; r++) {
+                    for (var c = 0; c < N_SIG; c++) andM[r][c] = false;
+                    for (var j = 0; j < N_OUT; j++) orM[r][j] = false;
+                }
+            }
+
+            // Geometry inside the SVG viewBox (640 x 420).
+            // Columns are arranged MSB-first (A3 leftmost, A0 rightmost; Y3
+            // leftmost, Y0 rightmost) so the diagram reads in the same order
+            // as the truth strip below and as binary literals (e.g. "1001"
+            // lines up directly under A3 A2 A1 A0). The arrays are indexed
+            // by signal/output number, so inputX[0] is still the A0 column
+            // (now drawn on the right), inputX[6] is A3 (now on the left),
+            // and so on. Within each input bit the complement column sits
+            // immediately to the right of its true column.
+            var GEOM = {
+                inputX: [262, 294, 198, 230, 134, 166, 70, 102],
+                outputX: [500, 460, 420, 380],
+                prodY: [98, 130, 162, 194, 226, 258, 290, 322],
+                prodX0: 58,    // product line left end
+                prodX1: 524,   // product line right end
+                inY0: 76,    // input rail top
+                inY1: 338,   // input rail bottom
+                outY0: 88,    // output rail top
+                outY1: 368,   // output rail bottom
+                divX: 338,   // visual divider between AND-plane and OR-plane
+                ihdrY: 42,    // input header label y
+                ibitY: 60,    // input live bit y
+                obitY: 408,   // output live bit y
+                ohdrY: 426,   // output header label y
+                plabelX: 44,    // product term label x
+            };
+
+            var svg = d3.select('#pla-svg');
+            var inputsRow = d3.select('#pla-inputs');
+            var outBitsEl = document.getElementById('pla-out-bits');
+            var inBitsEl = document.getElementById('pla-in-bits');
+
+            // Build input switch buttons.
+            for (var i = 0; i < N_IN; i++) {
+                (function (idx) {
+                    var btn = inputsRow.append('button')
+                        .attr('type', 'button')
+                        .attr('class', 'pla-input')
+                        .attr('data-i', idx);
+                    btn.append('span').text('A' + idx);
+                    btn.append('span').attr('class', 'bit').text('0');
+                    btn.on('click', function () {
+                        inputs[idx] = !inputs[idx];
+                        update();
+                    });
+                })(i);
+            }
+
+            // Static SVG scaffolding (frames, band labels, axis labels).
+            // Drawn once; live state is added/updated by update().
+            var gFrame = svg.append('g').attr('class', 'g-frame');
+
+            // Dashed divider between AND-plane and OR-plane.
+            gFrame.append('line')
+                .attr('class', 'pla-frame')
+                .attr('x1', GEOM.divX).attr('x2', GEOM.divX)
+                .attr('y1', 84).attr('y2', 354);
+
+            // Plane band labels.
+            gFrame.append('text')
+                .attr('class', 'pla-band-label')
+                .attr('x', (GEOM.inputX[0] + GEOM.inputX[N_SIG - 1]) / 2)
+                .attr('y', 22)
+                .attr('text-anchor', 'middle')
+                .text('AND-plane');
+            gFrame.append('text')
+                .attr('class', 'pla-band-label')
+                .attr('x', (GEOM.outputX[0] + GEOM.outputX[N_OUT - 1]) / 2)
+                .attr('y', 22)
+                .attr('text-anchor', 'middle')
+                .text('OR-plane');
+
+            // "inputs" / "outputs" axis labels.
+            gFrame.append('text')
+                .attr('class', 'pla-band-label')
+                .attr('x', (GEOM.inputX[0] + GEOM.inputX[N_SIG - 1]) / 2)
+                .attr('y', GEOM.ohdrY + 14)
+                .attr('text-anchor', 'middle')
+                .text('inputs A3..A0 (and complements)');
+            gFrame.append('text')
+                .attr('class', 'pla-band-label')
+                .attr('x', (GEOM.outputX[0] + GEOM.outputX[N_OUT - 1]) / 2)
+                .attr('y', GEOM.ohdrY + 14)
+                .attr('text-anchor', 'middle')
+                .text('outputs Y3..Y0');
+
+            // Input column headers (A0, !A0, A1, !A1, ...).
+            // Use the Unicode NOT sign for complements.
+            var sigName = function (sig) {
+                var n = Math.floor(sig / 2);
+                return (sig % 2 === 0) ? ('A' + n) : ('¬A' + n);
+            };
+            for (var s = 0; s < N_SIG; s++) {
+                gFrame.append('text')
+                    .attr('class', 'lbl-strong')
+                    .attr('x', GEOM.inputX[s])
+                    .attr('y', GEOM.ihdrY)
+                    .attr('text-anchor', 'middle')
+                    .text(sigName(s));
+            }
+
+            // Input live bit indicators (one per A_i, placed above the A_i column).
+            var ibitTexts = [];
+            for (var i = 0; i < N_IN; i++) {
+                var col = 2 * i; // the A_i column (not the complement)
+                var t = gFrame.append('text')
+                    .attr('class', 'ibit')
+                    .attr('x', (GEOM.inputX[col] + GEOM.inputX[col + 1]) / 2)
+                    .attr('y', GEOM.ibitY)
+                    .attr('text-anchor', 'middle')
+                    .text('0');
+                ibitTexts.push(t);
+            }
+
+            // Product term labels (P0..P7) on the left.
+            var plabelTexts = [];
+            for (var r = 0; r < N_PROD; r++) {
+                var t = gFrame.append('text')
+                    .attr('class', 'plabel')
+                    .attr('x', GEOM.plabelX)
+                    .attr('y', GEOM.prodY[r] + 3)
+                    .attr('text-anchor', 'end')
+                    .text('P' + r);
+                plabelTexts.push(t);
+            }
+
+            // Output column headers and bit indicators.
+            var obitTexts = [];
+            for (var j = 0; j < N_OUT; j++) {
+                gFrame.append('text')
+                    .attr('class', 'lbl-strong')
+                    .attr('x', GEOM.outputX[j])
+                    .attr('y', GEOM.ohdrY - 38)
+                    .attr('text-anchor', 'middle')
+                    .text('Y' + j);
+                var t = gFrame.append('text')
+                    .attr('class', 'obit')
+                    .attr('x', GEOM.outputX[j])
+                    .attr('y', GEOM.obitY)
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'central')
+                    .text('0');
+                obitTexts.push(t);
+            }
+
+            // Lines (input rails, product rails, output rails).
+            var gLines = svg.append('g').attr('class', 'g-lines');
+
+            var inputLines = [];
+            for (var s = 0; s < N_SIG; s++) {
+                inputLines.push(gLines.append('line')
+                    .attr('class', 'vline input')
+                    .attr('x1', GEOM.inputX[s]).attr('x2', GEOM.inputX[s])
+                    .attr('y1', GEOM.inY0).attr('y2', GEOM.inY1));
+            }
+
+            var prodLines = [];
+            for (var r = 0; r < N_PROD; r++) {
+                prodLines.push(gLines.append('line')
+                    .attr('class', 'hline product')
+                    .attr('x1', GEOM.prodX0).attr('x2', GEOM.prodX1)
+                    .attr('y1', GEOM.prodY[r]).attr('y2', GEOM.prodY[r]));
+            }
+
+            var outputLines = [];
+            for (var j = 0; j < N_OUT; j++) {
+                outputLines.push(gLines.append('line')
+                    .attr('class', 'vline output')
+                    .attr('x1', GEOM.outputX[j]).attr('x2', GEOM.outputX[j])
+                    .attr('y1', GEOM.outY0).attr('y2', GEOM.outY1));
+            }
+
+            // Cross-points (clickable). Each is a <g> containing a generous
+            // transparent hit-target rect + a small visible mark + a native
+            // <title> tooltip. The mark is invisible until hovered (faint)
+            // or toggled on (filled). With the colored mark drawn over both
+            // wires, an "on" dot reads as a fused junction at the crossing,
+            // exactly the schematic convention for a connection.
+            var HIT = 12; // half-width of the square hit area (in SVG units)
+            var gPoints = svg.append('g').attr('class', 'g-points');
+
+            function makeXpoint(parent, cx, cy, klass, tipText, onClick) {
+                var g = parent.append('g')
+                    .attr('class', 'xpoint ' + klass)
+                    .attr('transform', 'translate(' + cx + ',' + cy + ')')
+                    .on('click', onClick);
+                g.append('title').text(tipText);
+                g.append('rect')
+                    .attr('class', 'hit')
+                    .attr('x', -HIT).attr('y', -HIT)
+                    .attr('width', 2 * HIT).attr('height', 2 * HIT);
+                g.append('circle')
+                    .attr('class', 'mark')
+                    .attr('r', 6);
+                return g;
+            }
+
+            var andDots = [];
+            for (var r = 0; r < N_PROD; r++) {
+                andDots[r] = [];
+                for (var s = 0; s < N_SIG; s++) {
+                    (function (rr, ss) {
+                        andDots[rr][ss] = makeXpoint(
+                            gPoints,
+                            GEOM.inputX[ss], GEOM.prodY[rr],
+                            'and',
+                            'toggle: connect ' + sigName(ss) + ' as a factor of P' + rr,
+                            function () { andM[rr][ss] = !andM[rr][ss]; update(); }
+                        );
+                    })(r, s);
+                }
+            }
+            var orDots = [];
+            for (var r = 0; r < N_PROD; r++) {
+                orDots[r] = [];
+                for (var j = 0; j < N_OUT; j++) {
+                    (function (rr, jj) {
+                        orDots[rr][jj] = makeXpoint(
+                            gPoints,
+                            GEOM.outputX[jj], GEOM.prodY[rr],
+                            'or',
+                            'toggle: feed P' + rr + ' into Y' + jj,
+                            function () { orM[rr][jj] = !orM[rr][jj]; update(); }
+                        );
+                    })(r, j);
+                }
+            }
+
+            // Build the per-product-term readout panel.
+            var readoutEl = document.getElementById('pla-readout');
+            var readoutRows = [];
+            for (var r = 0; r < N_PROD; r++) {
+                var row = document.createElement('div');
+                row.className = 'pterm';
+                row.innerHTML = '<span class="lab">P' + r + '</span>' +
+                    '<span class="eq">=</span>' +
+                    '<span class="expr">&mdash;</span>' +
+                    '<span class="val">0</span>';
+                readoutEl.appendChild(row);
+                readoutRows.push(row);
+            }
+
+            // Build a human-readable expression for product term r based on
+            // the current AND-plane connections. Returns "—" if unused.
+            function termExpression(r) {
+                var parts = [];
+                for (var s = 0; s < N_SIG; s++) {
+                    if (andM[r][s]) parts.push(sigName(s));
+                }
+                if (parts.length === 0) return '—';
+                return parts.join('·');
+            }
+
+            // Evaluate and re-render.
+            function evaluate() {
+                var sigVals = new Array(N_SIG);
+                for (var i = 0; i < N_IN; i++) {
+                    sigVals[2 * i] = inputs[i];
+                    sigVals[2 * i + 1] = !inputs[i];
+                }
+                var prodConnected = new Array(N_PROD);
+                var prodVal = new Array(N_PROD);
+                for (var r = 0; r < N_PROD; r++) {
+                    var any = false;
+                    var v = true;
+                    for (var s = 0; s < N_SIG; s++) {
+                        if (andM[r][s]) {
+                            any = true;
+                            if (!sigVals[s]) v = false;
+                        }
+                    }
+                    prodConnected[r] = any;
+                    prodVal[r] = any ? v : false;
+                }
+                var outVal = new Array(N_OUT);
+                for (var j = 0; j < N_OUT; j++) {
+                    var o = false;
+                    for (var r = 0; r < N_PROD; r++) {
+                        if (orM[r][j] && prodVal[r]) { o = true; break; }
+                    }
+                    outVal[j] = o;
+                }
+                return { sigVals: sigVals, prodConnected: prodConnected, prodVal: prodVal, outVal: outVal };
+            }
+
+            function update() {
+                var st = evaluate();
+
+                // Input switches.
+                inputsRow.selectAll('.pla-input').each(function () {
+                    var i = +this.getAttribute('data-i');
+                    this.classList.toggle('on', !!inputs[i]);
+                    this.querySelector('.bit').textContent = inputs[i] ? '1' : '0';
+                });
+
+                // Input rail highlight.
+                for (var s = 0; s < N_SIG; s++) {
+                    inputLines[s].classed('lit', !!st.sigVals[s]);
+                }
+
+                // Input bit indicators above each A_i column.
+                for (var i = 0; i < N_IN; i++) {
+                    ibitTexts[i].text(inputs[i] ? '1' : '0').classed('lit', !!inputs[i]);
+                }
+
+                // AND cross-points.
+                for (var r = 0; r < N_PROD; r++) {
+                    for (var s = 0; s < N_SIG; s++) {
+                        andDots[r][s].classed('on', !!andM[r][s]);
+                    }
+                }
+
+                // Product line highlight + label.
+                for (var r = 0; r < N_PROD; r++) {
+                    prodLines[r].classed('lit', !!st.prodVal[r]);
+                    plabelTexts[r].classed('lit', !!st.prodVal[r]);
+                }
+
+                // Per-product-term readout panel.
+                for (var r = 0; r < N_PROD; r++) {
+                    var row = readoutRows[r];
+                    var connected = !!st.prodConnected[r];
+                    var lit = !!st.prodVal[r];
+                    row.classList.toggle('unused', !connected);
+                    row.classList.toggle('lit', lit);
+                    row.querySelector('.expr').textContent = connected ? termExpression(r) : 'unused';
+                    row.querySelector('.val').textContent = connected ? (lit ? '1' : '0') : '·';
+                }
+
+                // OR cross-points.
+                for (var r = 0; r < N_PROD; r++) {
+                    for (var j = 0; j < N_OUT; j++) {
+                        orDots[r][j].classed('on', !!orM[r][j]);
+                    }
+                }
+
+                // Output rail highlight + bit indicator.
+                for (var j = 0; j < N_OUT; j++) {
+                    outputLines[j].classed('lit', !!st.outVal[j]);
+                    obitTexts[j].text(st.outVal[j] ? '1' : '0').classed('lit', !!st.outVal[j]);
+                }
+
+                // Truth strip (A3 A2 A1 A0  ->  Y3 Y2 Y1 Y0).
+                inBitsEl.textContent = (inputs[3] ? '1' : '0') + (inputs[2] ? '1' : '0') + (inputs[1] ? '1' : '0') + (inputs[0] ? '1' : '0');
+                outBitsEl.textContent = (st.outVal[3] ? '1' : '0') + (st.outVal[2] ? '1' : '0') + (st.outVal[1] ? '1' : '0') + (st.outVal[0] ? '1' : '0');
+            }
+
+            // ----- Presets -----
+            // Helper to set a product term to: AND of (signal indices listed in andSigs)
+            // contributing to outputs listed in orOuts.
+            function setTerm(r, andSigs, orOuts) {
+                for (var s = 0; s < N_SIG; s++) andM[r][s] = (andSigs.indexOf(s) >= 0);
+                for (var j = 0; j < N_OUT; j++) orM[r][j] = (orOuts.indexOf(j) >= 0);
+            }
+
+            function loadDecoder() {
+                // 2-to-4 decoder on A1 A0 -> Y0..Y3. Signals: A0=0, !A0=1, A1=2, !A1=3.
+                clearMatrices();
+                setTerm(0, [1, 3], [0]); // !A1 !A0 -> Y0
+                setTerm(1, [0, 3], [1]); // !A1  A0 -> Y1
+                setTerm(2, [1, 2], [2]); //  A1 !A0 -> Y2
+                setTerm(3, [0, 2], [3]); //  A1  A0 -> Y3
+            }
+
+            function loadMux() {
+                // Dual 2:1 multiplexer. A 4:1 mux would need 4 data + 2 select = 6
+                // input signals, more than this 4-input array can carry. Two
+                // independent 2:1 muxes fit cleanly and use all four inputs and
+                // two of the four outputs:
+                //   Y0 = A2 ? A1 : A0   (A2 selects between data A0 and A1)
+                //   Y1 = A3 ? A1 : A0   (A3 selects between the same data pair)
+                // Signals: A0=0,!A0=1,A1=2,!A1=3,A2=4,!A2=5,A3=6,!A3=7.
+                clearMatrices();
+                setTerm(0, [0, 5], [0]); //  A0 !A2 -> Y0   (select A2=0, pass A0)
+                setTerm(1, [2, 4], [0]); //  A1  A2 -> Y0   (select A2=1, pass A1)
+                setTerm(2, [0, 7], [1]); //  A0 !A3 -> Y1   (select A3=0, pass A0)
+                setTerm(3, [2, 6], [1]); //  A1  A3 -> Y1   (select A3=1, pass A1)
+            }
+
+            function loadOpcode() {
+                // 6502 low-nibble opcode decoder fragment.
+                // A3 A2 A1 A0 represents the low 4 bits of an opcode byte.
+                // Y0 = 1 when low nibble = 1001 (LDA #  is 0xA9).
+                // Y1 = 1 when low nibble = 0101 (STA zp is 0x85).
+                // Y2 = 1 when low nibble = 1010 (NOP    is 0xEA).
+                // Signals: A0=0,!A0=1,A1=2,!A1=3,A2=4,!A2=5,A3=6,!A3=7.
+                clearMatrices();
+                setTerm(0, [0, 3, 5, 6], [0]); //  A0 !A1 !A2  A3 -> Y0  (1001)
+                setTerm(1, [0, 3, 4, 7], [1]); //  A0 !A1  A2 !A3 -> Y1  (0101)
+                setTerm(2, [1, 2, 5, 6], [2]); // !A0  A1 !A2  A3 -> Y2  (1010)
+            }
+
+            // ---- Preset registry ----
+            // One source of truth for every preset's loader, button label
+            // and the explainer text shown above the SVG when it's active.
+            var PRESETS = {
+                decoder: {
+                    load: loadDecoder,
+                    title: '2-to-4 decoder loaded',
+                    body: 'Inputs A1 and A0 act as a 2-bit address; A2 and A3 are unused, so toggling them does nothing. The AND-plane forms one product term per address combination (00, 01, 10, 11) and the OR-plane wires each product to one output, so exactly one of Y0..Y3 is high at any time.'
+                },
+                mux: {
+                    load: loadMux,
+                    title: 'dual 2:1 multiplexer loaded',
+                    body: 'A2 selects between data bits A0 and A1 onto Y0, and A3 independently selects the same pair onto Y1. The AND-plane combines each (data, select) pair into a product term; the OR-plane sums the two terms that drive each output. Y2 and Y3 are unused.'
+                },
+                opcode: {
+                    load: loadOpcode,
+                    title: '6502 opcode decoder fragment loaded',
+                    body: 'The four input bits stand in for the low nibble of an opcode byte. Y0 fires only on 1001 (LDA #, 0xA9), Y1 only on 0101 (STA zp, 0x85), and Y2 only on 1010 (NOP, 0xEA). Every other nibble produces no output. The real 6502 uses a much larger PLA of the same shape to decode all 256 opcodes.'
+                }
+            };
+
+            var explainerEl = document.getElementById('pla-explainer');
+            var explainerTitle = document.getElementById('pla-explainer-title');
+            var explainerBody = document.getElementById('pla-explainer-body');
+            var presetButtons = document.querySelectorAll('#pla-presets .pla-btn[data-preset]');
+
+            // Set the explainer + the active button highlight to reflect the
+            // currently loaded preset (or the "modified" / default state).
+            var currentPreset = null;
+
+            function setPresetActive(name) {
+                currentPreset = name;
+                presetButtons.forEach(function (b) {
+                    b.classList.toggle('active', b.getAttribute('data-preset') === name);
+                });
+                if (name && PRESETS[name]) {
+                    explainerEl.classList.remove('is-default');
+                    explainerTitle.textContent = PRESETS[name].title;
+                    explainerBody.textContent = PRESETS[name].body;
+                } else if (name === 'modified') {
+                    explainerEl.classList.add('is-default');
+                    explainerTitle.textContent = 'custom array';
+                    explainerBody.textContent = 'You have edited the array since the last preset was loaded. Click a preset to reload one of the built-in functions, or keep editing and watch the truth strip update.';
+                } else {
+                    explainerEl.classList.add('is-default');
+                    explainerTitle.textContent = 'no preset';
+                    explainerBody.textContent = 'Click a preset above to load a real function, or build one yourself by clicking crossings in either plane.';
+                }
+            }
+
+            // Called whenever a manual edit (cross-point click) happens. If
+            // a preset was active, demote it to the "modified" state.
+            function markModified() {
+                if (currentPreset && currentPreset !== 'modified') {
+                    setPresetActive('modified');
+                }
+            }
+
+            // Re-wire AND/OR cross-point handlers so they also flag manual
+            // edits. (The original handlers were created above; here we
+            // attach a delegated extra listener via the matrix updates.)
+            // Cleaner: patch the click handlers by wrapping the existing
+            // onClick. We do this by listening on the gPoints group.
+            svg.select('.g-points').on('click.modified', function (ev) {
+                // Any click that landed on an xpoint is a manual edit.
+                // Preset loaders run their loaders BEFORE update(), and
+                // they call setPresetActive themselves, so this fires
+                // only for genuine cross-point toggles.
+                var t = ev.target;
+                while (t && t !== this) {
+                    if (t.classList && t.classList.contains('xpoint')) {
+                        markModified();
+                        break;
+                    }
+                    t = t.parentNode;
+                }
+            });
+
+            presetButtons.forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var p = btn.getAttribute('data-preset');
+                    if (p === 'clear') {
+                        clearMatrices();
+                        setPresetActive(null);
+                    } else if (PRESETS[p]) {
+                        PRESETS[p].load();
+                        setPresetActive(p);
+                    }
+                    update();
+                });
+            });
+
+            // Initial state: load the decoder so the widget shows something
+            // meaningful on first paint. The reader can then click Clear.
+            loadDecoder();
+            setPresetActive('decoder');
+            update();
+
+            // Theme toggling: line/dot colours come from CSS variables, so the
+            // SVG re-themes automatically. The .lit / .on classes already pull
+            // from var(--c-reg) etc., so no redraw is needed. Listening to the
+            // event is kept for completeness in case future tweaks need it.
+            window.addEventListener('themechange', function () { update(); });
+        })();
+    </script>
+
+    <!-- ================= DECK NAV SCRIPT ================= -->
+    <script>
+        // Slide-deck navigation (mirrors Week 10/digital_logic_JS/nav.js).
+        // Arrow keys, dot indicator, prev/next buttons. The simulator and
+        // PLA widget keep running across slide changes; only visibility
+        // and opacity transition.
+        (function () {
+            var deck = document.getElementById('deck');
+            if (!deck) return;
+            var slides = Array.prototype.slice.call(deck.querySelectorAll('.slide'));
+            var dotsHost = document.getElementById('nav-dots');
+            var elPrev = document.getElementById('nav-prev');
+            var elNext = document.getElementById('nav-next');
+            var elCur = document.getElementById('nav-cur');
+            var elTot = document.getElementById('nav-tot');
+            var nextPage = deck.getAttribute('data-next');
+            var prevPage = deck.getAttribute('data-prev');
+            var current = 0;
+
+            function buildDots() {
+                dotsHost.innerHTML = '';
+                slides.forEach(function (_, i) {
+                    var d = document.createElement('span');
+                    d.className = 'dot' + (i === current ? ' active' : '');
+                    d.addEventListener('click', function () { go(i); });
+                    dotsHost.appendChild(d);
+                });
+                elTot.textContent = slides.length;
+            }
+
+            function go(i) {
+                if (i < 0 || i >= slides.length || i === current) return;
+                slides[current].classList.remove('active');
+                slides[current].classList.toggle('prev', i > current);
+                current = i;
+                slides[current].classList.add('active');
+                slides[current].classList.remove('prev');
+                slides.forEach(function (s, idx) {
+                    if (idx !== current && idx >= current) s.classList.remove('prev');
+                });
+                var dotEls = dotsHost.querySelectorAll('.dot');
+                dotEls.forEach(function (d, idx) { d.classList.toggle('active', idx === current); });
+                elCur.textContent = current + 1;
+                elPrev.classList.toggle('disabled', current === 0 && !prevPage);
+                elNext.classList.toggle('disabled', current === slides.length - 1 && !nextPage);
+            }
+
+            function next() {
+                if (current === slides.length - 1) {
+                    if (nextPage) window.location.href = nextPage;
+                    return;
+                }
+                go(current + 1);
+            }
+            function prev() {
+                if (current === 0) {
+                    if (prevPage) window.location.href = prevPage + '#last';
+                    return;
+                }
+                go(current - 1);
+            }
+
+            function landOnLast() {
+                if (slides.length < 2) return;
+                slides.forEach(function (s) { s.style.transition = 'none'; });
+                slides[0].classList.remove('active');
+                current = slides.length - 1;
+                slides[current].classList.add('active');
+                slides.forEach(function (s, idx) {
+                    if (idx < current) s.classList.add('prev');
+                    else s.classList.remove('prev');
+                });
+                void slides[current].offsetWidth;
+                slides.forEach(function (s) { s.style.transition = ''; });
+                history.replaceState(null, '', location.pathname + location.search);
+            }
+
+            function init() {
+                if (location.hash === '#last') landOnLast();
+                buildDots();
+                elCur.textContent = current + 1;
+                elPrev.classList.toggle('disabled', current === 0 && !prevPage);
+                elNext.classList.toggle('disabled', current === slides.length - 1 && !nextPage);
+                elPrev.addEventListener('click', prev);
+                elNext.addEventListener('click', next);
+                document.addEventListener('keydown', function (e) {
+                    if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+                    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+                        next(); e.preventDefault();
+                    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+                        prev(); e.preventDefault();
+                    } else if (e.key === 'Home') {
+                        go(0); e.preventDefault();
+                    } else if (e.key === 'End') {
+                        go(slides.length - 1); e.preventDefault();
+                    }
+                });
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+            else init();
+        })();
     </script>
 
 

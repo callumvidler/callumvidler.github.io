@@ -110,6 +110,7 @@
 .plot-box.ripple-box    { aspect-ratio: 2.4 / 1; }
 .plot-box.mux-box       { aspect-ratio: 1.9 / 1; }
 .plot-box.dec-box       { aspect-ratio: 1.4 / 1; }
+.plot-box.bjt-box       { aspect-ratio: 960 / 540; }
 
 /* ---------- shared digital classes for SVG drawing ---------- */
 svg.dig text {
@@ -175,6 +176,14 @@ body { overflow: hidden; height: 100vh; }
 .slide.prev { transform: translateX(-40px); }
 
 .slide .copy { max-width: 600px; }
+
+/* The BJT slide widens the slide and pins the copy column at its 600px
+   cap so every extra pixel goes to the circuit panel on the right. The
+   LHS text width is fixed at 600px regardless of slide width. */
+.slide#sec-bjt {
+    max-width: 2400px;
+    grid-template-columns: 600px minmax(0, 1fr);
+}
 
 .slide.title-slide {
     grid-template-columns: 1fr;

@@ -109,7 +109,11 @@
         // Single bottom rail joining cap bottom and mosfet source
         g.append('line').attr('x1', capX).attr('y1', gnd.y).attr('x2', mosX).attr('y2', gnd.y)
             .attr('stroke', 'var(--text-dim)').attr('stroke-width', 1.6);
-        ground(g, (capX + mosX) / 2, gnd.y);
+        var gndX = (capX + mosX) / 2;
+        var gndY = gnd.y + 12;
+        g.append('line').attr('x1', gndX).attr('y1', gnd.y).attr('x2', gndX).attr('y2', gndY)
+            .attr('stroke', 'var(--text-dim)').attr('stroke-width', 1.6);
+        ground(g, gndX, gndY);
 
         // Output dot and label
         g.append('circle').attr('cx', out.x - 14).attr('cy', out.y).attr('r', 4)

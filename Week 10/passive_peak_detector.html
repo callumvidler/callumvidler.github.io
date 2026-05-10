@@ -44,34 +44,34 @@
         Back
     </a>
 
-    <!-- ================= LANDING ================= -->
-    <section class="landing">
-        <div>
-            <div class="meta">BMEN90033 · WEEK 10 · PASSIVE PEAK DETECTION</div>
-            <h1 class="hero">Peak detection with <em>passive</em> components.</h1>
-            <p class="sub">A peak detector is a circuit whose output equals the maximum value attained by its
-                input over some interval of observation. This chapter constructs three implementations using
-                only diodes, capacitors, resistors, and switching transistors. Each variant is analysed under
-                sinusoidal and pulse-train inputs, and the operating regimes in which the output ceases to
-                represent the true peak are identified. Active peak detectors based on operational amplifiers
-                are deferred to a later chapter.</p>
-            <div class="tags">
-                <span class="field-tag">diode</span>
-                <span class="field-tag">capacitor</span>
-                <span class="field-tag">envelope</span>
-                <span class="field-tag">RC discharge</span>
-                <span class="field-tag">transistor reset</span>
+    <div class="deck" id="deck" data-next="active_peak_detector.html" data-prev="case_study.html">
+
+        <!-- ═════════════ SLIDE 0 · TITLE ═════════════ -->
+        <section class="slide title-slide active" data-slide="0">
+            <div class="copy">
+                <div class="meta">BMEN90033 · WEEK 10 · PASSIVE PEAK DETECTION</div>
+                <h1 class="slide-hero">Peak detection with <em>passive</em> components.</h1>
+                <div class="brief-box">
+                    <div class="brief-label">Overview</div>
+                    <p class="brief-body">A peak detector is a circuit whose output equals the maximum value
+                        attained by its input over some interval of observation. This chapter constructs three
+                        implementations using only diodes, capacitors, resistors, and switching transistors.
+                        Each variant is analysed under sinusoidal and pulse-train inputs, and the operating
+                        regimes in which the output ceases to represent the true peak are identified. Active
+                        peak detectors based on operational amplifiers are deferred to a later chapter.</p>
+                </div>
+                <div class="tags">
+                    <span class="field-tag">diode</span>
+                    <span class="field-tag">capacitor</span>
+                    <span class="field-tag">envelope</span>
+                    <span class="field-tag">RC discharge</span>
+                    <span class="field-tag">transistor reset</span>
+                </div>
             </div>
-        </div>
-        <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
-    </section>
+        </section>
 
-    <!-- ================= SCENE 01 · SIMPLE DIODE + CAPACITOR ================= -->
-    <div class="section-divider">
-        <div class="lab"><span>// 01 · the diode-capacitor circuit</span><span class="bar"></span></div>
-    </div>
-
-    <section class="scene" id="sec-simple">
+        <!-- ═════════════ SLIDE 1 · SIMPLE DIODE + CAPACITOR ═════════════ -->
+        <section class="slide" data-slide="1" id="sec-simple">
         <div class="copy">
             <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the diode-capacitor circuit</span></div>
             <h2>Charging a capacitor through a <em class="output">diode</em>.</h2>
@@ -139,12 +139,8 @@
         </div>
     </section>
 
-    <!-- ================= SCENE 02 · RC ENVELOPE ================= -->
-    <div class="section-divider">
-        <div class="lab"><span>// 02 · the rc envelope detector</span><span class="bar"></span></div>
-    </div>
-
-    <section class="scene" id="sec-rc">
+        <!-- ═════════════ SLIDE 2 · RC ENVELOPE ═════════════ -->
+        <section class="slide" data-slide="2" id="sec-rc">
         <div class="copy">
             <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the rc envelope detector</span></div>
             <h2>Adding a discharge path with a <em class="thresh">parallel resistor</em>.</h2>
@@ -220,12 +216,8 @@
         </div>
     </section>
 
-    <!-- ================= SCENE 03 · TRANSISTOR RESET ================= -->
-    <div class="section-divider">
-        <div class="lab"><span>// 03 · the transistor-reset peak detector</span><span class="bar"></span></div>
-    </div>
-
-    <section class="scene" id="sec-active">
+        <!-- ═════════════ SLIDE 3 · TRANSISTOR RESET ═════════════ -->
+        <section class="slide" data-slide="3" id="sec-active">
         <div class="copy">
             <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>switched discharge with a transistor</span></div>
             <h2>Replacing the resistor with a <em class="output">controlled switch</em>.</h2>
@@ -303,12 +295,8 @@
         </div>
     </section>
 
-    <!-- ================= SCENE 04 · WHERE PASSIVE PEAK DETECTION FAILS ================= -->
-    <div class="section-divider">
-        <div class="lab"><span>// 04 · failure modes of passive peak detection</span><span class="bar"></span></div>
-    </div>
-
-    <section class="scene" id="sec-fail">
+        <!-- ═════════════ SLIDE 4 · WHERE PASSIVE PEAK DETECTION FAILS ═════════════ -->
+        <section class="slide" data-slide="4" id="sec-fail">
         <div class="copy">
             <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>limitations and failure modes</span></div>
             <h2>Failure modes of <em class="thresh">passive peak detection</em>.</h2>
@@ -398,12 +386,32 @@
         </div>
     </section>
 
-    <footer>BMEN90033 · The University of Melbourne</footer>
+    </div>
+
+    <!-- ═════════════ DECK NAV ═════════════ -->
+    <div class="nav-hint">Use the dots or the arrow keys to advance through the slides.</div>
+    <div class="deck-nav">
+        <span class="arrow" id="nav-prev" aria-label="previous slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18l-6-6 6-6" />
+            </svg>
+        </span>
+        <span class="dots" id="nav-dots"></span>
+        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">5</span></span>
+        <span class="arrow" id="nav-next" aria-label="next slide">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18l6-6-6-6" />
+            </svg>
+        </span>
+    </div>
 
     <script src="passive_peak_detector_JS/scene_simple.js"></script>
     <script src="passive_peak_detector_JS/scene_rc_reset.js"></script>
     <script src="passive_peak_detector_JS/scene_active_reset.js"></script>
     <script src="passive_peak_detector_JS/scene_failure.js"></script>
+    <script src="case_study_JS/nav.js"></script>
 </body>
 
 </html>

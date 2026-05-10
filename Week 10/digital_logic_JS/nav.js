@@ -10,6 +10,8 @@
     var elNext = document.getElementById('nav-next');
     var elCur = document.getElementById('nav-cur');
     var elTot = document.getElementById('nav-tot');
+    var nextPage = deck.getAttribute('data-next');
+    var prevPage = deck.getAttribute('data-prev');
     var current = 0;
 
     function buildDots() {
@@ -36,17 +38,46 @@
         var dotEls = dotsHost.querySelectorAll('.dot');
         dotEls.forEach(function (d, idx) { d.classList.toggle('active', idx === current); });
         elCur.textContent = current + 1;
-        elPrev.classList.toggle('disabled', current === 0);
-        elNext.classList.toggle('disabled', current === slides.length - 1);
+        elPrev.classList.toggle('disabled', current === 0 && !prevPage);
+        elNext.classList.toggle('disabled', current === slides.length - 1 && !nextPage);
     }
 
-    function next() { go(current + 1); }
-    function prev() { go(current - 1); }
+    function next() {
+        if (current === slides.length - 1) {
+            if (nextPage) window.location.href = nextPage;
+            return;
+        }
+        go(current + 1);
+    }
+    function prev() {
+        if (current === 0) {
+            if (prevPage) window.location.href = prevPage + '#last';
+            return;
+        }
+        go(current - 1);
+    }
+
+    function landOnLast() {
+        if (slides.length < 2) return;
+        slides.forEach(function (s) { s.style.transition = 'none'; });
+        slides[0].classList.remove('active');
+        current = slides.length - 1;
+        slides[current].classList.add('active');
+        slides.forEach(function (s, idx) {
+            if (idx < current) s.classList.add('prev');
+            else s.classList.remove('prev');
+        });
+        void slides[current].offsetWidth;
+        slides.forEach(function (s) { s.style.transition = ''; });
+        history.replaceState(null, '', location.pathname + location.search);
+    }
 
     function init() {
+        if (location.hash === '#last') landOnLast();
         buildDots();
         elCur.textContent = current + 1;
-        elPrev.classList.add('disabled');
+        elPrev.classList.toggle('disabled', current === 0 && !prevPage);
+        elNext.classList.toggle('disabled', current === slides.length - 1 && !nextPage);
         elPrev.addEventListener('click', prev);
         elNext.addEventListener('click', next);
         document.addEventListener('keydown', function (e) {

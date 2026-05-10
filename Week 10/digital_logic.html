@@ -45,7 +45,7 @@
         Back
     </a>
 
-    <div class="deck" id="deck">
+    <div class="deck" id="deck" data-next="apple_1_cpu.html" data-prev="active_peak_detector.html">
 
     <!-- ================= TITLE SLIDE ================= -->
     <section class="slide title-slide active" data-slide="0">
@@ -129,10 +129,67 @@
         </div>
     </section>
 
-    <!-- ================= SLIDE 2 · CMOS CONSTRUCTION ================= -->
-    <section class="slide" data-slide="2" id="sec-cmos">
+    <!-- ================= SLIDE 2 · BJT LOGIC ================= -->
+    <section class="slide" data-slide="2" id="sec-bjt">
         <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>cmos construction</span></div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>bjt logic</span></div>
+            <h2>Building gates from <em class="output">bipolar transistors</em></h2>
+
+            <p class="lead">Before CMOS, the same Boolean primitives were realised with bipolar
+                junction transistors. An NPN device acts as a switch: drive its base above roughly
+                $0.7\,\text{V}$ and the collector clamps near ground; hold the base low and the
+                collector floats up to $V_{CC}$ through a pull-up resistor. Three single-stage circuits
+                cover the universal cases.</p>
+
+            <p>The inverter places one transistor between $Y$ and ground, with $R_C$ tying $Y$ to
+                $V_{CC}$. A high input saturates the transistor and pulls $Y$ low; a low input cuts
+                it off and $R_C$ pulls $Y$ high.</p>
+
+            <p>NOR places two transistors in parallel between $Y$ and ground: either input being high
+                is enough to pull $Y$ low. NAND places the same two transistors in series: both inputs
+                must be high before the conduction path to ground is complete. The base resistors
+                $R_A$ and $R_B$ limit base current; the collector resistor $R_C$ sets the high-state
+                voltage and the static current draw.</p>
+
+            <div class="formula-stack">
+                <div>$Y_{\text{NOT}}  = \overline{A}$</div>
+                <div>$Y_{\text{NOR}}  = \overline{A + B}$ &nbsp; (parallel)</div>
+                <div>$Y_{\text{NAND}} = \overline{A \cdot B}$ &nbsp; (series)</div>
+            </div>
+
+            <div class="callout">
+                Resistor-transistor logic dissipates static power: while a transistor is on, current
+                flows continuously through $R_C$ to ground. CMOS, on the next slide, eliminates this
+                by replacing $R_C$ with a complementary transistor that is off whenever the
+                pull-down is on.
+            </div>
+        </div>
+
+        <div>
+            <div class="plot-stack">
+                <div class="toolbar">
+                    <span class="slider-group">
+                        <span class="lab">A</span>
+                        <button class="bit-btn" id="dl-bjt-a" data-on="0">0</button>
+                    </span>
+                    <span class="divider"></span>
+                    <span class="slider-group">
+                        <span class="lab">B</span>
+                        <button class="bit-btn" id="dl-bjt-b" data-on="0">0</button>
+                    </span>
+                </div>
+                <div class="plot-box bjt-box">
+                    <div class="label">three RTL gates · <b>NOT, NOR, NAND from NPN transistors</b></div>
+                    <svg id="plot-dl-bjt"></svg>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= SLIDE 3 · CMOS CONSTRUCTION ================= -->
+    <section class="slide" data-slide="3" id="sec-cmos">
+        <div class="copy">
+            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>cmos construction</span></div>
             <h2>CMOS construction of <em class="output">logic gates</em></h2>
 
             <p class="lead">A CMOS process places a p-channel and an n-channel MOSFET on the same substrate.
@@ -182,10 +239,10 @@
         </div>
     </section>
 
-    <!-- ================= SLIDE 3 · ADDERS ================= -->
-    <section class="slide" data-slide="3" id="sec-add">
+    <!-- ================= SLIDE 4 · ADDERS ================= -->
+    <section class="slide" data-slide="4" id="sec-add">
         <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>half, full and ripple-carry adders</span></div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>half, full and ripple-carry adders</span></div>
             <h2>Binary adders: <em class="output">half, full</em> and <em class="output">ripple-carry</em></h2>
 
             <p class="lead">Adding two single bits $A$ and $B$ produces a sum $S$ and carry $C_{\text{out}}$.
@@ -256,10 +313,10 @@
         </div>
     </section>
 
-    <!-- ================= SLIDE 4 · SUBTRACTOR ================= -->
-    <section class="slide" data-slide="4" id="sec-sub">
+    <!-- ================= SLIDE 5 · SUBTRACTOR ================= -->
+    <section class="slide" data-slide="5" id="sec-sub">
         <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>two's-complement arithmetic</span></div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>two's-complement arithmetic</span></div>
             <h2>Subtraction by <em class="output">two's-complement</em> addition</h2>
 
             <p class="lead">Dedicated subtractor circuits are rarely fabricated. In two's-complement
@@ -324,10 +381,10 @@
         </div>
     </section>
 
-    <!-- ================= SLIDE 5 · MULTIPLEXER ================= -->
-    <section class="slide" data-slide="5" id="sec-mux">
+    <!-- ================= SLIDE 6 · MULTIPLEXER ================= -->
+    <section class="slide" data-slide="6" id="sec-mux">
         <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>data routing</span></div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>data routing</span></div>
             <h2>Multiplexers: routing one of <em class="output">$2^k$ inputs</em></h2>
 
             <p class="lead">A multiplexer routes one of $2^k$ data inputs to a single output, selected by a
@@ -390,10 +447,10 @@
         </div>
     </section>
 
-    <!-- ================= SLIDE 6 · DECODER ================= -->
-    <section class="slide" data-slide="6" id="sec-dec">
+    <!-- ================= SLIDE 7 · DECODER ================= -->
+    <section class="slide" data-slide="7" id="sec-dec">
         <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>address decoding</span></div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>address decoding</span></div>
             <h2>Decoders: an $n$-bit code to a <em class="output">one-hot</em> output</h2>
 
             <p class="lead">A binary decoder maps an $n$-bit code to a one-hot bus of $2^n$ lines: exactly
@@ -453,10 +510,10 @@
         </div>
     </section>
 
-    <!-- ================= SLIDE 7 · APPLICATIONS ================= -->
-    <section class="slide full" data-slide="7" id="sec-apps">
+    <!-- ================= SLIDE 8 · APPLICATIONS ================= -->
+    <section class="slide full" data-slide="8" id="sec-apps">
         <div class="copy">
-            <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>applications in instrumentation</span></div>
+            <div class="eyebrow"><span class="bar"></span><span class="num">08</span><span>applications in instrumentation</span></div>
             <h2>Applications in <em class="output">bioinstrumentation</em></h2>
 
             <p class="lead">Adders, subtractors, multiplexers and decoders compose every datapath that
@@ -507,7 +564,7 @@
             </svg>
         </span>
         <span class="dots" id="nav-dots"></span>
-        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">8</span></span>
+        <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">9</span></span>
         <span class="arrow" id="nav-next" aria-label="next slide">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -517,6 +574,7 @@
     </div>
 
     <script src="digital_logic_JS/scene_gates.js"></script>
+    <script src="digital_logic_JS/scene_bjt.js"></script>
     <script src="digital_logic_JS/scene_cmos.js"></script>
     <script src="digital_logic_JS/scene_adder.js"></script>
     <script src="digital_logic_JS/scene_subtractor.js"></script>

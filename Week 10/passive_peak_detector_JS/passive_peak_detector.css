@@ -355,3 +355,165 @@ footer {
     h2 { font-size: 26px; }
     .brand { top: 16px; left: 16px; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   Slide-deck layout. Mirrors the structure used on
+   active_peak_detector.html and case_study.html so this
+   page can be navigated as a deck rather than scrolled. The
+   colour palette and the existing .plot-stack / .toolbar /
+   .readout rules above are reused; only the deck shell,
+   slide transitions and deck navigation are defined here.
+   ══════════════════════════════════════════════════════════ */
+html, body { overflow: hidden; height: 100vh; min-height: 0; }
+
+.deck {
+    position: fixed; inset: 0;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+}
+
+.slide {
+    position: absolute; inset: 0;
+    padding: 78px 56px 90px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(40px);
+    transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0.32s;
+    display: grid;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.5fr);
+    gap: 32px;
+    align-items: start;
+    max-width: 1500px; margin: 0 auto;
+}
+.slide::-webkit-scrollbar { display: none; }
+.slide.full { grid-template-columns: 1fr; }
+.slide.active {
+    opacity: 1; visibility: visible; transform: translateX(0);
+    transition: opacity 0.32s ease, transform 0.32s ease, visibility 0s linear 0s;
+}
+.slide.prev { transform: translateX(-40px); }
+
+.slide .copy { max-width: 600px; }
+
+h1.slide-hero {
+    font-size: 46px; line-height: 1.08;
+    font-weight: 600; letter-spacing: -0.02em;
+    margin: 0 0 22px;
+}
+h1.slide-hero em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--c-input), var(--c-output));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+.slide.title-slide { grid-template-columns: 1fr; place-items: center; text-align: center; }
+.slide.title-slide .copy { max-width: 760px; }
+.slide.title-slide h1.slide-hero { font-size: 60px; }
+.slide.title-slide .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 26px;
+}
+.slide.title-slide .tags {
+    margin-top: 32px; display: flex; gap: 10px;
+    justify-content: center; flex-wrap: wrap;
+}
+
+.brief-box {
+    margin: 28px auto 8px;
+    max-width: 720px;
+    padding: 22px 26px 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-panel);
+    text-align: left;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
+}
+.brief-box .brief-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--accent);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+}
+.brief-box .brief-body {
+    font-size: 15.5px;
+    color: var(--fg);
+    line-height: 1.65;
+    margin: 0;
+}
+
+.nav-hint {
+    position: fixed;
+    bottom: 78px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+.nav-hint.hidden { opacity: 0; visibility: hidden; }
+
+.deck-nav {
+    position: fixed; bottom: 18px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: flex; align-items: center; gap: 14px;
+    padding: 8px 16px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}
+.deck-nav .arrow {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--pill-bg);
+    color: var(--text-dim);
+    display: grid; place-items: center;
+    cursor: pointer;
+    transition: all 0.12s;
+    user-select: none;
+}
+.deck-nav .arrow:hover:not(.disabled) { color: var(--accent); border-color: var(--accent); }
+.deck-nav .arrow.disabled { opacity: 0.3; cursor: not-allowed; }
+.deck-nav .dots { display: flex; gap: 8px; }
+.deck-nav .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: all 0.12s;
+}
+.deck-nav .dot:hover { background: var(--border-hover); }
+.deck-nav .dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.deck-nav .counter {
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    min-width: 48px;
+    text-align: center;
+}
+.deck-nav .counter b { color: var(--fg); }
+
+.plot-stack { padding-top: 36px; }
+
+@media (max-width: 1000px) {
+    .slide { grid-template-columns: 1fr; padding: 70px 24px 100px; }
+    .slide.title-slide h1.slide-hero { font-size: 40px; }
+    h1.slide-hero { font-size: 32px; }
+}

@@ -92,7 +92,11 @@
         // Single bottom rail joining cap bottom and resistor bottom
         g.append('line').attr('x1', capX).attr('y1', gnd.y).attr('x2', resX).attr('y2', gnd.y)
             .attr('stroke', 'var(--text-dim)').attr('stroke-width', 1.6);
-        ground(g, (capX + resX) / 2, gnd.y);
+        var gndX = (capX + resX) / 2;
+        var gndY = gnd.y + 12;
+        g.append('line').attr('x1', gndX).attr('y1', gnd.y).attr('x2', gndX).attr('y2', gndY)
+            .attr('stroke', 'var(--text-dim)').attr('stroke-width', 1.6);
+        ground(g, gndX, gndY);
 
         source(g, src.x, src.y, 'v_in');
 

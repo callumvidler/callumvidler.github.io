@@ -67,26 +67,31 @@
     var msWindow = Math.round(0.30 * FS);   // initial 300 ms window
     var msFilled = 0;                       // running sample count, capped at BUF
 
-    // 1-D Kalman filter (scalar state x, variance P).
-    // Plain scalar Kalman with constant Q,R is equivalent to a 1st-order
-    // LPF in steady state, so we make it adaptive: a slow IIR estimate of
-    // the innovation bias (kRMean) detects when the input mean is really
-    // shifting, and Q is boosted while that bias is non-zero. In quiet
-    // periods Q drops back to a small base value, so the filter rejects
-    // far more noise than the LPF at the same nominal fc.
-    var kS = 0;
-    var kP = 1.0;
-    var kR = 0.50;          // measurement noise variance for |EMG|
-    var kRMean = 0;         // running mean of innovation (z - x)
+    // Bayesian envelope estimator after Sanger (2007), "Bayesian filtering of
+    // myoelectric signals". The underlying EMG is modelled as zero-mean
+    // Gaussian with slowly varying variance σ²(n), so x²(n) = σ²(n)·χ²₁.
+    // Taking logs linearises the problem:
+    //     z(n) = log(x²(n)) = log(σ²(n)) + log(χ²₁),
+    // where log(χ²₁) is approximately Gaussian with mean ψ(½)+log 2 ≈ −1.27
+    // and variance π²/2. A standard 1-D Kalman on the bias-corrected
+    // measurement z − (−1.27) recovers the latent state s = log σ². The
+    // output is converted back to a MAV-scale envelope via E[|x|] = σ·√(2/π).
+    var skS = -7;          // log(σ²), seeded near a quiet baseline σ ≈ 0.03
+    var skP = 4.0;         // initial state variance (wide prior)
+    var SK_MEAN = -1.27036;             // E[log χ²₁]
+    var SK_R = Math.PI * Math.PI / 2;   // Var[log χ²₁]
+    var SK_EPS = 1e-6;                  // floor inside log to avoid log(0)
 
     var mode = 'lpf';       // 'lpf' | 'mavg' | 'kalman'
 
     var lastEffort = 0;
     var lastTime = null;
 
-    // Cap how much grip the gripper actually delivers, so saturation maps
-    // to a clear "fully closed" pose. 2A_max / pi for A_max=1.0 ≈ 0.637 V.
-    var MAV_FULL = 0.637;
+    // MAV value that maps to a fully closed gripper. The synthetic EMG is
+    // bandlimited Gaussian-like noise rather than a sine, so its MAV ceiling
+    // is σ·√(2/π) (about 0.34 at effort=1), not 2A/π. Setting the cap near
+    // that empirical ceiling lets full slider effort actually saturate grip.
+    var MAV_FULL = 0.32;
 
     // Map fc (Hz) to a moving-average window length in samples. fc=0 maps
     // to the longest sensible window (2 s).
@@ -241,79 +246,267 @@
             .attr('fill', 'var(--muted)')
             .text('GRIPPER · MAV → JAW ANGLE');
 
-        // Centre of the device in the SVG
-        var cx = 360, cy = 200;
+        var stateOn = mav > thr;
+        var bodyFill = stateOn
+            ? 'color-mix(in srgb, var(--c-output2) 18%, var(--bg-2))'
+            : 'var(--bg-2)';
 
-        // Wrist / chassis block
+        // Cap grip01 visually so the two fingers do not cross when fully closed.
+        var g = Math.min(0.94, grip01);
+
+        // Centre of the device
+        var cx = 360;
+
+        // ─── Wrist coupler ───────────────────────────────────────────
+        var wristY = 296, wristH = 50, wristHW = 56;
         gHand.append('rect')
-            .attr('x', cx - 70).attr('y', cy + 60)
-            .attr('width', 140).attr('height', 70)
-            .attr('rx', 8)
+            .attr('x', cx - wristHW).attr('y', wristY)
+            .attr('width', 2 * wristHW).attr('height', wristH)
+            .attr('rx', 4)
+            .attr('fill', 'var(--bg-2)')
+            .attr('stroke', 'var(--text)').attr('stroke-width', 1.4);
+        // Decorative bands across the coupler
+        [0.28, 0.62, 0.86].forEach(function (f) {
+            gHand.append('line')
+                .attr('x1', cx - wristHW + 4).attr('x2', cx + wristHW - 4)
+                .attr('y1', wristY + f * wristH).attr('y2', wristY + f * wristH)
+                .attr('stroke', 'var(--border)').attr('stroke-width', 0.7);
+        });
+        // Bolt heads on the flange line
+        [-34, -12, 12, 34].forEach(function (dx) {
+            gHand.append('circle')
+                .attr('cx', cx + dx).attr('cy', wristY + 0.28 * wristH).attr('r', 2.2)
+                .attr('fill', 'var(--bg-1)')
+                .attr('stroke', 'var(--text)').attr('stroke-width', 0.7);
+        });
+
+        // ─── Palm / housing ──────────────────────────────────────────
+        var palmW = 168, palmH = 78;
+        var palmX = cx - palmW / 2, palmY = 220;
+        gHand.append('rect')
+            .attr('x', palmX).attr('y', palmY)
+            .attr('width', palmW).attr('height', palmH)
+            .attr('rx', 14)
             .attr('fill', 'var(--bg-2)')
             .attr('stroke', 'var(--text)').attr('stroke-width', 1.6);
+        // Inner bezel
+        gHand.append('rect')
+            .attr('x', palmX + 6).attr('y', palmY + 6)
+            .attr('width', palmW - 12).attr('height', palmH - 12)
+            .attr('rx', 9)
+            .attr('fill', 'none')
+            .attr('stroke', 'var(--border)').attr('stroke-width', 0.8);
+        // Mounting screws at corners
+        [[palmX + 12, palmY + 12], [palmX + palmW - 12, palmY + 12],
+         [palmX + 12, palmY + palmH - 12], [palmX + palmW - 12, palmY + palmH - 12]
+        ].forEach(function (pt) {
+            gHand.append('circle')
+                .attr('cx', pt[0]).attr('cy', pt[1]).attr('r', 2.2)
+                .attr('fill', 'var(--bg-1)')
+                .attr('stroke', 'var(--text)').attr('stroke-width', 0.7);
+            gHand.append('line')
+                .attr('x1', pt[0] - 1.4).attr('x2', pt[0] + 1.4)
+                .attr('y1', pt[1]).attr('y2', pt[1])
+                .attr('stroke', 'var(--text)').attr('stroke-width', 0.5);
+        });
+        // Status LED on the palm
+        var ledY = palmY + palmH / 2 - 4;
+        gHand.append('circle')
+            .attr('cx', cx).attr('cy', ledY).attr('r', 8)
+            .attr('fill', 'var(--bg-1)')
+            .attr('stroke', 'var(--border)').attr('stroke-width', 0.8);
+        gHand.append('circle')
+            .attr('cx', cx).attr('cy', ledY).attr('r', 4.5)
+            .attr('fill', stateOn ? 'var(--c-output2)' : 'var(--c-low)')
+            .attr('opacity', stateOn ? 1 : 0.45);
+        if (stateOn) {
+            gHand.append('circle')
+                .attr('cx', cx).attr('cy', ledY).attr('r', 11)
+                .attr('fill', 'none')
+                .attr('stroke', 'var(--c-output2)').attr('stroke-width', 0.9)
+                .attr('opacity', 0.5);
+        }
+        // Brand label
         gHand.append('text')
-            .attr('x', cx).attr('y', cy + 102)
+            .attr('x', cx).attr('y', palmY + palmH - 14)
             .attr('text-anchor', 'middle')
             .attr('font-family', "'JetBrains Mono', monospace")
-            .attr('font-size', 11)
-            .attr('fill', 'var(--text-dim)')
-            .text('actuator');
+            .attr('font-size', 7.5).attr('letter-spacing', '0.22em')
+            .attr('fill', 'var(--muted)')
+            .text('MYO-2 · ACTUATOR');
 
-        // Pivot points for two jaws
-        var pivotL = { x: cx - 44, y: cy + 60 };
-        var pivotR = { x: cx + 44, y: cy + 60 };
+        // ─── Articulated fingers ─────────────────────────────────────
+        var pivotL = { x: cx - 56, y: palmY + 4 };
+        var pivotR = { x: cx + 56, y: palmY + 4 };
 
-        var openDeg = 60;        // open angle from vertical (relaxed)
-        var closeDeg = 6;        // closed angle from vertical
-        var ang = openDeg - (openDeg - closeDeg) * grip01;
-        var rad = ang * Math.PI / 180;
-        var jawLen = 130;
+        // Angle convention: angle from vertical, positive = outward (away from
+        // palm centre), negative = inward. Open pose has both segments spread
+        // outward; closed pose has the proximal tilted inward and the distal
+        // curled further inward (curl is the inward bend at the knuckle).
+        var proxOpen = 32, proxClose = -10;
+        var curlOpen = 0,  curlClose = 30;
+        var prox = proxOpen + (proxClose - proxOpen) * g;
+        var curl = curlOpen + (curlClose - curlOpen) * g;
+        var distAbs = prox - curl;     // distal absolute angle from vertical
 
-        var tipL = { x: pivotL.x - Math.sin(rad) * jawLen, y: pivotL.y - Math.cos(rad) * jawLen };
-        var tipR = { x: pivotR.x + Math.sin(rad) * jawLen, y: pivotR.y - Math.cos(rad) * jawLen };
+        var proxLen = 72;
+        var distLen = 56;
 
-        function jaw(p, tip) {
-            // Build a tapered rectangle along the pivot→tip axis.
-            var dx = tip.x - p.x, dy = tip.y - p.y;
-            var len = Math.sqrt(dx * dx + dy * dy);
-            var ux = dx / len, uy = dy / len;       // unit along jaw
-            var nx = -uy, ny = ux;                  // unit normal
-            var hb = 16, ht = 8;                    // half-widths at base and tip
+        function segment(p1, p2, hb, ht, fill) {
+            var ddx = p2.x - p1.x, ddy = p2.y - p1.y;
+            var L = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (L < 0.001) return;
+            var ux = ddx / L, uy = ddy / L;
+            var nx = -uy, ny = ux;
             var pts = [
-                [p.x + nx * hb, p.y + ny * hb],
-                [tip.x + nx * ht, tip.y + ny * ht],
-                [tip.x - nx * ht, tip.y - ny * ht],
-                [p.x - nx * hb, p.y - ny * hb]
+                [p1.x + nx * hb, p1.y + ny * hb],
+                [p2.x + nx * ht, p2.y + ny * ht],
+                [p2.x - nx * ht, p2.y - ny * ht],
+                [p1.x - nx * hb, p1.y - ny * hb]
             ].map(function (q) { return q.join(','); }).join(' ');
             gHand.append('polygon')
                 .attr('points', pts)
-                .attr('fill', grip01 > 0.05 ? 'color-mix(in srgb, var(--c-output2) 30%, var(--bg-2))' : 'var(--bg-2)')
-                .attr('stroke', 'var(--text)').attr('stroke-width', 1.6)
+                .attr('fill', fill)
+                .attr('stroke', 'var(--text)').attr('stroke-width', 1.4)
                 .attr('stroke-linejoin', 'round');
         }
-        jaw(pivotL, tipL);
-        jaw(pivotR, tipR);
 
-        // Pivot dots
-        [pivotL, pivotR].forEach(function (q) {
-            gHand.append('circle').attr('cx', q.x).attr('cy', q.y).attr('r', 4)
+        function joint(p, r) {
+            gHand.append('circle')
+                .attr('cx', p.x).attr('cy', p.y).attr('r', r)
+                .attr('fill', 'var(--bg-1)')
+                .attr('stroke', 'var(--text)').attr('stroke-width', 1.1);
+            gHand.append('circle')
+                .attr('cx', p.x).attr('cy', p.y).attr('r', r * 0.35)
                 .attr('fill', 'var(--text)');
-        });
-
-        // Object being gripped (only when above threshold)
-        if (mav > thr) {
-            var gap = (tipR.x - tipL.x) / 2 - 6;
-            gap = Math.max(8, gap);
-            var ox = (tipL.x + tipR.x) / 2;
-            var oy = (tipL.y + tipR.y) / 2 + 8;
-            gHand.append('rect')
-                .attr('x', ox - gap).attr('y', oy - 22)
-                .attr('width', 2 * gap).attr('height', 44)
-                .attr('rx', 6)
-                .attr('fill', 'color-mix(in srgb, var(--c-thresh) 25%, var(--bg-2))')
-                .attr('stroke', 'var(--c-thresh)')
-                .attr('stroke-width', 1.4);
         }
+
+        function gripPad(p1, p2, innerNx, innerNy) {
+            var ddx = p2.x - p1.x, ddy = p2.y - p1.y;
+            var L = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (L < 0.001) return;
+            var ux = ddx / L, uy = ddy / L;
+            // Pad runs along most of the distal segment, offset inward.
+            var off = 4;
+            var t0 = 0.18, t1 = 0.92;
+            var b = { x: p1.x + ux * (L * t0) + innerNx * off,
+                      y: p1.y + uy * (L * t0) + innerNy * off };
+            var e = { x: p1.x + ux * (L * t1) + innerNx * off,
+                      y: p1.y + uy * (L * t1) + innerNy * off };
+            var hw = 4.5;
+            var pts = [
+                [b.x + innerNx * hw, b.y + innerNy * hw],
+                [e.x + innerNx * hw, e.y + innerNy * hw],
+                [e.x - innerNx * hw, e.y - innerNy * hw],
+                [b.x - innerNx * hw, b.y - innerNy * hw]
+            ].map(function (q) { return q.join(','); }).join(' ');
+            gHand.append('polygon')
+                .attr('points', pts)
+                .attr('fill', 'var(--bg-1)')
+                .attr('stroke', 'var(--text)').attr('stroke-width', 0.8)
+                .attr('opacity', 0.95);
+            // Ridges across the pad surface
+            for (var ri = 0.12; ri < 0.95; ri += 0.16) {
+                var rx = b.x + (e.x - b.x) * ri;
+                var ry = b.y + (e.y - b.y) * ri;
+                gHand.append('line')
+                    .attr('x1', rx + innerNx * (hw - 0.5)).attr('y1', ry + innerNy * (hw - 0.5))
+                    .attr('x2', rx - innerNx * (hw - 0.5)).attr('y2', ry - innerNy * (hw - 0.5))
+                    .attr('stroke', 'var(--text)').attr('stroke-width', 0.5)
+                    .attr('opacity', 0.45);
+            }
+        }
+
+        function fingerGeom(pivot, side) {
+            // side: -1 left, +1 right. Positive angle = outward.
+            var radProx = prox * Math.PI / 180;
+            var radDist = distAbs * Math.PI / 180;
+            var jx = pivot.x + side * Math.sin(radProx) * proxLen;
+            var jy = pivot.y - Math.cos(radProx) * proxLen;
+            var tx = jx + side * Math.sin(radDist) * distLen;
+            var ty = jy - Math.cos(radDist) * distLen;
+            var ddx = tx - jx, ddy = ty - jy;
+            var L = Math.sqrt(ddx * ddx + ddy * ddy);
+            var ux = ddx / L, uy = ddy / L;
+            var n1x = -uy, n1y = ux;
+            var midX = (jx + tx) / 2;
+            var innerNx, innerNy;
+            if (n1x * (cx - midX) > 0) { innerNx = n1x; innerNy = n1y; }
+            else { innerNx = -n1x; innerNy = -n1y; }
+            return { jx: jx, jy: jy, tx: tx, ty: ty,
+                     innerNx: innerNx, innerNy: innerNy,
+                     ux: ux, uy: uy, L: L };
+        }
+
+        function drawFinger(pivot, geom) {
+            segment(pivot, { x: geom.jx, y: geom.jy }, 13, 10, bodyFill);
+            segment({ x: geom.jx, y: geom.jy }, { x: geom.tx, y: geom.ty }, 10, 6.5, bodyFill);
+            gripPad({ x: geom.jx, y: geom.jy }, { x: geom.tx, y: geom.ty }, geom.innerNx, geom.innerNy);
+            joint({ x: geom.jx, y: geom.jy }, 4.2);
+            gHand.append('circle')
+                .attr('cx', geom.tx).attr('cy', geom.ty).attr('r', 4.5)
+                .attr('fill', bodyFill)
+                .attr('stroke', 'var(--text)').attr('stroke-width', 1.2);
+        }
+
+        var leftG = fingerGeom(pivotL, -1);
+        var rightG = fingerGeom(pivotR, 1);
+
+        // ─── Ball (always visible, deforms when compressed) ──────────
+        // Fixed natural radius and resting position centred between the
+        // pivots. The ball deforms only when an inner pad surface comes
+        // closer to the ball centre than R; otherwise it is a perfect
+        // circle. Compression preserves volume of a 3D sphere squashed
+        // into an oblate spheroid (equal minor axes), so b = R·√(R/a).
+        var R_ball = 50;
+        var ball_y = 100;
+        var pad_off = 8.5;     // inner pad surface offset from segment line
+
+        function ballToInnerPadDist(g) {
+            var t0 = 0.18, t1 = 0.92;
+            var p0x = g.jx + g.ux * t0 * g.L + g.innerNx * pad_off;
+            var p0y = g.jy + g.uy * t0 * g.L + g.innerNy * pad_off;
+            var p1x = g.jx + g.ux * t1 * g.L + g.innerNx * pad_off;
+            var p1y = g.jy + g.uy * t1 * g.L + g.innerNy * pad_off;
+            var sx = p1x - p0x, sy = p1y - p0y;
+            var slen2 = sx * sx + sy * sy;
+            var tt = ((cx - p0x) * sx + (ball_y - p0y) * sy) / slen2;
+            tt = Math.max(0, Math.min(1, tt));
+            var qx = p0x + tt * sx, qy = p0y + tt * sy;
+            return Math.sqrt((cx - qx) * (cx - qx) + (ball_y - qy) * (ball_y - qy));
+        }
+
+        var dPad = Math.min(ballToInnerPadDist(leftG), ballToInnerPadDist(rightG));
+        var aBall = Math.min(R_ball, dPad);
+        var bBall = aBall < R_ball ? R_ball * Math.sqrt(R_ball / aBall) : R_ball;
+
+        // Ball body
+        gHand.append('ellipse')
+            .attr('cx', cx).attr('cy', ball_y)
+            .attr('rx', aBall).attr('ry', bBall)
+            .attr('fill', 'color-mix(in srgb, var(--c-thresh) 24%, var(--bg-2))')
+            .attr('stroke', 'var(--c-thresh)')
+            .attr('stroke-width', 1.6);
+        // Specular highlight (also follows the deformation)
+        gHand.append('ellipse')
+            .attr('cx', cx - aBall * 0.35).attr('cy', ball_y - bBall * 0.4)
+            .attr('rx', aBall * 0.32).attr('ry', bBall * 0.16)
+            .attr('fill', 'var(--bg-1)')
+            .attr('opacity', 0.5);
+        // Subtle shadow at the bottom
+        gHand.append('ellipse')
+            .attr('cx', cx).attr('cy', ball_y + bBall * 0.55)
+            .attr('rx', aBall * 0.55).attr('ry', bBall * 0.10)
+            .attr('fill', 'var(--c-thresh)')
+            .attr('opacity', 0.18);
+
+        // Fingers drawn on top of the ball so contact looks clean.
+        drawFinger(pivotL, leftG);
+        drawFinger(pivotR, rightG);
+
+        // Base knuckle pivots last
+        joint(pivotL, 5);
+        joint(pivotR, 5);
 
         // Force gauge on the right
         var gaugeX = 720, gaugeY = 80, gaugeW = 220, gaugeH = 18;
@@ -343,7 +536,6 @@
             .text((100 * grip01).toFixed(0) + ' %');
 
         // State pill
-        var stateOn = mav > thr;
         var pillY = gaugeY + 70;
         gHand.append('rect')
             .attr('x', gaugeX).attr('y', pillY)
@@ -405,12 +597,13 @@
         var tau = fc > 0 ? 1 / (2 * Math.PI * fc) : 2.0;
         var alpha = ts / (tau + ts);
 
-        // Kalman: base process noise is much smaller than the LPF
-        // equivalent so quiet-period smoothing is heavier. The adaptive
-        // term (added per-sample below) brings Q up only when the
-        // innovation bias indicates a real shift in the EMG envelope.
+        // Bayesian filter: pick the random-walk process variance q so the
+        // steady-state Kalman gain on log σ² matches the 1st-order LPF gain
+        // at the same fc. For random walk + Gaussian observation, K∞ ≈ √(q/R)
+        // when q ≪ R, so q = R·α² with α = ts/(τ+ts), τ = 1/(2π fc).
         var fcKal = Math.max(0.05, fc);
-        var Qbase = 0.06 * kR * Math.pow(2 * Math.PI * fcKal * ts, 2);
+        var sk_alpha = ts / (1 / (2 * Math.PI * fcKal) + ts);
+        var sk_Q = SK_R * sk_alpha * sk_alpha;
 
         // Moving avg: re-compute window length if the slider moved.
         var newWindow = fcToMsWindow(fc);
@@ -437,21 +630,18 @@
             msFilled = Math.min(BUF, msFilled + 1);
             var maOut = msSum / Math.min(msWindow, msFilled);
 
-            // 1-D Kalman with adaptive Q. Track running mean of the
-            // innovation; when its magnitude grows the filter believes
-            // the underlying mean is shifting, so Q is boosted to let
-            // the state catch up.
-            var innov = a - kS;
-            kRMean = kRMean * 0.995 + innov * 0.005;
-            var Q = Qbase + 80 * kRMean * kRMean;
-            kP = kP + Q;
-            var K = kP / (kP + kR);
-            kS = kS + K * innov;
-            kP = (1 - K) * kP;
+            // Sanger Bayesian filter: 1-D Kalman on bias-corrected log(x²).
+            skP = skP + sk_Q;
+            var sk_z = Math.log(s * s + SK_EPS) - SK_MEAN;
+            var sk_K = skP / (skP + SK_R);
+            skS = skS + sk_K * (sk_z - skS);
+            skP = (1 - sk_K) * skP;
+            // MAV-scale output: E[|x|] = σ · √(2/π) = √(exp(skS) · 2/π).
+            var sangerOut = Math.sqrt(Math.exp(skS) * 2 / Math.PI);
 
             var out = mode === 'lpf' ? lpfState
                     : mode === 'mavg' ? maOut
-                    : kS;
+                    : sangerOut;
 
             emgBuf[head] = s;
             mavBuf[head] = out;
@@ -461,7 +651,7 @@
         // Latest output of the active filter
         var mav = mode === 'lpf' ? lpfState
                 : mode === 'mavg' ? (msFilled > 0 ? msSum / Math.min(msWindow, msFilled) : 0)
-                : kS;
+                : Math.sqrt(Math.exp(skS) * 2 / Math.PI);
 
         ui.effv.textContent = (100 * effort).toFixed(0) + ' %';
         ui.fcv.textContent = fc.toFixed(1) + ' Hz';
@@ -492,9 +682,14 @@
         // others, so switching does not snap to zero.
         var seed = mode === 'lpf' ? lpfState
                  : mode === 'mavg' ? (msFilled > 0 ? msSum / Math.min(msWindow, msFilled) : 0)
-                 : kS;
+                 : Math.sqrt(Math.exp(skS) * 2 / Math.PI);
         if (m === 'lpf') lpfState = seed;
-        else if (m === 'kalman') { kS = seed; kP = 0.5; }
+        else if (m === 'kalman') {
+            // Seed log(σ²) from the MAV-scale value: σ = seed·√(π/2).
+            var sigma2 = Math.max(SK_EPS, seed * seed * Math.PI / 2);
+            skS = Math.log(sigma2);
+            skP = 1.0;
+        }
         drawLegend();
     }
 

@@ -17,8 +17,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
-        onload="renderMathInElement(document.body, {
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {
             delimiters: [
                 { left: '$$', right: '$$', display: true },
                 { left: '\\[', right: '\\]', display: true },
@@ -90,7 +89,8 @@
                     of clinical interest, not the count alone, because a rising envelope during the pre-state is
                     what predicts the seizure.</p>
                 <p>The clinicians ask for three things from the circuit: <strong>detect</strong> each spike,
-                    <strong>measure</strong> its peak amplitude, and <strong>track</strong> the trend.</p>
+                    <strong>measure</strong> its peak amplitude, and <strong>track</strong> the trend.
+                </p>
 
                 <div class="callout">
                     The trace shows the unprocessed electrode signal: alpha-band activity and electrode noise
@@ -115,8 +115,10 @@
                         <span class="now" id="eeg-now-phase">phase: —</span>
                     </div>
                     <div class="readout" id="eeg-readout">
-                        <div class="item"><span class="k">spikes seen</span><span class="v" id="eeg-count">0</span></div>
-                        <div class="item"><span class="k">last amplitude</span><span class="v" id="eeg-amp">— mV</span></div>
+                        <div class="item"><span class="k">spikes seen</span><span class="v" id="eeg-count">0</span>
+                        </div>
+                        <div class="item"><span class="k">last amplitude</span><span class="v" id="eeg-amp">— mV</span>
+                        </div>
                         <div class="item"><span class="k">trend</span><span class="v" id="eeg-trend">—</span></div>
                     </div>
                 </div>
@@ -131,7 +133,8 @@
                 <p class="lead">The clinic's brief reduces to three mathematical operations: a binary
                     <em>detection</em>, an analog <em>amplitude measurement</em>, and a slow <em>trend</em>
                     over many events. Pick the blocks from this course that you would assemble to perform
-                    those three operations.</p>
+                    those three operations.
+                </p>
                 <p class="dim">Multiple selections are allowed. Some choices are correct, some are partially
                     useful, and some belong to a different problem.</p>
                 <div class="callout">
@@ -161,8 +164,9 @@
         <!-- ═════════════ SLIDE 3 · APPROACH A · COMPARATOR + SCHMITT ═════════════ -->
         <section class="slide" data-slide="3">
             <div class="copy">
-                <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>approach A · threshold detection</span></div>
-                <h2>A <em class="thresh">comparator</em> reduces the spike to a digital event.</h2>
+                <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>approach A · threshold
+                        detection</span></div>
+                <h2>Signal-digitization via <em class="thresh">comparator</em>.</h2>
                 <p class="lead">The simplest detector is an op-amp comparator with its non-inverting input tied
                     to the EEG and its inverting input held at a reference voltage $V_\mathrm{th}$. Whenever the
                     EEG crosses upwards through $V_\mathrm{th}$, the output flips to the positive rail and a
@@ -220,7 +224,8 @@
                     <div class="readout" id="cmp-readout">
                         <div class="item"><span class="k">true spikes</span><span class="v" id="cmp-true">0</span></div>
                         <div class="item"><span class="k">detected</span><span class="v" id="cmp-det">0</span></div>
-                        <div class="item"><span class="k">false retriggers</span><span class="v warn" id="cmp-false">0</span></div>
+                        <div class="item"><span class="k">false retriggers</span><span class="v warn"
+                                id="cmp-false">0</span></div>
                     </div>
                 </div>
             </div>
@@ -229,8 +234,9 @@
         <!-- ═════════════ SLIDE 4 · APPROACH B · PEAK DETECTOR ═════════════ -->
         <section class="slide" data-slide="4">
             <div class="copy">
-                <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>approach B · peak measurement</span></div>
-                <h2>A <em class="output2">passive peak detector</em> tries to capture amplitude.</h2>
+                <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>approach B · peak
+                        measurement</span></div>
+                <h2>Capturing amplitude via a <em class="output2">passive peak detector</em>.</h2>
                 <p class="lead">The simplest peak detector is a diode in series with a hold capacitor. While the
                     input rises, the diode conducts and the capacitor charges to the input voltage minus the
                     diode forward drop, $V_C = V_\mathrm{in} - V_D$. When the input falls back, the diode
@@ -245,18 +251,25 @@
                         <div class="ttl">// strengths</div>
                         <ul>
                             <li>One diode and one capacitor; nothing else is required to hold a peak.</li>
-                            <li>With a leak resistor across the capacitor, the trace approximates the rising envelope.</li>
+                            <li>With a leak resistor across the capacitor, the trace approximates the rising envelope.
+                            </li>
                             <li>No threshold to tune; the largest input within $\tau_\mathrm{leak}$ finds itself.</li>
                         </ul>
                     </div>
                     <div class="pc-card cons">
                         <div class="ttl">// weaknesses</div>
                         <ul>
-                            <li>The diode drop $V_D$ is subtracted from every reading: $V_\mathrm{held} \approx V_\mathrm{peak} - V_D$.</li>
-                            <li>If $V_D$ exceeds the spike amplitude, the diode never conducts and the detector outputs nothing. Raw EEG spikes are millivolts; a silicon diode at $V_D \approx 0.6$ V will not turn on.</li>
-                            <li>The next stage loads the capacitor; without a high-impedance buffer, the held value droops.</li>
-                            <li>Charging through the source impedance limits how fast a narrow spike can be captured.</li>
-                            <li>No reset path: a tall peak masks every smaller spike until the leak brings the held value back down.</li>
+                            <li>The diode drop $V_D$ is subtracted from every reading: $V_\mathrm{held} \approx
+                                V_\mathrm{peak} - V_D$.</li>
+                            <li>If $V_D$ exceeds the spike amplitude, the diode never conducts and the detector outputs
+                                nothing. Raw EEG spikes are millivolts; a silicon diode at $V_D \approx 0.6$ V will not
+                                turn on.</li>
+                            <li>The next stage loads the capacitor; without a high-impedance buffer, the held value
+                                droops.</li>
+                            <li>Charging through the source impedance limits how fast a narrow spike can be captured.
+                            </li>
+                            <li>No reset path: a tall peak masks every smaller spike until the leak brings the held
+                                value back down.</li>
                         </ul>
                     </div>
                 </div>
@@ -288,8 +301,10 @@
                     </div>
                     <div class="readout" id="pk-readout">
                         <div class="item"><span class="k">held value</span><span class="v" id="pk-val">— mV</span></div>
-                        <div class="item"><span class="k">last spike</span><span class="v" id="pk-last">— mV</span></div>
-                        <div class="item"><span class="k">envelope slope</span><span class="v" id="pk-slope">—</span></div>
+                        <div class="item"><span class="k">last spike</span><span class="v" id="pk-last">— mV</span>
+                        </div>
+                        <div class="item"><span class="k">envelope slope</span><span class="v" id="pk-slope">—</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -298,8 +313,9 @@
         <!-- ═════════════ SLIDE 5 · COMBINED CHAIN ═════════════ -->
         <section class="slide" data-slide="5">
             <div class="copy">
-                <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the full chain</span></div>
-                <h2>The <em class="high">block diagram</em> that meets the brief.</h2>
+                <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the full chain</span>
+                </div>
+                <h2>One potential <em class="high">block diagram</em> that meets the brief.</h2>
                 <p class="lead">The filtered EEG is in millivolts and is too small to drive the analog peak
                     detector directly. A pre-amp lifts the signal above the diode forward drop, then a
                     parallel pair of blocks supplies the two outputs the brief requires: a Schmitt trigger
@@ -308,9 +324,13 @@
                     time.</p>
 
                 <ul class="bullets">
-                    <li><strong>Pre-amp</strong> raises the EEG above the diode forward drop and the Schmitt hysteresis window. Without it neither branch operates.</li>
-                    <li><strong>Schmitt + monostable</strong> rejects noise the bare comparator would re-trigger on, then standardises pulse width so a downstream counter sees uniform events.</li>
-                    <li><strong>Peak detector</strong> ($D + C \parallel R_\mathrm{leak}$) holds the most recent peak; the leak time constant $\tau = R_\mathrm{leak} C$ lets the held value follow the envelope rather than freeze.</li>
+                    <li><strong>Pre-amp</strong> raises the EEG above the diode forward drop and the Schmitt hysteresis
+                        window. Without it neither branch operates.</li>
+                    <li><strong>Schmitt + monostable</strong> rejects noise the bare comparator would re-trigger on,
+                        then standardises pulse width so a downstream counter sees uniform events.</li>
+                    <li><strong>Peak detector</strong> ($D + C \parallel R_\mathrm{leak}$) holds the most recent peak;
+                        the leak time constant $\tau = R_\mathrm{leak} C$ lets the held value follow the envelope rather
+                        than freeze.</li>
                 </ul>
                 <div class="callout">
                     Every block has appeared earlier in the course. The case study is the mapping from the
@@ -348,9 +368,12 @@
                         <svg id="plot-chain-circuit"></svg>
                     </div>
                     <div class="readout" id="chain-readout">
-                        <div class="item"><span class="k">pulses (4 s)</span><span class="v" id="chain-pulses">0</span></div>
-                        <div class="item"><span class="k">held peak</span><span class="v" id="chain-peak">— mV</span></div>
-                        <div class="item"><span class="k">envelope</span><span class="v on" id="chain-env">rising</span></div>
+                        <div class="item"><span class="k">pulses (4 s)</span><span class="v" id="chain-pulses">0</span>
+                        </div>
+                        <div class="item"><span class="k">held peak</span><span class="v" id="chain-peak">— mV</span>
+                        </div>
+                        <div class="item"><span class="k">envelope</span><span class="v on" id="chain-env">rising</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -362,16 +385,16 @@
     <div class="nav-hint">Use the dots or the arrow keys to advance through the slides.</div>
     <div class="deck-nav">
         <span class="arrow" id="nav-prev" aria-label="previous slide">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M15 18l-6-6 6-6" />
             </svg>
         </span>
         <span class="dots" id="nav-dots"></span>
         <span class="counter"><b id="nav-cur">1</b> / <span id="nav-tot">6</span></span>
         <span class="arrow" id="nav-next" aria-label="next slide">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M9 18l6-6-6-6" />
             </svg>
         </span>

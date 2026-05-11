@@ -174,6 +174,7 @@ h2 {
 h2 em { font-style: normal; }
 h2 em.input  { color: var(--c-input); }
 h2 em.output { color: var(--c-output); }
+h2 em.output2 { color: var(--c-output2); }
 h2 em.thresh { color: var(--c-thresh); }
 h2 em.high   { color: var(--c-high); }
 

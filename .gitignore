@@ -1,0 +1,11 @@
+# Claude
+.claude/
+CLAUDE.md
+
+# Vibeyard
+.vibeyard/
+.vibeyardignore
+
+# macOS
+.DS_Store
+**/.DS_Store

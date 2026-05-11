@@ -271,6 +271,80 @@ svg.ov .trace.f-middle { stroke: var(--c-output2); }
 svg.ov .trace.f-ring   { stroke: var(--c-thresh); }
 svg.ov .trace.f-pinky  { stroke: var(--c-pre); }
 
+/* In overlay mode all five traces share one y-axis; thin them slightly and drop
+   opacity so overlapping curves remain distinguishable. */
+svg.ov.mode-overlay .trace {
+    stroke-opacity: 0.62;
+    stroke-width: 1.7;
+}
+
+/* ─── Compact overlay/stacked toggle, lives in the top bar above the plots ─── */
+.lab-plots-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2px 0 0;
+}
+.plot-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-panel);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.12s;
+}
+.plot-toggle:hover { border-color: var(--border-hover); }
+.plot-toggle:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+}
+.plot-toggle .opt {
+    padding: 1px 4px;
+    border-radius: 999px;
+    color: var(--muted);
+    transition: color 0.12s, background 0.12s;
+}
+.plot-toggle .opt.active {
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+.plot-toggle .sep {
+    color: var(--border);
+    pointer-events: none;
+}
+
+/* ─── Per-lane labels and lane dividers on the stacked trace plots ─── */
+svg.ov .lane-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+}
+svg.ov .lane-label.f-thumb  { fill: var(--c-input); }
+svg.ov .lane-label.f-index  { fill: var(--c-output); }
+svg.ov .lane-label.f-middle { fill: var(--c-output2); }
+svg.ov .lane-label.f-ring   { fill: var(--c-thresh); }
+svg.ov .lane-label.f-pinky  { fill: var(--c-pre); }
+svg.ov .grid line.lane-sep {
+    stroke: var(--border);
+    stroke-width: 1;
+}
+svg.ov .grid line.lane-zero {
+    stroke: var(--grid-line);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+    opacity: 0.6;
+}
+
 /* ─── Sensor row + webcam panel ─── */
 .sensor-panel {
     display: grid;

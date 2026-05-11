@@ -202,10 +202,16 @@
     var BUF = window.EMGSignal.BUF;
     var FS = window.EMGSignal.FS;
 
+    var viewMode = 'overlay';   // 'overlay' (default) or 'stacked'
+
     function makePlot(svg, yDomain, xTitle, yTitle) {
         var W = 800, H = 220;
-        var margin = { top: 26, right: 18, bottom: 34, left: 48 };
-        var iw, ih, x, y;
+        var margin = { top: 44, right: 18, bottom: 52, left: 96 };
+        var iw, ih, x;
+        var laneH = 0;
+        var laneTops = new Array(N_F);
+        var laneScales = new Array(N_F);
+        var ySingle;
         var gRoot = svg.append('g');
         var gGrid = gRoot.append('g').attr('class', 'grid');
         var gAxis = gRoot.append('g').attr('class', 'axis');
@@ -222,40 +228,76 @@
             ih = H - margin.top - margin.bottom;
             gRoot.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
             x = d3.scaleLinear().domain([-T_WIN, 0]).range([0, iw]);
-            y = d3.scaleLinear().domain(yDomain).range([ih, 0]);
+            ySingle = d3.scaleLinear().domain(yDomain).range([ih, 0]);
+            laneH = ih / N_F;
+            for (var i = 0; i < N_F; i++) {
+                laneTops[i] = i * laneH;
+                laneScales[i] = d3.scaleLinear()
+                    .domain(yDomain)
+                    .range([laneTops[i] + laneH * 0.92, laneTops[i] + laneH * 0.08]);
+            }
         }
 
         function drawAxes() {
             gGrid.selectAll('*').remove();
             gAxis.selectAll('*').remove();
             gTitles.selectAll('*').remove();
+            svg.classed('mode-overlay', viewMode === 'overlay');
+            svg.classed('mode-stacked', viewMode === 'stacked');
 
-            var ys = y.ticks(5);
-            ys.forEach(function (v) {
-                gGrid.append('line')
-                    .attr('class', Math.abs(v) < 1e-6 ? 'major' : '')
+            if (viewMode === 'stacked') {
+                for (var i = 0; i < N_F; i++) {
+                    if (i > 0) {
+                        gGrid.append('line').attr('class', 'lane-sep')
+                            .attr('x1', 0).attr('x2', iw)
+                            .attr('y1', laneTops[i]).attr('y2', laneTops[i]);
+                    }
+                    var yScale = laneScales[i];
+                    gGrid.append('line').attr('class', 'lane-zero')
+                        .attr('x1', 0).attr('x2', iw)
+                        .attr('y1', yScale(0)).attr('y2', yScale(0));
+                }
+                gGrid.append('line').attr('class', 'lane-sep')
                     .attr('x1', 0).attr('x2', iw)
-                    .attr('y1', y(v)).attr('y2', y(v));
-            });
-            gAxis.append('g')
-                .call(d3.axisLeft(y).tickValues(ys)
-                    .tickFormat(function (d) { return d.toFixed(2); })
-                    .tickSize(0).tickPadding(8))
-                .select('.domain').remove();
+                    .attr('y1', 0).attr('y2', 0);
+
+                for (var j = 0; j < N_F; j++) {
+                    gAxis.append('text')
+                        .attr('class', 'lane-label ' + FINGERS[j].cls)
+                        .attr('x', -10)
+                        .attr('y', laneTops[j] + laneH / 2)
+                        .attr('text-anchor', 'end')
+                        .attr('dominant-baseline', 'middle')
+                        .text(FINGERS[j].label);
+                }
+            } else {
+                var ys = ySingle.ticks(5);
+                ys.forEach(function (v) {
+                    gGrid.append('line')
+                        .attr('class', Math.abs(v) < 1e-6 ? 'major' : '')
+                        .attr('x1', 0).attr('x2', iw)
+                        .attr('y1', ySingle(v)).attr('y2', ySingle(v));
+                });
+                gAxis.append('g')
+                    .call(d3.axisLeft(ySingle).tickValues(ys)
+                        .tickFormat(function (d) { return d.toFixed(2); })
+                        .tickSize(0).tickPadding(8))
+                    .select('.domain').remove();
+            }
 
             var xt = [-2, -1.5, -1, -0.5, 0];
             gAxis.append('g').attr('transform', 'translate(0,' + ih + ')')
                 .call(d3.axisBottom(x).tickValues(xt)
                     .tickFormat(function (d) { return d.toFixed(1) + ' s'; })
-                    .tickSize(0).tickPadding(8))
+                    .tickSize(0).tickPadding(10))
                 .select('.domain').remove();
 
             gTitles.append('text').attr('class', 'axis-title')
-                .attr('x', iw / 2).attr('y', ih + 26)
+                .attr('x', iw / 2).attr('y', ih + 40)
                 .attr('text-anchor', 'middle')
                 .text(xTitle);
             gTitles.append('text').attr('class', 'axis-title')
-                .attr('transform', 'translate(' + (-36) + ',' + (ih / 2) + ') rotate(-90)')
+                .attr('transform', 'translate(' + (-72) + ',' + (ih / 2) + ') rotate(-90)')
                 .attr('text-anchor', 'middle')
                 .text(yTitle);
         }
@@ -279,9 +321,6 @@
         function redraw(buffers, enabled) {
             ensurePaths();
             var s = 4;
-            var line = d3.line()
-                .x(function (_, i, arr) { return x((i / (arr.length - 1)) * T_WIN - T_WIN); })
-                .y(function (v) { return y(v); });
             for (var i = 0; i < N_F; i++) {
                 if (!enabled[i]) {
                     paths[i].attr('d', '').attr('display', 'none');
@@ -289,7 +328,12 @@
                 }
                 paths[i].attr('display', null);
                 var d = decimate(buffers[i], s);
-                paths[i].attr('d', line(Array.from(d)));
+                var arr = Array.from(d);
+                var yScale = viewMode === 'stacked' ? laneScales[i] : ySingle;
+                var line = d3.line()
+                    .x(function (_, k, a) { return x((k / (a.length - 1)) * T_WIN - T_WIN); })
+                    .y(function (v) { return yScale(v); });
+                paths[i].attr('d', line(arr));
             }
         }
 
@@ -403,7 +447,8 @@
     var ui = {
         fc: document.getElementById('arm-fc'),
         fcv: document.getElementById('arm-fc-val'),
-        pause: document.getElementById('arm-pause')
+        pause: document.getElementById('arm-pause'),
+        view: document.getElementById('arm-view')
     };
 
     var paused = false;
@@ -480,6 +525,37 @@
             ui.pause.classList.toggle('active', paused);
             ui.pause.textContent = paused ? 'paused' : 'pause';
         });
+        if (ui.view) {
+            var syncViewToggle = function () {
+                ui.view.dataset.mode = viewMode;
+                ui.view.querySelectorAll('.opt').forEach(function (el) {
+                    el.classList.toggle('active', el.dataset.opt === viewMode);
+                });
+            };
+            var setViewMode = function (next) {
+                if (next !== 'overlay' && next !== 'stacked') return;
+                if (next === viewMode) return;
+                viewMode = next;
+                syncViewToggle();
+                inputPlot.drawAxes();
+                outputPlot.drawAxes();
+            };
+            syncViewToggle();
+            ui.view.addEventListener('click', function (ev) {
+                var opt = ev.target && ev.target.closest && ev.target.closest('.opt');
+                if (opt && opt.dataset.opt) {
+                    setViewMode(opt.dataset.opt);
+                } else {
+                    setViewMode(viewMode === 'overlay' ? 'stacked' : 'overlay');
+                }
+            });
+            ui.view.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Enter' || ev.key === ' ') {
+                    ev.preventDefault();
+                    setViewMode(viewMode === 'overlay' ? 'stacked' : 'overlay');
+                }
+            });
+        }
         window.addEventListener('resize', function () {
             inputPlot.layout();  inputPlot.drawAxes();
             outputPlot.layout(); outputPlot.drawAxes();

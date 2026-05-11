@@ -164,24 +164,38 @@
 
     function drawLegend() {
         gLegend.selectAll('*').remove();
-        var lx = 8, ly = 8, dy = 14;
-        function lg(i, color, label) {
-            gLegend.append('line')
-                .attr('x1', lx).attr('x2', lx + 18)
-                .attr('y1', ly + i * dy + 6).attr('y2', ly + i * dy + 6)
-                .attr('stroke', color).attr('stroke-width', 2.2);
-            gLegend.append('text')
-                .attr('x', lx + 24).attr('y', ly + i * dy + 9)
-                .attr('font-family', "'JetBrains Mono', monospace")
-                .attr('font-size', 10).attr('fill', 'var(--text-dim)')
-                .text(label);
-        }
         var modeLabel = mode === 'lpf' ? '1st-order LPF'
                        : mode === 'mavg' ? 'moving avg'
                        : 'kalman';
-        lg(0, 'var(--c-input)',   'EMG x(t)');
-        lg(1, 'var(--c-output2)', 'MAV · ' + modeLabel);
-        lg(2, 'var(--c-thresh)',  'threshold');
+        var items = [
+            { color: 'var(--c-input)',   label: 'EMG x(t)'         },
+            { color: 'var(--c-output2)', label: 'MAV · ' + modeLabel },
+            { color: 'var(--c-thresh)',  label: 'threshold'        }
+        ];
+        var lineLen = 18, labelPad = 6, gap = 18;
+        var groups = [];
+        var totalW = 0;
+        items.forEach(function (it) {
+            var sub = gLegend.append('g');
+            sub.append('line')
+                .attr('x1', 0).attr('x2', lineLen)
+                .attr('y1', 7).attr('y2', 7)
+                .attr('stroke', it.color).attr('stroke-width', 2.2);
+            sub.append('text')
+                .attr('x', lineLen + labelPad).attr('y', 10)
+                .attr('font-family', "'JetBrains Mono', monospace")
+                .attr('font-size', 10).attr('fill', 'var(--text-dim)')
+                .text(it.label);
+            var w = sub.node().getBBox().width;
+            groups.push({ sub: sub, w: w });
+            totalW += w;
+        });
+        totalW += gap * (items.length - 1);
+        var cursor = iw - totalW;
+        groups.forEach(function (grp) {
+            grp.sub.attr('transform', 'translate(' + cursor + ',-22)');
+            cursor += grp.w + gap;
+        });
     }
 
     // Bandlimited EMG sample. Effort scales burst amplitude; baseline noise

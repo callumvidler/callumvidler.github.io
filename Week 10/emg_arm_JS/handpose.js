@@ -25,6 +25,10 @@
         [0, 13, 14, 15, 16],   // ring
         [0, 17, 18, 19, 20]    // pinky
     ];
+    // Per-finger curl gain. The thumb has a smaller anatomical curl range than
+    // the long fingers, so its raw deficit reads low; boost it slightly so a
+    // natural thumb flexion drives the simulated channel comparably.
+    var FINGER_GAIN = [1.35, 1.0, 1.0, 1.0, 1.0];
 
     var raw = [0, 0, 0, 0, 0];
     var smoothed = [0, 0, 0, 0, 0];
@@ -99,7 +103,12 @@
         totalHandFrames++;
         var kp = getKeypoints(hands[0]);
         if (!kp) return;
-        for (var f = 0; f < 5; f++) raw[f] = fingerCurl(kp, FINGER_CHAINS[f]);
+        for (var f = 0; f < 5; f++) {
+            var c = fingerCurl(kp, FINGER_CHAINS[f]) * FINGER_GAIN[f];
+            if (c < 0) c = 0;
+            if (c > 1) c = 1;
+            raw[f] = c;
+        }
         lastQuat = computeRotation(hands[0], kp);
     }
 

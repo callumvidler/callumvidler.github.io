@@ -1,6 +1,6 @@
 # BMEN90033 Bioinstrumentation: Interactive Lecture Material
 
-This repository hosts the static site published at [callumvidler.github.io](https://callumvidler.github.io). The site collects interactive visualisations developed alongside BMEN90033 Bioinstrumentation at the University of Melbourne. Each topic page presents a single concept, such as the action potential, semiconductor band structure, operational amplifier behaviour, Laplace-domain analysis, or analogue filter response, and renders it as an explorable simulation rather than a static figure.
+This repository hosts the static site published at [callumvidler.github.io](https://callumvidler.github.io). The site collects interactive visualisations developed alongside BMEN90033 Bioinstrumentation. Each topic page presents a single concept, such as the action potential, semiconductor band structure, operational amplifier behaviour, Laplace-domain analysis, or analogue filter response, and renders it as an explorable simulation rather than a static figure.
 
 ## Scope and intent
 

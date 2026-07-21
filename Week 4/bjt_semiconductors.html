@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BMEN90033: BJT Semiconductors — Fundamental Operation</title>
+    <title>BMEN90033: Fundamental BJT Operation</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <style>
@@ -245,7 +245,7 @@
             Back
         </a>
         <div>
-            <h1>BJT Semiconductors — Fundamental Operation</h1>
+            <h1>BJT Semiconductors: Fundamental Operation</h1>
             <div class="header-sub">BMEN90033 · Week 4</div>
         </div>
     </div>
@@ -893,7 +893,7 @@
         ctx.textAlign = 'center';
         ctx.font = '11px "Inter"';
         ctx.fillStyle = T.overlay50;
-        ctx.fillText('Concentration (cm\u207B\u00B3)' + (isLog ? ' \u2014 log' : ' \u2014 linear'), 0, 0);
+        ctx.fillText('Concentration (cm\u207B\u00B3)' + (isLog ? ': log' : ': linear'), 0, 0);
         ctx.restore();
 
         // Carrier concentration curves
@@ -1192,56 +1192,56 @@
         // Minority carrier explanation — shown in all states
         const minorityNote = `
             <div class="physics-note" style="margin-top:0.6rem;">
-                <strong>Why are there ${minority} in the ${isNPN ? 'N' : 'P'}-type regions?</strong>
-                Even in a doped semiconductor, a small number of minority carriers always exist due to thermal generation. At room temperature, silicon has an intrinsic carrier concentration n<sub>i</sub> &approx; 1.5 &times; 10<sup>10</sup> cm<sup>&minus;3</sup>. The <em>mass-action law</em> requires that n &middot; p = n<sub>i</sub><sup>2</sup> always holds at equilibrium. So in the ${emitterType} emitter doped at ~10<sup>17</sup> cm<sup>&minus;3</sup>, the minority ${minority} concentration is n<sub>i</sub><sup>2</sup>/10<sup>17</sup> &approx; 10<sup>3</sup> cm<sup>&minus;3</sup> &mdash; tiny, but not zero. Switch to <strong>linear scale</strong> to see how negligible these are compared to majority carriers.
+                <strong>Minority carriers in the ${isNPN ? 'N' : 'P'}-type regions.</strong>
+                Thermal generation produces a small minority-carrier population even in a doped semiconductor. At room temperature, silicon has an intrinsic carrier concentration n<sub>i</sub> &approx; 1.5 &times; 10<sup>10</sup> cm<sup>&minus;3</sup>. At equilibrium, the <em>mass-action law</em> gives n &middot; p = n<sub>i</sub><sup>2</sup>. In the ${emitterType} emitter doped at ~10<sup>17</sup> cm<sup>&minus;3</sup>, the minority ${minority} concentration is therefore approximately 10<sup>3</sup> cm<sup>&minus;3</sup>, small but non-zero. The linear scale shows this difference relative to the majority-carrier concentration.
             </div>
         `;
 
         if (baseCurrent === 0) {
             regionLabel.textContent = 'Cutoff';
             html = `
-                <h3>Cutoff \u2014 Transistor OFF</h3>
+                <h3>Cutoff: Transistor off</h3>
                 <p>No base current is applied. The base-emitter junction is unbiased, so no minority carriers are injected into the base. Both depletion regions are at their thermal equilibrium width.</p>
                 <p>The ${emitterType} emitter (${emitterDopant}-doped) contains abundant majority ${majority}, but they cannot cross the base-emitter depletion region. No collector current flows.</p>
                 <p>The ${baseType} base (${baseDopant}-doped, lightly doped and thin) and the ${collectorType} collector sit at equilibrium. Fixed donor and acceptor ions in each depletion region create a built-in electric field that opposes carrier diffusion.</p>
-                <div class="physics-note"><strong>Key physics:</strong> At thermal equilibrium, the diffusion tendency of carriers is exactly balanced by the drift due to the built-in electric field in each depletion region.</div>
+                <div class="physics-note"><strong>Mechanism:</strong> At thermal equilibrium, carrier diffusion is balanced by drift in the built-in electric field of each depletion region.</div>
                 ${minorityNote}
             `;
         } else if (baseCurrent < 15) {
             regionLabel.textContent = 'Sub-threshold';
             html = `
-                <h3>Sub-threshold \u2014 Below V<sub>BE(on)</sub></h3>
+                <h3>Subthreshold: Below V<sub>BE(on)</sub></h3>
                 <p>A small voltage is applied to the base-emitter junction, but it is below the turn-on voltage (\u22480.6\u20130.7 V for silicon). The BE depletion region narrows slightly, but the remaining barrier is still too high for significant carrier injection.</p>
                 <p>Only a tiny, exponentially small leakage current flows. The few ${majority} that have enough thermal energy to surmount the reduced barrier are immediately swept across, but their number is negligible compared to the active region.</p>
-                <p>The collector current is essentially zero. The transistor is effectively still OFF, even though V<sub>BE</sub> > 0. This is the <em>sub-threshold</em> or <em>weak inversion</em> regime.</p>
-                <div class="physics-note"><strong>Key physics:</strong> The current in this region is governed by the Shockley diode equation: I \u221d exp(V<sub>BE</sub>/V<sub>T</sub>) \u2212 1. Below ~0.6 V, the exponential is very small, so current is negligible. The transition to full conduction is not a sharp threshold but a rapid exponential rise.</div>
+                <p>The collector current remains small even though V<sub>BE</sub> > 0. This is the <em>subthreshold</em> regime.</p>
+                <div class="physics-note"><strong>Mechanism:</strong> The current follows the Shockley relation I \u221d exp(V<sub>BE</sub>/V<sub>T</sub>) \u2212 1. Conduction therefore rises exponentially rather than at a sharp threshold.</div>
             `;
         } else if (baseCurrent < 55) {
             regionLabel.textContent = 'Active';
             html = `
-                <h3>Forward Active \u2014 Transistor Action</h3>
+                <h3>Forward active: Transistor action</h3>
                 <p>A small forward bias is applied to the base-emitter junction, narrowing its depletion region. Majority ${majority} from the heavily-doped ${emitterType} emitter are injected into the thin, lightly-doped ${baseType} base as <em>minority carriers</em>.</p>
                 <p>Because the base is very thin, most injected ${majority} diffuse across it before they can recombine with the base's majority ${minority}. They reach the base-collector depletion region, where the strong electric field sweeps them into the collector.</p>
                 <p>The small fraction of ${majority} that <em>do</em> recombine in the base is what constitutes the base current I<sub>B</sub>. This gives rise to current gain: I<sub>C</sub>/I<sub>B</sub> &approx; &beta; (typically 50&ndash;300).</p>
-                <div class="physics-note"><strong>Key physics:</strong> Carrier transport across the base is by <em>diffusion</em> (concentration gradient). Collection at the BC junction is by <em>drift</em> (electric field). The thin, lightly-doped base ensures most carriers are collected rather than recombined.</div>
+                <div class="physics-note"><strong>Mechanism:</strong> Carriers cross the base by <em>diffusion</em> and enter the collector by <em>drift</em> in the base-collector electric field. The thin, lightly doped base limits recombination.</div>
             `;
         } else if (baseCurrent < 80) {
             regionLabel.textContent = 'Approaching Sat.';
             html = `
                 <h3>Approaching Saturation</h3>
                 <p>As I<sub>B</sub> increases further, V<sub>CE</sub> decreases and the base-collector junction moves from reverse bias toward forward bias. The BC depletion region is narrowing.</p>
-                <p>The collector current is still increasing with I<sub>B</sub>, but the gain is beginning to drop. Notice in the carrier concentration plot that minority carriers are starting to build up at the collector side of the base \u2014 the BC junction is no longer efficiently extracting all injected carriers.</p>
+                <p>The collector current still increases with I<sub>B</sub>, but the gain begins to decrease. The carrier-concentration plot shows minority carriers accumulating at the collector side of the base because the BC junction no longer extracts all injected carriers efficiently.</p>
                 <p>This is a <em>gradual transition</em>, not a sharp boundary. The transistor smoothly moves from linear amplification toward the saturated state as the BC junction bias shifts from reverse to forward.</p>
-                <div class="physics-note"><strong>Key physics:</strong> Saturation begins when V<sub>BC</sub> \u2265 0 (the BC junction becomes forward biased). This happens gradually: as I<sub>C</sub> increases, the voltage drop across the collector resistor increases, reducing V<sub>CE</sub> until V<sub>CE</sub> < V<sub>BE</sub>, at which point V<sub>BC</sub> > 0.</div>
+                <div class="physics-note"><strong>Mechanism:</strong> Saturation begins as V<sub>BC</sub> becomes positive and the BC junction becomes forward biased. Increasing I<sub>C</sub> raises the collector-resistor voltage drop until V<sub>CE</sub> < V<sub>BE</sub>.</div>
             `;
         } else {
             regionLabel.textContent = 'Saturation';
             html = `
-                <h3>Saturation \u2014 Both Junctions Forward Biased</h3>
+                <h3>Saturation: Both junctions forward biased</h3>
                 <p>Both the base-emitter and base-collector junctions are now forward biased. Carriers are injected into the base from both the emitter <em>and</em> the collector sides.</p>
-                <p>The collector current no longer increases proportionally with base current &mdash; the transistor is <em>saturated</em>. V<sub>CE</sub> has dropped to a small value (V<sub>CE(sat)</sub> &approx; 0.2 V).</p>
+                <p>The collector current no longer increases proportionally with base current because the transistor is <em>saturated</em>. V<sub>CE</sub> has dropped to a small value (V<sub>CE(sat)</sub> &approx; 0.2 V).</p>
                 <p>Excess minority ${majority} accumulate throughout the base region. This stored charge is visible in the carrier concentration plot as an elevated minority concentration across the entire base.</p>
-                <div class="physics-note"><strong>Key physics:</strong> The excess stored charge in the base is why BJTs are slow to turn off from saturation &mdash; the stored charge must be removed (recombination or reverse extraction) before the transistor can return to cutoff. This delay is called the <em>storage time</em> t<sub>s</sub>.</div>
+                <div class="physics-note"><strong>Mechanism:</strong> Excess charge stored in the base must be removed by recombination or reverse extraction before the transistor returns to cutoff. This delay is the <em>storage time</em> t<sub>s</sub>.</div>
             `;
         }
 

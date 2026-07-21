@@ -255,7 +255,7 @@
   <div id="container">
     <div id="info" class="panel" style="top:52px">
       <h2>Myelinated vs Unmyelinated</h2>
-      <div class="section-label">Upper — Myelinated</div>
+      <div class="section-label">Upper: Myelinated</div>
       <div class="legend">
         <div class="swatch" style="background:#6ea8d7"></div> Myelin sheath (insulator)
       </div>
@@ -265,7 +265,7 @@
       <div class="legend">
         <div class="dot" style="background:#fff"></div> Dipole (+/&minus;) jumps between nodes
       </div>
-      <div class="section-label" style="margin-top:10px">Lower — Unmyelinated</div>
+      <div class="section-label" style="margin-top:10px">Lower: Unmyelinated</div>
       <div class="legend">
         <div class="swatch" style="background:rgba(255,255,255,0.2)"></div> Bare axon membrane
       </div>
@@ -824,12 +824,12 @@
       csLabel2.scale.set(7, 0.7, 1);
       crossGroup.add(csLabel2);
 
-      const annot1 = makeTextSprite('Myelin insulates \u2014 no ion flow', '#6ea8d7', 24);
+      const annot1 = makeTextSprite('Myelin insulates: no ion flow', '#6ea8d7', 24);
       annot1.position.set(csX, csMyY + 3.5, 0);
       annot1.scale.set(7, 0.6, 1);
       crossGroup.add(annot1);
 
-      const annot2 = makeTextSprite('Full membrane exposed \u2014 continuous ion exchange', '#e08080', 24);
+      const annot2 = makeTextSprite('Full membrane exposed: continuous ion exchange', '#e08080', 24);
       annot2.position.set(csX, csUnY - 2.8, 0);
       annot2.scale.set(9, 0.6, 1);
       crossGroup.add(annot2);

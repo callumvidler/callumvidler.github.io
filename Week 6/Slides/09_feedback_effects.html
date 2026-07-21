@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 9 — Gain-Bandwidth Tradeoff with Feedback</title>
+  <title>Slide 9: Gain-Bandwidth Tradeoff with Feedback</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
@@ -349,10 +349,10 @@
     // ───────────────────────────────────────────────────
     const stepSubtitleText = {
       1: 'Step 1: The op-amp\'s open-loop response is fixed by its internal compensation capacitor.',
-      2: 'Step 2: Apply feedback and re-derive A_CL(f) — still a single pole, but moved outward.',
-      3: 'Step 3: Multiply DC gain × new bandwidth — the product collapses to a constant.',
+      2: 'Step 2: Apply feedback and re-derive A_CL(f). The pole moves to a higher frequency.',
+      3: 'Step 3: Multiply DC gain × bandwidth. The product is constant.',
       4: 'Step 4: Drag the slider. Every gain choice lands on the same open-loop asymptote.',
-      5: 'Step 5: Time-domain consequence — a high-gain stage smears a biosignal.'
+      5: 'Step 5: Time-domain consequence. Higher closed-loop gain reduces bandwidth.'
     };
     const stepSubtitle = {};
     for (const k of Object.keys(stepSubtitleText)) {
@@ -462,7 +462,7 @@
       };
 
       const [b1dot, b1txt] = await makeBulletTex(
-        '\\text{Huge DC gain — but only up to } f_p \\approx 10\\,\\text{Hz.}',
+        '\\text{High DC gain, but only up to } f_p \\approx 10\\,\\text{Hz.}',
         2.25, ACCENT
       );
       const [b2dot, b2txt] = await makeBulletTex(
@@ -622,7 +622,7 @@
       await bXAxisLbl.loadGlyphs?.();
       bXAxisLbl.moveTo([(bodeFrame.x0 + bodeFrame.x1) / 2, bodeFrame.y0 + 0.20, 0]);
 
-      const bodeHdr = await makeSectionHdr('FREQUENCY DOMAIN — one knee at f_p', -6.05, 1.68, MUTED);
+      const bodeHdr = await makeSectionHdr('FREQUENCY DOMAIN: one knee at f_p', -6.05, 1.68, MUTED);
 
       // ── Row 2b: s-plane pole diagram (right side) ──
       const spFrame = { x0: 0.30, x1: 6.00, y0: 0.05, y1: 1.45 };
@@ -714,7 +714,7 @@
       await spShiftLbl.loadGlyphs?.();
       spShiftLbl.moveTo([(poleX + clPoleX) / 2, poleY + 0.58, 0]);
 
-      const spHdr = await makeSectionHdr('s-PLANE — one pole on the negative real axis', 0.25, 1.68, MUTED);
+      const spHdr = await makeSectionHdr('s-PLANE: one pole on the negative real axis', 0.25, 1.68, MUTED);
 
       // ── Row 3: simplified CL expression in an accent strip ──
       // Card is tall enough to hold the double-fraction with breathing room.
@@ -733,7 +733,7 @@
       alg.scale(0.58).moveTo([0.15, -0.90, 0]);
 
       const observation = new Text({
-        text: 'Still a single pole — just rescaled in DC level and pushed outward in frequency.',
+        text: 'The response remains single-pole, with lower DC gain and a higher pole frequency.',
         fontSize: 11, color: MUTED, fontUrl: FONT_URL
       });
       await observation.loadGlyphs?.();
@@ -924,7 +924,7 @@
       const frame = { x0: -5.3, x1: 5.2, y0: -2.55, y1: 2.05 };
       const bode = await makeBodeStatics(frame, true);
       const asympLbl = new MathTex({
-        latex: '\\text {Drag the slider — every closed-loop asymptote meets the open-loop line at} \\; f_{unity}.',
+        latex: '\\text {The slider shows that each closed-loop asymptote meets the open-loop line at} \\; f_{unity}.',
         fontSize: 18, color: MUTED, fontUrl: FONT_URL
       });
       await asympLbl.loadGlyphs?.();

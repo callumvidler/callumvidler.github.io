@@ -400,10 +400,8 @@
     <div class="title-block">
         <div class="sub">BMEN90033 &middot; Week 5</div>
         <h1>Total Harmonic Distortion</h1>
-        <p>If an amplifier's output doesn't perfectly match its input, the difference is distortion.
-           Total Harmonic Distortion (THD) puts a number on how much unwanted harmonic content
-           has crept into the signal. Below, we look at what harmonics are, how they add up to
-           distort a waveform, how you measure them, and why any of this matters for bioinstrumentation.</p>
+        <p>Total harmonic distortion (THD) quantifies the harmonic content added to a signal
+           by an amplifier. It is obtained from the amplitudes of the fundamental and its harmonics.</p>
     </div>
 
     <!-- SECTION 1: The Pure Fundamental -->
@@ -415,7 +413,7 @@
 
         <p>Every periodic signal has a fundamental frequency: the lowest frequency component, and the one
            that sets the signal's pitch or repetition rate. Below is a pure sine wave at a single frequency.
-           This is what a clean, undistorted signal looks like.</p>
+           A pure sine wave contains no harmonic distortion.</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="canvas-fundamental"></canvas>
@@ -430,8 +428,8 @@
         </div>
 
         <div class="callout">
-            <strong>This is the reference.</strong> Any deviation from this pure shape means distortion.
-            So how do we measure it?
+            <strong>Reference signal.</strong> Harmonic amplitudes in the output are measured relative
+            to the fundamental.
         </div>
     </details>
 
@@ -473,9 +471,8 @@
             <h2>Combining Harmonics</h2>
         </summary>
 
-        <p>What happens when you add harmonics to the fundamental? Drag the sliders below to find out.
-           The faint coloured traces are the individual harmonics; the bright white trace is everything
-           summed together.</p>
+        <p>The sliders add harmonics to the fundamental. Faint coloured traces show the individual
+           components, and the bright white trace shows their sum.</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-combined"></canvas>
@@ -520,8 +517,8 @@
         </div>
 
         <div class="callout">
-            <strong>Try the presets.</strong> Notice how Class B has prominent odd harmonics (3rd, 5th) from
-            crossover distortion, while Class A shows lower, more evenly distributed harmonics.
+            <strong>Amplifier presets.</strong> The Class B preset has prominent odd harmonics from
+            crossover distortion. The Class A preset has smaller harmonics distributed across the spectrum.
         </div>
     </details>
 
@@ -532,11 +529,10 @@
             <h2>Fourier Decomposition</h2>
         </summary>
 
-        <p>In 1807, Joseph Fourier showed that any periodic signal can be written as a sum of sinusoids.
-           That means you can take a distorted waveform and break it back down into the fundamental
-           and each of its harmonics.</p>
+        <p>A periodic signal can be represented as a sum of sinusoids. Fourier decomposition separates
+           a distorted waveform into its fundamental and harmonic components.</p>
 
-        <p>Hit Decompose to watch the current waveform split into its individual sine waves:</p>
+        <p>The Decompose control separates the current waveform into these components.</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="canvas-fourier"></canvas>
@@ -548,8 +544,8 @@
         </div>
 
         <div class="callout">
-            <strong>The core idea:</strong> any periodic signal, no matter how messy, is just a pile of sine waves
-            added together. The next section covers the practical tool engineers use to pull them apart.
+            <strong>Fourier representation.</strong> The sum of the sinusoidal components reconstructs
+            the periodic waveform. The next section shows the corresponding frequency spectrum.
         </div>
     </details>
 
@@ -560,21 +556,19 @@
             <h2>The Frequency Spectrum</h2>
         </summary>
 
-        <p>In practice, the Fast Fourier Transform (FFT) converts a time-domain signal into its
-           frequency-domain representation. The output is a spectrum: amplitude vs frequency, showing
-           every harmonic component sitting inside the signal.</p>
+        <p>The fast Fourier transform (FFT) converts sampled time-domain data into a frequency-domain
+           spectrum. Each spectral component is represented by its frequency and amplitude.</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="canvas-spectrum"></canvas>
         </div>
 
-        <p>This spectrum updates as you move the sliders in Part 03. The tallest bar at <em>f</em> is the
-           fundamental. Anything at 2<em>f</em>, 3<em>f</em>, etc. is a harmonic that shouldn't be there.</p>
+        <p>The spectrum updates with the sliders in Part 03. The bar at <em>f</em> is the
+           fundamental; bars at 2<em>f</em>, 3<em>f</em>, and higher integer multiples are harmonics.</p>
 
         <div class="callout">
-            <strong>How distortion is measured in practice:</strong> feed a pure sine into the amplifier,
-            look at the output spectrum, and see what showed up that shouldn't be there. The ratio of
-            those unwanted harmonics to the fundamental is THD.
+            <strong>Measurement.</strong> A pure sine wave is applied to the amplifier and the output
+            spectrum is measured. THD is the root-sum-square harmonic amplitude divided by the fundamental amplitude.
         </div>
     </details>
 
@@ -643,15 +637,14 @@
         </table>
     </details>
 
-    <!-- SECTION 7: Why It Matters -->
+    <!-- SECTION 7: Measurement consequences -->
     <details class="section" id="sec-context" open>
         <summary>
             <span class="section-number">Part 07</span>
-            <h2>Why It Matters</h2>
+            <h2>Consequences for biosignal measurement</h2>
         </summary>
 
-        <p>Distortion means the output doesn't faithfully reproduce the input. In audio that sounds bad.
-           In bioinstrumentation it can be dangerous.</p>
+        <p>Harmonic distortion changes the shape and amplitude of the measured waveform.</p>
 
         <p>Biosignals like ECG, EEG, and EMG carry diagnostic information in their shape and timing.
            Harmonic distortion can:</p>
@@ -670,10 +663,9 @@
         </ul>
 
         <div class="callout">
-            <strong>For bioinstrumentation, fidelity usually wins.</strong> A device that distorts an ECG
-            waveform is worse than one that drains the battery faster. That said, portable and wearable
-            devices still need good efficiency, which is why Class D amplifiers with well-designed output
-            filters are becoming more common: high efficiency and low THD at the same time.
+            <strong>Design trade-off.</strong> Measurement amplifiers require low distortion, while
+            portable instruments also require low power consumption. A Class D stage therefore requires
+            an output filter that suppresses switching harmonics within the measurement band.
         </div>
     </details>
 

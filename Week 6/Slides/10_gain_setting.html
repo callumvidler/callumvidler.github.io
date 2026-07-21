@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 10 - Gain Setting by Feedback</title>
+  <title>Slide 10: Gain Setting by Feedback</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link
     href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
@@ -444,34 +444,34 @@
 
     <div id="s3Quiz">
       <div class="quiz-question">
-        If the closed-loop gain is simply set by the ratio R<sub>2</sub>/R<sub>1</sub>, does it matter what actual
-        values I choose for R<sub>2</sub> and R<sub>1</sub>?
+        If the closed-loop gain is set by R<sub>2</sub>/R<sub>1</sub>, do the individual
+        values of R<sub>2</sub> and R<sub>1</sub> matter?
       </div>
       <button class="quiz-option" data-answer="a">
-        <span class="opt-label">A)</span> No &mdash; any values of R<sub>2</sub> and R<sub>1</sub> giving the correct
+        <span class="opt-label">A)</span> No. Any values of R<sub>2</sub> and R<sub>1</sub> giving the correct
         ratio will work identically.
       </button>
       <button class="quiz-option" data-answer="b">
-        <span class="opt-label">B)</span> Yes &mdash; resistors too low waste power and overload the output; too high
-        introduces noise and offset errors.
+        <span class="opt-label">B)</span> Yes. Resistors that are too small load the output; resistors that are too large
+        introduce noise and offset errors.
       </button>
       <button class="quiz-option" data-answer="c">
-        <span class="opt-label">C)</span> Yes &mdash; but only because standard resistor values limit the available
+        <span class="opt-label">C)</span> Yes, but only because standard resistor values limit the available
         ratios.
       </button>
       <div class="quiz-explanation" id="s3Explanation">
         <strong>Correct: B</strong><br><br>
-        The gain equation A<sub>CL</sub> = R<sub>2</sub>/R<sub>1</sub> only cares about the <em>ratio</em>, but
-        practical constraints set a useful range &mdash; typically <strong>10 k&Omega; to 100 k&Omega;</strong>:<br><br>
+        The gain equation A<sub>CL</sub> = R<sub>2</sub>/R<sub>1</sub> depends only on the <em>ratio</em>, but
+        practical constraints set a useful range, typically <strong>10 k&Omega; to 100 k&Omega;</strong>:<br><br>
         <strong>Too low (&lt; 1 k&Omega;):</strong> The op-amp output must drive heavy current through low-value
         resistors. Most op-amps can only source ~20&ndash;25 mA, so small resistances cause the output to clip, distort,
         or overheat.<br><br>
         <strong>Too high (&gt; 1 M&Omega;):</strong> Input bias currents (nA&ndash;&mu;A) flowing through large
-        resistances create significant DC offset voltages at the output. Additionally, stray board capacitance (~pF) in
+        resistances create significant DC offset voltages at the output. Stray board capacitance (~pF) in
         parallel with high-value resistors forms unintended low-pass filters that limit bandwidth. Johnson (thermal)
         noise also scales with &radic;R.<br><br>
-        The "sweet spot" of <strong>10 k&Omega;&ndash;100 k&Omega;</strong> keeps current draw manageable, offsets
-        small, and parasitic effects negligible.
+        Values of <strong>10 k&Omega;&ndash;100 k&Omega;</strong> generally limit output current,
+        bias-current offset, thermal noise, and parasitic capacitance.
       </div>
       <button class="quiz-reset" id="s3Reset">Try Again</button>
     </div>
@@ -2544,10 +2544,10 @@
       const rMax = Math.max(r1, r2);
       if (rMin < 1e3) {
         s4Warning.className = 's4-warning warn-low';
-        s4Warning.textContent = 'Too low \u2014 output overloaded.';
+        s4Warning.textContent = 'Too low: output overloaded.';
       } else if (rMax > 1e6) {
         s4Warning.className = 's4-warning warn-high';
-        s4Warning.textContent = 'Too high \u2014 offset & parasitic errors.';
+        s4Warning.textContent = 'Too high: offset and parasitic errors.';
       } else if (rMin >= 10e3 && rMax <= 100e3) {
         s4Warning.className = 's4-warning warn-ok';
         s4Warning.textContent = 'Optimal 10k\u03A9\u2013100k\u03A9 range.';
@@ -2998,7 +2998,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 10 - Gain Setting by Feedback</title>
+  <title>Slide 10: Gain Setting by Feedback</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
@@ -3524,7 +3524,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 10 — How Negative Feedback Controls the Gain</title>
+  <title>Slide 10: How Negative Feedback Controls the Gain</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">

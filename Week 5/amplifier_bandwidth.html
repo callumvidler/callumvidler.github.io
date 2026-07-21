@@ -439,9 +439,8 @@
     <div class="title-block">
         <div class="sub">BMEN90033 · Week 5</div>
         <h1>Amplifier Bandwidth</h1>
-        <p>Every real amplifier has a frequency limit. Here we model the amplifier's output
-           as a simple RC low-pass filter, look at the result on the complex plane,
-           and build up to the Bode magnitude plot.</p>
+        <p>Every real amplifier has a finite bandwidth. A simple RC low-pass model relates
+           its transfer function, complex-plane representation, and Bode magnitude response.</p>
     </div>
 
     <!-- ════════════════════════════════════════════════ -->
@@ -480,8 +479,8 @@
             </div>
         </div>
 
-        <p>The amplifier output sees a voltage divider between R and the capacitor's
-           impedance. Let's work through the derivation step by step.</p>
+        <p>The resistor and capacitor form a frequency-dependent voltage divider at the
+           amplifier output.</p>
 
         <p><strong>First, recall the capacitor impedance.</strong> A capacitor's impedance in the
            frequency domain is:</p>
@@ -521,7 +520,7 @@
                         </span>
                     </span>
                 </div>
-                <span class="step-note">A fraction within a fraction. We can clean this up.</span>
+                <span class="step-note">Multiplication by j&#969;C removes the nested fraction.</span>
             </li>
 
             <li>
@@ -562,7 +561,7 @@
 
             <li>
                 <strong>Define the cutoff frequency</strong> &#969;<sub>0</sub> = 1/RC. Since
-                &#969;RC = &#969;/(1/RC) = &#969;/&#969;<sub>0</sub>, we can write:
+                &#969;RC = &#969;/(1/RC) = &#969;/&#969;<sub>0</sub>, the expression becomes:
                 <div class="eq-line" style="margin: 10px 0 4px;">
                     <span>=</span>
                     <span class="frac frac-lg">
@@ -602,7 +601,7 @@
             </span>
         </div>
 
-        <p>What does this mean physically?</p>
+        <p>The limiting cases give the physical interpretation:</p>
         <ul>
             <li><strong>At low frequencies</strong> (&#969; &#8810; &#969;<sub>0</sub>): the term
                 j(&#969;/&#969;<sub>0</sub>) is negligibly small, so the denominator &#8776; 1 and the
@@ -622,9 +621,9 @@
         </div>
 
         <div class="callout">
-            <strong>Key point:</strong> the denominator (1 + j(&#969;/&#969;<sub>0</sub>)) is a complex number
+            <strong>Frequency dependence:</strong> the denominator (1 + j(&#969;/&#969;<sub>0</sub>)) is a complex number
             that grows with frequency. Since it sits in the denominator, the gain <em>decreases</em>.
-            The complex plane in Part 02 shows exactly how.
+            Part 02 represents this change on the complex plane.
         </div>
     </details>
 
@@ -639,7 +638,7 @@
 
         <p>The denominator <strong>1 + j(&#969;/&#969;<sub>0</sub>)</strong> is a point in the complex plane.
            The real part is fixed at 1. The imaginary part is &#969;/&#969;<sub>0</sub>, which grows with frequency.
-           Use the test frequency slider to watch the phasor grow:</p>
+           The test-frequency slider varies the phasor:</p>
 
         <div class="canvas-container canvas-tall">
             <canvas id="phasor-canvas"></canvas>
@@ -667,7 +666,7 @@
             <div class="readout-item">|H| = <span class="val" id="gain-db-val">37.0 dB</span></div>
         </div>
 
-        <p>Three things to notice as you increase &#969;:</p>
+        <p>Increasing &#969; changes both the magnitude and angle:</p>
         <ul>
             <li><strong>The phasor gets longer.</strong> Its magnitude is &#8730;(1 + (&#969;/&#969;<sub>0</sub>)&#178;).
                 Since this is in the denominator of H, the gain drops.</li>
@@ -700,9 +699,8 @@
             <li><strong>&#969; &#8811; &#969;<sub>0</sub></strong>: the angle approaches &#8722;90&#176;. The capacitor dominates and current leads voltage by 90&#176;.</li>
         </ul>
 
-        <p>The plot below shows what this looks like in the time domain. The yellow
-           wave is the input, the green wave is the output. As you increase the test
-           frequency past &#969;<sub>0</sub>, watch the output shrink and shift to the right:</p>
+        <p>The time-domain plot shows the yellow input and green output. Above
+           &#969;<sub>0</sub>, the output amplitude decreases and its phase lag increases.</p>
 
         <div class="canvas-container canvas-medium">
             <canvas id="phase-canvas"></canvas>
@@ -739,7 +737,7 @@
             <h2>Building the Bode Magnitude Plot</h2>
         </summary>
 
-        <p>We now have the magnitude of the transfer function from Part 02:</p>
+        <p>Part 02 gives the transfer-function magnitude:</p>
 
         <div class="eq-line">
             <span>|H(j&#969;)| =</span>
@@ -749,9 +747,8 @@
             </span>
         </div>
 
-        <p>We could plot this directly (gain vs. frequency), but the numbers span
-           enormous ranges. A gain of 1000 at 1 rad/s and 0.001 at 1 000 000 rad/s
-           on a linear plot would be unreadable. Two standard tricks compress the scale:</p>
+        <p>A linear gain-frequency plot is impractical when both variables span several
+           orders of magnitude. Logarithmic gain and frequency scales compress these ranges:</p>
 
         <ol class="derivation">
             <li>
@@ -889,10 +886,9 @@
         </div>
 
         <div class="callout">
-            <strong>Reading the plot:</strong> Everything to the left of &#969;<sub>0</sub> (the green
-            dashed line) is the useful bandwidth, where the amplifier faithfully reproduces
-            the input. The yellow marker shows your current test frequency. Try sweeping it
-            across and watch the gain drop.
+            <strong>Reading the plot:</strong> The green dashed line marks &#969;<sub>0</sub>.
+            Frequencies below this line lie in the passband. The yellow marker identifies the
+            selected test frequency and its gain.
         </div>
 
         <div class="callout warn">
@@ -912,9 +908,9 @@
             <h2>Gain-Bandwidth Product</h2>
         </summary>
 
-        <p>In Parts 01 to 03 we treated the gain A<sub>v</sub> and the cutoff frequency
-           &#969;<sub>0</sub> as independent parameters. In a real amplifier, they are linked.
-           To see why, we need to understand how amplifiers are used in practice.</p>
+        <p>Parts 01 to 03 treated gain A<sub>v</sub> and cutoff frequency
+           &#969;<sub>0</sub> as independent. In a real amplifier, the gain-bandwidth
+           product links them.</p>
 
         <h3 style="font-size: 16px; color: var(--text); margin: 28px 0 14px;">Open-loop vs closed-loop</h3>
 
@@ -926,8 +922,8 @@
             <canvas id="opamp-open-canvas"></canvas>
         </div>
 
-        <p>To get a precise, predictable gain, we connect a <strong>feedback network</strong>
-           (usually two resistors) from the output back to the inverting input. This is called
+        <p>A <strong>feedback network</strong>, usually two resistors, connects the output
+           to the inverting input. This is
            <strong>negative feedback</strong>. The resistor ratio sets the
            <strong>closed-loop gain</strong> A<sub>CL</sub>:</p>
 
@@ -957,9 +953,9 @@
             GBP = A<sub>CL</sub> &#215; &#969;<sub>0</sub> = constant
         </div>
 
-        <p>When you use feedback to reduce the gain from A<sub>OL</sub> down to A<sub>CL</sub>,
-           the bandwidth extends by the same factor. The product is fixed by the silicon.
-           You can have high gain or wide bandwidth, but not both.</p>
+        <p>Reducing the gain from A<sub>OL</sub> to A<sub>CL</sub> through feedback
+           increases the bandwidth by the same factor. The device therefore exchanges
+           closed-loop gain for bandwidth.</p>
 
         <ul>
             <li><strong>High gain (A<sub>CL</sub> = 1000)</strong>: strong amplification, but
@@ -1003,10 +999,9 @@
         </div>
 
         <div class="callout">
-            <strong>Reading the plot:</strong> all the curves converge to the same point at the
-            bottom right. That convergence point is the GBP (at unity gain). No matter how you
-            configure the feedback, you cannot get gain above the open-loop curve. The
-            gain-bandwidth product is a hard limit set by the amplifier's physics.
+            <strong>Reading the plot:</strong> All curves converge at the unity-gain bandwidth,
+            which equals the GBP. No feedback configuration can produce gain above the open-loop
+            response.
         </div>
 
         <div class="callout warn">

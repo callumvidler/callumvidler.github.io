@@ -367,7 +367,7 @@
                 </div>
 
                 <div class="callout">
-                    Lower the cutoff to suppress ripple but watch the output take longer to settle. The
+                    Lower cutoff frequencies suppress ripple but increase settling time. The
                     dashed line marks the analytic target $\tfrac{2A}{\pi}$, so any offset visible at
                     steady state is residual ripple, not bias.
                 </div>
@@ -471,20 +471,19 @@
                 <p class="lead">A myoelectric prosthetic hand is controlled by surface EMG from the
                     residual limb. The raw signal is bipolar and noisy; the controller cannot use it
                     directly. The MAV envelope is the quantity that correlates with voluntary
-                    contraction force, so the chain from the previous slide is what the device runs in
-                    real time.</p>
+                    contraction force. The controller therefore computes this signal chain in real time.</p>
 
                 <ul class="bullets">
-                    <li><strong>Detection</strong> — a threshold on the MAV separates a voluntary
+                    <li><strong>Detection:</strong> a threshold on the MAV separates a voluntary
                         contraction from baseline activity, so the gripper only engages when the user
                         intends to grip.</li>
-                    <li><strong>Proportional control</strong> — once above threshold, the MAV value
+                    <li><strong>Proportional control:</strong> once above threshold, the MAV value
                         sets motor drive, so a stronger contraction produces a firmer grip.</li>
-                    <li><strong>Smoother choice</strong> — three options for the averaging stage are
+                    <li><strong>Averaging method:</strong> three options for the averaging stage are
                         provided. The first-order LPF is the analog default; the moving-window average
                         is the literal $\tfrac{1}{T}\!\int|x|\,\mathrm{d}t$; a 1-D Kalman filter
-                        adapts its gain as the variance evolves and gives the cleanest envelope.</li>
-                    <li><strong>Latency vs. smoothness</strong> — the smoothing parameter $f_c$ sets
+                        adapts its gain as the estimated variance changes.</li>
+                    <li><strong>Latency and smoothness:</strong> the smoothing parameter $f_c$ sets
                         the bandwidth of all three. Lower $f_c$ rejects more EMG burst noise but
                         lengthens the delay between intent and grip. $f_c = 0$ is the limit of pure
                         averaging.</li>

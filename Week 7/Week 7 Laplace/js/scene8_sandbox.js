@@ -356,7 +356,7 @@
     const unstable = userPoles.some(p => p.re > 1e-4);
     const onAxis   = userPoles.some(p => Math.abs(p.re) < 1e-4 && Math.abs(p.im) > 1e-4);
     if (improper) status = 'improper · need at least as many poles as zeros';
-    else if (unstable) status = 'unstable · pole in RHP — output grows';
+    else if (unstable) status = 'unstable · pole in RHP; output grows';
     else if (onAxis) status = 'marginally stable · poles on jω axis';
     else if (userPoles.length === 0 && inputKind !== 'impulse') status = 'pure feedthrough · y(t) = k·x(t)';
     iosub.textContent = status;

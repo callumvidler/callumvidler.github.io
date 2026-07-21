@@ -1147,7 +1147,7 @@
                 .attr('font-family', "'JetBrains Mono', monospace")
                 .attr('font-size', 12).style('fill', 'var(--muted)')
                 .attr('opacity', 0.7)
-                .text('type into the input box — presses will scroll left as time passes');
+                .text('type into the input box; keypresses scroll left with time');
         }
     }
 

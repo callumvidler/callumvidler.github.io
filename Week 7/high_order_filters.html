@@ -239,10 +239,15 @@
         <h2>The limitations of the first-order response.</h2>
         <p class="lead">The elementary single-pole low-pass filter, realised as a series resistor followed by a shunt capacitor, has the transfer function</p>
         <div class="eq-block">$$H_1(s) = \frac{\omega_c}{s + \omega_c}.$$</div>
-        <p>It possesses a single <em class="imag">pole</em> at $s = -\omega_c$ and no finite zeros. Asymptotically, the magnitude response attenuates at <strong>$20$ dB per decade</strong> above the cutoff — a single order of magnitude reduction for each decade of frequency. This roll-off rate is often inadequate in practice. When an out-of-band interferer such as the $50$ Hz mains fundamental lies within a factor of two of the intended signal band, a first-order response provides negligible rejection.</p>
-        <p>Increasing the slope of the transition band requires additional poles: an $N^{\text{th}}$-order filter attenuates at $N \cdot 20$ dB per decade in the asymptotic stopband. However, the placement of $N$ poles in the left half-plane is not unique, and the resulting degrees of freedom admit a continuum of possible responses. The classical filter families — Butterworth, Chebyshev type I, Chebyshev type II, and elliptic — correspond to the optimal solutions of four distinct approximation problems, each minimising a different measure of deviation from the ideal brick-wall response.</p>
+        <p>It has one <em class="imag">pole</em> at $s = -\omega_c$ and no finite zeros. Above the cutoff,
+        the asymptotic attenuation is <strong>$20$ dB per decade</strong>. This rate provides little
+        rejection when an interferer lies close to the signal band.</p>
+        <p>Additional poles increase the asymptotic attenuation to $N \cdot 20$ dB per decade for
+        an $N^{\text{th}}$-order filter. Different pole and zero placements produce the Butterworth,
+        Chebyshev type I, Chebyshev type II, and elliptic approximations.</p>
         <div class="callout">
-            <strong>Four competing design objectives.</strong> Any higher-order approximation must balance passband flatness, stopband attenuation, transition-band steepness, and phase linearity. Improvement in any one criterion is purchased at the expense of at least one of the others, and the selection of a filter family is therefore equivalent to a declaration of which approximation error is tolerable for the application at hand.
+            <strong>Design criteria.</strong> Filter selection balances passband flatness, stopband
+            attenuation, transition width, and phase linearity. No family optimises all four simultaneously.
         </div>
     </div>
     <div class="canvas-wrap" style="aspect-ratio: 1/0.9; max-width: 620px;">
@@ -277,7 +282,7 @@
                 <div class="plot-box"><div class="label">s-plane · <b>butterworth</b></div><canvas data-plot="splane" data-filter="butter"></canvas></div>
                 <div class="plot-box"><div class="label">bode · <b>butterworth vs 1st-order</b></div><canvas data-plot="bode" data-filter="butter" data-compare="first"></canvas></div>
             </div>
-            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>butterworth</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="butter"></canvas></div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>butterworth</b>, jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="butter"></canvas></div>
         </div>
     </div>
 </section>
@@ -306,7 +311,7 @@
                 <div class="plot-box"><div class="label">s-plane · <b>chebyshev i</b></div><canvas data-plot="splane" data-filter="cheby1"></canvas></div>
                 <div class="plot-box"><div class="label">bode · <b>chebyshev i vs butterworth</b></div><canvas data-plot="bode" data-filter="cheby1" data-compare="butter"></canvas></div>
             </div>
-            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>chebyshev i</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="cheby1"></canvas></div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>chebyshev i</b>, jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="cheby1"></canvas></div>
         </div>
     </div>
 </section>
@@ -316,7 +321,9 @@
     <div class="copy">
         <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>chebyshev type ii</span></div>
         <h2>The introduction of <em class="cheby2">finite zeros</em>.</h2>
-        <p class="lead">The inverse approximation problem exchanges the roles of the two frequency bands: the passband is required to be monotonically smooth, while equi-ripple behaviour is admitted in the stopband. The resulting filter is the Chebyshev type II, also termed the inverse Chebyshev design. It is the first of the families considered here whose transfer function contains <em class="time">finite transmission zeros</em> — located on the imaginary axis — producing deep, localised notches in the stopband.</p>
+        <p class="lead">The Chebyshev type II, or inverse Chebyshev, approximation has a monotonic
+        passband and an equiripple stopband. <em class="time">Finite transmission zeros</em> on the imaginary axis
+        produce local stopband nulls.</p>
         <div class="eq-block">$$|H(j\omega)|^2 = \frac{1}{1 + \left[\varepsilon^2\, T_N^2(\omega_s/\omega)\right]^{-1}}$$</div>
         <p>Whereas the Chebyshev polynomial in the type I response oscillates over the passband, its argument in the type II formulation is inverted so that the oscillation is mapped onto the stopband. At each zero of $T_N(\omega_s/\omega)$ the magnitude vanishes exactly, producing the transmission zeros that are observed as sharp nulls in the magnitude response.</p>
 
@@ -334,7 +341,7 @@
                 <div class="plot-box"><div class="label">s-plane · <b>chebyshev ii</b></div><canvas data-plot="splane" data-filter="cheby2"></canvas></div>
                 <div class="plot-box"><div class="label">bode · <b>chebyshev ii vs butterworth</b></div><canvas data-plot="bode" data-filter="cheby2" data-compare="butter"></canvas></div>
             </div>
-            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>chebyshev ii</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="cheby2"></canvas></div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>chebyshev ii</b>, jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="cheby2"></canvas></div>
         </div>
     </div>
 </section>
@@ -352,11 +359,14 @@
         <ul>
             <li>Four poles on an ellipse in close proximity to the imaginary axis, generating the passband ripple.</li>
             <li>Two conjugate pairs of zeros on the imaginary axis, each within the stopband and responsible for local nulls that bound the stopband ripple.</li>
-            <li>The poles and zeros are related by a reciprocal symmetry across the passband edge, reflecting the self-dual construction of the elliptic approximation.</li>
+            <li>The poles and zeros have reciprocal symmetry across the passband edge, as required by the elliptic approximation.</li>
         </ul>
 
         <div class="callout ellip">
-            <strong>Applicability.</strong> The elliptic family is the standard choice where a near-ideal brick-wall magnitude response is required: anti-aliasing stages ahead of delta-sigma converters, channel-selection filters in narrow-band radio-frequency receivers, and output reconstruction in Class-D audio amplifiers. The principal disadvantage is pronounced phase nonlinearity near the band edges, which can produce substantial group-delay distortion. Applications in which waveform morphology is diagnostic—for instance, clinical electrocardiography and oscilloscope front-ends—generally require a design with a more linear phase response.
+            <strong>Applicability.</strong> Elliptic filters provide the narrowest transition for a
+            specified order, passband ripple, and stopband attenuation. Their phase is strongly nonlinear
+            near the band edges. Clinical electrocardiography and other applications that preserve waveform
+            morphology generally require a more linear phase response.
         </div>
     </div>
     <div class="canvas-wrap" style="max-width: 680px;">
@@ -365,7 +375,7 @@
                 <div class="plot-box"><div class="label">s-plane · <b>elliptic</b></div><canvas data-plot="splane" data-filter="ellip"></canvas></div>
                 <div class="plot-box"><div class="label">bode · <b>elliptic vs butterworth</b></div><canvas data-plot="bode" data-filter="ellip" data-compare="butter"></canvas></div>
             </div>
-            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>elliptic</b> — jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="ellip"></canvas></div>
+            <div class="plot-box wide"><div class="label">|H(s)| surface · <b>elliptic</b>, jω trace highlighted <span style="color:var(--text-dim); margin-left:6px;">(drag to rotate · dbl-click resets)</span></div><canvas data-plot="splane3d" data-filter="ellip"></canvas></div>
         </div>
     </div>
 </section>
@@ -433,7 +443,12 @@
         </div>
 
         <div class="callout" style="margin-top:22px;">
-            <strong>Interpretation of the traces.</strong> The faint blue envelope in each panel denotes the target low-frequency component. The elliptic and Chebyshev type II outputs exhibit the closest agreement with this reference, reflecting their superior stopband attenuation at the interferer frequency. The Chebyshev type I response attenuates the interferer comparably but introduces visible amplitude variation within the passband. The Butterworth output is free of passband distortion but retains a greater fraction of the interferer. The first-order response provides negligible rejection. The Bode magnitude overlay at the bottom of the figure relates these time-domain observations to the underlying frequency-domain characteristics.
+            <strong>Interpretation of the traces.</strong> The faint blue envelope is the target
+            low-frequency component. The elliptic and Chebyshev type II outputs are closest to this
+            reference because they provide the greatest attenuation at the interferer frequency. The
+            Chebyshev type I response attenuates the interferer but adds passband amplitude variation.
+            The Butterworth response preserves passband amplitude but retains more interference. The
+            first-order response provides little rejection.
         </div>
     </div>
 </section>

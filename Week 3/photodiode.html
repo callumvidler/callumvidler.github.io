@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BMEN90033 2026: Photodiode Physics — Interactive Explainer</title>
+  <title>BMEN90033 2026: Interactive Photodiode Physics</title>
   <style>
     :root {
       --bg: #0a0e14;
@@ -317,7 +317,8 @@
   <div class="explainer">
     <div class="title-block">
       <h1>How a Photodiode Detects Light</h1>
-      <p>Step through the physics of a photodiode &mdash; from the unbiased p-n junction to photocurrent generation. Adjust reverse bias voltage and light intensity to see how incident photons create measurable current.</p>
+      <p>This model relates reverse bias, photon absorption, and semiconductor bandgap
+        to photocurrent generation in a photodiode.</p>
     </div>
 
     <div class="step-nav">
@@ -348,7 +349,7 @@
     </div>
 
     <div id="desc" class="step-description">
-      <h2>Step 1 &mdash; The Unbiased Junction</h2>
+      <h2>Step 1: The unbiased junction</h2>
       <p>Loading&hellip;</p>
     </div>
 
@@ -421,20 +422,20 @@
     // ─── Step descriptions ───
     const STEPS = [
       {
-        title: 'Step 1 — The Unbiased Junction',
-        html: `A photodiode is a p-n junction diode optimised for light detection. The P-type region (left) contains mobile <span style="color:#ff6b6b">holes</span> and fixed negative acceptor ions. The N-type region (right) contains mobile <span style="color:#4ecdc4">electrons</span> and fixed positive donor ions.<br><br>At the junction, carrier diffusion and recombination create the <strong>depletion region</strong> — a zone with a strong built-in electric field (N→P). This field is the key to photodetection: any carriers generated here will be swept to opposite sides.`
+        title: 'Step 1: The unbiased junction',
+        html: `A photodiode is a p-n junction diode optimised for light detection. The P-type region (left) contains mobile <span style="color:#ff6b6b">holes</span> and fixed negative acceptor ions. The N-type region (right) contains mobile <span style="color:#4ecdc4">electrons</span> and fixed positive donor ions.<br><br>At the junction, carrier diffusion and recombination create a <strong>depletion region</strong> with a strong built-in electric field (N→P). This field drives photogenerated electrons and holes toward opposite sides.`
       },
       {
-        title: 'Step 2 — Reverse Bias Applied',
-        html: `Unlike an LED (forward biased), a photodiode operates under <strong>reverse bias</strong> — the external voltage reinforces the built-in field and <em>widens</em> the depletion region.<br><br>A wider depletion region means a larger volume where photon-generated carriers can be efficiently collected. It also reduces junction capacitance, improving high-speed response. Use the slider to increase reverse bias and watch the depletion zone expand.<br><br><span class="key-equation">W<sub>dep</sub> ∝ √(V<sub>bi</sub> + V<sub>R</sub>)</span>`
+        title: 'Step 2: Reverse bias applied',
+        html: `A photodiode normally operates under <strong>reverse bias</strong>. The external voltage reinforces the built-in field and <em>widens</em> the depletion region.<br><br>A wider depletion region increases the volume in which photogenerated carriers can be collected and reduces junction capacitance. The reverse-bias slider controls this width.<br><br><span class="key-equation">W<sub>dep</sub> ∝ √(V<sub>bi</sub> + V<sub>R</sub>)</span>`
       },
       {
-        title: 'Step 3 — Photon Absorption & Carrier Generation',
-        html: `When a photon with energy <strong>E ≥ E<sub>g</sub></strong> enters the depletion region, it is absorbed by the semiconductor lattice. The photon's energy promotes a valence-band electron into the conduction band, creating an <strong>electron-hole pair</strong>.<br><br>The built-in electric field (enhanced by reverse bias) immediately sweeps the <span style="color:#4ecdc4">electron</span> toward the N-side and the <span style="color:#ff6b6b">hole</span> toward the P-side. This separation of charge carriers produces a measurable <strong>photocurrent</strong> — proportional to incident light intensity.<br><br><span class="key-equation">I<sub>ph</sub> = q · η · Φ</span>`
+        title: 'Step 3: Photon absorption and carrier generation',
+        html: `When a photon with energy <strong>E ≥ E<sub>g</sub></strong> enters the depletion region, the semiconductor can absorb it. The photon promotes a valence-band electron into the conduction band and creates an <strong>electron-hole pair</strong>.<br><br>The electric field drives the <span style="color:#4ecdc4">electron</span> toward the N-side and the <span style="color:#ff6b6b">hole</span> toward the P-side. The resulting <strong>photocurrent</strong> is proportional to incident photon flux.<br><br><span class="key-equation">I<sub>ph</sub> = q · η · Φ</span>`
       },
       {
-        title: 'Step 4 — Spectral Response & Material Choice',
-        html: `A photodiode can only detect photons with energy above the material's <strong>bandgap</strong>. This sets a <strong>cutoff wavelength</strong> — longer wavelengths (lower energy) pass through undetected:<br><br>• <strong>GaP</strong> → UV/blue only (λ<sub>c</sub> ≈ 550 nm, E<sub>g</sub> = 2.26 eV)<br>• <strong>Silicon</strong> → visible + near-IR (λ<sub>c</sub> ≈ 1100 nm, E<sub>g</sub> = 1.12 eV)<br>• <strong>InGaAs</strong> → near-IR telecom (λ<sub>c</sub> ≈ 1700 nm, E<sub>g</sub> = 0.75 eV)<br><br>The responsivity R (A/W) peaks near but below the cutoff wavelength. Switch materials below to see how the spectral window and detection efficiency change.<br><br><span class="key-equation">λ<sub>cutoff</sub> = hc / E<sub>g</sub> ≈ 1240 / E<sub>g</sub>(eV) nm</span>`
+        title: 'Step 4: Spectral response and material',
+        html: `A photodiode detects photons with energy above the material's <strong>bandgap</strong>. This condition sets a <strong>cutoff wavelength</strong>; longer wavelengths pass through without generating carriers:<br><br>• <strong>GaP</strong>: UV/blue only (λ<sub>c</sub> ≈ 550 nm, E<sub>g</sub> = 2.26 eV)<br>• <strong>Silicon</strong>: visible and near-IR (λ<sub>c</sub> ≈ 1100 nm, E<sub>g</sub> = 1.12 eV)<br>• <strong>InGaAs</strong>: near-IR telecommunications band (λ<sub>c</sub> ≈ 1700 nm, E<sub>g</sub> = 0.75 eV)<br><br>The material selector changes the spectral window and responsivity R (A/W).<br><br><span class="key-equation">λ<sub>cutoff</sub> = hc / E<sub>g</sub> ≈ 1240 / E<sub>g</sub>(eV) nm</span>`
       }
     ];
 
@@ -1115,7 +1116,7 @@
         const mat = MATERIALS[currentMaterial];
         ctx.fillStyle = T.overlay25;
         const statusText = reverseVoltage > 0
-          ? `Reverse bias: ${reverseVoltage.toFixed(1)} V — depletion widened`
+          ? `Reverse bias: ${reverseVoltage.toFixed(1)} V, depletion widened`
           : `No bias applied`;
         ctx.fillText(statusText, 16, H - 10);
       }

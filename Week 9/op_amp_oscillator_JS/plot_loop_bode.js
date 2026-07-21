@@ -272,7 +272,7 @@
             var loop = state.A * BETA0;
             var regime = Math.abs(loop - 1) < 0.005
                 ? 'threshold'
-                : (loop < 1 ? 'below — decays' : 'above — clips');
+                : (loop < 1 ? 'below: decays' : 'above: clips');
             lab.textContent = state.A.toFixed(2)
                             + ' · Aβ(jω₀) = ' + loop.toFixed(3)
                             + ' · ' + regime;

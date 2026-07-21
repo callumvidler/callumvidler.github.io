@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 12 — Virtual Short</title>
+  <title>Slide 12: Virtual Short</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
@@ -138,7 +138,7 @@
     const eq1 = new MathTex({ latex: 'V_{out} = A_{OL}(V_{+} - V_{-})', color: FG });
     const eq2 = new MathTex({ latex: 'V_{+} - V_{-} = \\dfrac{V_{out}}{A_{OL}}', color: FG });
     const eq3 = new MathTex({ latex: 'A_{OL}\\to\\infty \\;\\Rightarrow\\; V_{+}\\approx V_{-}', color: ACCENT });
-    const eq4 = new Text({ text: 'Input impedance is very large — negligible input current', fontSize: 10, color: MUTED, fontUrl: FONT_URL });
+    const eq4 = new Text({ text: 'High input impedance produces negligible input current', fontSize: 10, color: MUTED, fontUrl: FONT_URL });
     await Promise.all([eq1.waitForRender?.(), eq2.waitForRender?.(), eq3.waitForRender?.(), eq4.loadGlyphs?.()]);
     eq1.scale(0.55).moveTo([0, -2.2, 0]);
     eq2.scale(0.55).moveTo([0, -2.75, 0]);

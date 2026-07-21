@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>BMEN90033 2026: P-N Junction — 3D Visualisation</title>
+  <title>BMEN90033 2026: 3D P-N Junction</title>
   <style>
     :root { --text: #ffffff; --accent: var(--site-accent); }
     [data-theme="light"] { --text: #1a1a1e; }
@@ -116,7 +116,7 @@
   </a>
   <div id="container">
     <div id="info" class="panel" style="top:52px">
-      <h2>P-N Junction — 3D Visualisation</h2>
+      <h2>3D P-N Junction</h2>
       <div class="legend"><div class="dot" style="background:#44aa66"></div> Silicon atom</div>
       <div class="legend"><div class="dot" style="background:#ee5555"></div> Donor ion (P⁺)</div>
       <div class="legend"><div class="dot" style="background:#5588dd"></div> Acceptor ion (B⁻)</div>
@@ -131,7 +131,7 @@
     </div>
 
     <div id="diagram-panel" class="panel">
-      <h3 id="diagramTitle">Energy Band Diagram — Equilibrium</h3>
+      <h3 id="diagramTitle">Energy Band Diagram: Equilibrium</h3>
       <canvas id="bandCanvas" width="600" height="300"></canvas>
     </div>
 
@@ -321,7 +321,7 @@
         if (progress > 0.85) phaseText = 'Equilibrium forming';
         stateReadout.textContent = phaseText + ' ' + pct + '%';
         stateReadout.style.color = T.yellow2;
-        diagramTitle.textContent = 'Energy Band Diagram \u2014 Junction Forming';
+        diagramTitle.textContent = 'Energy Band Diagram: Junction Forming';
         return;
       }
       const V = biasVoltage;
@@ -342,22 +342,22 @@
       else if (state === 'Reverse Bias') stateReadout.style.color = '#ffb74d';
       else stateReadout.style.color = '#66bb6a';
 
-      diagramTitle.textContent = 'Energy Band Diagram \u2014 ' + state;
+      diagramTitle.textContent = 'Energy Band Diagram: ' + state;
       updateDescription();
     }
 
     function updateDescription() {
       const state = junctionState(biasVoltage);
       if (state === 'Equilibrium') {
-        descText.textContent = 'At equilibrium, carrier diffusion across the junction is balanced by the built-in electric field. The depletion region contains no mobile carriers \u2014 only fixed donor and acceptor ions.';
+        descText.textContent = 'At equilibrium, carrier diffusion across the junction is balanced by the built-in electric field. The depletion region contains fixed donor and acceptor ions but few mobile carriers.';
       } else if (state === 'Forward Bias (sub-threshold)') {
         descText.textContent = 'The applied forward bias is reducing the built-in potential barrier and narrowing the depletion region, but the voltage has not yet reached the turn-on threshold (~' + V_TURN_ON.toFixed(1) + ' V for Si). Negligible current flows.';
       } else if (state === 'Forward Bias') {
         descText.textContent = 'Forward bias has overcome the built-in potential barrier. Electrons from the N-side conduction band cross into the P-side where they recombine with holes. Current flows through the junction.';
       } else if (state === 'Reverse Bias') {
-        descText.textContent = 'Reverse bias: the positive terminal pulls free electrons out of the N-side through the right wire, while the negative terminal pushes electrons into the P-side through the left wire. These electrons hop through holes in the P-side, filling them. Once all holes are filled, electrons pile up at the P-side face — the negative charge buildup opposes further flow and current stops.';
+        descText.textContent = 'Reverse bias: the positive terminal removes free electrons from the N-side, while the negative terminal supplies electrons to the P-side. The resulting space charge widens the depletion region and limits reverse current.';
       } else {
-        descText.textContent = 'Avalanche breakdown! Spontaneous ionisation occurs everywhere — the intense field rips electrons from lattice atoms, leaving holes behind. Electrons from the negative wire terminal hop to fill these holes, but each ionisation event creates new holes elsewhere. Freed electrons are swept out through the N-side wire. The chain reaction sustains massive reverse current.';
+        descText.textContent = 'Avalanche breakdown: the strong electric field accelerates carriers until impact ionisation creates additional electron-hole pairs. Carrier multiplication then produces a large reverse current.';
       }
     }
 
@@ -1168,9 +1168,9 @@
       if (progress < 0.15) {
         descText.textContent = 'The P-type and N-type materials have just been joined. Free electrons on the N-side (right) see an abundance of holes on the P-side (left) and begin diffusing across the junction...';
       } else if (progress < 0.5) {
-        descText.textContent = 'Electrons are diffusing into the P-side and recombining with holes (filling vacancies). Each recombination exposes a fixed ion — positive donor ions on the N-side, negative acceptor ions on the P-side.';
+        descText.textContent = 'Electrons diffuse into the P-side and recombine with holes. This process leaves positive donor ions on the N-side and negative acceptor ions on the P-side.';
       } else if (progress < 0.85) {
-        descText.textContent = 'The exposed fixed ions create a growing electric field (E) pointing from N → P. This field opposes further electron diffusion. The depletion region — emptied of mobile carriers — is widening.';
+        descText.textContent = 'The exposed fixed ions create an electric field (E) from N to P. This field opposes further diffusion as the depletion region widens.';
       } else {
         descText.textContent = 'The built-in electric field now balances the diffusion tendency. No more net carrier movement occurs. The depletion region has reached its equilibrium width.';
       }
@@ -1219,7 +1219,7 @@
         formationPhase = false;
         biasSlider.disabled = false;
         biasSlider.style.opacity = '1';
-        descText.textContent = 'At equilibrium, carrier diffusion across the junction is balanced by the built-in electric field. The depletion region contains no mobile carriers — only fixed donor and acceptor ions.';
+        descText.textContent = 'At equilibrium, carrier diffusion across the junction is balanced by the built-in electric field. The depletion region contains fixed donor and acceptor ions but few mobile carriers.';
       }
     }
 

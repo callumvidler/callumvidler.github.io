@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BMEN90033 2026: LED Physics — Interactive Explainer</title>
+  <title>BMEN90033 2026: Interactive LED Physics</title>
   <style>
     :root {
       --bg: #0a0e14;
@@ -317,7 +317,8 @@
   <div class="explainer">
     <div class="title-block">
       <h1>How an LED Emits Light</h1>
-      <p>Step through the physics of a light-emitting diode — from the unbiased p-n junction to photon emission. Adjust voltage and material to see how the semiconductor bandgap determines emission colour.</p>
+      <p>This model relates forward bias, carrier recombination, and semiconductor bandgap
+        to the emission colour of a light-emitting diode.</p>
     </div>
 
     <div class="step-nav">
@@ -348,7 +349,7 @@
     </div>
 
     <div id="desc" class="step-description">
-      <h2>Step 1 — The Unbiased Junction</h2>
+      <h2>Step 1: The unbiased junction</h2>
       <p>Loading…</p>
     </div>
 
@@ -414,20 +415,20 @@
     // ─── Step descriptions ───
     const STEPS = [
       {
-        title: 'Step 1 — The Unbiased Junction',
-        html: `The P-type region (left) contains mobile <span style="color:#ff6b6b">holes</span> and fixed negative acceptor ions. The N-type region (right) contains mobile <span style="color:#4ecdc4">electrons</span> and fixed positive donor ions.<br><br>At the junction, holes and electrons have diffused across and recombined, creating the <strong>depletion region</strong> — a zone stripped of free carriers. The remaining fixed ions generate a built-in electric field (N→P) that opposes further diffusion, establishing equilibrium.`
+        title: 'Step 1: The unbiased junction',
+        html: `The P-type region (left) contains mobile <span style="color:#ff6b6b">holes</span> and fixed negative acceptor ions. The N-type region (right) contains mobile <span style="color:#4ecdc4">electrons</span> and fixed positive donor ions.<br><br>At the junction, holes and electrons diffuse across and recombine, creating a <strong>depletion region</strong> with few mobile carriers. The remaining fixed ions generate a built-in electric field (N→P) that opposes further diffusion and establishes equilibrium.`
       },
       {
-        title: 'Step 2 — Forward Bias Applied',
-        html: `An external voltage pushes electrons from the N-side toward the junction and holes from the P-side toward the junction. The depletion region <strong>narrows</strong> as applied voltage increases.<br><br>Once the voltage exceeds the built-in potential (the threshold depends on the material), the barrier collapses and carriers flood across the junction. Use the slider to increase voltage and watch the depletion zone shrink.`
+        title: 'Step 2: Forward bias applied',
+        html: `An external voltage drives electrons from the N-side toward the junction and holes from the P-side toward the junction. The depletion region <strong>narrows</strong> as the applied voltage increases.<br><br>Once the voltage is sufficient, carrier injection across the junction rises rapidly. The voltage slider controls the depletion-region width.`
       },
       {
-        title: 'Step 3 — Recombination & Photon Emission',
-        html: `Electrons crossing into the P-side encounter majority <span style="color:#ff6b6b">holes</span>. When an electron drops from the conduction band into a hole in the valence band, it <strong>recombines</strong> and releases energy.<br><br>In a <em>direct bandgap</em> semiconductor (GaAs, GaN, InGaN), that energy is emitted as a <span style="color:#ffd93d">photon</span> rather than dissipated as heat. The photon wavelength — and therefore colour — is set by the bandgap energy.<br><br><span class="key-equation">E = hc / λ</span>`
+        title: 'Step 3: Recombination and photon emission',
+        html: `Electrons crossing into the P-side encounter majority <span style="color:#ff6b6b">holes</span>. When an electron drops from the conduction band into a hole in the valence band, it <strong>recombines</strong> and releases energy.<br><br>In a <em>direct bandgap</em> semiconductor (GaAs, GaN, InGaN), this energy is emitted as a <span style="color:#ffd93d">photon</span> rather than dissipated as heat. The bandgap energy sets the photon wavelength and colour.<br><br><span class="key-equation">E = hc / λ</span>`
       },
       {
-        title: 'Step 4 — What Determines the Colour',
-        html: `The semiconductor material's <strong>bandgap</strong> dictates the emission wavelength. Different alloys produce different colours:<br><br>• <strong>InGaN</strong> → blue/green (λ ≈ 450–530 nm, E<sub>g</sub> ≈ 2.4–2.8 eV)<br>• <strong>AlGaInP</strong> → red/amber (λ ≈ 590–650 nm, E<sub>g</sub> ≈ 1.8–2.1 eV)<br>• <strong>GaAs</strong> → infrared (λ ≈ 870 nm, E<sub>g</sub> ≈ 1.4 eV)<br><br>By tuning the alloy composition, you can continuously shift the bandgap — and therefore the colour. Switch materials below to see the emission change.`
+        title: 'Step 4: Emission colour',
+        html: `The semiconductor material's <strong>bandgap</strong> determines the emission wavelength. Different alloys produce different colours:<br><br>• <strong>InGaN</strong>: blue/green (λ ≈ 450–530 nm, E<sub>g</sub> ≈ 2.4–2.8 eV)<br>• <strong>AlGaInP</strong>: red/amber (λ ≈ 590–650 nm, E<sub>g</sub> ≈ 1.8–2.1 eV)<br>• <strong>GaAs</strong>: infrared (λ ≈ 870 nm, E<sub>g</sub> ≈ 1.4 eV)<br><br>Changing the alloy composition shifts the bandgap and therefore the emission colour.`
       }
     ];
 
@@ -1171,7 +1172,7 @@
         const exceeded = getThresholdExceeded();
         ctx.fillStyle = exceeded ? 'rgba(0, 255, 136, 0.5)' : T.overlay25;
         const statusText = exceeded ?
-          'Threshold exceeded — current flowing' :
+          'Threshold exceeded: current flowing' :
           `Threshold: ${mat.threshold.toFixed(1)} V`;
         ctx.fillText(statusText, 16, H - 10);
       }

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 20 — Isolation Amplifier</title>
+  <title>Slide 20: Isolation Amplifier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
@@ -159,7 +159,7 @@
           <span class="k">X<sub>C</sub> (barrier)</span><span class="v" id="xcVal">636.6 MΩ</span>
           <span class="k">I<sub>leakage</sub></span><span class="v" id="ileakVal">0.38 µA</span>
           <span class="k">Threshold</span><span class="v">10 µA (IEC 60601)</span>
-          <div class="safety-status" id="safetyStatus">SAFE — Leakage current within IEC 60601 limits</div>
+          <div class="safety-status" id="safetyStatus">SAFE: Leakage current within IEC 60601 limits</div>
         </div>
       </div>
     </div>
@@ -685,10 +685,10 @@
       ileakValEl.textContent = formatCurrent(Ileak);
 
       if (ileakUA > THRESHOLD_UA) {
-        safetyStatusEl.textContent = 'DANGER — Leakage current exceeds patient safety threshold!';
+        safetyStatusEl.textContent = 'DANGER: Leakage current exceeds patient safety threshold';
         safetyStatusEl.classList.add('danger');
       } else {
-        safetyStatusEl.textContent = 'SAFE — Leakage current within IEC 60601 limits';
+        safetyStatusEl.textContent = 'SAFE: Leakage current within IEC 60601 limits';
         safetyStatusEl.classList.remove('danger');
       }
     }

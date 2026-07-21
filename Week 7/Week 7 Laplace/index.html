@@ -1100,11 +1100,8 @@
   <section class="landing" id="s0" data-label="00 Landing">
     <div>
       <div class="meta">WEEK 7: BIOINSTRUMENTATION</div>
-      <h1 class="hero">From Fourier to Laplace, understanding <em> Transfer Functions</em>.</h1>
-      <p class="sub">A breif introduction to transfer functions. Here we'll start off by looking at the fourier &
-        laplace transform,
-        and how they can be used to understand dynamical systems.
-      </p>
+      <h1 class="hero">From Fourier and Laplace transforms to <em>transfer functions</em>.</h1>
+      <p class="sub">An introduction to the transform methods used to represent linear dynamical systems.</p>
       <div style="margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
         <span class="field-tag">signals &amp; systems</span>
         <span class="field-tag">complex analysis</span>
@@ -1117,13 +1114,11 @@
   <!-- =========================== SECTION 1 — HOOK =========================== -->
   <section class="scene wide" id="s1" data-label="01 Hook">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>Practical Example</span></div>
-      <h2>Car Suspension</h2>
-      <p class="lead">Imagine a car driving over a bump, the chassis lifts, and then it
-        oscillates until it settles. A good
-        suspension settles very quickly, a bad one keeps oscillating for a while, and a really bad one never settles
-        at all.</p>
-      <p>Watch the chassis's vertical position $y(t)$ after the bump. Flip between the three designs.</p>
+      <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>practical example</span></div>
+      <h2>Car suspension</h2>
+      <p class="lead">After a car crosses a bump, its chassis oscillates before returning to equilibrium.
+        The settling rate depends on the suspension damping and stability.</p>
+      <p>The three designs compare critically damped, underdamped, and unstable chassis displacement $y(t)$.</p>
 
       <div class="controls">
         <div class="seg iconic" id="carSeg">
@@ -1154,11 +1149,10 @@
       </div>
 
       <div class="question-card">
-        <p>Many of you are familiar with the fourier transform, but can it tell us which design is stable? Can it even
-          describe the moment of impact?</p>
-        <p class="dim" style="margin-top:8px;font-size:14px;">The Fourier transform is great for describing steady
-          oscillations, but cannot describe transient events. For example, it cannot describe the blow-up of an unstable
-          system, what happens at the moment of impact or how the system responds after this event.</p>
+        <p>A conventional Fourier transform represents the frequency content of integrable signals, including
+          decaying transients. It does not converge for a response that grows without bound.</p>
+        <p class="dim" style="margin-top:8px;font-size:14px;">The Laplace transform adds an exponential weighting
+          and exposes the pole locations that determine whether each mode decays or grows.</p>
       </div>
     </div>
 
@@ -1178,15 +1172,14 @@
     <div class="copy">
       <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>The complex exponential</span>
       </div>
-      <h2>How do we encode rotation and magnitude?</h2>
-      <p class="lead">Before any transform, just sit with this: $e^{j\omega t}$ is a single point racing around a
-        circle. Its <em class="real">real shadow</em> traces out cosine, its <em class="imag">imaginary shadow</em>
-        traces out sine.</p>
-      <p>How fast it spins is the frequency, the radius is the amplitude, and where it starts on the circle is the
-        phase. Pretty much everything that follows in this lecture is just variations on this one object.</p>
-      <p class="dim" style="font-size: 14px;">Worth knowing: complex exponentials are the <em
-          class="acc">eigenfunctions</em> of linear time invariant systems. Push one through a filter and the same
-        exponential comes out the other side, just rescaled. That is the whole reason these transforms work.</p>
+      <h2>Rotation and magnitude in the complex plane</h2>
+      <p class="lead">The complex exponential $e^{j\omega t}$ traces the unit circle. Its
+        <em class="real">real component</em> is $\cos(\omega t)$ and its
+        <em class="imag">imaginary component</em> is $\sin(\omega t)$.</p>
+      <p>Angular velocity gives the frequency, radius gives the amplitude, and initial angle gives the phase.</p>
+      <p class="dim" style="font-size: 14px;">Complex exponentials are <em
+          class="acc">eigenfunctions</em> of linear time-invariant systems. A sinusoidal input produces
+        a sinusoid at the same frequency, scaled in magnitude and shifted in phase.</p>
 
       <div class="controls">
         <div class="ctrl"><label>frequency $\omega$</label><input type="range" id="phasorW" min="0.3" max="3"
@@ -1210,12 +1203,11 @@
   <!-- =========================== SECTION 2B — S-PLANE GRID =========================== -->
   <section class="scene wide" id="s2b" data-label="03 s-plane grid">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>the s-plane, visualised</span>
+      <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>the s-plane</span>
       </div>
       <h2>Every point in the plane is a different exponential.</h2>
-      <p class="lead">Section 02 kept us on the unit circle, where $e^{j\omega t}$ spins forever at a constant radius.
-        Step off that circle to a general $s = \sigma + j\omega$, and $e^{st}$ gains a growth rate as well as a
-        frequency.</p>
+      <p class="lead">For a general complex frequency $s = \sigma + j\omega$, the exponential
+        $e^{st}$ has both a growth or decay rate and an oscillation frequency.</p>
       <p>Each tile on the left plots the real part $\mathrm{Re}\{e^{st}\} = e^{\sigma t}\cos(\omega t)$ for the $s$ at
         the centre of that tile. <em class="acc">Click any tile</em> to see the full complex trajectory of $e^{st}$ on
         the right.</p>
@@ -1227,9 +1219,8 @@
         </li>
         <li><em class="real">Real axis</em> ($\omega = 0$) is a pure exponential $e^{\sigma t}$: no rotation at all.</li>
       </ul>
-      <p class="dim" style="font-size: 14px;">This is the intuition behind pole locations later on: every pole of a
-        transfer function picks out a single tile of this grid, and the mode it contributes to the response looks
-        exactly like the curve in that tile.</p>
+      <p class="dim" style="font-size: 14px;">Each pole of a transfer function contributes a mode
+        $e^{st}$ with the decay rate and oscillation frequency shown at its location in this grid.</p>
     </div>
     <div class="canvas-wrap" style="aspect-ratio: auto;">
       <div class="eq-bar"
@@ -1259,19 +1250,18 @@
   <!-- =========================== SECTION 2.5 — WRAP INTRO =========================== -->
   <section class="scene wide" id="s25" data-label="04 Wrap intro">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>Understanding the Fourier
-          Transform</span></div>
-      <h2>How to think about the Fourier Transform</h2>
-      <p class="lead">Before understanding the intergral, lets first look at the two functions inside of it.</p>
-      <p><em class="acc">1.</em> As we showed above, the complex exponential $e^{-j2\pi f t}$ is just a point walking
-        around the <em class="acc">unit circle</em>. Whose radius is 1 and whose angle is given by $-2\pi f t$. </p>
-      <p><em class="acc">2.</em> If we multiply that circle by a real number $g$, you will get a circle whos radius is
-        scaled by $g$. However, if $g$ varies as a function of time, e.g. $g(t)$, you now have a circle whose radius
-        changes with time. The radius of the circle <em class="acc">scales in
-          and out</em> as a function of time.</p>
-      <p><em class="acc">3.</em> Let time actually advance. The point traces a spiral around the origin, its radius
-        driven by $g(t)$ and its angle driven by the exponential. That spiral is the signal, <em class="acc">wrapped
-          around the complex plane</em>.</p>
+      <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>Fourier transform
+          geometry</span></div>
+      <h2>The Fourier integrand in the complex plane</h2>
+      <p class="lead">The Fourier integrand combines the signal $g(t)$ with the complex exponential
+        $e^{-j2\pi f t}$.</p>
+      <p><em class="acc">1.</em> The exponential $e^{-j2\pi f t}$ traces the
+        <em class="acc">unit circle</em> with angle
+        $-2\pi f t$.</p>
+      <p><em class="acc">2.</em> Multiplication by $g(t)$ <em class="acc">scales the radius</em>
+        at each time.</p>
+      <p><em class="acc">3.</em> As time advances, the scaled point traces $g(t)e^{-j2\pi f t}$
+        <em class="acc">in the complex plane</em>.</p>
 
       <div class="controls">
         <div class="ctrl"><label>winding $f$</label><input type="range" id="wrapF" min="0.2" max="2.5" step="0.005"
@@ -1311,8 +1301,8 @@
   <!-- =========================== SECTION 3 — WINDING MACHINE =========================== -->
   <section class="scene wide" id="s3" data-label="05 Fourier winding">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the winding machine</span></div>
-      <h2>Fourier is a winding machine.</h2>
+      <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>geometric interpretation</span></div>
+      <h2>The Fourier transform measures complex accumulation.</h2>
       <p class="lead">Multiplying a signal $g(t)$ by $e^{-2\pi j f t}$ winds it around the origin of the complex plane
         at frequency $f$.</p>
       <p>Consider the centroid of the resulting curve. For most values of $f$, the curve loops around the origin with
@@ -1356,15 +1346,14 @@
   <!-- =========================== SECTION 4 — FOURIER BREAKS =========================== -->
   <section class="scene wide" id="s4" data-label="06 Fourier breaks">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>the wall</span></div>
-      <h2>The Fourier transform fails on unbounded signals.</h2>
+      <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>convergence</span></div>
+      <h2>The Fourier integral does not converge for growing signals.</h2>
       <p class="lead">Now consider the signal $e^{0.3 t}\cos(\omega_0 t)$. The wound curve spirals outward without
         bound, its centroid fails to converge, and the defining integral diverges.</p>
-      <p>The Fourier transform is defined only for signals that remain integrable over all time, i.e. those in $L^1$ or
-        $L^2(\mathbb{R})$. Transients, the responses of unstable systems, and causal signals switched on at a finite
-        time generally fall outside this class.</p>
-      <p>This motivates a natural modification: attenuate the signal prior to winding, so as to restore
-        integrability.</p>
+      <p>The ordinary Fourier integral is defined for absolutely integrable signals. Extensions also cover
+        square-integrable signals and distributions, but a growing unstable response still lacks an ordinary
+        Fourier transform.</p>
+      <p>Multiplying the signal by a real exponential can restore convergence.</p>
 
       <div class="controls">
         <div class="ctrl"><label>growth rate $a$</label><input type="range" id="growA" min="-0.2" max="0.6" step="0.005"
@@ -1392,11 +1381,11 @@
   <!-- =========================== SECTION 5 — LAPLACE =========================== -->
   <section class="scene wide" id="s5" data-label="07 Laplace">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>the fix</span></div>
+      <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>Laplace transform</span></div>
       <h2>The Laplace transform generalises Fourier via a complex frequency.</h2>
       <p class="lead">Replace the Fourier kernel $e^{-j\omega t}$ with $e^{-st}$, where $s = \sigma + j\omega \in
         \mathbb{C}$. The kernel factorises as $e^{-st} = e^{-\sigma t}\,e^{-j\omega t}$.</p>
-      <p>The second factor is the familiar Fourier winder; the first is a real exponential weighting that attenuates
+      <p>The second factor is the Fourier kernel; the first is a real exponential weighting that attenuates
         the signal for $\sigma > 0$ and amplifies it for $\sigma < 0$. Setting $\sigma = 0$ recovers the Fourier
         transform exactly.</p>
       <p>Applied to the divergent signal of the previous section, the transform converges whenever $\sigma$ exceeds the
@@ -1419,7 +1408,7 @@
       <div
         style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:12px;width:100%;height:100%;">
         <div class="plot" style="position:relative;"><canvas id="l_sig"></canvas>
-          <div class="title">$g(t)$ · tamed by $e^{-\sigma t}$</div>
+          <div class="title">$g(t)$ · weighted by $e^{-\sigma t}$</div>
         </div>
         <div class="plot" style="position:relative;"><canvas id="l_wound"></canvas>
           <div class="title">wound shape</div>
@@ -1498,7 +1487,7 @@
   <!-- =========================== SECTION 6 — LAPLACE SURFACE =========================== -->
   <section class="scene wide" id="s6" data-label="09 Link">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">09</span><span>connecting the two</span></div>
+      <div class="eyebrow"><span class="bar"></span><span class="num">09</span><span>Fourier and Laplace</span></div>
       <h2>The Fourier transform is a restriction of the Laplace transform.</h2>
       <p class="lead">Varying both $\sigma$ and $\omega$ simultaneously, the magnitude $|F(s)|$ defines a surface over
         the complex plane. Poles appear as singularities at which the surface diverges; zeros appear as points at
@@ -1600,12 +1589,12 @@
   <!-- =========================== SECTION 8 — SANDBOX =========================== -->
   <section class="scene wide" id="s8" data-label="11 Sandbox">
     <div class="copy">
-      <div class="eyebrow"><span class="bar"></span><span class="num">11</span><span>your turn</span></div>
-      <h2>Pick an input, build a system, see what falls out.</h2>
-      <p class="lead">Start by choosing an input $x(t)$ on the left. The poles and zeros that come along for the ride
-        (the ones forced on you by the input itself) show up on the s-plane in <em class="acc">yellow</em>.</p>
-      <p>Then go build your own $H(s)$. Click the s-plane to drop poles (<em class="imag">×</em>) and zeros (<em
-          class="time">○</em>), drag to move them around, shift-click to delete. The output $y(t)$ is the inverse
+      <div class="eyebrow"><span class="bar"></span><span class="num">11</span><span>interactive system</span></div>
+      <h2>Constructing a transfer function</h2>
+      <p class="lead">The selected input $x(t)$ contributes the poles and zeros shown in
+        <em class="acc">yellow</em> on the s-plane.</p>
+      <p>Click the s-plane to add poles (<em class="imag">×</em>) and zeros (<em
+          class="time">○</em>), drag to move them, and shift-click to delete them. The output $y(t)$ is the inverse
         Laplace of $X(s)\,H(s)$, computed live by integrating the underlying ODE on every frame.</p>
 
       <div class="controls">
@@ -1654,7 +1643,7 @@
   </section>
 
   <footer>
-    <p>Built with KaTeX, HTML canvas, and a lot of center-of-mass arithmetic.</p>
+    <p>Rendered with KaTeX and HTML canvas.</p>
   </footer>
 
   <!-- Tweaks panel -->

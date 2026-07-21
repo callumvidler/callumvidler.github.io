@@ -253,7 +253,9 @@
         <p>This coupling is quantified by the <strong>power-supply rejection ratio</strong> (PSRR), defined as the ratio of a perturbation at the supply to the resulting perturbation at the output, referred to the input. Precision devices typically exhibit a low-frequency PSRR on the order of $100\,\mathrm{dB}$. Above a break frequency of a few hundred hertz, however, the rejection falls at approximately $20\,\mathrm{dB}$ per decade, reaching $20\,\mathrm{dB}$ in the vicinity of $1\,\mathrm{MHz}$ and vanishing, for practical purposes, above $10\,\mathrm{MHz}$. In the high-frequency band the amplifier therefore provides little attenuation between supply perturbations and the output signal.</p>
         <p>The sources of such perturbations are intrinsic to the system. Switch-mode regulators inject a fundamental at the switching frequency, commonly $500\,\mathrm{kHz}$ to several megahertz, together with its harmonics. Digital logic elsewhere on the printed circuit board draws pulsed currents through the distributed inductance of the supply network, producing wideband transient voltages. The output stage of the amplifier itself demands transient current which the upstream regulator, whose control loop typically has a bandwidth of a few kilohertz, cannot supply within the relevant time scale.</p>
         <div class="callout">
-            <strong>The function of the bypass capacitor</strong> is to establish a low-impedance path between the supply terminal and the reference potential across the frequency range over which the amplifier is susceptible to supply-borne disturbance. A sufficiently low impedance ensures that rail-borne noise currents develop only a small voltage at the supply terminal and that transient load currents are sourced locally, rather than conducted along the inductive path to the upstream regulator.
+            <strong>Bypass capacitor.</strong> A bypass capacitor provides a low-impedance path from
+            the supply terminal to the reference potential. It limits rail-voltage disturbances and
+            supplies transient load current locally.
         </div>
     </div>
     <div class="canvas-wrap" style="aspect-ratio: 1/0.85; max-width: 560px;">
@@ -355,7 +357,10 @@
         <p>The ceramic, notwithstanding its two-order-of-magnitude smaller capacitance, is self-resonant at a frequency more than twenty times higher than the electrolytic. This follows from the dependence of $f_{\text{SRF}}$ on the geometric mean of $\mathrm{ESL}$ and $C$: the reduction in capacitance by a factor of one hundred is partially offset by a concurrent reduction in parasitic inductance by a factor of approximately five.</p>
 
         <div class="callout">
-            <strong>The two components serve distinct functions.</strong> Within the frequency range in which it remains capacitive, the $10\,\mu\mathrm{F}$ device provides the lower impedance of the pair and is effective from the audio band to the low radio-frequency range. Above its self-resonance, where it behaves inductively, bypassing is provided by the $0.1\,\mu\mathrm{F}$ ceramic, which remains capacitive into the VHF range. The two capacitors therefore occupy disjoint and complementary frequency intervals rather than replicating one another.
+            <strong>The two components have distinct frequency ranges.</strong> The $10\,\mu\mathrm{F}$
+            device provides the lower impedance at low and intermediate frequencies. Above its
+            self-resonance it becomes inductive, while the $0.1\,\mu\mathrm{F}$ ceramic remains capacitive
+            to a higher frequency.
         </div>
     </div>
     <div class="canvas-wrap" style="aspect-ratio: 1/0.9; max-width: 620px;">
@@ -413,7 +418,11 @@
 
     <div class="copy" style="max-width:900px; margin: 24px auto 0;">
         <div class="callout par">
-            <strong>Consequences for amplifier operation.</strong> The output stage of the operational amplifier draws transient currents whose spectral content extends well beyond the self-resonant frequency of the bulk capacitor. In the absence of a complementary ceramic, these transients are conducted through the rising inductive impedance of the bulk device, producing voltage deviations on the supply rail which the amplifier transfers to its output in proportion to its diminished high-frequency power-supply rejection. In circuits with insufficient parasitic isolation, the resulting rail coupling may additionally close a positive-feedback path capable of destabilising the amplifier. The ceramic capacitor, located in close proximity to the supply terminal, supplies the high-frequency component of the transient current at an impedance of order one milliohm; the bulk capacitor subsequently restores the charge displaced from the ceramic on a longer time scale, at frequencies at which the ceramic alone lacks adequate charge storage. The roles of the two components are therefore complementary rather than redundant.
+            <strong>Consequences for amplifier operation.</strong> The output stage draws transient
+            current above the self-resonant frequency of the bulk capacitor. A nearby ceramic capacitor
+            supplies this high-frequency current and reduces the resulting rail-voltage disturbance.
+            The bulk capacitor restores charge at lower frequencies, where its larger capacitance provides
+            the lower impedance.
         </div>
 
         <h3>Implications for printed circuit board layout</h3>
@@ -424,7 +433,11 @@
             <li>The effective capacitance of class-2 ceramic dielectrics, including X7R and Y5V, is a strong function of the applied DC bias and of temperature. Devices intended to provide a specified high-frequency impedance should be selected with a voltage rating of at least twice the nominal supply potential, and the derated capacitance should be verified against the manufacturer's bias characteristic.</li>
         </ul>
 
-        <p class="dim" style="font-size:14px; margin-top: 20px;">A concluding remark is warranted. The nominal distinction between "$10\,\mu\mathrm{F}$" and "$0.1\,\mu\mathrm{F}$" corresponds, in practice, to a distinction between two classes of physical construction: a high-capacitance electrolytic or tantalum device of relatively large volume and long internal current path, and a low-capacitance ceramic device of small volume and short current path. Were it technologically feasible to realise a $10\,\mu\mathrm{F}$ capacitor in an 0402 ceramic package with an $\mathrm{ESL}$ of order $1\,\mathrm{nH}$, a single such component would satisfy the bypass requirements of the amplifier, and the classical bulk–ceramic combination would be rendered superfluous. Contemporary high-density ceramic technologies approach this regime, and correspondingly, a number of recent design practices dispense with the bulk component in favour of two or three ceramic capacitors of comparable value.</p>
+        <p class="dim" style="font-size:14px; margin-top: 20px;">Capacitance value alone does not
+        determine bypass performance. Package geometry and construction determine the current-path
+        inductance and therefore the useful frequency range. A sufficiently large ceramic capacitor
+        with low ESL can replace a separate bulk and ceramic pair when its bias-dependent capacitance
+        remains adequate.</p>
     </div>
 </section>
 
@@ -459,7 +472,9 @@ Z_k(s) &= \mathrm{ESR}_k + s\,\mathrm{ESL}_k + \frac{1}{sC_k} = \frac{D_k(s)}{sC
         <p>In the underdamped regime these roots constitute a complex-conjugate pair with natural frequency</p>
         <div class="eq-block">$$\small \omega_{\text{AR}} = \sqrt{\frac{C_1 + C_2}{C_1 C_2\,(\mathrm{ESL}_1 + \mathrm{ESL}_2)}} \;\approx\; \frac{1}{\sqrt{\mathrm{ESL}_1\,C_2}} \quad \bigl(C_1 \gg C_2,\; \mathrm{ESL}_1 \gg \mathrm{ESL}_2\bigr).$$</div>
         <p>The approximation is instructive: the resonance of the composite network is governed by the equivalent series inductance of the bulk device and the capacitance of the ceramic device. Physically, this is the frequency at which the post-resonance inductive reactance of the bulk capacitor and the pre-resonance capacitive reactance of the ceramic capacitor combine to form a parallel LC tank. For the nominal parameters of the present analysis this yields $f_{\text{AR}} \approx 6.5\,\mathrm{MHz}$, situated between the two self-resonances.</p>
-        <p>A conjugate pole pair of small real part produces a local maximum of $|Z_{\text{tot}}(j\omega)|$ at $\omega \approx \omega_{\text{AR}}$. The composite impedance is therefore not monotonic between the two self-resonant minima: a residual peak — the anti-resonance — is an unavoidable feature of any parallel arrangement of capacitors of dissimilar self-resonant frequency. The amplitude of the peak is bounded by $\mathrm{ESR}_1 + \mathrm{ESR}_2$, which supplies the dissipation that damps the parallel tank.</p>
+        <p>A conjugate pole pair of small real part produces a local maximum of
+        $|Z_{\text{tot}}(j\omega)|$ at $\omega \approx \omega_{\text{AR}}$. This anti-resonance lies
+        between the two self-resonant minima. The combined ESR damps the parallel tank.</p>
 
         <div class="callout par">
             <strong>Agreement with the measured behaviour.</strong> The transfer function analysis reproduces the two qualitative features identified in Section 04: the composite impedance traces the lower envelope of the two individual curves away from the anti-resonance (a consequence of the zeros of $Z_{\text{tot}}$ being inherited from the individual branches), and the effective capacitance of the pair at any frequency is dictated by the branch presenting the lower impedance, not by the arithmetic sum $C_1 + C_2$. The additive rule $C_{\text{eff}} = C_1 + C_2$ is recovered only in the limit $s \to 0$, where both $D_k(s) \to 1$ and $Z_{\text{tot}}(s) \to 1/[s(C_1 + C_2)]$.
@@ -877,7 +892,7 @@ function drawParallel() {
     const zP = fs.map(f => zParallel(f, bulk, cer));
     const zS = fs.map(f => 1 / (2 * Math.PI * f * (bulk.C + cer.C)));
 
-    const ax = logAxes(ctx, w, h, 10, 1e9, 1e-3, 1e4, { title: 'drag sliders → watch the combined curve follow the lower envelope' });
+    const ax = logAxes(ctx, w, h, 10, 1e9, 1e-3, 1e4, { title: 'The combined curve follows the lower impedance envelope' });
 
     if (showIdeal) drawCurve(ctx, ax, fs, zS, p.ideal, 1.6, true);
     drawCurve(ctx, ax, fs, zB, p.bulk, 1.8);

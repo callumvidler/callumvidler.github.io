@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>BMEN90033 2026: Ag/AgCl Electrode–Body Interface — 3D Visualisation</title>
+  <title>BMEN90033 2026: 3D Ag/AgCl Electrode-Body Interface</title>
   <style>
     :root { --text: #ffffff; --accent: var(--site-accent); }
     [data-theme="light"] { --text: #1a1a1e; }
@@ -289,7 +289,7 @@
     </div>
 
     <div id="mode-indicator">
-      <span id="modeText">Equilibrium — no net current</span>
+      <span id="modeText">Equilibrium: no net current</span>
     </div>
 
     <div id="reaction-panel" class="panel">
@@ -1044,7 +1044,7 @@
       document.getElementById('modeOxidize').classList.toggle('active', m === 'oxidize');
 
       const modeTexts = {
-        equil: 'Equilibrium — no net current',
+        equil: 'Equilibrium: no net current',
         reduce: 'Reduction: AgCl + e⁻ → Ag + Cl⁻ (electrons consumed)',
         oxidize: 'Oxidation: Ag + Cl⁻ → AgCl + e⁻ (electrons released)',
       };

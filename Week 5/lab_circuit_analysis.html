@@ -539,12 +539,11 @@
     <div class="explainer">
         <div class="title-block">
             <h1>Lab Circuit Analysis</h1>
-            <div class="sub">week 05 &mdash; BJT common-emitter amplifier &mdash; transfer function &amp; frequency response</div>
+            <div class="sub">week 05: BJT common-emitter amplifier, transfer function and frequency response</div>
             <p>
-                Step-by-step analysis of a voltage-divider biased common-emitter BJT amplifier.
-                We identify the DC operating point, build the AC small-signal model, derive the
-                transfer function H(s) = V<sub>o</sub>/V<sub>s</sub>, find the poles, and sketch
-                the Bode and Nyquist plots.
+                Analysis of a voltage-divider biased common-emitter BJT amplifier, including its
+                DC operating point, AC small-signal model, transfer function
+                H(s) = V<sub>o</sub>/V<sub>s</sub>, poles, Bode plot, and Nyquist plot.
             </p>
         </div>
 
@@ -555,7 +554,7 @@
                 <h2>Circuit Identification &amp; Component Values</h2>
             </summary>
 
-            <p>The circuit is a <strong>common-emitter (CE) BJT amplifier</strong> with voltage-divider biasing. Here are the components:</p>
+            <p>The circuit is a <strong>common-emitter (CE) BJT amplifier</strong> with voltage-divider biasing.</p>
 
             <table class="param-table">
                 <thead>
@@ -590,8 +589,8 @@
                 <h2>DC Operating Point (Q-Point)</h2>
             </summary>
 
-            <p>At DC, all capacitors are open circuits. We need to find I<sub>C</sub>, V<sub>CE</sub>, and the
-            transconductance g<sub>m</sub> for the small-signal model.</p>
+            <p>At DC, all capacitors are open circuits. The calculation determines I<sub>C</sub>,
+            V<sub>CE</sub>, and the small-signal transconductance g<sub>m</sub>.</p>
 
             <h3>Step 1: Thevenin Base Voltage</h3>
             <p>The voltage divider R<sub>B1</sub> and R<sub>B2</sub> sets the base voltage:</p>
@@ -658,7 +657,8 @@
                 <h2>AC Small-Signal Equivalent Circuit</h2>
             </summary>
 
-            <p>To build the AC model, we replace the BJT with its hybrid-&pi; model, short V<sub>CC</sub> to ground, and keep all capacitors as impedances Z = 1/sC.</p>
+            <p>The AC model replaces the BJT with its hybrid-&pi; model, shorts V<sub>CC</sub>
+            to ground, and represents each capacitor by the impedance Z = 1/sC.</p>
 
             <h3>Rules for AC Model</h3>
             <ul>
@@ -695,7 +695,9 @@
                 <h2>Transfer Function Derivation</h2>
             </summary>
 
-            <p>We derive A<sub>V</sub>(s) = V<sub>o</sub>(s) / V<sub>s</sub>(s) as the product of the midband gain and frequency-dependent pole/zero terms. Define shorthand:</p>
+            <p>The transfer function A<sub>V</sub>(s) = V<sub>o</sub>(s) / V<sub>s</sub>(s)
+            is written as the product of the midband gain and frequency-dependent pole-zero terms.
+            The following resistance definitions simplify the expression:</p>
             <div class="eq-line">
                 <span class="dim">R<sub>BB</sub></span> = R<sub>B1</sub> || R<sub>B2</sub> = 66.67 k&Omega;
                 &emsp;&emsp;
@@ -1101,7 +1103,7 @@
             ctx.fillStyle = T.text;
             ctx.font = '600 13px Inter, sans-serif';
             ctx.textAlign = 'left';
-            ctx.fillText('Bode Plot \u2014 CE Amplifier Frequency Response', pad.left, 24);
+            ctx.fillText('Bode Plot: CE Amplifier Frequency Response', pad.left, 24);
 
             // Plot the curve
             ctx.beginPath();

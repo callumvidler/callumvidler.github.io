@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>BMEN90033 2026: Semiconductor Doping — 3D Silicon Lattice</title>
+  <title>BMEN90033 2026: 3D Semiconductor Doping</title>
   <style>
     :root { --text: #ffffff; --accent: var(--site-accent); }
     [data-theme="light"] { --text: #1a1a1e; }
@@ -117,7 +117,7 @@
   </a>
   <div id="container">
     <div id="info" class="panel" style="top:52px">
-      <h2>Semiconductor Doping — 3D Diamond Cubic Lattice</h2>
+      <h2>Semiconductor Doping in a 3D Diamond Cubic Lattice</h2>
       <div class="legend"><div class="dot" style="background:#44aa66"></div> Silicon atom (4 tetrahedral bonds)</div>
       <div class="legend"><div class="dot" style="background:#ee5555"></div> Phosphorus donor (5 valence e⁻)</div>
       <div class="legend"><div class="dot" style="background:#5588dd"></div> Boron acceptor (3 valence e⁻)</div>
@@ -131,7 +131,7 @@
     </div>
 
     <div id="diagram-panel" class="panel">
-      <h3 id="diagramTitle">Band Diagram — Pure Silicon</h3>
+      <h3 id="diagramTitle">Band Diagram: Pure Silicon</h3>
       <canvas id="diagramCanvas" width="600" height="300"></canvas>
     </div>
 
@@ -1277,10 +1277,10 @@
       const desc = {
         pure: 'Pure silicon forms a diamond cubic lattice. Each Si atom forms 4 tetrahedral covalent bonds with its neighbours, sharing a pair of electrons per bond. All valence electrons are locked in bonds at low temperature. Raise temperature to see thermal excitation.',
         ntype: 'Phosphorus (Group V) replaces Si atoms. Its 5th valence electron orbits the dopant loosely. At room temperature it detaches and hops bond-to-bond through the 3D lattice. Apply voltage: electrons are attracted toward the red (+) plate. The battery pushes new electrons out of the blue (\u2212) plate, sustaining current.',
-        ptype: 'Boron (Group III) has only 3 valence electrons — one bond is incomplete (a hole). Under voltage, the battery pushes electrons from the blue (\u2212) plate into the lattice, filling nearby holes. At the red (+) plate, electrons are pulled out, creating new holes. Holes appear to flow from red (+) toward blue (\u2212).',
+        ptype: 'Boron (Group III) has only 3 valence electrons, leaving one incomplete bond (a hole). Under voltage, the battery supplies electrons from the blue (\u2212) plate to fill nearby holes. The red (+) plate removes electrons and creates new holes. The resulting hole current moves from red (+) toward blue (\u2212).',
       };
       document.getElementById('descText').textContent = desc[mode];
-      const titles = { pure: 'Band Diagram — Pure Silicon', ntype: 'Band Diagram — N-type (P)', ptype: 'Band Diagram — P-type (B)' };
+      const titles = { pure: 'Band Diagram: Pure Silicon', ntype: 'Band Diagram: N-type (P)', ptype: 'Band Diagram: P-type (B)' };
       document.getElementById('diagramTitle').textContent = titles[mode];
     }
 

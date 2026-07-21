@@ -58,7 +58,7 @@
             ttl: 'Op-amp integrator',
             desc: 'Output proportional to the time-integral of the input.',
             verdict: 'wrong',
-            why: 'Integration smears the sharp spikes into the baseline. Removes exactly the feature you are trying to find.'
+            why: 'Integration spreads each sharp spike into the baseline and obscures the feature being detected.'
         },
         {
             id: 'differentiator',
@@ -72,7 +72,7 @@
             ttl: 'Voltage follower / buffer',
             desc: 'Unity-gain stage that isolates impedance.',
             verdict: 'partial',
-            why: 'Does not detect or measure on its own, but you need one before the peak detector so the source impedance does not load the hold capacitor.'
+            why: 'It does not detect or measure directly, but a buffer prevents the source impedance from loading the hold capacitor.'
         }
     ];
 

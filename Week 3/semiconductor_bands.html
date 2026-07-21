@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>BMEN90033 2026: Semiconductor Band Theory — 3D Visualisation</title>
+  <title>BMEN90033 2026: 3D Semiconductor Band Theory</title>
   <style>
     :root { --text: #ffffff; --accent: var(--site-accent); }
     [data-theme="light"] { --text: #1a1a1e; }
@@ -134,8 +134,8 @@
       <div class="legend"><div class="dot" style="background:#ffcc44"></div> Free electrons (delocalised)</div>
       <p id="descText">Each atom has a valence shell (blue sphere) and a conduction
         shell (orange sphere). The gap between them is the band gap.
-        As temperature rises the conduction shell contracts — when it
-        overlaps the valence shell, electrons can escape and travel
+        As temperature rises, the conduction shell contracts. When it
+        overlaps the valence shell, electrons can move
         between neighbouring atoms.</p>
     </div>
 
@@ -225,7 +225,7 @@
         conductionRadiusMin: 4.5,    // at T=max — barely shrinks, gap stays huge
         freeElectronCurve: t => (t > 0.9 ? Math.floor((t - 0.9) * 20) : 0),
         conductivityLabel: t => t > 0.9 ? 'Negligible' : 'None',
-        desc: 'The conduction shell is far from the valence shell (~9 eV gap). Even at high temperature it barely contracts — electrons cannot reach it. No current flows.',
+        desc: 'The conduction shell is far from the valence shell (~9 eV gap). Even at high temperature it barely contracts, so electrons cannot reach it. No current flows.',
       },
       semiconductor: {
         label: 'Semiconductor (Si)',
@@ -244,7 +244,7 @@
           if (t < 0.7) return 'Moderate';
           return 'High';
         },
-        desc: 'The conduction shell starts slightly beyond the valence shell (~1.1 eV gap). As temperature rises, thermal energy shrinks the effective gap — electrons jump to the conduction shell and travel between atoms.',
+        desc: 'The conduction shell starts slightly beyond the valence shell (~1.1 eV gap). As temperature rises, thermal energy shrinks the effective gap. Electrons then enter the conduction shell and travel between atoms.',
       },
       conductor: {
         label: 'Conductor (Cu)',
@@ -258,7 +258,7 @@
         conductionRadiusMin: 2.8,
         freeElectronCurve: () => 6,
         conductivityLabel: () => 'Very High',
-        desc: 'The conduction shell overlaps the valence shell at all temperatures (0 eV gap). The outermost electron is always free to drift between atoms — this is the "electron sea" of a metal.',
+        desc: 'The conduction shell overlaps the valence shell at all temperatures (0 eV gap). The outermost electron is therefore free to drift between atoms, producing the electron sea of a metal.',
       },
     };
 
@@ -879,7 +879,7 @@
       document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('btn' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
       document.getElementById('descText').textContent = MATERIAL_CONFIGS[mode].desc;
-      document.getElementById('bandTitle').textContent = 'Energy Band Diagram \u2014 ' + MATERIAL_CONFIGS[mode].label;
+      document.getElementById('bandTitle').textContent = 'Energy Band Diagram: ' + MATERIAL_CONFIGS[mode].label;
     }
 
     document.getElementById('btnInsulator').addEventListener('click', () => setMode('insulator'));

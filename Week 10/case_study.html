@@ -52,16 +52,13 @@
                 <h1 class="slide-hero">Detecting <em>pre-seizure spikes</em> in clinical EEG.</h1>
                 <div class="brief-box">
                     <div class="brief-label">The brief</div>
-                    <p class="brief-body">You are a biomedical engineer working in a seizure clinic. The
-                        clinicians have observed a strange phenomenon. When the EEG signal is low pass
-                        filtered, there is a recurring peak in the signal that occurs sporadically before a
-                        seizure and this peak increases every few seconds but is not periodic. They have
-                        asked you to see if you can detect, measure and track this peak every time it
-                        occurs.</p>
+                    <p class="brief-body">A low-pass filtered clinical EEG contains sporadic peaks before
+                        a seizure. The peaks are non-periodic and increase in amplitude during the
+                        pre-seizure interval. The required instrument must detect each event, measure its
+                        peak amplitude, and track the amplitude trend.</p>
                     <div class="brief-question">
                         <span class="brief-q-mark" aria-hidden="true">?</span>
-                        <p>What circuits that you have learned about so far would you use to perform these
-                            mathematical functions?</p>
+                        <p>Which circuit blocks implement these operations?</p>
                     </div>
                 </div>
                 <div class="tags">
@@ -79,7 +76,7 @@
         <section class="slide" data-slide="1">
             <div class="copy">
                 <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the problem</span></div>
-                <h2>What the clinicians <em class="input">see</em>.</h2>
+                <h2>Observed <em class="input">EEG features</em>.</h2>
                 <p class="lead">The trace below is a representative recording from one of the affected patients,
                     cycling through normal behaviour, a pre-state, a seizure, and a brief recovery. The
                     feature of interest is the band shaded yellow: a small number of brief, sporadic spikes
@@ -88,9 +85,8 @@
                     sampling clock cannot decide when a spike has occurred. Second, the amplitude is the quantity
                     of clinical interest, not the count alone, because a rising envelope during the pre-state is
                     what predicts the seizure.</p>
-                <p>The clinicians ask for three things from the circuit: <strong>detect</strong> each spike,
-                    <strong>measure</strong> its peak amplitude, and <strong>track</strong> the trend.
-                </p>
+                <p>The circuit must <strong>detect</strong> each spike, <strong>measure</strong> its peak
+                    amplitude, and <strong>track</strong> the trend.</p>
 
                 <div class="callout">
                     The trace shows the unprocessed electrode signal: alpha-band activity and electrode noise
@@ -129,17 +125,17 @@
         <section class="slide" data-slide="2">
             <div class="copy">
                 <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>the question</span></div>
-                <h2>Which <em class="output">circuits</em> would you use?</h2>
+                <h2>Selecting the required <em class="output">circuit blocks</em>.</h2>
                 <p class="lead">The clinic's brief reduces to three mathematical operations: a binary
                     <em>detection</em>, an analog <em>amplitude measurement</em>, and a slow <em>trend</em>
-                    over many events. Pick the blocks from this course that you would assemble to perform
-                    those three operations.
+                    over many events. The selection exercise identifies the blocks required for
+                    these operations.
                 </p>
                 <p class="dim">Multiple selections are allowed. Some choices are correct, some are partially
                     useful, and some belong to a different problem.</p>
                 <div class="callout">
-                    The low-pass filter is already in place, so the front-end conditioning is done. Your job
-                    starts at the filtered EEG and ends with three readouts on the clinician's screen:
+                    The low-pass filter is already in place, so the remaining chain begins at the
+                    filtered EEG and ends with three readouts:
                     <em>count</em>, <em>amplitude</em>, and <em>amplitude over time</em>.
                 </div>
                 <div class="plot-stack target-stack">
@@ -189,7 +185,7 @@
                     <div class="pc-card cons">
                         <div class="ttl">// weaknesses</div>
                         <ul>
-                            <li>Carries no amplitude information — every detected spike is the same pulse.</li>
+                            <li>Carries no amplitude information; every detected spike produces the same pulse.</li>
                             <li>Threshold must be set above the noise but below the smallest spike of interest.</li>
                             <li>Misses early sub-threshold spikes during the build-up phase.</li>
                         </ul>
@@ -315,7 +311,7 @@
             <div class="copy">
                 <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>the full chain</span>
                 </div>
-                <h2>One potential <em class="high">block diagram</em> that meets the brief.</h2>
+                <h2>A <em class="high">block diagram</em> that meets the brief.</h2>
                 <p class="lead">The filtered EEG is in millivolts and is too small to drive the analog peak
                     detector directly. A pre-amp lifts the signal above the diode forward drop, then a
                     parallel pair of blocks supplies the two outputs the brief requires: a Schmitt trigger
@@ -333,9 +329,8 @@
                         than freeze.</li>
                 </ul>
                 <div class="callout">
-                    Every block has appeared earlier in the course. The case study is the mapping from the
-                    clinical request to this chain. The trace on the right shows the input EEG and the held
-                    output, the signal a clinician would actually read.
+                    The trace on the right compares the input EEG with the held amplitude signal
+                    presented to the clinician.
                 </div>
             </div>
             <div>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slide 19 — Instrumentation Amplifier</title>
+  <title>Slide 19: Instrumentation Amplifier</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../theme.css">
@@ -471,7 +471,7 @@
     Y -= LS + BG_GAP;
     // Bullet 2: Key benefit
     const d2 = mkDot(DX, Y);
-    const b2l1 = await mkMath('\\text{Very high input impedance —}', FG, BS, RX, Y);
+    const b2l1 = await mkMath('\\text{Very high input impedance:}', FG, BS, RX, Y);
     const b2l2 = await mkMath('\\text{does not load the signal source.}', FG, BS, RX, Y - LS);
 
     Y -= LS + BG_GAP;
@@ -867,21 +867,21 @@
     function updateExplainText(rg, gain, zs, lf) {
       const lossPct = ((1 - lf) * 100);
       if (zs > 5000 && lossPct > 30) {
-        gainExplainEl.innerHTML = '<b>High source Z!</b> Without buffers, the amplifier\'s input resistors (R\u2032) ' +
+        gainExplainEl.innerHTML = '<b>High source impedance.</b> Without buffers, the amplifier\'s input resistors (R\u2032) ' +
           'draw current from the sensor. This forms a voltage divider with the source impedance Z<sub>s</sub>, ' +
-          'dropping ' + Math.round(lossPct) + '% of the signal before it even reaches the amp. ' +
-          'The buffers fix this \u2014 their near-infinite input impedance draws virtually zero current.';
+          'attenuating the signal by ' + Math.round(lossPct) + '%. ' +
+          'The buffers prevent this loading because their high input impedance draws negligible current.';
       } else if (lossPct > 10) {
-        gainExplainEl.innerHTML = 'Without buffers, R\u2032 and Z<sub>s</sub> form a voltage divider \u2014 ' +
-          'the amp\'s input resistors "load" the source by drawing current, losing ' +
-          Math.round(lossPct) + '% of the signal. Buffers isolate the source so no current is drawn.';
+        gainExplainEl.innerHTML = 'Without buffers, R\u2032 and Z<sub>s</sub> form a voltage divider, ' +
+          'and the input resistors attenuate the signal by ' +
+          Math.round(lossPct) + '%. Buffers isolate the source and limit this current.';
       } else if (gain > 50) {
         gainExplainEl.innerHTML = 'High gain from small R<sub>G</sub>. ' +
-          'Buffers amplify only the <em>differential</em> signal \u2014 common-mode noise passes through unchanged.';
+          'Buffers amplify only the <em>differential</em> signal; common-mode noise passes through unchanged.';
       } else {
-        gainExplainEl.innerHTML = 'Low source Z \u2014 loading is minimal because Z<sub>s</sub> \u226A R\u2032, ' +
-          'so little voltage is dropped across the source. Try increasing Z<sub>s</sub> to see how ' +
-          'a weak sensor (e.g. thermocouple) loses signal without buffers.';
+        gainExplainEl.innerHTML = 'Low source Z: loading is minimal because Z<sub>s</sub> \u226A R\u2032, ' +
+          'so little voltage is dropped across the source. Increasing Z<sub>s</sub> demonstrates ' +
+          'the attenuation of a high-impedance sensor without buffers.';
       }
     }
 

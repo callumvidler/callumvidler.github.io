@@ -208,7 +208,8 @@
     <div>
         <div class="meta">BMEN90033 · WEEK 7 · BIOINSTRUMENTATION</div>
         <h1 class="hero">Intro to <em>Transfer Functions</em>.</h1>
-        <p class="sub">A transfer function expresses the input–output relationship of a linear time-invariant system in the frequency domain as a compact rational function. The exposition here adopts a canonical second-order system — a gravity pendulum — as its illustrative vehicle.</p>
+        <p class="sub">A transfer function represents the input-output relationship of a linear
+        time-invariant system. A damped pendulum provides a canonical second-order example.</p>
         <div class="tags">
             <span class="field-tag">linear systems</span>
             <span class="field-tag">Laplace domain</span>
@@ -224,9 +225,12 @@
         <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the idea</span></div>
         <h2>Input → System → Output.</h2>
         <p class="lead">Physical systems encountered in bioinstrumentation uniformly map an input signal to an output through an intervening transformation: a transducer converts acoustic pressure to voltage; an amplifier scales a voltage; a muscle fibre converts neural excitation to mechanical contraction.</p>
-        <p>Provided the system is <strong>linear</strong> — the response scaling proportionally with the input — and <strong>time-invariant</strong>, its dynamics are fully specified by a single complex-valued function of frequency, the <em class="acc">transfer function</em> $H(s)$.</p>
+        <p>For a <strong>linear</strong>, <strong>time-invariant</strong> system, the
+        <em class="acc">transfer function</em> $H(s)$ specifies the input-output dynamics under
+        zero initial conditions.</p>
         <div class="eq-block">$$Y(s) = H(s)\,X(s)$$</div>
-        <p>All constitutive parameters — inertial, elastic, dissipative, and biological — are encoded within $H(s)$. Once determined, it permits the response to arbitrary inputs to be evaluated algebraically, obviating repeated integration of the governing differential equation.</p>
+        <p>The coefficients of $H(s)$ contain the system parameters. Once $H(s)$ is known,
+        the transformed output follows algebraically from $Y(s)=H(s)X(s)$.</p>
         <div class="callout">
             <strong>The variable $s$.</strong> The complex variable $s = \sigma + j\omega$ represents a generalised frequency. Steady-state sinusoidal response at a real frequency $\omega$ is recovered by the substitution $s = j\omega$, from which the magnitude (gain) and phase (delay) of the output follow directly.
         </div>
@@ -281,8 +285,8 @@
         <p>with forcing $u(t) = F(t)/(mL)$, yielding the canonical form:</p>
         <div class="eq-block">$$\ddot{\theta} + 2\zeta\omega_0\,\dot{\theta} + \omega_0^2\,\theta = u(t).$$</div>
         <ul>
-            <li><strong>Natural frequency</strong> $\omega_0 = \sqrt{g/L}$ — the undamped oscillation frequency, determined by rope length alone. For $L = 2.45\text{ m}$, $\omega_0 \approx 2.0\text{ rad/s}$ (period $\approx 3.1\text{ s}$).</li>
-            <li><strong>Damping ratio</strong> $\zeta$ — a dimensionless measure of dissipation. Typical playground swings exhibit $\zeta \approx 0.02$–$0.05$, corresponding to light damping.</li>
+            <li><strong>Natural frequency:</strong> $\omega_0 = \sqrt{g/L}$ is the undamped oscillation frequency. For $L = 2.45\text{ m}$, $\omega_0 \approx 2.0\text{ rad/s}$ (period $\approx 3.1\text{ s}$).</li>
+            <li><strong>Damping ratio:</strong> $\zeta$ is a dimensionless measure of dissipation. Typical playground swings exhibit $\zeta \approx 0.02$–$0.05$, corresponding to light damping.</li>
         </ul>
 
         <h3>Step 5 · Laplace transform</h3>
@@ -313,7 +317,7 @@
 <section class="scene wide" id="s3">
     <div class="copy">
         <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>resonance</span></div>
-        <h2>Push at the right rhythm.</h2>
+        <h2>Resonance under periodic forcing.</h2>
         <p class="lead">Forcing is in practice impulsive rather than continuously sinusoidal: a brief push delivered once per cycle constitutes an impulse train at rate $\omega$, whose fundamental Fourier component is situated at $\omega$. The transfer function determines the steady-state amplitude of this component:</p>
         <div class="eq-block">$$|H(j\omega)| = \frac{1}{\sqrt{(\omega_0^2 - \omega^2)^2 + (2\zeta\omega_0\omega)^2}}$$</div>
         <p>Maximum amplitude is attained at $\omega = \omega_0$, where the forcing remains <em class="acc">in phase</em> with the motion; at other frequencies the phase relationship is incoherent and amplification is suppressed. This phase dependence is precisely what $|H(j\omega)|$ captures.</p>
@@ -337,7 +341,9 @@
         </div>
 
         <div class="callout">
-            <strong>Observe.</strong> For $\omega \ll \omega_0$ or $\omega \gg \omega_0$ the response is negligible. At $\omega = \omega_0$ the amplitude attains $1/(2\zeta)$, here approximately tenfold the input &mdash; the defining feature of resonance.
+            <strong>Resonance.</strong> For $\omega \ll \omega_0$ or $\omega \gg \omega_0$ the
+            response is small. At $\omega = \omega_0$ the amplitude reaches $1/(2\zeta)$,
+            approximately ten times the input for the parameters shown.
         </div>
         <p>The peak of the Bode magnitude defines the quality factor $Q \approx 1/(2\zeta)$. Lightly-damped systems exhibit tall, narrow peaks; heavily-damped systems exhibit broad, flat responses. Increasing $\zeta$ progressively flattens the peak.</p>
     </div>
@@ -352,7 +358,7 @@
 <section class="scene wide" id="s4">
     <div class="copy">
         <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>the s-plane</span></div>
-        <h2>Poles. Zeros. A fingerprint.</h2>
+        <h2>Pole-zero representation.</h2>
         <p class="lead">The transfer function carries information beyond its values on the real-frequency axis. Treating $s$ as a complex variable, one identifies the loci at which $H(s)$ <em class="imag">diverges</em> and at which it <em class="time">vanishes</em>. These points, termed <em class="imag">poles</em> and <em class="time">zeros</em> respectively, together fully characterise the system.</p>
         <p>Equating the denominator of $H(s)$ to zero and solving the resulting quadratic:</p>
         <div class="eq-line">$$s = -\zeta\omega_0 \pm j\,\omega_0\sqrt{1-\zeta^2}$$</div>
@@ -394,15 +400,19 @@
     <div class="copy">
         <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>where zeros come from</span></div>
         <h2>A weight tied halfway down.</h2>
-        <p class="lead">The simple pendulum's transfer function contains poles alone. <em class="time">Zeros</em> — frequencies at which transmission is suppressed — require a second dynamical mode capable of opposing the first through the same input channel.</p>
+        <p class="lead">The simple pendulum's transfer function contains poles but no finite zeros.
+        A <em class="time">transmission zero</em> can arise when a second dynamical mode opposes
+        the first through the same input channel.</p>
         <p>The minimal modification introduces an intermediate mass $m_1$ at a joint along the rope, with the bob $m_2$ suspended below. Horizontal forcing is applied to $m_2$. The resulting system constitutes a <strong>double pendulum</strong>.</p>
 
         <h3>Equations of motion</h3>
-        <p>Let $\theta_1,\theta_2$ denote the two segment angles. In the small-angle limit the bob's horizontal position is $x_2 = L_1\theta_1 + L_2\theta_2$. A Lagrangian formulation with gravity as the sole restoring force yields a coupled $2\times 2$ system. The off-diagonal inertia term $m_2 L_1 L_2$ mediates modal coupling — displacement of one angle excites the other. This coupling, in conjunction with the intermediate mass, generates a transmission zero.</p>
+        <p>Let $\theta_1,\theta_2$ denote the two segment angles. In the small-angle limit the bob's horizontal position is $x_2 = L_1\theta_1 + L_2\theta_2$. A Lagrangian formulation with gravity as the restoring force yields a coupled $2\times 2$ system. The off-diagonal inertia term $m_2 L_1 L_2$ couples the two angular coordinates. Together with the intermediate mass, this coupling generates a transmission zero.</p>
 
         <h3>The zero</h3>
         <div class="eq-block">$$\omega_z^2 = \frac{g\bigl[L_1 m_2 + L_2(m_1+m_2)\bigr]}{m_1 L_1 L_2}$$</div>
-        <p>At $\omega = \omega_z$ the intermediate mass oscillates with precisely the amplitude and phase required to cancel the forcing transmitted to the bob; the bob remains nearly stationary while the intermediate mass absorbs the input. In the time trace — green denoting the bob's horizontal displacement and blue the intermediate mass — the bob response collapses as $\omega \to \omega_z$.</p>
+        <p>At $\omega = \omega_z$ the intermediate mass oscillates with the amplitude and phase
+        required to cancel the forcing transmitted to the bob. In the time trace, green denotes
+        the bob displacement and blue denotes the intermediate-mass displacement.</p>
 
         <div class="controls">
             <div class="control-group"><label>push freq $\omega$</label><input type="range" id="w-slider-p5a" data-param="w" min="0.1" max="4.0" step="0.01" value="1.0"><span class="control-value">1.00 rad/s</span></div>
@@ -427,7 +437,9 @@
         <h2>The notch, made visible.</h2>
         <p class="lead">A real forcing frequency $\omega$ corresponds to the single point $s = j\omega$ on the positive imaginary axis. Traversing $\omega$ advances a marker along this axis, at each position of which the transfer function evaluates to</p>
         <div class="eq-block">$$|H(j\omega)| = \frac{\prod_i |j\omega - z_i|}{\prod_k |j\omega - p_k|}$$</div>
-        <p>— the ratio of the product of distances from the marker to each <em class="time">zero</em> to the product of distances to each <em class="imag">pole</em>. Proximity to a pole produces a resonance peak as the denominator contracts; coincidence with a zero produces a transmission notch as the numerator vanishes. The Bode magnitude is the trace of $|H(j\omega)|$ so obtained.</p>
+        <p>This is the product of distances from the marker to each <em class="time">zero</em>,
+        divided by the product of distances to each <em class="imag">pole</em>. Proximity to a pole
+        produces a resonance peak; coincidence with a zero produces a transmission notch.</p>
 
         <div class="controls">
             <div class="control-group"><label>push freq $\omega$</label><input type="range" id="w-slider-p5b" data-param="w" min="0.1" max="4.0" step="0.01" value="1.0"><span class="control-value">1.00 rad/s</span></div>
@@ -447,7 +459,9 @@
         <p><strong>Observe.</strong> As $\mu \to 0$ the intermediate mass vanishes, the zero recedes to infinity, and the transfer function reduces to that of the simple pendulum. Increasing $\mu$ deepens the notch. Displacing $\alpha$ from $0.5$ shifts $\omega_z$: higher placement of the intermediate mass along the rope raises the notch frequency.</p>
 
         <div class="callout">
-            <strong>Taipei 101.</strong> The 660-tonne tuned mass damper suspended within the upper storeys of Taipei 101 is an instance of this mechanism. The tower serves as the primary mass and the pendulum as the intermediate mass along an effective compliance of stiffness and gravity. Its parameters are tuned such that $\omega_z$ coincides with the wind-driven resonance, notching out the sway that would otherwise be excited.
+            <strong>Taipei 101.</strong> The 660-tonne tuned mass damper in Taipei 101 applies this
+            mechanism. The tower is the primary mass and the suspended pendulum is the secondary mass.
+            Its parameters are selected to attenuate wind-driven sway near the structural resonance.
         </div>
     </div>
     <div class="canvas-wrap" style="aspect-ratio: 1/0.95; max-width: 680px;">

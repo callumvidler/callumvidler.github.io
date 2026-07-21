@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BMEN90033 2026: Laser Diode — Interactive Explainer</title>
+  <title>BMEN90033 2026: Interactive Laser Diode</title>
   <style>
     :root {
       --bg: #0a0e14;
@@ -291,7 +291,7 @@
   <div class="explainer">
     <div class="title-block">
       <h1>Laser Diode Physics</h1>
-      <p>BMEN90033 — Bioinstrumentation</p>
+      <p>BMEN90033: Bioinstrumentation</p>
     </div>
 
     <div class="step-nav">
@@ -329,7 +329,7 @@
     </div>
 
     <div id="desc" class="step-description">
-      <h2>Step 1 — The Unbiased Junction</h2>
+      <h2>Step 1: The unbiased junction</h2>
       <p>Loading…</p>
     </div>
 
@@ -388,28 +388,28 @@
     // ─── Step descriptions ───
     const STEPS = [
       {
-        title: 'Step 1 — The Unbiased Junction',
+        title: 'Step 1: The unbiased junction',
         html: `A laser diode is a forward-biased PN junction where <strong>stimulated emission</strong> dominates over spontaneous emission. With no applied voltage, the Fermi levels of the p-type and n-type regions align, and a <strong>built-in potential</strong> forms across the depletion region.<br><br>The conduction band on the n-side sits lower in energy than on the p-side (relative to vacuum), so there is a potential barrier that blocks majority carrier flow. <span style="color:#4ecdc4">Electrons</span> fill the conduction band on the n-side; <span style="color:#ff6b6b">holes</span> fill the valence band on the p-side.`
       },
       {
-        title: 'Step 2 — Forward Bias & Carrier Injection',
-        html: `Applying a forward voltage V ≈ E<sub>g</sub>/e (typically ~1.5–3 V depending on the material) lowers the barrier. <span style="color:#4ecdc4">Electrons</span> from the n-side and <span style="color:#ff6b6b">holes</span> from the p-side are <strong>injected into the active region</strong>.<br><br>The active region is kept very thin — often a <strong>quantum well</strong> (~5–10 nm) — so carriers are confined in a small space and the carrier density stays high. Without this confinement, you can't get the population inversion needed for lasing.<br><br>Try increasing the current slider to inject carriers into the active region.<br><br><span class="key-equation">J = J₀(e<sup>eV/kT</sup> − 1)</span>`
+        title: 'Step 2: Forward bias and carrier injection',
+        html: `Applying a forward voltage V ≈ E<sub>g</sub>/e (typically ~1.5–3 V depending on the material) lowers the barrier. <span style="color:#4ecdc4">Electrons</span> from the n-side and <span style="color:#ff6b6b">holes</span> from the p-side are <strong>injected into the active region</strong>.<br><br>The active region is often a thin <strong>quantum well</strong> (~5–10 nm). Confinement increases carrier density and supports the population inversion required for lasing. The current slider controls the injection rate.<br><br><span class="key-equation">J = J₀(e<sup>eV/kT</sup> − 1)</span>`
       },
       {
-        title: 'Step 3 — Population Inversion',
-        html: `At low current, most recombination is <strong>spontaneous</strong> — the junction just acts as an LED. As current increases, the quasi-Fermi level for electrons (E<sub>Fc</sub>) rises into the conduction band while the quasi-Fermi level for holes (E<sub>Fv</sub>) drops into the valence band.<br><br>Once <strong>E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub></strong>, you get <strong>population inversion</strong>: more electrons sit in the upper state than the lower state across a range of photon energies. This is the <strong>Bernard-Duraffourg condition</strong> — the threshold for net stimulated emission gain.<br><br>In the band diagram, you can see the quasi-Fermi levels split apart as current passes threshold (~${THRESHOLD_CURRENT} mA).<br><br><span class="key-equation">E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub>  (Bernard-Duraffourg)</span>`
+        title: 'Step 3: Population inversion',
+        html: `At low current, most recombination is <strong>spontaneous</strong>, so the junction behaves as an LED. As current increases, the electron quasi-Fermi level (E<sub>Fc</sub>) rises while the hole quasi-Fermi level (E<sub>Fv</sub>) falls.<br><br>The condition <strong>E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub></strong> produces <strong>population inversion</strong> across a range of photon energies. This Bernard-Duraffourg condition permits net stimulated-emission gain. The band diagram shows the quasi-Fermi-level separation near the threshold current (~${THRESHOLD_CURRENT} mA).<br><br><span class="key-equation">E<sub>Fc</sub> − E<sub>Fv</sub> > E<sub>g</sub>  (Bernard-Duraffourg)</span>`
       },
       {
-        title: 'Step 4 — Stimulated Emission & Optical Gain',
-        html: `A photon with energy ℏω ≈ E<sub>g</sub> passing through the inverted active region is more likely to <strong>stimulate</strong> an electron-hole recombination (producing a copy of itself) than to be absorbed. The medium now has <strong>positive optical gain</strong>.<br><br>The gain coefficient g(ω) depends on the joint density of states, the Fermi occupation factors, and the transition matrix element. Each stimulated photon has the <strong>same phase, frequency, polarisation, and direction</strong> as the photon that triggered it — that's where coherence comes from.<br><br>Increase current above threshold to see stimulated emission chains — one photon triggers another, and the signal gets amplified.`
+        title: 'Step 4: Stimulated emission and optical gain',
+        html: `A photon with energy ℏω ≈ E<sub>g</sub> passing through the inverted active region can <strong>stimulate</strong> electron-hole recombination and produce a second photon. The medium then has <strong>positive optical gain</strong>.<br><br>The gain coefficient g(ω) depends on the joint density of states, Fermi occupation factors, and transition matrix element. A stimulated photon has the same phase, frequency, polarisation, and direction as the incident photon. Above threshold, repeated stimulated-emission events amplify the optical field.`
       },
       {
-        title: 'Step 5 — The Fabry-Pérot Optical Cavity',
+        title: 'Step 5: The Fabry-Pérot optical cavity',
         html: `The cleaved crystal facets of the semiconductor (refractive index n ≈ 3.5) work as <strong>~32% reflectors</strong>, forming a <strong>Fabry-Pérot resonator</strong>. Photons bounce back and forth between these mirrors, passing through the gain medium multiple times.<br><br>Lasing starts when the <strong>round-trip gain matches the round-trip loss</strong> (mirror loss + internal absorption + scattering):<br><br><span class="key-equation">Γ · g<sub>th</sub> = α<sub>i</sub> + (1/2L) · ln(1/R₁R₂)</span><br><br>where Γ is the optical confinement factor, α<sub>i</sub> is internal loss, L is cavity length (~300 μm), and R₁, R₂ are facet reflectivities (~0.32). Only modes that satisfy the resonance condition 2nL = mλ are supported.`
       },
       {
-        title: 'Step 6 — Coherent Output Above Threshold',
-        html: `Above threshold, stimulated photons dominate. The output is:<br><br>• <strong>Spatially coherent</strong> — single transverse mode from the waveguide<br>• <strong>Temporally coherent</strong> — narrow linewidth set by the cavity modes<br>• <strong>Linearly related to current</strong> — optical power P scales as P = η(I − I<sub>th</sub>) above threshold<br><br>Below threshold, the device just emits incoherent spontaneous emission (like an LED). At threshold, stimulated emission clamps the carrier density. The slope efficiency η<sub>d</sub> ≈ (ℏω/e) · (α<sub>m</sub>/(α<sub>m</sub> + α<sub>i</sub>)) tells you how much of the current actually converts to light.<br><br><span class="key-equation">P = η<sub>d</sub> · (I − I<sub>th</sub>)  for I > I<sub>th</sub></span>`
+        title: 'Step 6: Coherent output above threshold',
+        html: `Above threshold, stimulated emission dominates. The waveguide controls the transverse optical modes, while the cavity modes set the spectral linewidth. Optical power increases approximately linearly with current above threshold:<br><br><span class="key-equation">P = η<sub>d</sub> · (I − I<sub>th</sub>)  for I > I<sub>th</sub></span><br><br>Below threshold, spontaneous emission dominates. At threshold, stimulated emission clamps the carrier density. The slope efficiency η<sub>d</sub> ≈ (ℏω/e) · (α<sub>m</sub>/(α<sub>m</sub> + α<sub>i</sub>)) relates additional drive current to output optical power.`
       }
     ];
 

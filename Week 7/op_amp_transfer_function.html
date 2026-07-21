@@ -384,7 +384,9 @@
         <p>is conserved: <em class="acc">feedback trades gain for bandwidth one-for-one, along a constant-GBW hyperbola</em>.</p>
 
         <div class="callout">
-            <strong>Interpretation.</strong> A single device parameter $\omega_t$ determines the maximum achievable (gain, bandwidth) product. Circuit design choices — the resistor ratio setting $\beta$ — merely select an operating point along that hyperbola. This constraint is fundamental and device-level; no passive network external to the op-amp can circumvent it.
+            <strong>Interpretation.</strong> The device parameter $\omega_t$ sets the maximum
+            gain-bandwidth product. The resistor ratio sets $\beta$ and selects an operating point
+            on the constant-GBW curve.
         </div>
     </div>
 </section>
@@ -450,7 +452,10 @@
             <li><strong>Bandwidth:</strong> extended from $\omega_a$ to $\omega_a(1 + A_0\beta) \approx \omega_t\beta$.</li>
         </ul>
 
-        <p>Their product is the same, $\omega_t = A_0\omega_a$, an intrinsic device-level constant. The $s$-plane representation makes the exchange visible: the single pole translates leftward along the negative real axis in direct proportion to the loop gain, while the DC asymptote drops by the same factor. Time-domain responses inherit the geometry directly — the closed-loop exponential approaches its final value with a time constant $\tau_{cl} = 1/\omega_{cl}$ that is shorter by $(1 + A_0\beta)$.</p>
+        <p>Their product is the same, $\omega_t = A_0\omega_a$. As loop gain increases,
+        the pole moves leftward along the negative real axis while the DC gain decreases by
+        the same factor. The closed-loop time constant
+        $\tau_{cl} = 1/\omega_{cl}$ is reduced by $(1 + A_0\beta)$.</p>
 
         <p class="dim" style="font-size:14px;">The first-order model developed here is adequate for frequencies well below any higher-order internal poles. Near the unity-gain frequency of realistic devices, secondary poles introduce additional phase and the stability of the feedback loop becomes contingent on phase margin. That analysis belongs to a subsequent topic.</p>
     </div>

@@ -6,7 +6,6 @@
     <title>BMEN90033: Lab Circuit Analysis</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0a0e14;
@@ -16,7 +15,7 @@
             --text: #e2e8f0;
             --text-dim: #8892a4;
             --text-muted: #505868;
-            --accent: #6aaa8e;
+            --accent: var(--site-accent);
             --yellow: #ffcc44;
             --red: #e06050;
             --blue: #5b9bd5;
@@ -29,7 +28,7 @@
             --bg-card: #eeeef0;
             --border: rgba(0,0,0,0.1);
             --border-hover: rgba(0,0,0,0.2);
-            --accent: #3d8b6e;
+            --accent: var(--site-accent);
             --accent-dim: #357a60;
             --text: #1a1a1e;
             --text-dim: #555555;
@@ -40,28 +39,12 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
             overflow-x: hidden;
         }
-
-        .back-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 14px;
-            border-radius: 4px;
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            color: var(--text-dim);
-            text-decoration: none;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.15s;
-        }
-        .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
 
         .explainer {
             max-width: 880px;
@@ -82,7 +65,7 @@
         .title-block .sub {
             font-size: 12px;
             color: var(--text-muted);
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             margin-bottom: 12px;
         }
         .title-block p {
@@ -119,7 +102,7 @@
             transform: rotate(90deg);
         }
         .section-number {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             color: var(--accent);
             letter-spacing: 1px;
@@ -157,7 +140,7 @@
             background: rgba(106,170,142,0.06);
             border: 1px solid rgba(106,170,142,0.15);
             border-radius: 6px;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 15px;
             color: var(--accent);
             line-height: 1.8;
@@ -196,14 +179,14 @@
             position: absolute;
             left: 18px;
             top: 16px;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             color: var(--accent);
             font-weight: 600;
         }
         .derivation .math {
             display: inline-block;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             color: var(--text);
             margin: 4px 0;
         }
@@ -221,7 +204,7 @@
             align-items: stretch;
             vertical-align: middle;
             margin: 0 3px;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             color: var(--text);
         }
         .frac .num, .frac .den {
@@ -249,7 +232,7 @@
             align-items: center;
             justify-content: center;
             gap: 6px;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 14px;
             color: var(--text);
             padding: 14px 16px;
@@ -300,7 +283,7 @@
             padding: 10px 14px;
             font-weight: 600;
             color: var(--accent);
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             letter-spacing: 0.5px;
             text-transform: uppercase;
@@ -313,7 +296,7 @@
             border-bottom: 1px solid var(--border);
         }
         .param-table td:first-child {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             color: var(--text);
             font-size: 13px;
         }
@@ -374,7 +357,7 @@
             border-radius: 3px;
             letter-spacing: 0.5px;
             text-transform: uppercase;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
         }
         .controls-grid {
             display: grid;
@@ -390,7 +373,7 @@
             gap: 10px;
         }
         .ctrl-row label {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 12px;
             color: var(--text-dim);
             min-width: 32px;
@@ -423,7 +406,7 @@
             border: 2px solid var(--bg);
         }
         .ctrl-val {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             color: var(--text);
             min-width: 72px;
@@ -441,7 +424,7 @@
             border: 1px solid var(--border);
             color: var(--text-dim);
             font-size: 11px;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             cursor: pointer;
             transition: all 0.15s;
         }
@@ -454,7 +437,7 @@
             margin-top: 14px;
             padding-top: 14px;
             border-top: 1px solid var(--border);
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 11px;
             color: var(--text-muted);
         }
@@ -543,7 +526,15 @@
     <script src="../theme.js"></script>
 </head>
 <body>
-    <a href="../index.html" class="back-btn">Back</a>
+    <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 5</span></div>
+
+    <a class="back-btn" href="../index.html">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+        </svg>
+        Back
+    </a>
 
     <div class="explainer">
         <div class="title-block">
@@ -1086,7 +1077,7 @@
 
             // Axes labels
             ctx.fillStyle = T.textGray;
-            ctx.font = '11px IBM Plex Mono, monospace';
+            ctx.font = '11px JetBrains Mono, monospace';
             ctx.textAlign = 'center';
             const supMap = {1:'\u00B9',2:'\u00B2',3:'\u00B3',4:'\u2074',5:'\u2075',6:'\u2076',7:'\u2077',8:'\u2078'};
             for (let l = logMin; l <= logMax; l++) {
@@ -1098,7 +1089,7 @@
             }
 
             ctx.fillStyle = T.textSlate;
-            ctx.font = '12px IBM Plex Sans, sans-serif';
+            ctx.font = '12px Inter, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('Frequency (Hz)', pad.left + pw / 2, H - 6);
             ctx.save();
@@ -1108,7 +1099,7 @@
             ctx.restore();
 
             ctx.fillStyle = T.text;
-            ctx.font = '600 13px IBM Plex Sans, sans-serif';
+            ctx.font = '600 13px Inter, sans-serif';
             ctx.textAlign = 'left';
             ctx.fillText('Bode Plot \u2014 CE Amplifier Frequency Response', pad.left, 24);
 
@@ -1147,7 +1138,7 @@
             ctx.beginPath(); ctx.moveTo(pad.left, yOf(midDb)); ctx.lineTo(pad.left + pw, yOf(midDb)); ctx.stroke();
             ctx.setLineDash([]);
             ctx.fillStyle = '#6aaa8e';
-            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.font = '10px JetBrains Mono, monospace';
             ctx.textAlign = 'right';
             ctx.fillText(midDb.toFixed(1) + ' dB midband', pad.left + pw - 4, yOf(midDb) - 6);
 
@@ -1211,7 +1202,7 @@
             }
 
             ctx.fillStyle = T.textGray;
-            ctx.font = '11px IBM Plex Mono, monospace';
+            ctx.font = '11px JetBrains Mono, monospace';
             ctx.textAlign = 'center';
             const supMap = {1:'\u00B9',2:'\u00B2',3:'\u00B3',4:'\u2074',5:'\u2075',6:'\u2076',7:'\u2077',8:'\u2078'};
             for (let l = logMin; l <= logMax; l++) {
@@ -1223,7 +1214,7 @@
             }
 
             ctx.fillStyle = T.textSlate;
-            ctx.font = '12px IBM Plex Sans, sans-serif';
+            ctx.font = '12px Inter, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('Frequency (Hz)', pad.left + pw / 2, H - 6);
             ctx.save();
@@ -1233,7 +1224,7 @@
             ctx.restore();
 
             ctx.fillStyle = T.text;
-            ctx.font = '600 13px IBM Plex Sans, sans-serif';
+            ctx.font = '600 13px Inter, sans-serif';
             ctx.textAlign = 'left';
             ctx.fillText('Bode Phase Plot', pad.left, 24);
 
@@ -1266,7 +1257,7 @@
             ctx.beginPath(); ctx.moveTo(pad.left, yOf(-180)); ctx.lineTo(pad.left + pw, yOf(-180)); ctx.stroke();
             ctx.setLineDash([]);
             ctx.fillStyle = T.textGray;
-            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.font = '10px JetBrains Mono, monospace';
             ctx.textAlign = 'right';
             ctx.fillText('-180\u00B0 (inverting)', pad.left + pw - 4, yOf(-180) - 6);
 
@@ -1375,7 +1366,7 @@
 
             // Labels
             ctx.fillStyle = T.textSlate;
-            ctx.font = '12px IBM Plex Sans, sans-serif';
+            ctx.font = '12px Inter, sans-serif';
             ctx.textAlign = 'center';
             ctx.fillText('Re{A\u1D65(j\u03C9)}', pad.left + pw / 2, H - 6);
             ctx.save();
@@ -1385,13 +1376,13 @@
             ctx.restore();
 
             ctx.fillStyle = T.text;
-            ctx.font = '600 13px IBM Plex Sans, sans-serif';
+            ctx.font = '600 13px Inter, sans-serif';
             ctx.textAlign = 'left';
             ctx.fillText('Nyquist Plot', pad.left, 24);
 
             // Scale labels on axes
             ctx.fillStyle = T.textGray;
-            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.font = '10px JetBrains Mono, monospace';
             ctx.textAlign = 'center';
             const ticks = [-40, -30, -20, -10, 10, 20, 30, 40];
             ticks.forEach(t => {
@@ -1438,7 +1429,7 @@
             ctx.arc(xOf(-1), yOf(0), 4, 0, 2 * Math.PI);
             ctx.fill();
             ctx.fillStyle = '#e06050';
-            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.font = '10px JetBrains Mono, monospace';
             ctx.textAlign = 'left';
             ctx.fillText('-1', xOf(-1) + 6, yOf(0) - 6);
 
@@ -1476,7 +1467,7 @@
                 { f: 1e6, label: '1 MHz', ox: -6, oy: -8, align: 'right' },
                 { f: 8e6, label: '8 MHz', ox: 6, oy: 14 },
             ];
-            ctx.font = '9px IBM Plex Mono, monospace';
+            ctx.font = '9px JetBrains Mono, monospace';
             // Compute positions first, then nudge any that are too close
             const labelPositions = annots.map(a => {
                 const w = 2 * Math.PI * a.f;
@@ -1537,7 +1528,7 @@
                     // Magnitude label perpendicular to vector
                     const lx = (ox + cx) / 2, ly = (oy + cy) / 2;
                     ctx.fillStyle = T.overlay70;
-                    ctx.font = '10px IBM Plex Mono, monospace';
+                    ctx.font = '10px JetBrains Mono, monospace';
                     const nx = -uy * 14, ny = ux * 14;
                     ctx.textAlign = 'center';
                     ctx.fillText('|A\u1D65|=' + hc.mag.toFixed(1), lx + nx, ly + ny);
@@ -1571,7 +1562,7 @@
                     const alx = ox + Math.cos(midCanvasAngle) * labelR;
                     const aly = oy + Math.sin(midCanvasAngle) * labelR;
                     ctx.fillStyle = T.yellow;
-                    ctx.font = '10px IBM Plex Mono, monospace';
+                    ctx.font = '10px JetBrains Mono, monospace';
                     ctx.textAlign = 'center';
                     ctx.fillText(angleDeg.toFixed(0) + '\u00B0', alx, aly + 4);
                 }
@@ -1609,7 +1600,7 @@
             });
 
             // Place labels, merging any that are within 55px of each other
-            ctx.font = '10px IBM Plex Mono, monospace';
+            ctx.font = '10px JetBrains Mono, monospace';
             const placed = [];
             for (let i = 0; i < items.length; i++) {
                 const m = items[i];

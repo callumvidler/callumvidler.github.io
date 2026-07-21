@@ -4,6 +4,18 @@
     var theme = (stored === 'dark' || stored === 'light') ? stored : 'light';
     document.documentElement.setAttribute('data-theme', theme);
 
+    // Shared house fonts: Inter (body/headings) + JetBrains Mono (labels/chrome).
+    // Injected once for every page so no per-page <link> is needed.
+    try {
+        if (!document.querySelector('link[data-house-fonts]')) {
+            var f = document.createElement('link');
+            f.rel = 'stylesheet';
+            f.setAttribute('data-house-fonts', '');
+            f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap';
+            document.head.appendChild(f);
+        }
+    } catch (e) { }
+
     // Theme-aware color helper for canvas/JS drawing code.
     // Usage: T.text, T.grid, T.plotBg, etc. Always reads live theme.
     window.T = {

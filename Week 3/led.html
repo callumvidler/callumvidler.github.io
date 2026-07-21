@@ -5,11 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BMEN90033 2026: LED Physics — Interactive Explainer</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet">
   <style>
     :root {
       --bg: #0a0e14;
@@ -19,7 +14,7 @@
       --text: #e2e8f0;
       --text-dim: #8892a4;
       --text-muted: #505868;
-      --accent: #00ccff;
+      --accent: var(--site-accent);
       --p-color: #ff6b6b;
       --n-color: #4ecdc4;
       --photon-color: #ffd93d;
@@ -31,29 +26,12 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
     }
-
-    /* Back button */
-    .back-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 14px;
-      border-radius: 4px;
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      text-decoration: none;
-      font-size: 12px;
-      font-weight: 500;
-      transition: all 0.15s;
-    }
-    .back-btn:hover { color: var(--text); border-color: var(--border-hover); }
 
     /* Layout */
     .explainer {
@@ -95,7 +73,7 @@
       background: transparent;
       border: none;
       color: var(--text-muted);
-      font-family: 'IBM Plex Sans', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
@@ -112,7 +90,7 @@
     }
     .step-num {
       display: block;
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
       color: var(--text-muted);
       margin-bottom: 2px;
@@ -160,10 +138,10 @@
       display: inline-block;
       margin-top: 10px;
       padding: 6px 14px;
-      background: rgba(0, 204, 255, 0.06);
-      border: 1px solid rgba(0, 204, 255, 0.15);
+      background: color-mix(in srgb, var(--site-accent) 6%, transparent);
+      border: 1px solid color-mix(in srgb, var(--site-accent) 15%, transparent);
       border-radius: 4px;
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 13px;
       color: var(--accent);
     }
@@ -207,7 +185,7 @@
       cursor: pointer;
     }
     .control-value {
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 12px;
       color: var(--text);
       min-width: 48px;
@@ -224,7 +202,7 @@
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--border);
       color: var(--text-dim);
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 11px;
       font-weight: 500;
       border-radius: 4px;
@@ -275,7 +253,7 @@
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--border);
       color: var(--text-dim);
-      font-family: 'IBM Plex Sans', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 13px;
       font-weight: 500;
       border-radius: 6px;
@@ -317,10 +295,8 @@
     [data-theme="light"] .nav-btn:hover { background: rgba(0,0,0,0.08); color: #222; }
     [data-theme="light"] .mat-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
     [data-theme="light"] .mat-btn.active { background: rgba(0,0,0,0.08); border-color: rgba(0,0,0,0.15); color: #222; }
-    [data-theme="light"] .back-btn { background: rgba(255,255,255,0.92); border-color: rgba(0,0,0,0.1); color: #555; }
     [data-theme="light"] .title-block p { color: #666; }
     [data-theme="light"] .title-block h1 { color: #1a1a1e; }
-    [data-theme="light"] .back-btn:hover { color: #1a1a1e; }
     [data-theme="light"] .control-value { color: #1a1a1e; }
     [data-theme="light"] .mat-btn:hover { color: #1a1a1e; }
   </style>
@@ -329,7 +305,14 @@
 </head>
 
 <body>
-  <a class="back-btn" href="../index.html">← Back</a>
+  <div class="brand"><span class="mark"></span><span>BMEN90033 · Week 3</span></div>
+  <a class="back-btn" href="../index.html">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5" />
+          <path d="M12 19l-7-7 7-7" />
+      </svg>
+      Back
+  </a>
 
   <div class="explainer">
     <div class="title-block">
@@ -548,7 +531,7 @@
     // ─── Drawing helpers ───
     function drawRegionLabels() {
       const jx = W * 0.5;
-      ctx.font = '600 14px IBM Plex Sans';
+      ctx.font = '600 14px Inter';
       ctx.fillStyle = 'rgba(255,107,107,0.5)';
       ctx.textAlign = 'center';
       ctx.fillText('P-type', jx * 0.5, 148);
@@ -596,7 +579,7 @@
 
       // Depletion label
       if (deplHalf > 20) {
-        ctx.font = '500 10px IBM Plex Mono';
+        ctx.font = '500 10px JetBrains Mono';
         ctx.fillStyle = T.overlay20;
         ctx.textAlign = 'center';
         ctx.fillText('Depletion', jx, H - 16);
@@ -613,7 +596,7 @@
       const rows = Math.floor((H - 80) / spacing);
       const colsPerSide = Math.max(1, Math.floor(deplHalf / spacing));
 
-      ctx.font = '700 10px IBM Plex Mono';
+      ctx.font = '700 10px JetBrains Mono';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
@@ -669,7 +652,7 @@
       ctx.lineTo(jx - arrowLen * 0.4 + 8, arrowY + 5);
       ctx.fill();
 
-      ctx.font = '500 10px IBM Plex Mono';
+      ctx.font = '500 10px JetBrains Mono';
       ctx.fillStyle = 'rgba(255, 200, 50, 0.35)';
       ctx.textAlign = 'center';
       ctx.fillText('E-field', jx, arrowY - 12);
@@ -697,7 +680,7 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        ctx.font = '700 9px IBM Plex Mono';
+        ctx.font = '700 9px JetBrains Mono';
         ctx.fillStyle = 'rgba(255, 107, 107, 0.7)';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -714,7 +697,7 @@
           ctx.arc(e.x, e.y, 5, 0, Math.PI * 2);
           ctx.fillStyle = 'rgba(78, 205, 196, 0.35)';
           ctx.fill();
-          ctx.font = '700 8px IBM Plex Mono';
+          ctx.font = '700 8px JetBrains Mono';
           ctx.fillStyle = 'rgba(78, 205, 196, 0.5)';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -730,7 +713,7 @@
         ctx.lineWidth = 1;
         ctx.stroke();
 
-        ctx.font = '700 8px IBM Plex Mono';
+        ctx.font = '700 8px JetBrains Mono';
         ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -798,7 +781,7 @@
       const bx = W * 0.5;
       const by = H - 50;
 
-      ctx.font = '500 11px IBM Plex Mono';
+      ctx.font = '500 11px JetBrains Mono';
       ctx.fillStyle = T.overlay35;
       ctx.textAlign = 'center';
 
@@ -834,7 +817,7 @@
       ctx.stroke();
 
       // Title
-      ctx.font = '500 9px IBM Plex Mono';
+      ctx.font = '500 9px JetBrains Mono';
       ctx.fillStyle = T.overlay25;
       ctx.textAlign = 'center';
       ctx.fillText('Energy Band Diagram', bx + bw / 2, by + 12);
@@ -898,7 +881,7 @@
       ctx.setLineDash([]);
 
       // Labels
-      ctx.font = '500 8px IBM Plex Mono';
+      ctx.font = '500 8px JetBrains Mono';
       ctx.textAlign = 'left';
       ctx.fillStyle = 'rgba(78, 205, 196, 0.6)';
       ctx.fillText('Ec', bx + 2, pCbY - 3);
@@ -929,7 +912,7 @@
       ctx.beginPath();
       ctx.moveTo(bgX - 3, nVbY - 4); ctx.lineTo(bgX + 3, nVbY - 4); ctx.lineTo(bgX, nVbY); ctx.fill();
 
-      ctx.font = '400 7px IBM Plex Mono';
+      ctx.font = '400 7px JetBrains Mono';
       ctx.fillStyle = T.overlay25;
       ctx.textAlign = 'left';
       ctx.fillText('Eg=' + mat.bandgap.toFixed(2) + 'eV', bgX + 5, (nCbY + nVbY) / 2 + 3);
@@ -953,7 +936,7 @@
         ctx.lineTo(arrowX, nVbY);
         ctx.fill();
         // Photon label
-        ctx.font = '500 7px IBM Plex Mono';
+        ctx.font = '500 7px JetBrains Mono';
         ctx.fillStyle = mat.photonColor + '88';
         ctx.textAlign = 'left';
         ctx.fillText('hν', arrowX + 5, (nCbY + nVbY) / 2 + 2);
@@ -1183,7 +1166,7 @@
       // Status text
       const mat = MATERIALS[currentMaterial];
       if (currentStep >= 1) {
-        ctx.font = '500 11px IBM Plex Mono';
+        ctx.font = '500 11px JetBrains Mono';
         ctx.textAlign = 'left';
         const exceeded = getThresholdExceeded();
         ctx.fillStyle = exceeded ? 'rgba(0, 255, 136, 0.5)' : T.overlay25;

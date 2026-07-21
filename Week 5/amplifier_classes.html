@@ -6,14 +6,13 @@
     <title>BMEN90033: Amplifier Classes — Interactive Explainer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-deep: #1a1a1e;
             --bg-panel: #222226;
             --bg-card: #2a2a2f;
             --border: rgba(255,255,255,0.08);
-            --accent: #6aaa8e;
+            --accent: var(--site-accent);
             --accent-dim: #5a9a7e;
             --text: #ffffff;
             --text-dim: #a0a0a0;
@@ -31,7 +30,7 @@
             --bg-card: #eeeef0;
             --border: rgba(0,0,0,0.1);
             --border-hover: rgba(0,0,0,0.2);
-            --accent: #3d8b6e;
+            --accent: var(--site-accent);
             --accent-dim: #357a60;
             --text: #1a1a1e;
             --text-dim: #555555;
@@ -41,7 +40,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg-deep);
             color: var(--text);
             min-height: 100vh;
@@ -60,14 +59,15 @@
 
         .header-left { display: flex; align-items: center; gap: 12px; }
 
-        .back-btn {
+        .header-left .back-btn {
+            position: static;
             display: inline-flex; align-items: center; gap: 5px;
             padding: 4px 10px; border-radius: 3px;
             background: rgba(255,255,255,0.05); border: 1px solid var(--border);
             color: var(--text-dim); text-decoration: none;
             font-size: 11px; font-weight: 500; transition: all 0.15s;
         }
-        .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+        .header-left .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
 
         h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
         .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
@@ -167,7 +167,7 @@
         }
 
         .ctrl-val {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.68rem;
             color: var(--text);
             min-width: 56px;
@@ -184,7 +184,7 @@
             background: rgba(255,255,255,0.04);
             border: 1px solid var(--border);
             color: var(--text-dim);
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.65rem;
             font-weight: 500;
             border-radius: 3px;
@@ -228,14 +228,14 @@
             transition: width 0.15s ease;
         }
         .power-bar-val {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.6rem;
             color: var(--text-dim);
             min-width: 42px;
             text-align: right;
         }
         .efficiency-readout {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.75rem;
             font-weight: 500;
             text-align: center;
@@ -334,14 +334,20 @@
 
 <header>
     <div class="header-left">
-        <a class="back-btn" href="../index.html">&larr; Back</a>
+        <a class="back-btn" href="../index.html">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+            </svg>
+            Back
+        </a>
         <div>
             <h1>Amplifier Classes</h1>
             <div class="header-sub">Week 5 &mdash; Amplifiers</div>
         </div>
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
-        <span id="efficiency-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:3px 8px;border-radius:3px;background:rgba(106,170,142,0.15);color:var(--accent);font-weight:500;">&eta; = 25%</span>
+        <span id="efficiency-badge" style="font-family:'JetBrains Mono',monospace;font-size:0.72rem;padding:3px 8px;border-radius:3px;background:rgba(106,170,142,0.15);color:var(--accent);font-weight:500;">&eta; = 25%</span>
     </div>
 </header>
 
@@ -1233,7 +1239,7 @@ function drawLoadLineInset(ctx, w, h) {
     ctx.stroke();
 
     ctx.save();
-    ctx.font = '8px "IBM Plex Mono", monospace';
+    ctx.font = '8px "JetBrains Mono", monospace';
     ctx.fillStyle = T.overlay40;
     ctx.textAlign = 'center';
     ctx.fillText('V_CE', ox + axW / 2, oy + 11);
@@ -1308,7 +1314,7 @@ function drawLoadLineInset(ctx, w, h) {
     ctx.lineWidth = 1.5;
 
     ctx.save();
-    ctx.font = '600 8px "IBM Plex Mono", monospace';
+    ctx.font = '600 8px "JetBrains Mono", monospace';
     ctx.fillStyle = '#e06050';
     ctx.textAlign = 'left';
     ctx.fillText('Q', qx + 5, qy - 3);
@@ -1452,7 +1458,7 @@ function drawClassACurrentFlow(ctx, w, h) {
 
     // Signal state label
     ctx.save();
-    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.font = '600 9px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     if (Math.abs(normalizedVin) < 0.05) {
         ctx.fillStyle = T.overlay50;
@@ -1565,7 +1571,7 @@ function drawClassBCurrentFlow(ctx, w, h) {
 
     // Signal state label
     ctx.save();
-    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.font = '600 9px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     if (Math.abs(normalizedVin) <= deadZone && vinPeak > 0) {
         ctx.fillStyle = 'rgba(224,96,80,0.9)';
@@ -1692,7 +1698,7 @@ function drawClassABCurrentFlow(ctx, w, h) {
 
     // Draw NPN base annotation (to the left of the base pin)
     ctx.save();
-    ctx.font = '500 9px "IBM Plex Mono", monospace';
+    ctx.font = '500 9px "JetBrains Mono", monospace';
     ctx.textAlign = 'right';
 
     // NPN base voltage
@@ -1717,7 +1723,7 @@ function drawClassABCurrentFlow(ctx, w, h) {
 
     // Signal state label
     ctx.save();
-    ctx.font = '600 9px "IBM Plex Mono", monospace';
+    ctx.font = '600 9px "JetBrains Mono", monospace';
     ctx.textAlign = 'left';
     if (Math.abs(normalizedVin) < 0.05) {
         ctx.fillStyle = T.overlay50;
@@ -1741,8 +1747,8 @@ function drawCircuit() {
     const activeColor = '#6aaa8e';
     const componentColor = T.overlay70;
     const labelColor = T.textDim;
-    const labelFont = '500 10px "IBM Plex Mono", monospace';
-    const titleFont = '500 11px "IBM Plex Sans", sans-serif';
+    const labelFont = '500 10px "JetBrains Mono", monospace';
+    const titleFont = '500 11px "Inter", sans-serif';
 
     ctx.strokeStyle = lineColor;
     ctx.lineWidth = 1.5;
@@ -1895,7 +1901,7 @@ function drawWaveforms() {
 
     // ─── Y-axis labels ───
     ctx.save();
-    ctx.font = '9px "IBM Plex Mono", monospace';
+    ctx.font = '9px "JetBrains Mono", monospace';
     ctx.fillStyle = T.overlay30;
     ctx.textAlign = 'right';
     ctx.fillText('+' + maxVout + 'V', padL - 6, padT + plotH * 0.05 + 4);
@@ -1908,7 +1914,7 @@ function drawWaveforms() {
         const peakOut = Math.max(...waveHistory.map(s => Math.abs(s.vout)));
         const measuredGain = peakOut / vinPeak;
         ctx.save();
-        ctx.font = '500 10px "IBM Plex Mono", monospace';
+        ctx.font = '500 10px "JetBrains Mono", monospace';
         ctx.fillStyle = 'rgba(106,170,142,0.6)';
         ctx.textAlign = 'right';
         ctx.fillText('Gain: ~' + measuredGain.toFixed(1) + 'x', w - padR, padT + 12);

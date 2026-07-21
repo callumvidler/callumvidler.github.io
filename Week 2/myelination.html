@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026: Myelinated vs Unmyelinated Neuron Conduction</title>
   <style>
-    :root { --text: #ffffff; }
+    :root { --text: #ffffff; --accent: var(--site-accent); }
     [data-theme="light"] { --text: #1a1a1e; }
 
     * {
@@ -17,7 +17,7 @@
     body {
       background: #111;
       color: #ccc;
-      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       overflow: hidden;
     }
 
@@ -146,9 +146,9 @@
     }
 
     button.ctrl-btn.active {
-      background: rgba(255, 200, 50, 0.15);
-      border-color: rgba(255, 200, 50, 0.4);
-      color: #ffc832;
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--accent);
     }
 
     #signal-panel {
@@ -195,7 +195,7 @@
       padding: 12px 24px;
       border-radius: 10px;
       border: 1px solid rgba(255, 255, 255, 0.08);
-      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-family: 'JetBrains Mono', monospace;
       text-align: center;
       pointer-events: none;
     }

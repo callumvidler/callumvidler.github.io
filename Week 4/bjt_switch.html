@@ -6,14 +6,13 @@
     <title>BMEN90033: BJT as a Switch — Interactive Explainer</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-deep: #1a1a1e;
             --bg-panel: #222226;
             --bg-card: #2a2a2f;
             --border: rgba(255,255,255,0.08);
-            --accent: #6aaa8e;
+            --accent: var(--site-accent);
             --accent-dim: #5a9a7e;
             --text: #ffffff;
             --text-dim: #a0a0a0;
@@ -33,7 +32,7 @@
             --bg-card: #eeeef0;
             --border: rgba(0,0,0,0.1);
             --border-hover: rgba(0,0,0,0.2);
-            --accent: #3d8b6e;
+            --accent: var(--site-accent);
             --accent-dim: #357a60;
             --text: #1a1a1e;
             --text-dim: #555555;
@@ -43,7 +42,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: var(--bg-deep);
             color: var(--text);
             min-height: 100vh;
@@ -61,15 +60,7 @@
         }
 
         .header-left { display: flex; align-items: center; gap: 12px; }
-
-        .back-btn {
-            display: inline-flex; align-items: center; gap: 5px;
-            padding: 4px 10px; border-radius: 3px;
-            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-            color: var(--text-dim); text-decoration: none;
-            font-size: 11px; font-weight: 500; transition: all 0.15s;
-        }
-        .back-btn:hover { color: var(--text); border-color: rgba(255,255,255,0.18); }
+        .header-left .back-btn { position: static; top: auto; right: auto; }
 
         h1 { font-size: 0.85rem; font-weight: 600; letter-spacing: -0.01em; }
         .header-sub { font-size: 0.65rem; color: var(--text-dim); margin-top: 1px; }
@@ -171,7 +162,7 @@
         }
 
         .ctrl-val {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.68rem;
             color: var(--text);
             min-width: 56px;
@@ -199,7 +190,7 @@
             background: rgba(255,255,255,0.04);
             border: 1px solid var(--border);
             color: var(--text-dim);
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.65rem;
             font-weight: 500;
             border-radius: 3px;
@@ -230,7 +221,7 @@
             color: var(--text-muted);
         }
         .readout-value {
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.72rem;
             font-weight: 500;
         }
@@ -259,15 +250,13 @@
             display: inline-block;
             padding: 2px 8px;
             border-radius: 3px;
-            font-family: 'IBM Plex Mono', monospace;
+            font-family: 'JetBrains Mono', monospace;
             font-size: 0.65rem;
             font-weight: 500;
         }
         .region-cutoff { background: rgba(200,60,60,0.2); color: #d66; }
         .region-active { background: rgba(90,154,186,0.2); color: var(--col-ic); }
         .region-saturation { background: rgba(204,168,85,0.2); color: var(--col-ib); }
-        [data-theme="light"] .back-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.1); color: #555; }
-        [data-theme="light"] .back-btn:hover { color: #1a1a1e; border-color: rgba(0,0,0,0.2); }
         [data-theme="light"] .toggle-btn { background: rgba(0,0,0,0.04); }
         [data-theme="light"] .toggle-btn:hover { background: rgba(0,0,0,0.08); color: #1a1a1e; }
         [data-theme="light"] .toggle-btn.active { background: rgba(0,0,0,0.10); border-color: rgba(0,0,0,0.18); color: #1a1a1e; }
@@ -283,7 +272,13 @@
 
 <header>
     <div class="header-left">
-        <a class="back-btn" href="../index.html">&larr; Back</a>
+        <a class="back-btn" href="../index.html">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+            </svg>
+            Back
+        </a>
         <div>
             <h1>BJT as a Switch</h1>
             <div class="header-sub">Week 4 &mdash; Transistors</div>
@@ -308,7 +303,7 @@
         <div class="panel-header">
             <div style="display:flex;align-items:center;gap:10px;">
                 <strong>Circuit Diagram</strong>
-                <span id="hfe-forced-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-muted);"></span>
+                <span id="hfe-forced-badge" style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--text-muted);"></span>
             </div>
             <div class="legend">
                 <div class="legend-item"><div class="legend-dot" style="background:var(--col-ib)"></div>Base</div>
@@ -650,7 +645,7 @@ function drawCircuit(state) {
     // ─── NPN layout ───
     if (isNPN) {
         // V_CC label
-        ctx.font = `600 ${s(12)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `600 ${s(12)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -667,7 +662,7 @@ function drawCircuit(state) {
 
         // R_load voltage drop label (right side)
         const vRL = state.ic * rLoad;
-        ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `400 ${s(9)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = T.textFaint;
         ctx.textAlign = 'left';
         ctx.fillText(vRL.toFixed(2) + ' V', railX + s(28), (rlTop + rlBot) / 2);
@@ -678,7 +673,7 @@ function drawCircuit(state) {
         // I_C arrow ON the wire (between R_load and collector), shifted up
         const icWireY = rlBot + (bjtY - bjtR - rlBot) * 0.3;
         drawInlineCurrentArrow(ctx, railX, icWireY, s(14), 'down', COL_IC);
-        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = COL_IC;
         ctx.textAlign = 'left';
         ctx.fillText('I_C = ' + formatCurrent(state.ic), railX + s(10), icWireY);
@@ -692,7 +687,7 @@ function drawCircuit(state) {
         // I_E arrow ON the wire (between emitter and GND), label to the right
         const ieWireMid = (bjtY + bjtR + gndY) / 2;
         drawInlineCurrentArrow(ctx, railX, ieWireMid, s(14), 'down', COL_IE);
-        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = COL_IE;
         ctx.textAlign = 'left';
         ctx.fillText('I_E = ' + formatCurrent(state.ie), railX + s(10), ieWireMid);
@@ -706,7 +701,7 @@ function drawCircuit(state) {
     } else {
         // ─── PNP layout ───
         // V_CC label
-        ctx.font = `600 ${s(12)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `600 ${s(12)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = T.text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -718,7 +713,7 @@ function drawCircuit(state) {
         // I_E arrow ON the wire (between V_CC and emitter), label to the right
         const ieWireMid = (vccY + bjtY - bjtR) / 2;
         drawInlineCurrentArrow(ctx, railX, ieWireMid, s(14), 'down', COL_IE);
-        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = COL_IE;
         ctx.textAlign = 'left';
         ctx.fillText('I_E = ' + formatCurrent(state.ie), railX + s(10), ieWireMid);
@@ -734,7 +729,7 @@ function drawCircuit(state) {
         // I_C arrow ON the wire (between collector and R_load), shifted up
         const icWireY = bjtY + bjtR + (rlTop - bjtY - bjtR) * 0.3;
         drawInlineCurrentArrow(ctx, railX, icWireY, s(14), 'down', COL_IC);
-        ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = COL_IC;
         ctx.textAlign = 'left';
         ctx.fillText('I_C = ' + formatCurrent(state.ic), railX + s(10), icWireY);
@@ -745,7 +740,7 @@ function drawCircuit(state) {
 
         // R_load voltage drop label
         const vRL = state.ic * rLoad;
-        ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+        ctx.font = `400 ${s(9)}px 'JetBrains Mono', monospace`;
         ctx.fillStyle = T.textFaint;
         ctx.textAlign = 'left';
         ctx.fillText(vRL.toFixed(2) + ' V', railX + s(28), (rlTop + rlBot) / 2);
@@ -761,7 +756,7 @@ function drawCircuit(state) {
     }
 
     // h_FE(forced) label below BJT
-    ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `400 ${s(9)}px 'JetBrains Mono', monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     if (state.region === 'saturation') {
@@ -802,14 +797,14 @@ function drawCircuit(state) {
     if (state.ib > 0) {
         drawInlineCurrentArrow(ctx, ibWireX, baseY, s(28), ibDir, COL_IB);
     }
-    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = COL_IB;
     ctx.textAlign = 'center';
     ctx.fillText('I_B = ' + formatCurrent(state.ib), ibWireX - s(8), baseY - s(14));
 
     // V_BE label (below and to the left, clear of BJT symbol)
     const vbe = state.ib > 0 ? VBE_ON : 0;
-    ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `400 ${s(9)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = T.textFaint;
     ctx.textAlign = 'center';
     ctx.fillText('V_BE = ' + vbe.toFixed(1) + ' V', ibWireX - s(10), baseY + s(24));
@@ -850,7 +845,7 @@ function drawResistorBox(ctx, x1, y1, x2, y2, s, name, valStr, labelSide) {
     ctx.strokeRect(-boxLen / 2, -boxW / 2, boxLen, boxW);
 
     // Value text inside box
-    ctx.font = `400 ${s(8)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `400 ${s(8)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = T.textSub;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -860,7 +855,7 @@ function drawResistorBox(ctx, x1, y1, x2, y2, s, name, valStr, labelSide) {
     // Name label outside box
     const allMidX = (x1 + x2) / 2, allMidY = (y1 + y2) / 2;
     const off = (boxW / 2 + s(10)) * labelSide;
-    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = T.textMid;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -915,7 +910,7 @@ function drawBJT_NPN(ctx, x, y, r, s) {
     ctx.fill();
 
     // Terminal labels
-    ctx.font = `600 ${s(9)}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `600 ${s(9)}px 'Inter', sans-serif`;
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = COL_IC;
@@ -932,7 +927,7 @@ function drawBJT_NPN(ctx, x, y, r, s) {
 
     // Type label (inside circle, right side)
     ctx.fillStyle = T.overlay40;
-    ctx.font = `600 ${s(11)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `600 ${s(11)}px 'JetBrains Mono', monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('NPN', x + r * 0.32, y);
@@ -986,7 +981,7 @@ function drawBJT_PNP(ctx, x, y, r, s) {
     ctx.beginPath(); ctx.moveTo(barX, cBarY); ctx.lineTo(cEndX, cEndY); ctx.stroke();
 
     // Terminal labels
-    ctx.font = `600 ${s(9)}px 'IBM Plex Sans', sans-serif`;
+    ctx.font = `600 ${s(9)}px 'Inter', sans-serif`;
     ctx.textBaseline = 'middle';
 
     ctx.fillStyle = COL_IE;
@@ -1003,7 +998,7 @@ function drawBJT_PNP(ctx, x, y, r, s) {
 
     // Type label (inside circle, right side)
     ctx.fillStyle = T.overlay40;
-    ctx.font = `600 ${s(11)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `600 ${s(11)}px 'JetBrains Mono', monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('PNP', x + r * 0.32, y);
@@ -1054,7 +1049,7 @@ function drawVCELabel(ctx, x, yTop, yBot, vce, s) {
     ctx.stroke();
 
     // Label (to the right of the bracket)
-    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = COL_VCE;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -1094,7 +1089,7 @@ function drawVoltageSource(ctx, x, y, r, s, vIn) {
     ctx.stroke();
 
     // + and - labels (top and bottom inside circle)
-    ctx.font = `600 ${s(10)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `600 ${s(10)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = T.overlay50;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1102,10 +1097,10 @@ function drawVoltageSource(ctx, x, y, r, s, vIn) {
     ctx.fillText('−', x, y + r * 0.45);
 
     // V_in label below source
-    ctx.font = `500 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `500 ${s(9)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = T.textMid;
     ctx.fillText('V_in', x, y - r - s(10));
-    ctx.font = `400 ${s(9)}px 'IBM Plex Mono', monospace`;
+    ctx.font = `400 ${s(9)}px 'JetBrains Mono', monospace`;
     ctx.fillStyle = T.text;
     ctx.fillText(vIn.toFixed(1) + ' V', x, y - r - s(22));
 }
@@ -1171,7 +1166,7 @@ function drawTimePlots() {
     drawTrace(ctx, dataBuf.t, dataBuf.ie, tStart, tWindow, mapY, pad.l, plotW, '#c96b5a', 1.5);
 
     // Y-axis labels
-    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.font = "13px 'JetBrains Mono', monospace";
     ctx.fillStyle = T.textDim;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -1195,7 +1190,7 @@ function drawTimePlots() {
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.fillStyle = T.textDimmer;
-    ctx.font = "13px 'IBM Plex Sans', sans-serif";
+    ctx.font = "13px 'Inter', sans-serif";
     ctx.fillText('Current', 0, 0);
     ctx.restore();
 
@@ -1274,7 +1269,7 @@ function drawIVCurve(state) {
     ctx.fillRect(pad.l, pad.t + plotH - cutoffH, plotW, cutoffH);
 
     // Region labels
-    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.font = "12px 'JetBrains Mono', monospace";
     ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(204,168,85,0.8)';
     ctx.save();
@@ -1333,7 +1328,7 @@ function drawIVCurve(state) {
         ctx.stroke();
 
         // Label
-        ctx.font = "11px 'IBM Plex Mono', monospace";
+        ctx.font = "11px 'JetBrains Mono', monospace";
         ctx.fillStyle = `rgba(90,154,186,${Math.min(alpha + 0.3, 1)})`;
         ctx.textAlign = 'left';
         const labelIc = hfe * ib;
@@ -1355,7 +1350,7 @@ function drawIVCurve(state) {
     ctx.setLineDash([]);
 
     // Load line label
-    ctx.font = "12px 'IBM Plex Mono', monospace";
+    ctx.font = "12px 'JetBrains Mono', monospace";
     ctx.fillStyle = T.overlay80;
     ctx.textAlign = 'right';
     ctx.fillText('Load line', mapX(vcc) - 4, mapY(0) - 6);
@@ -1380,7 +1375,7 @@ function drawIVCurve(state) {
     ctx.stroke();
 
     // ─── Axis labels ───
-    ctx.font = "13px 'IBM Plex Mono', monospace";
+    ctx.font = "13px 'JetBrains Mono', monospace";
     ctx.fillStyle = T.textDim;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -1402,13 +1397,13 @@ function drawIVCurve(state) {
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
     ctx.fillStyle = T.textDimmer;
-    ctx.font = "13px 'IBM Plex Sans', sans-serif";
+    ctx.font = "13px 'Inter', sans-serif";
     ctx.fillText('I_C (Collector Current)', 0, 0);
     ctx.restore();
 
     ctx.fillStyle = T.textDimmer;
     ctx.textAlign = 'center';
-    ctx.font = "13px 'IBM Plex Sans', sans-serif";
+    ctx.font = "13px 'Inter', sans-serif";
     const vAxisLabel = bjt === 'NPN' ? 'V_CE (Collector-Emitter)' : 'V_EC (Emitter-Collector)';
     ctx.fillText(vAxisLabel, pad.l + plotW / 2, pad.t + plotH + 32);
 

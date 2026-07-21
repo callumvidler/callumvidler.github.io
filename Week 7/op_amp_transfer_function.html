@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMEN90033: Op-Amp Transfer Functions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg: #0a0a10;
+        --bg-2: #12131c;
+        --bg-panel: rgba(22,23,32,0.75);
+        --fg: #eef0f5;
+        --text: #eef0f5;
+        --text-dim: #d4d7e0;
+        --text-muted: #8b90a3;
+        --muted: #8b90a3;
+        --real: #58a6ff;
+        --imag: #ff5c7a;
+        --time: #7be089;
+        --accent: #ffcf5c;
+        --blue: #58a6ff;
+        --red: #ff5c7a;
+        --green: #7be089;
+        --yellow: #ffcf5c;
+        --grid: rgba(255,255,255,0.06);
+        --border: rgba(255,255,255,0.09);
+        --border-hover: rgba(255,255,255,0.18);
+        --body-size: 17px;
+        --math-size: 18px;
+        --hero-size: 64px;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, -apple-system, sans-serif; font-size: var(--body-size); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+      body { overflow-x: hidden; min-height: 100vh; }
+
+      .katex { font-size: var(--math-size) !important; }
+      .katex-display { margin: 0.6em 0 !important; }
+      .katex-display > .katex { font-size: calc(var(--math-size) * 1.1) !important; }
+
+      a { color: var(--accent); }
+
+      .rail { position: fixed; top: 0; left: 0; right: 0; height: 2px; background: transparent; z-index: 60; pointer-events: none; }
+      .rail-fill { height: 100%; background: linear-gradient(90deg, var(--real), var(--accent)); width: 0%; transition: width 0.15s; }
+
+      .brand { position: fixed; top: 20px; left: 24px; z-index: 40; font-size: 12px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 10px; }
+      .brand .mark { width: 10px; height: 10px; border-radius: 50%; background: conic-gradient(var(--real), var(--imag), var(--time), var(--real)); }
+
+      .back-btn { position: fixed; top: 18px; right: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px; background: rgba(22,23,32,0.6); border: 1px solid var(--border); color: var(--fg); text-decoration: none; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; backdrop-filter: blur(8px); transition: all 0.15s; }
+      .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+      @media (max-width: 900px) { .back-btn { top: 14px; right: 16px; } }
+
+      section.scene {
+        min-height: 100vh;
+        padding: 100px 56px 80px;
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+        gap: 48px;
+        align-items: center;
+        position: relative;
+        border-bottom: 1px solid var(--border);
+      }
+      section.scene.wide { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+      section.scene.full { grid-template-columns: 1fr; max-width: 1180px; margin: 0 auto; }
+      section.scene .copy { max-width: 680px; }
+      section.scene .canvas-wrap { position: relative; width: 100%; max-width: 720px; margin: 0 auto; }
+
+      .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+      .eyebrow .num { color: var(--accent); }
+      .eyebrow .bar { flex: 0 0 28px; height: 1px; background: var(--accent); }
+
+      h1.hero { font-size: var(--hero-size); line-height: 1.02; font-weight: 600; letter-spacing: -0.025em; margin: 0 0 24px; }
+      h1.hero em { font-style: normal; background: linear-gradient(135deg, var(--real), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+      h2 { font-size: 38px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 18px; color: var(--fg); }
+      h3 { font-size: 18px; font-weight: 600; margin: 22px 0 8px; color: var(--fg); letter-spacing: -0.01em; }
+      p { margin: 0 0 14px; color: var(--text-dim); }
+      p.lead { font-size: calc(var(--body-size) + 2px); color: var(--fg); }
+      p.dim { color: var(--muted); }
+      section.scene ul { padding-left: 20px; margin: 4px 0 14px; color: var(--text-dim); }
+      section.scene li { margin-bottom: 6px; line-height: 1.6; }
+      strong { color: var(--fg); font-weight: 600; }
+      em.real { font-style: normal; color: var(--real); }
+      em.imag { font-style: normal; color: var(--imag); }
+      em.time { font-style: normal; color: var(--time); }
+      em.acc  { font-style: normal; color: var(--accent); }
+      em.yellow { font-style: normal; color: var(--yellow); }
+
+      .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 18px 0 8px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+      .legend span { display: inline-flex; align-items: center; gap: 6px; }
+      .legend i { width: 12px; height: 12px; border-radius: 2px; display: inline-block; }
+
+      .controls { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; padding: 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; backdrop-filter: blur(8px); }
+      .control-group { display: grid; grid-template-columns: 170px 1fr 110px; align-items: center; gap: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .control-group label { color: var(--muted); }
+      .control-group .control-value { color: var(--accent); text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+      .control-group input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; width: 100%; height: auto; }
+      .control-group input[type=range]::-webkit-slider-runnable-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); margin-top: -5.5px; cursor: grab; border: 2px solid var(--bg); }
+      .control-group input[type=range]::-moz-range-track { height: 3px; background: rgba(255,255,255,0.12); border-radius: 2px; }
+      .control-group input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); cursor: grab; }
+
+      .plot { position: absolute; inset: 0; background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+      .plot .title { position: absolute; top: 12px; left: 16px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); z-index: 2; }
+      .plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+      .eq-block { display: block; margin: 16px 0; padding: 16px 20px; background: rgba(255,207,92,0.05); border: 1px solid rgba(255,207,92,0.18); border-radius: 10px; text-align: center; color: var(--fg); }
+      .eq-line { display: block; padding: 14px 18px; margin: 14px 0; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; text-align: center; color: var(--fg); }
+
+      .callout { margin-top: 18px; padding: 16px 20px; border-left: 2px solid var(--accent); background: rgba(255,207,92,0.05); border-radius: 0 8px 8px 0; font-size: 14px; color: var(--text-dim); line-height: 1.7; }
+      .callout strong { color: var(--fg); }
+
+      .readout-bar { display: flex; gap: 22px; flex-wrap: wrap; padding: 12px 16px; background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; backdrop-filter: blur(8px); font-family: 'JetBrains Mono', monospace; }
+      .readout-item { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; display: inline-flex; align-items: baseline; gap: 8px; }
+      .readout-item .val { color: var(--fg); font-size: 13px; text-transform: none; letter-spacing: 0; }
+      .readout-item .val.accent { color: var(--accent); }
+      .readout-item .val.blue { color: var(--blue); }
+      .readout-item .val.green { color: var(--green); }
+
+      details.derivation { margin: 18px 0 8px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.02); overflow: hidden; }
+      details.derivation > summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 12px; padding: 14px 18px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); transition: color 0.15s, background 0.15s; }
+      details.derivation > summary::-webkit-details-marker { display: none; }
+      details.derivation > summary:hover { color: var(--fg); background: rgba(255,255,255,0.03); }
+      details.derivation > summary .tag { color: var(--accent); }
+      details.derivation > summary .chev { margin-left: auto; font-size: 14px; color: var(--muted); transition: transform 0.2s; line-height: 1; }
+      details.derivation[open] > summary { border-bottom: 1px solid var(--border); color: var(--fg); }
+      details.derivation[open] > summary .chev { transform: rotate(90deg); color: var(--accent); }
+      details.derivation .body { padding: 18px 22px 22px; }
+      details.derivation .body > :first-child { margin-top: 0; }
+
+      .landing { min-height: 100vh; display: grid; place-items: center; padding: 120px 56px 80px; position: relative; text-align: center; }
+      .landing .meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 32px; }
+      .landing h1 { max-width: 22ch; margin-left: auto; margin-right: auto; }
+      .landing .sub { color: var(--muted); font-size: 18px; max-width: 58ch; margin: 20px auto 0; line-height: 1.6; }
+      .landing .tags { margin-top: 40px; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+      .field-tag { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; display: inline-block; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; }
+      .scroll-hint { position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; color: var(--muted); text-transform: uppercase; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+      .scroll-hint .line { width: 1px; height: 32px; background: linear-gradient(var(--muted), transparent); animation: pulse 2s infinite; }
+      @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+      footer { padding: 60px 56px 80px; text-align: center; color: var(--muted); font-size: 13px; border-top: 1px solid var(--border); }
+
+      .stack-two { display: grid; grid-template-rows: 1fr 1fr; gap: 20px; height: 100%; }
+      .stack-two .plot { position: relative; inset: auto; width: 100%; height: 100%; }
+
+      @media (max-width: 900px) {
+        section.scene,
+        section.scene.wide { grid-template-columns: 1fr; padding: 80px 24px 60px; }
+        .landing { padding: 100px 24px 60px; }
+        h1.hero { font-size: 44px; }
+        h2 { font-size: 28px; }
+        .brand { top: 16px; left: 16px; }
+        .control-group { grid-template-columns: 140px 1fr 90px; }
+      }
+    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+        onload="renderMathInElement(document.body, {
+            delimiters: [
+                { left: '$$', right: '$$', display: true },
+                { left: '\\[', right: '\\]', display: true },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false }
+            ],
+            throwOnError: false
+        });"></script>
+</head>
+<body>
+
+<div class="brand"><span class="mark"></span><span>BMEN90033 · Week 7 · Extras</span></div>
+<a class="back-btn" href="../index.html">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/>
+    </svg>
+    Back
+</a>
+<div class="rail"><div class="rail-fill" id="rail"></div></div>
+
+<!-- =========================== LANDING =========================== -->
+<section class="landing" id="s0">
+    <div>
+        <div class="meta">BMEN90033 · WEEK 7 · BIOINSTRUMENTATION</div>
+        <h1 class="hero">The <em>Op-Amp</em> as a Transfer Function.</h1>
+        <p class="sub">The operational amplifier is a two-input, one-output device whose open-loop dynamics are dominated by a single pole. Applying negative feedback relocates that pole, trading gain for bandwidth while preserving the gain–bandwidth product. This page derives both transfer functions and visualises the resulting $s$-plane geometry and time response.</p>
+        <div class="tags">
+            <span class="field-tag">feedback</span>
+            <span class="field-tag">pole migration</span>
+            <span class="field-tag">gain–bandwidth</span>
+        </div>
+    </div>
+    <div class="scroll-hint"><span>scroll</span><span class="line"></span></div>
+</section>
+
+<!-- =========================== SECTION 1 — OPEN LOOP =========================== -->
+<section class="scene" id="s1">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">01</span><span>the device</span></div>
+        <h2>The open-loop op-amp.</h2>
+        <p class="lead">In its open-loop configuration the op-amp produces an output proportional to the differential input, $v_d = v_+ - v_-$. For an ideal device this gain is infinite; for a real device it is finite, frequency-dependent, and limited by internal compensation.</p>
+        <p>The circuit to the right depicts the open-loop connection: a non-inverting input $v_+$ driven by a source $v_{in}(t)$, an inverting input $v_-$ returned to ground, and an output $v_o$ referenced to the same ground.</p>
+
+        <h3>Ideal assumptions</h3>
+        <ul>
+            <li>Infinite differential gain, $A_0 \to \infty$ at DC.</li>
+            <li>Infinite input impedance, $i_+ = i_- = 0$.</li>
+            <li>Zero output impedance, output voltage independent of load.</li>
+            <li>Infinite bandwidth and zero offset.</li>
+        </ul>
+        <p>Real devices depart from these limits. The finite DC gain $A_0$ lies typically between $10^5$ and $10^6$, and the response rolls off above a low dominant-pole frequency $\omega_a$, introduced deliberately during fabrication to guarantee stability under feedback.</p>
+
+        <div class="callout">
+            <strong>Dominant-pole compensation.</strong> A small integrated capacitor between internal gain stages produces a single low-frequency pole. All higher-order poles lie well above the unity-gain frequency, so the device behaves as first-order across its useful range.
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/0.85; max-width: 560px;">
+        <div class="plot">
+            <canvas id="circuit-open"></canvas>
+            <div class="title">circuit · open-loop op-amp</div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 2 — ONE-POLE MODEL =========================== -->
+<section class="scene" id="s2">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">02</span><span>one-pole model</span></div>
+        <h2>From first principles.</h2>
+        <p class="lead">The dominant-pole compensation capacitor $C_c$ converts the internal gain stage into a single-pole low-pass. The output responds to the differential input through a first-order linear ordinary differential equation, from which the transfer function follows directly.</p>
+
+        <details class="derivation" open>
+          <summary><span class="tag">show</span><span>derivation · 4 steps</span><span class="chev">&#x25B6;</span></summary>
+          <div class="body">
+
+        <h3 style="margin-top:0;">Step 1 · governing equation</h3>
+        <p>Let $g_m$ denote the transconductance of the input stage and $R_o$ the output resistance across which the compensation capacitor $C_c$ appears in parallel. A differential input $v_d$ drives a current $g_m v_d$ into the parallel combination:</p>
+        <div class="eq-line">$$C_c\,\dot{v}_o + \frac{v_o}{R_o} = g_m\,v_d.$$</div>
+
+        <h3>Step 2 · Laplace transform</h3>
+        <p>Under quiescent initial conditions, the Laplace transform yields:</p>
+        <div class="eq-line">$$\bigl(sC_c + 1/R_o\bigr)\,V_o(s) = g_m\,V_d(s).$$</div>
+
+        <h3>Step 3 · solve for the ratio</h3>
+        <p>Rearranging and dividing numerator and denominator by $1/R_o$:</p>
+        <div class="eq-line">$$A(s) = \frac{V_o(s)}{V_d(s)} = \frac{g_m R_o}{1 + sR_oC_c}.$$</div>
+
+        <h3>Step 4 · canonical parameters</h3>
+        <p>Identifying $A_0 = g_m R_o$ (DC open-loop gain) and $\omega_a = 1/(R_oC_c)$ (dominant-pole frequency):</p>
+
+          </div>
+        </details>
+
+        <div class="eq-block">$$A(s) = \frac{A_0}{1 + s/\omega_a}$$</div>
+        <p>The transfer function is strictly first-order, with a single pole at $s = -\omega_a$ and no finite zeros. The product of DC gain and pole frequency,</p>
+        <div class="eq-line">$$\omega_t \;=\; A_0\,\omega_a,$$</div>
+        <p>is the <em class="acc">unity-gain bandwidth</em> (or gain–bandwidth product, <strong>GBW</strong>). It is an intrinsic device parameter, invariant under feedback, and typically quoted directly in data sheets (e.g. $\omega_t/2\pi \approx 1\text{ MHz}$ for a general-purpose part).</p>
+
+        <h3>Block diagram</h3>
+        <p>In the open-loop case the block diagram contains a single forward element $A(s)$; the input is the differential voltage $V_d(s)$ and the output is $V_o(s)$.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1.0; max-width: 560px;">
+        <div class="stack-two">
+            <div class="plot"><canvas id="block-open"></canvas><div class="title">block diagram · open loop</div></div>
+            <div class="plot"><canvas id="bode-open"></canvas><div class="title">Bode magnitude · |A(jω)|</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 3 — OPEN-LOOP s-PLANE =========================== -->
+<section class="scene wide" id="s3">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">03</span><span>open-loop behaviour</span></div>
+        <h2>One pole. Slow decay.</h2>
+        <p class="lead">The open-loop transfer function possesses a single real pole at $s = -\omega_a$ on the negative real axis. Because $\omega_a$ is small (typically $\omega_a/2\pi \sim 10\text{ Hz}$), this pole lies very close to the imaginary axis; the associated decay time constant $\tau = 1/\omega_a$ is long.</p>
+
+        <div class="eq-block">$$p_{\text{ol}} = -\omega_a, \qquad \tau_{\text{ol}} = \frac{1}{\omega_a}$$</div>
+
+        <p>The impulse response follows directly from the inverse Laplace transform:</p>
+        <div class="eq-line">$$h(t) = A_0\,\omega_a\,e^{-\omega_a t}\,u(t).$$</div>
+        <p>A step input of magnitude $V_s$ produces a saturating exponential approach to $A_0 V_s$:</p>
+        <div class="eq-line">$$v_o(t) = A_0 V_s\bigl(1 - e^{-\omega_a t}\bigr).$$</div>
+        <p>In practice the output saturates at the supply rails long before reaching $A_0 V_s$; open-loop operation is therefore useful only as a comparator. Meaningful linear amplification requires feedback.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>DC gain log₁₀ A₀</label><input type="range" id="A0-log" min="3" max="6.5" step="0.1" value="5.3"><span class="control-value" id="A0-val">2.0·10⁵</span></div>
+            <div class="control-group"><label>dominant pole ω_a</label><input type="range" id="wa-slider" min="3" max="300" step="1" value="60"><span class="control-value" id="wa-val">60 rad/s</span></div>
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">pole<span class="val accent" id="pole-ol">—</span></div>
+            <div class="readout-item">τ<span class="val" id="tau-ol">—</span></div>
+            <div class="readout-item">GBW ω_t<span class="val blue" id="gbw-ol">—</span></div>
+        </div>
+
+        <div class="legend">
+            <span><i style="background:var(--yellow)"></i>× open-loop pole</span>
+            <span><i style="background:var(--red)"></i>unstable region</span>
+            <span><i style="background:var(--accent)"></i>step response</span>
+        </div>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1.0; max-width: 680px;">
+        <div class="stack-two">
+            <div class="plot"><canvas id="splane-open"></canvas><div class="title">s-plane · A(s)</div></div>
+            <div class="plot"><canvas id="step-open"></canvas><div class="title">step response · v_o(t)</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 4 — NEGATIVE FEEDBACK CIRCUIT =========================== -->
+<section class="scene" id="s4">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">04</span><span>negative feedback</span></div>
+        <h2>Returning a fraction of the output.</h2>
+        <p class="lead">Applying <em class="acc">negative feedback</em> returns a scaled copy of the output to the inverting input. The canonical non-inverting amplifier accomplishes this through a resistive divider $\{R_1, R_2\}$ that sets the feedback factor</p>
+        <div class="eq-block">$$\beta = \frac{R_1}{R_1 + R_2}.$$</div>
+        <p>The input signal is applied to $v_+$ directly, and the inverting terminal samples the fraction $\beta\,v_o$ of the output.</p>
+
+        <h3>Block diagram</h3>
+        <p>The feedback topology admits the canonical representation shown below: a summing junction computes the error $E(s) = V_{in}(s) - \beta\,V_o(s)$, the forward path $A(s)$ amplifies the error, and the output is sampled back through the feedback element $\beta$.</p>
+
+        <div class="callout">
+            <strong>Sign convention.</strong> The feedback enters the summing junction with a negative sign because it is applied to the inverting terminal of the op-amp. Physically, the differential input sees $v_+ - v_- = v_{in} - \beta v_o$.
+        </div>
+
+        <h3>Why feedback?</h3>
+        <ul>
+            <li>Gain is desensitised against variation of $A_0$: the closed-loop gain depends primarily on the resistor ratio.</li>
+            <li>Bandwidth is extended in direct proportion to the loop gain $A_0\beta$.</li>
+            <li>Input and output impedances are altered by the same factor, improving source and load matching.</li>
+            <li>Linearity is improved because $A(s)$ operates on the small error signal $e(t)$ rather than the full input.</li>
+        </ul>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1.05; max-width: 580px;">
+        <div class="stack-two">
+            <div class="plot"><canvas id="circuit-closed"></canvas><div class="title">circuit · non-inverting amplifier</div></div>
+            <div class="plot"><canvas id="block-closed"></canvas><div class="title">block diagram · closed loop</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 5 — CLOSED-LOOP DERIVATION =========================== -->
+<section class="scene full" id="s5">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">05</span><span>closed-loop transfer function</span></div>
+        <h2>The feedback identity.</h2>
+        <p class="lead">Three equations describe the feedback loop: the summing junction, the forward gain, and the feedback scaling. Eliminating the internal variables yields the closed-loop transfer function.</p>
+
+        <details class="derivation" open>
+          <summary><span class="tag">show</span><span>derivation · 5 steps</span><span class="chev">&#x25B6;</span></summary>
+          <div class="body">
+
+        <h3 style="margin-top:0;">Step 1 · loop equations</h3>
+        <div class="eq-line">$$E(s) = V_{in}(s) - \beta\,V_o(s), \qquad V_o(s) = A(s)\,E(s).$$</div>
+
+        <h3>Step 2 · eliminate the error</h3>
+        <p>Substituting the first into the second:</p>
+        <div class="eq-line">$$V_o(s) = A(s)\bigl[V_{in}(s) - \beta\,V_o(s)\bigr].$$</div>
+
+        <h3>Step 3 · gather output terms</h3>
+        <div class="eq-line">$$V_o(s)\bigl[1 + A(s)\beta\bigr] = A(s)\,V_{in}(s).$$</div>
+
+        <h3>Step 4 · canonical feedback formula</h3>
+        <div class="eq-line">$$H_{cl}(s) = \frac{V_o(s)}{V_{in}(s)} = \frac{A(s)}{1 + A(s)\beta}.$$</div>
+        <p>This is <em class="acc">Black's formula</em>. The term $A(s)\beta$ is the <em>loop gain</em>; when $|A(s)\beta| \gg 1$, the closed-loop response reduces to $1/\beta$ independent of $A(s)$.</p>
+
+        <h3>Step 5 · substitute the one-pole model</h3>
+        <p>Using $A(s) = A_0/(1 + s/\omega_a)$:</p>
+        <div class="eq-line">$$H_{cl}(s) = \frac{A_0}{1 + s/\omega_a + A_0\beta} \;=\; \frac{A_0}{(1 + A_0\beta) + s/\omega_a}.$$</div>
+        <p>Factoring $(1 + A_0\beta)$ from the denominator:</p>
+
+          </div>
+        </details>
+
+        <div class="eq-block">$$H_{cl}(s) = \frac{\dfrac{A_0}{1 + A_0\beta}}{1 + \dfrac{s}{\omega_a(1 + A_0\beta)}}\;=\;\frac{G_{cl}}{1 + s/\omega_{cl}}$$</div>
+
+        <p>The closed-loop system remains first-order. Two quantities characterise it:</p>
+
+        <div class="eq-line">$$G_{cl} = \frac{A_0}{1 + A_0\beta}\;\xrightarrow[A_0\beta\,\gg\,1]{}\;\frac{1}{\beta}, \qquad \omega_{cl} = \omega_a\,(1 + A_0\beta)\;\xrightarrow[A_0\beta\,\gg\,1]{}\;A_0\omega_a\,\beta = \omega_t\,\beta.$$</div>
+
+        <p>The closed-loop DC gain $G_{cl}$ approaches the reciprocal feedback factor $1/\beta = 1 + R_2/R_1$, and the closed-loop bandwidth $\omega_{cl}$ scales linearly with $\beta$. Their product,</p>
+        <div class="eq-line">$$G_{cl}\cdot\omega_{cl} \;\approx\; \frac{1}{\beta}\cdot\omega_t\beta \;=\; \omega_t,$$</div>
+        <p>is conserved: <em class="acc">feedback trades gain for bandwidth one-for-one, along a constant-GBW hyperbola</em>.</p>
+
+        <div class="callout">
+            <strong>Interpretation.</strong> A single device parameter $\omega_t$ determines the maximum achievable (gain, bandwidth) product. Circuit design choices — the resistor ratio setting $\beta$ — merely select an operating point along that hyperbola. This constraint is fundamental and device-level; no passive network external to the op-amp can circumvent it.
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 6 — CLOSED-LOOP BEHAVIOUR =========================== -->
+<section class="scene wide" id="s6">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">06</span><span>closed-loop behaviour</span></div>
+        <h2>The pole migrates outward.</h2>
+        <p class="lead">The closed-loop pole is located at $s = -\omega_{cl} = -\omega_a(1 + A_0\beta)$. For realistic parameters $A_0\beta \gg 1$ and the pole is translated orders of magnitude deeper into the left half-plane. The step response is correspondingly faster; the Bode magnitude extends to higher frequencies.</p>
+
+        <div class="eq-block">$$p_{cl} = -\omega_a(1 + A_0\beta)$$</div>
+
+        <p>Increasing $\beta$ towards unity (the unity-gain follower, $G_{cl}\to 1$) pushes the pole out to $s = -\omega_t$. Reducing $\beta$ towards zero (high closed-loop gain) returns the pole to the open-loop position; in the limit $\beta = 0$, feedback is removed and the original pole at $-\omega_a$ is recovered.</p>
+
+        <div class="controls">
+            <div class="control-group"><label>feedback factor β</label><input type="range" id="beta-slider" min="0.001" max="1" step="0.001" value="0.1"><span class="control-value" id="beta-val">0.100</span></div>
+            <div class="control-group"><label>closed-loop gain 1/β</label><input type="range" id="gain-slider" min="1" max="1000" step="1" value="10"><span class="control-value" id="gain-val">10×</span></div>
+            <div class="control-group"><label>DC open-loop A₀</label><input type="range" id="A0-log2" min="3" max="6.5" step="0.1" value="5.3"><span class="control-value" id="A0-val2">2.0·10⁵</span></div>
+            <div class="control-group"><label>dominant pole ω_a</label><input type="range" id="wa-slider2" min="3" max="300" step="1" value="60"><span class="control-value" id="wa-val2">60 rad/s</span></div>
+        </div>
+
+        <div class="readout-bar">
+            <div class="readout-item">loop gain A₀β<span class="val accent" id="loop-gain">—</span></div>
+            <div class="readout-item">G_cl<span class="val blue" id="gcl-val">—</span></div>
+            <div class="readout-item">ω_cl<span class="val green" id="wcl-val">—</span></div>
+            <div class="readout-item">G_cl·ω_cl<span class="val yellow" id="gbw-cl">—</span></div>
+        </div>
+
+        <div class="legend">
+            <span><i style="background:var(--yellow)"></i>× open-loop pole</span>
+            <span><i style="background:var(--green)"></i>× closed-loop pole</span>
+            <span><i style="background:var(--blue)"></i>open-loop response</span>
+            <span><i style="background:var(--green)"></i>closed-loop response</span>
+        </div>
+
+        <div class="callout">
+            <strong>Observe.</strong> As $\beta$ increases (closed-loop gain decreases), the green pole sweeps leftward along the real axis. The closed-loop Bode trace extends to higher frequencies while its DC level drops, tracing a rectangle of constant area $\omega_t$ beneath the two curves' asymptotes.
+        </div>
+        <p class="dim" style="font-size:14px;">The two sliders are coupled: modifying $\beta$ updates $1/\beta$, and vice versa. Both the $s$-plane geometry and the frequency and time responses update to reflect the chosen operating point.</p>
+    </div>
+    <div class="canvas-wrap" style="aspect-ratio: 1/1.35; max-width: 680px;">
+        <div class="stack-two" style="grid-template-rows: 1fr 1fr 1fr; height: 100%;">
+            <div class="plot"><canvas id="splane-compare"></canvas><div class="title">s-plane · pole migration</div></div>
+            <div class="plot"><canvas id="bode-compare"></canvas><div class="title">Bode magnitude · open vs closed</div></div>
+            <div class="plot"><canvas id="step-compare"></canvas><div class="title">step response · open vs closed</div></div>
+        </div>
+    </div>
+</section>
+
+<!-- =========================== SECTION 7 — SUMMARY =========================== -->
+<section class="scene full" id="s7">
+    <div class="copy">
+        <div class="eyebrow"><span class="bar"></span><span class="num">07</span><span>summary</span></div>
+        <h2>Two transfer functions, one device parameter.</h2>
+
+        <p>The open-loop and closed-loop transfer functions of a dominant-pole-compensated op-amp are both first-order rational functions:</p>
+        <div class="eq-line">$$A(s) = \frac{A_0}{1 + s/\omega_a}, \qquad H_{cl}(s) = \frac{A_0/(1 + A_0\beta)}{1 + s/\bigl[\omega_a(1 + A_0\beta)\bigr]}.$$</div>
+
+        <p>They differ in two respects:</p>
+        <ul>
+            <li><strong>DC gain:</strong> reduced from $A_0$ to $A_0/(1 + A_0\beta) \approx 1/\beta$.</li>
+            <li><strong>Bandwidth:</strong> extended from $\omega_a$ to $\omega_a(1 + A_0\beta) \approx \omega_t\beta$.</li>
+        </ul>
+
+        <p>Their product is the same, $\omega_t = A_0\omega_a$, an intrinsic device-level constant. The $s$-plane representation makes the exchange visible: the single pole translates leftward along the negative real axis in direct proportion to the loop gain, while the DC asymptote drops by the same factor. Time-domain responses inherit the geometry directly — the closed-loop exponential approaches its final value with a time constant $\tau_{cl} = 1/\omega_{cl}$ that is shorter by $(1 + A_0\beta)$.</p>
+
+        <p class="dim" style="font-size:14px;">The first-order model developed here is adequate for frequencies well below any higher-order internal poles. Near the unity-gain frequency of realistic devices, secondary poles introduce additional phase and the stability of the feedback loop becomes contingent on phase margin. That analysis belongs to a subsequent topic.</p>
+    </div>
+</section>
+
+<footer>
+    <p>Rendered with KaTeX and HTML canvas under the single-pole (dominant-pole) approximation of the operational amplifier.</p>
+</footer>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// COLOURS + HELPERS
+// ══════════════════════════════════════════════════════════════
+function getColors() {
+    const cs = getComputedStyle(document.documentElement);
+    return {
+        text:   cs.getPropertyValue('--text').trim(),
+        dim:    cs.getPropertyValue('--text-dim').trim(),
+        muted:  cs.getPropertyValue('--text-muted').trim(),
+        border: cs.getPropertyValue('--border').trim() || 'rgba(255,255,255,0.1)',
+        accent: cs.getPropertyValue('--accent').trim(),
+        yellow: cs.getPropertyValue('--yellow').trim(),
+        red:    cs.getPropertyValue('--red').trim(),
+        blue:   cs.getPropertyValue('--blue').trim(),
+        green:  cs.getPropertyValue('--green').trim(),
+        bg:     cs.getPropertyValue('--bg').trim(),
+        bg2:    cs.getPropertyValue('--bg-2').trim(),
+    };
+}
+
+function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const W = rect.width, H = rect.height;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, W, H };
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, head=7, width=1.8) {
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - head*Math.cos(ang - 0.45), y2 - head*Math.sin(ang - 0.45));
+    ctx.lineTo(x2 - head*Math.cos(ang + 0.45), y2 - head*Math.sin(ang + 0.45));
+    ctx.closePath();
+    ctx.fill();
+}
+
+// ══════════════════════════════════════════════════════════════
+// OP-AMP SYMBOL (triangle) drawn at centre (cx,cy) with width w
+// Returns key pin coordinates.
+// ══════════════════════════════════════════════════════════════
+function drawOpAmpSymbol(ctx, cx, cy, w, c) {
+    const h = w * 0.85;
+    const left = cx - w/2;
+    const right = cx + w/2;
+    const top = cy - h/2;
+    const bot = cy + h/2;
+
+    // Body
+    ctx.fillStyle = 'rgba(22,23,32,0.85)';
+    ctx.strokeStyle = c.text;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(left, top);
+    ctx.lineTo(left, bot);
+    ctx.lineTo(right, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Input pin coords
+    const inPlusY  = cy + h*0.22;   // lower input: non-inverting (+)
+    const inMinusY = cy - h*0.22;   // upper input: inverting (-)
+    const plusPin  = { x: left, y: inPlusY };
+    const minusPin = { x: left, y: inMinusY };
+    const outPin   = { x: right, y: cy };
+
+    // + / − labels inside triangle
+    ctx.fillStyle = c.text;
+    ctx.font = "600 16px 'JetBrains Mono', monospace";
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('−', left + 10, inMinusY);
+    ctx.fillText('+', left + 10, inPlusY);
+
+    return { plus: plusPin, minus: minusPin, out: outPin, left, right, top, bot, h };
+}
+
+function drawGround(ctx, x, y, c) {
+    ctx.strokeStyle = c.muted;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x - 10, y);
+    ctx.lineTo(x + 10, y);
+    ctx.moveTo(x - 7, y + 4);
+    ctx.lineTo(x + 7, y + 4);
+    ctx.moveTo(x - 4, y + 8);
+    ctx.lineTo(x + 4, y + 8);
+    ctx.stroke();
+}
+
+function drawResistor(ctx, x1, y1, x2, y2, label, c) {
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.sqrt(dx*dx + dy*dy);
+    const ux = dx/len, uy = dy/len;
+    const px = -uy, py = ux;
+
+    const pad = (len - 38) / 2;
+    const ax = x1 + ux*pad, ay = y1 + uy*pad;
+    const bx = x2 - ux*pad, by = y2 - uy*pad;
+
+    ctx.strokeStyle = c.text;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1); ctx.lineTo(ax, ay);
+    // zigzag
+    const zigs = 6;
+    for (let i = 0; i <= zigs; i++) {
+        const t = i / zigs;
+        const mx = ax + (bx - ax) * t;
+        const my = ay + (by - ay) * t;
+        const side = (i % 2 === 0) ? 1 : -1;
+        const wob = (i === 0 || i === zigs) ? 0 : 5;
+        ctx.lineTo(mx + px * wob * side, my + py * wob * side);
+    }
+    ctx.moveTo(bx, by); ctx.lineTo(x2, y2);
+    ctx.stroke();
+
+    if (label) {
+        ctx.fillStyle = c.accent;
+        ctx.font = "600 14px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const lx = (x1 + x2)/2 + px * 16;
+        const ly = (y1 + y2)/2 + py * 16;
+        ctx.fillText(label, lx, ly);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CIRCUIT · OPEN LOOP
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('circuit-open');
+    if (!canvas) return;
+
+    function render() {
+        const { ctx, W, H } = setupCanvas(canvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const amp = drawOpAmpSymbol(ctx, W*0.58, H*0.50, Math.min(W*0.38, 160), c);
+
+        // Non-inverting input wire: from source at left to plus pin
+        const srcX = W*0.08;
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(srcX, amp.plus.y);
+        ctx.lineTo(amp.plus.x, amp.plus.y);
+        ctx.stroke();
+
+        // Source symbol (circle with sine wave, labelled v_in)
+        ctx.strokeStyle = c.blue; ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.arc(srcX, amp.plus.y, 14, 0, Math.PI*2); ctx.stroke();
+        // sine inside
+        ctx.beginPath();
+        for (let i = 0; i <= 24; i++) {
+            const t = i/24;
+            const x = srcX - 8 + 16*t;
+            const y = amp.plus.y + 5*Math.sin(t*Math.PI*2);
+            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 15px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('v_in(t)', srcX, amp.plus.y + 22);
+
+        // Source to ground
+        ctx.strokeStyle = c.muted; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(srcX, amp.plus.y + 14);
+        ctx.lineTo(srcX, amp.plus.y + 52);
+        ctx.stroke();
+        drawGround(ctx, srcX, amp.plus.y + 54, c);
+
+        // Inverting input to ground (direct)
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(amp.minus.x, amp.minus.y);
+        ctx.lineTo(amp.minus.x - 34, amp.minus.y);
+        ctx.lineTo(amp.minus.x - 34, amp.minus.y - 36);
+        ctx.stroke();
+        // small bend to ground near the top for v_-
+        ctx.beginPath();
+        ctx.moveTo(amp.minus.x - 34, amp.minus.y - 36);
+        ctx.lineTo(amp.minus.x - 10, amp.minus.y - 36);
+        ctx.stroke();
+        drawGround(ctx, amp.minus.x - 4, amp.minus.y - 32, c);
+
+        // Output wire
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(amp.out.x, amp.out.y);
+        ctx.lineTo(amp.out.x + 60, amp.out.y);
+        ctx.stroke();
+        // v_o label and output node dot
+        ctx.fillStyle = c.accent;
+        ctx.beginPath(); ctx.arc(amp.out.x + 60, amp.out.y, 3.5, 0, Math.PI*2); ctx.fill();
+        ctx.font = "600 16px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('  v_o(t)', amp.out.x + 60, amp.out.y);
+
+        // Pin labels
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('v_+', amp.plus.x - 4, amp.plus.y - 12);
+        ctx.fillText('v_−', amp.minus.x - 4, amp.minus.y + 12);
+
+        // Differential input indicator (v_d = v+ - v-)
+        ctx.strokeStyle = c.yellow; ctx.setLineDash([3,3]); ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(amp.left - 12, amp.minus.y);
+        ctx.lineTo(amp.left - 12, amp.plus.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = c.yellow;
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.font = "600 13px 'JetBrains Mono', monospace";
+        ctx.fillText('v_d', amp.left - 16, (amp.plus.y + amp.minus.y)/2);
+    }
+
+    window.addEventListener('resize', render);
+    render();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// BLOCK DIAGRAM · OPEN LOOP
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('block-open');
+    if (!canvas) return;
+
+    function render() {
+        const { ctx, W, H } = setupCanvas(canvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const cy = H/2;
+        const bw = Math.min(W*0.32, 150);
+        const bh = Math.min(H*0.38, 72);
+        const bx = W/2;
+
+        // Block
+        ctx.fillStyle = 'rgba(255,207,92,0.10)';
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(bx - bw/2, cy - bh/2, bw, bh, 10);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = c.accent;
+        ctx.font = "600 22px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A(s)', bx, cy);
+
+        // Input arrow
+        drawArrow(ctx, W*0.08, cy, bx - bw/2 - 2, cy, c.text, 8, 2);
+        // Output arrow
+        drawArrow(ctx, bx + bw/2 + 2, cy, W*0.92, cy, c.text, 8, 2);
+
+        // Labels
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 16px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('V_d(s)', W*0.18, cy - 10);
+
+        ctx.fillStyle = c.green;
+        ctx.fillText('V_o(s)', W*0.82, cy - 10);
+    }
+
+    window.addEventListener('resize', render);
+    render();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// BODE · OPEN LOOP (on its own, section 02)
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('bode-open');
+    if (!canvas) return;
+
+    function render() {
+        const { ctx, W, H } = setupCanvas(canvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 64, padR = 20, padT = 40, padB = 44;
+        const plotX = padL, plotY = padT;
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        const A0 = 1e5;
+        const wa = 60;        // rad/s
+        const wt = A0 * wa;
+
+        // Log x: 1 rad/s to 1e9 rad/s
+        const xMinLog = 0, xMaxLog = 9;
+        // Log y (dB-like): 20*log10|H|
+        const yMinDB = -40, yMaxDB = 120;
+
+        const xFromLog = lx => plotX + plotW * (lx - xMinLog) / (xMaxLog - xMinLog);
+        const yFromDB = db => plotY + plotH * (1 - (db - yMinDB)/(yMaxDB - yMinDB));
+
+        // Frame
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        // Gridlines (per decade)
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2,3]);
+        for (let lx = xMinLog; lx <= xMaxLog; lx++) {
+            const x = xFromLog(lx);
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY + plotH); ctx.stroke();
+        }
+        for (let db = yMinDB; db <= yMaxDB; db += 20) {
+            const y = yFromDB(db);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX + plotW, y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // X-axis ticks
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let lx = xMinLog; lx <= xMaxLog; lx += 2) {
+            const x = xFromLog(lx);
+            ctx.fillText('10' + toSup(lx), x, plotY + plotH + 6);
+        }
+        // Y-axis ticks
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let db = yMinDB; db <= yMaxDB; db += 40) {
+            const y = yFromDB(db);
+            ctx.fillText(db + ' dB', plotX - 8, y);
+        }
+
+        // Axis labels
+        ctx.fillStyle = c.dim;
+        ctx.font = "600 13px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('ω  (rad/s, log)', plotX + plotW/2, plotY + plotH + 22);
+        ctx.save();
+        ctx.translate(plotX - 48, plotY + plotH/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('|A(jω)|  (dB)', 0, 0);
+        ctx.restore();
+
+        // Transfer function curve
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        const N = 400;
+        for (let i = 0; i <= N; i++) {
+            const lx = xMinLog + (xMaxLog - xMinLog)*i/N;
+            const w = Math.pow(10, lx);
+            const mag = A0 / Math.sqrt(1 + (w/wa)*(w/wa));
+            const db = 20 * Math.log10(mag);
+            const x = xFromLog(lx);
+            const y = yFromDB(Math.max(yMinDB, Math.min(yMaxDB, db)));
+            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+
+        // Mark ω_a
+        ctx.strokeStyle = c.yellow;
+        ctx.setLineDash([4,4]);
+        ctx.lineWidth = 1.2;
+        const xwa = xFromLog(Math.log10(wa));
+        ctx.beginPath(); ctx.moveTo(xwa, plotY); ctx.lineTo(xwa, plotY + plotH); ctx.stroke();
+        // Mark ω_t
+        const xwt = xFromLog(Math.log10(wt));
+        ctx.beginPath(); ctx.moveTo(xwt, plotY); ctx.lineTo(xwt, plotY + plotH); ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = c.yellow;
+        ctx.font = "600 13px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('ω_a', xwa + 5, plotY + 6);
+        ctx.textAlign = 'right';
+        ctx.fillText('ω_t', xwt - 5, plotY + 6);
+
+        // A0 line label
+        ctx.fillStyle = c.accent;
+        ctx.font = "600 13px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        const yA0 = yFromDB(20*Math.log10(A0));
+        ctx.fillText('A_0 = 10⁵', plotX + 8, yA0 - 4);
+
+        // −20 dB/dec annotation
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        const midLx = (Math.log10(wa) + Math.log10(wt))/2;
+        const midMag = A0 * wa / Math.pow(10, midLx);
+        const midDB = 20*Math.log10(midMag);
+        ctx.fillText('−20 dB/dec', xFromLog(midLx) + 8, yFromDB(midDB) - 10);
+    }
+
+    function toSup(n) {
+        const map = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+        return String(n).split('').map(ch => map[ch] || ch).join('');
+    }
+
+    window.addEventListener('resize', render);
+    render();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// SECTION 03 · OPEN-LOOP s-PLANE + STEP RESPONSE (interactive)
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const splCanvas = document.getElementById('splane-open');
+    const stepCanvas = document.getElementById('step-open');
+    if (!splCanvas || !stepCanvas) return;
+
+    const A0Slider = document.getElementById('A0-log');
+    const waSlider = document.getElementById('wa-slider');
+    const A0Val = document.getElementById('A0-val');
+    const waVal = document.getElementById('wa-val');
+    const poleRead = document.getElementById('pole-ol');
+    const tauRead = document.getElementById('tau-ol');
+    const gbwRead = document.getElementById('gbw-ol');
+
+    function params() {
+        const A0 = Math.pow(10, parseFloat(A0Slider.value));
+        const wa = parseFloat(waSlider.value);
+        return { A0, wa };
+    }
+
+    function fmtSci(x) {
+        if (x === 0) return '0';
+        const e = Math.floor(Math.log10(Math.abs(x)));
+        const m = x / Math.pow(10, e);
+        return m.toFixed(1) + '·10' + toSup(e);
+    }
+    function toSup(n) {
+        const map = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+        return String(n).split('').map(ch => map[ch] || ch).join('');
+    }
+
+    function updateReadouts() {
+        const { A0, wa } = params();
+        A0Val.textContent = fmtSci(A0);
+        waVal.textContent = wa.toFixed(0) + ' rad/s';
+        poleRead.textContent = '−' + wa.toFixed(0) + ' rad/s';
+        tauRead.textContent = (1/wa*1000).toFixed(1) + ' ms';
+        gbwRead.textContent = fmtSci(A0*wa) + ' rad/s';
+    }
+
+    [A0Slider, waSlider].forEach(s => s.addEventListener('input', () => {
+        updateReadouts(); drawAll();
+    }));
+
+    function drawSPlane() {
+        const { ctx, W, H } = setupCanvas(splCanvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 60, padR = 28, padT = 42, padB = 46;
+        const plotX = padL, plotY = padT;
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        const { wa } = params();
+
+        // Axis ranges: scale with wa
+        const reMin = -1.6 * wa;
+        const reMax =  0.25 * wa;
+        const imMax =  1.0 * wa;
+        const imMin = -imMax;
+
+        const xFromRe = r => plotX + plotW * (r - reMin) / (reMax - reMin);
+        const yFromIm = im => plotY + plotH * (1 - (im - imMin)/(imMax - imMin));
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        // Unstable region
+        const xZero = xFromRe(0);
+        ctx.fillStyle = 'rgba(255,92,122,0.07)';
+        ctx.fillRect(xZero, plotY, plotX + plotW - xZero, plotH);
+        ctx.fillStyle = c.red;
+        ctx.font = "600 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('unstable', xZero + 6, plotY + plotH - 8);
+
+        // Gridlines
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2,3]);
+        const step = wa * 0.5;
+        for (let r = Math.ceil(reMin/step)*step; r <= reMax; r += step) {
+            const x = xFromRe(r);
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY+plotH); ctx.stroke();
+        }
+        for (let im = Math.ceil(imMin/step)*step; im <= imMax; im += step) {
+            const y = yFromIm(im);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX+plotW, y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Axes
+        ctx.strokeStyle = c.muted; ctx.lineWidth = 1.4;
+        const yZero = yFromIm(0);
+        ctx.beginPath();
+        ctx.moveTo(plotX, yZero); ctx.lineTo(plotX + plotW, yZero);
+        ctx.moveTo(xZero, plotY); ctx.lineTo(xZero, plotY + plotH);
+        ctx.stroke();
+
+        // Axis labels
+        ctx.fillStyle = c.dim;
+        ctx.font = "600 13px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Re(s) = σ', plotX + plotW - 6, yZero - 12);
+        ctx.save();
+        ctx.translate(xZero + 8, plotY + 16);
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Im(s) = jω', 0, 0);
+        ctx.restore();
+
+        // Title
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('single real pole at  s = −ω_a', plotX + 8, plotY + 8);
+
+        // Pole
+        const px = xFromRe(-wa);
+        const py = yZero;
+        ctx.strokeStyle = c.yellow;
+        ctx.lineWidth = 3;
+        const r = 11;
+        ctx.beginPath();
+        ctx.moveTo(px - r, py - r); ctx.lineTo(px + r, py + r);
+        ctx.moveTo(px + r, py - r); ctx.lineTo(px - r, py + r);
+        ctx.stroke();
+
+        ctx.fillStyle = c.yellow;
+        ctx.font = "600 14px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('−ω_a', px, py - 14);
+
+        // Re tick label
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(wa.toFixed(0), xFromRe(-wa), yZero + 6);
+    }
+
+    function drawStep() {
+        const { ctx, W, H } = setupCanvas(stepCanvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 64, padR = 24, padT = 40, padB = 46;
+        const plotX = padL, plotY = padT;
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        const { A0, wa } = params();
+
+        // Show the output approaching A0*V_s, with V_s=1mV (tiny input so the rail clipping isn't active)
+        const Vs = 0.001;
+        const finalVal = A0 * Vs;   // ≈ hundreds of volts — instead normalise to saturation at ±Vsat=12V
+        const Vsat = 12;
+
+        // Time axis: ~5 τ
+        const tau = 1/wa;
+        const tMax = 6 * tau;
+
+        // Y axis: -2 to +14
+        const yMin = -2, yMax = 15;
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        const xFromT = t => plotX + plotW * t / tMax;
+        const yFromV = v => plotY + plotH * (1 - (v - yMin)/(yMax - yMin));
+
+        // Gridlines
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2,3]);
+        for (let i = 0; i <= 5; i++) {
+            const t = tau * i;
+            const x = xFromT(t);
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY+plotH); ctx.stroke();
+        }
+        for (let v = 0; v <= 15; v += 3) {
+            const y = yFromV(v);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX+plotW, y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Axes
+        ctx.strokeStyle = c.muted; ctx.lineWidth = 1.4;
+        const y0 = yFromV(0);
+        ctx.beginPath();
+        ctx.moveTo(plotX, y0); ctx.lineTo(plotX+plotW, y0);
+        ctx.stroke();
+
+        // Saturation line
+        ctx.strokeStyle = c.red; ctx.setLineDash([5,5]); ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(plotX, yFromV(Vsat)); ctx.lineTo(plotX+plotW, yFromV(Vsat));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = c.red;
+        ctx.font = "600 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('+V_sat', plotX + 6, yFromV(Vsat) - 4);
+
+        // Response: v_o(t) = min(Vsat, A0*Vs*(1 - e^{-wa t}))
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        const N = 400;
+        let tSat = null;
+        for (let i = 0; i <= N; i++) {
+            const t = (i/N)*tMax;
+            let v = finalVal * (1 - Math.exp(-wa*t));
+            if (v >= Vsat) { v = Vsat; if (tSat === null) tSat = t; }
+            const x = xFromT(t);
+            const y = yFromV(v);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Time-axis ticks (multiples of tau)
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let i = 0; i <= 5; i++) {
+            const label = i === 0 ? '0' : (i === 1 ? 'τ' : i + 'τ');
+            ctx.fillText(label, xFromT(i*tau), plotY + plotH + 6);
+        }
+
+        // V axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let v = 0; v <= 15; v += 3) {
+            ctx.fillText(v.toFixed(0) + ' V', plotX - 8, yFromV(v));
+        }
+
+        // Axis names
+        ctx.fillStyle = c.dim;
+        ctx.font = "600 13px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('t  (units of τ = 1/ω_a)', plotX + plotW/2, plotY + plotH + 24);
+        ctx.save();
+        ctx.translate(plotX - 52, plotY + plotH/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('v_o(t)', 0, 0);
+        ctx.restore();
+
+        // Info box
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('step V_s = 1 mV ·  final = A_0·V_s', plotX + 8, plotY + 8);
+    }
+
+    function drawAll() {
+        drawSPlane();
+        drawStep();
+    }
+
+    window.addEventListener('resize', drawAll);
+    updateReadouts();
+    drawAll();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// CIRCUIT · NON-INVERTING AMPLIFIER
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('circuit-closed');
+    if (!canvas) return;
+
+    function render() {
+        const { ctx, W, H } = setupCanvas(canvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const amp = drawOpAmpSymbol(ctx, W*0.55, H*0.46, Math.min(W*0.38, 150), c);
+
+        // Input to non-inverting input
+        const srcX = W*0.08;
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(srcX, amp.plus.y);
+        ctx.lineTo(amp.plus.x, amp.plus.y);
+        ctx.stroke();
+
+        ctx.strokeStyle = c.blue;
+        ctx.beginPath(); ctx.arc(srcX, amp.plus.y, 14, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath();
+        for (let i = 0; i <= 24; i++) {
+            const t = i/24;
+            const x = srcX - 8 + 16*t;
+            const y = amp.plus.y + 5*Math.sin(t*Math.PI*2);
+            if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 14px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('v_in', srcX, amp.plus.y + 20);
+
+        ctx.strokeStyle = c.muted; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(srcX, amp.plus.y + 14); ctx.lineTo(srcX, amp.plus.y + 50); ctx.stroke();
+        drawGround(ctx, srcX, amp.plus.y + 52, c);
+
+        // Output wire extending to the right
+        const outX = amp.out.x + 60;
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(amp.out.x, amp.out.y); ctx.lineTo(outX, amp.out.y);
+        ctx.stroke();
+        ctx.fillStyle = c.accent;
+        ctx.beginPath(); ctx.arc(outX, amp.out.y, 3.5, 0, Math.PI*2); ctx.fill();
+        ctx.font = "600 15px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('  v_o', outX, amp.out.y);
+
+        // Feedback path: down from a node between amp and label
+        const fbNodeX = amp.out.x + 30;
+        ctx.fillStyle = c.text;
+        ctx.beginPath(); ctx.arc(fbNodeX, amp.out.y, 3, 0, Math.PI*2); ctx.fill();
+
+        // R2 from fbNode down then left to v- node
+        const vminusNodeX = amp.minus.x - 40;
+        const vminusNodeY = amp.minus.y;
+        // Route: fbNode -> down to belowLine -> left to below vminus -> up to vminus
+        const belowY = H - 90;
+
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(fbNodeX, amp.out.y);
+        ctx.lineTo(fbNodeX, belowY);
+        ctx.stroke();
+
+        // R2 resistor horizontally along belowY
+        drawResistor(ctx, fbNodeX, belowY, vminusNodeX, belowY, 'R₂', c);
+
+        // Up to v- node
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(vminusNodeX, belowY);
+        ctx.lineTo(vminusNodeX, vminusNodeY);
+        ctx.lineTo(amp.minus.x, amp.minus.y);
+        ctx.stroke();
+
+        // Node dot for v-
+        ctx.fillStyle = c.text;
+        ctx.beginPath(); ctx.arc(vminusNodeX, vminusNodeY, 3, 0, Math.PI*2); ctx.fill();
+
+        // R1 from v- node down to ground
+        const r1BottomY = belowY + 58;
+        drawResistor(ctx, vminusNodeX, vminusNodeY + 12, vminusNodeX, r1BottomY, 'R₁', c);
+
+        // Wire down to ground
+        ctx.strokeStyle = c.text; ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.moveTo(vminusNodeX, r1BottomY);
+        ctx.lineTo(vminusNodeX, r1BottomY + 10);
+        ctx.stroke();
+        drawGround(ctx, vminusNodeX, r1BottomY + 12, c);
+
+        // Pin labels
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('v_+', amp.plus.x - 4, amp.plus.y - 12);
+        ctx.fillText('v_−', amp.minus.x - 4, amp.minus.y + 12);
+
+        // β formula annotation
+        ctx.fillStyle = c.accent;
+        ctx.font = "600 13px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('β = R₁ / (R₁ + R₂)', W - 12, 12);
+    }
+
+    window.addEventListener('resize', render);
+    render();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// BLOCK DIAGRAM · CLOSED LOOP
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const canvas = document.getElementById('block-closed');
+    if (!canvas) return;
+
+    function render() {
+        const { ctx, W, H } = setupCanvas(canvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const cy = H*0.42;
+        const sumR = 18;
+        const sumX = W*0.25;
+        const aBw = Math.min(W*0.20, 100);
+        const aBh = 54;
+        const aBx = W*0.58;
+        const betaBw = Math.min(W*0.16, 80);
+        const betaBh = 44;
+        const betaBx = W*0.58;
+        const betaY = H*0.80;
+
+        // Input arrow
+        drawArrow(ctx, W*0.06, cy, sumX - sumR - 2, cy, c.text, 8, 2);
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 15px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('V_in(s)', (W*0.06 + sumX - sumR)/2, cy - 8);
+
+        // Summing junction circle
+        ctx.fillStyle = 'rgba(22,23,32,0.85)';
+        ctx.strokeStyle = c.text;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(sumX, cy, sumR, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        // + and − signs
+        ctx.fillStyle = c.text;
+        ctx.font = "600 14px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('+', sumX - 8, cy - 6);
+        ctx.fillText('−', sumX - 6, cy + 8);
+
+        // Sum to A(s) block
+        drawArrow(ctx, sumX + sumR + 2, cy, aBx - aBw/2 - 2, cy, c.text, 8, 2);
+        ctx.fillStyle = c.accent;
+        ctx.font = "600 14px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('E(s)', (sumX + sumR + aBx - aBw/2)/2, cy - 8);
+
+        // A(s) block
+        ctx.fillStyle = 'rgba(255,207,92,0.10)';
+        ctx.strokeStyle = c.accent;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(aBx - aBw/2, cy - aBh/2, aBw, aBh, 8);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c.accent;
+        ctx.font = "600 20px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('A(s)', aBx, cy);
+
+        // A(s) output to output arrow
+        const outEndX = W*0.94;
+        ctx.strokeStyle = c.text;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(aBx + aBw/2, cy);
+        ctx.lineTo(outEndX - 20, cy);
+        ctx.stroke();
+        drawArrow(ctx, outEndX - 20, cy, outEndX - 2, cy, c.text, 8, 2);
+
+        ctx.fillStyle = c.green;
+        ctx.font = "600 15px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('V_o(s)', (aBx + aBw/2 + outEndX)/2, cy - 8);
+
+        // Feedback tap node
+        const tapX = aBx + aBw/2 + 24;
+        ctx.fillStyle = c.text;
+        ctx.beginPath(); ctx.arc(tapX, cy, 3, 0, Math.PI*2); ctx.fill();
+
+        // Down to β block
+        ctx.strokeStyle = c.text; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(tapX, cy);
+        ctx.lineTo(tapX, betaY);
+        ctx.lineTo(betaBx + betaBw/2, betaY);
+        ctx.stroke();
+
+        // β block
+        ctx.fillStyle = 'rgba(88,166,255,0.10)';
+        ctx.strokeStyle = c.blue;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(betaBx - betaBw/2, betaY - betaBh/2, betaBw, betaBh, 8);
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 18px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('β', betaBx, betaY);
+
+        // β block output goes left to summing junction (from bottom −)
+        ctx.strokeStyle = c.text; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(betaBx - betaBw/2, betaY);
+        ctx.lineTo(sumX, betaY);
+        ctx.lineTo(sumX, cy + sumR + 2);
+        ctx.stroke();
+        drawArrow(ctx, sumX, cy + sumR + 12, sumX, cy + sumR + 2, c.text, 8, 2);
+
+        // β signal label
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 13px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('β·V_o(s)', (sumX + betaBx - betaBw/2)/2, betaY - 8);
+    }
+
+    window.addEventListener('resize', render);
+    render();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// SECTION 06 · COMPARATIVE s-PLANE, BODE, STEP
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const splCanvas = document.getElementById('splane-compare');
+    const bodeCanvas = document.getElementById('bode-compare');
+    const stepCanvas = document.getElementById('step-compare');
+    if (!splCanvas || !bodeCanvas || !stepCanvas) return;
+
+    const betaSlider = document.getElementById('beta-slider');
+    const gainSlider = document.getElementById('gain-slider');
+    const A0Slider2  = document.getElementById('A0-log2');
+    const waSlider2  = document.getElementById('wa-slider2');
+
+    const betaVal = document.getElementById('beta-val');
+    const gainVal = document.getElementById('gain-val');
+    const A0Val2  = document.getElementById('A0-val2');
+    const waVal2  = document.getElementById('wa-val2');
+    const loopGain = document.getElementById('loop-gain');
+    const gclRead  = document.getElementById('gcl-val');
+    const wclRead  = document.getElementById('wcl-val');
+    const gbwClRead = document.getElementById('gbw-cl');
+
+    function toSup(n) {
+        const map = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+        return String(n).split('').map(ch => map[ch] || ch).join('');
+    }
+    function fmtSci(x) {
+        if (!isFinite(x) || x === 0) return x === 0 ? '0' : '—';
+        const e = Math.floor(Math.log10(Math.abs(x)));
+        const m = x / Math.pow(10, e);
+        return m.toFixed(1) + '·10' + toSup(e);
+    }
+
+    function params() {
+        const beta = parseFloat(betaSlider.value);
+        const A0 = Math.pow(10, parseFloat(A0Slider2.value));
+        const wa = parseFloat(waSlider2.value);
+        const loop = A0 * beta;
+        const Gcl = A0 / (1 + loop);
+        const wcl = wa * (1 + loop);
+        return { beta, A0, wa, loop, Gcl, wcl, wt: A0 * wa };
+    }
+
+    let updating = false;
+    function syncFromBeta() {
+        if (updating) return;
+        updating = true;
+        const b = parseFloat(betaSlider.value);
+        const g = 1/Math.max(b, 1e-6);
+        gainSlider.value = Math.min(1000, Math.max(1, Math.round(g)));
+        updating = false;
+    }
+    function syncFromGain() {
+        if (updating) return;
+        updating = true;
+        const g = parseFloat(gainSlider.value);
+        const b = 1/Math.max(g, 1);
+        betaSlider.value = Math.min(1, Math.max(0.001, b));
+        updating = false;
+    }
+
+    betaSlider.addEventListener('input', () => { syncFromBeta(); updateReadouts(); drawAll(); });
+    gainSlider.addEventListener('input', () => { syncFromGain(); updateReadouts(); drawAll(); });
+    A0Slider2.addEventListener('input', () => { updateReadouts(); drawAll(); });
+    waSlider2.addEventListener('input', () => { updateReadouts(); drawAll(); });
+
+    function updateReadouts() {
+        const { beta, A0, wa, loop, Gcl, wcl, wt } = params();
+        betaVal.textContent = beta.toFixed(3);
+        gainVal.textContent = (1/beta).toFixed(1) + '×';
+        A0Val2.textContent = fmtSci(A0);
+        waVal2.textContent = wa.toFixed(0) + ' rad/s';
+        loopGain.textContent = fmtSci(loop);
+        gclRead.textContent = Gcl.toFixed(1);
+        wclRead.textContent = fmtSci(wcl) + ' rad/s';
+        gbwClRead.textContent = fmtSci(Gcl * wcl) + ' rad/s';
+    }
+
+    function drawSPlane() {
+        const { ctx, W, H } = setupCanvas(splCanvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 60, padR = 28, padT = 40, padB = 44;
+        const plotX = padL, plotY = padT;
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        const { wa, wcl, wt } = params();
+
+        // Fixed log-like axis so both poles visible. Use symlog: map r to sign(r)*log10(1+|r|)
+        const xMap = r => {
+            const s = Math.sign(r);
+            return s * Math.log10(1 + Math.abs(r));
+        };
+
+        // Axis range: left extreme = xMap(-wt*2), right extreme = xMap(wa*0.5)
+        const xAxMin = xMap(-wt * 2);
+        const xAxMax = xMap(wt * 0.15);
+
+        const xFromRe = r => plotX + plotW * (xMap(r) - xAxMin) / (xAxMax - xAxMin);
+        const yMid = plotY + plotH/2;
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        // Unstable region
+        const xZero = xFromRe(0);
+        ctx.fillStyle = 'rgba(255,92,122,0.06)';
+        ctx.fillRect(xZero, plotY, plotX + plotW - xZero, plotH);
+        ctx.fillStyle = c.red;
+        ctx.font = "600 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('unstable', xZero + 6, plotY + plotH - 8);
+
+        // Real axis
+        ctx.strokeStyle = c.muted;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(plotX, yMid); ctx.lineTo(plotX + plotW, yMid);
+        ctx.moveTo(xZero, plotY); ctx.lineTo(xZero, plotY + plotH);
+        ctx.stroke();
+
+        // Decade grid (every 10^k)
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2,3]);
+        for (let k = 0; k <= 9; k++) {
+            const rNeg = -Math.pow(10, k);
+            if (rNeg >= -wt*3) {
+                const x = xFromRe(rNeg);
+                if (x >= plotX && x <= plotX + plotW) {
+                    ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY + plotH); ctx.stroke();
+                }
+            }
+        }
+        ctx.setLineDash([]);
+
+        // Decade labels
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let k = 0; k <= 9; k++) {
+            const rNeg = -Math.pow(10, k);
+            if (rNeg >= -wt*3) {
+                const x = xFromRe(rNeg);
+                if (x >= plotX && x <= plotX + plotW) {
+                    ctx.fillText('−10' + toSup(k), x, yMid + 8);
+                }
+            }
+        }
+
+        // Axis labels
+        ctx.fillStyle = c.dim;
+        ctx.font = "600 13px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Re(s) = σ  (rad/s)', plotX + plotW - 6, yMid - 14);
+
+        // Title
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText('pole migration: −ω_a  →  −ω_cl', plotX + 8, plotY + 8);
+
+        // Pole: open-loop at -wa (yellow ×)
+        function drawX(cx, cy, col, r) {
+            ctx.strokeStyle = col; ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(cx - r, cy - r); ctx.lineTo(cx + r, cy + r);
+            ctx.moveTo(cx + r, cy - r); ctx.lineTo(cx - r, cy + r);
+            ctx.stroke();
+        }
+        const xOL = xFromRe(-wa);
+        const xCL = xFromRe(-wcl);
+
+        // Migration arrow
+        drawArrow(ctx, xOL, yMid - 38, xCL, yMid - 38, c.green, 10, 2);
+        ctx.fillStyle = c.green;
+        ctx.font = "600 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('× (1 + A₀β)', (xOL + xCL)/2, yMid - 44);
+
+        drawX(xOL, yMid, c.yellow, 11);
+        drawX(xCL, yMid, c.green, 11);
+
+        ctx.fillStyle = c.yellow;
+        ctx.font = "600 13px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText('−ω_a', xOL, yMid + 26);
+
+        ctx.fillStyle = c.green;
+        ctx.fillText('−ω_cl', xCL, yMid + 26);
+    }
+
+    function drawBode() {
+        const { ctx, W, H } = setupCanvas(bodeCanvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 64, padR = 24, padT = 36, padB = 42;
+        const plotX = padL, plotY = padT;
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        const { A0, wa, Gcl, wcl, wt } = params();
+
+        const xMinLog = 0, xMaxLog = Math.ceil(Math.log10(wt)) + 1;
+        const yMinDB = -30, yMaxDB = Math.ceil(20*Math.log10(A0)/20)*20 + 10;
+
+        const xFromLog = lx => plotX + plotW * (lx - xMinLog)/(xMaxLog - xMinLog);
+        const yFromDB = db => plotY + plotH * (1 - (db - yMinDB)/(yMaxDB - yMinDB));
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        // Grid
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2,3]);
+        for (let lx = 0; lx <= xMaxLog; lx++) {
+            const x = xFromLog(lx);
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY+plotH); ctx.stroke();
+        }
+        for (let db = yMinDB; db <= yMaxDB; db += 20) {
+            const y = yFromDB(db);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX+plotW, y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Axis ticks
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        for (let lx = 0; lx <= xMaxLog; lx += 2) {
+            ctx.fillText('10' + toSup(lx), xFromLog(lx), plotY + plotH + 6);
+        }
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        for (let db = yMinDB; db <= yMaxDB; db += 40) {
+            ctx.fillText(db + ' dB', plotX - 8, yFromDB(db));
+        }
+
+        // Axis labels
+        ctx.fillStyle = c.dim;
+        ctx.font = "600 12px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText('ω  (rad/s, log)', plotX + plotW/2, plotY + plotH + 22);
+        ctx.save();
+        ctx.translate(plotX - 50, plotY + plotH/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('|H(jω)|  (dB)', 0, 0);
+        ctx.restore();
+
+        function plotCurve(G0, wp, color, dashed) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.2;
+            if (dashed) ctx.setLineDash([6,4]); else ctx.setLineDash([]);
+            ctx.beginPath();
+            const N = 400;
+            for (let i = 0; i <= N; i++) {
+                const lx = xMinLog + (xMaxLog - xMinLog)*i/N;
+                const w = Math.pow(10, lx);
+                const mag = G0 / Math.sqrt(1 + (w/wp)*(w/wp));
+                const db = 20*Math.log10(mag);
+                const x = xFromLog(lx);
+                const y = yFromDB(Math.max(yMinDB - 20, Math.min(yMaxDB + 20, db)));
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        plotCurve(A0, wa, c.blue, false);
+        plotCurve(Gcl, wcl, c.green, false);
+
+        // Vertical markers at wa and wcl
+        ctx.setLineDash([4,4]);
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = c.yellow;
+        const xwa = xFromLog(Math.log10(wa));
+        ctx.beginPath(); ctx.moveTo(xwa, plotY); ctx.lineTo(xwa, plotY + plotH); ctx.stroke();
+        ctx.strokeStyle = c.green;
+        const xwcl = xFromLog(Math.log10(wcl));
+        ctx.beginPath(); ctx.moveTo(xwcl, plotY); ctx.lineTo(xwcl, plotY + plotH); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Labels
+        ctx.fillStyle = c.yellow;
+        ctx.font = "600 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        ctx.fillText('ω_a', xwa + 4, plotY + 4);
+        ctx.fillStyle = c.green;
+        ctx.fillText('ω_cl', xwcl + 4, plotY + 4);
+
+        // Legend in plot area
+        const lgX = plotX + plotW - 12;
+        const lgY = plotY + 6;
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillText('— open loop A(s)', lgX, lgY);
+        ctx.fillStyle = c.green;
+        ctx.fillText('— closed loop H_cl(s)', lgX, lgY + 18);
+    }
+
+    function drawStep() {
+        const { ctx, W, H } = setupCanvas(stepCanvas);
+        const c = getColors();
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 64, padR = 24, padT = 36, padB = 44;
+        const plotX = padL, plotY = padT;
+        const plotW = W - padL - padR;
+        const plotH = H - padT - padB;
+
+        const { A0, wa, Gcl, wcl } = params();
+
+        // Normalise to closed-loop final = Gcl*Vs; we show both in units of Gcl*Vs (closed-loop final = 1)
+        const Vs = 1;
+        const closedFinal = Gcl * Vs;
+
+        // Time: enough to see closed-loop reach steady state (5/wcl) but also some of open-loop rise
+        const tMax = 5 / wcl;
+
+        const yMax = closedFinal * 1.2;
+        const yMin = -0.05 * closedFinal;
+
+        const xFromT = t => plotX + plotW * t / tMax;
+        const yFromV = v => plotY + plotH * (1 - (v - yMin)/(yMax - yMin));
+
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plotX, plotY, plotW, plotH);
+
+        // Gridlines
+        ctx.strokeStyle = c.border;
+        ctx.setLineDash([2,3]);
+        for (let i = 0; i <= 5; i++) {
+            const t = (i/5) * tMax;
+            const x = xFromT(t);
+            ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY+plotH); ctx.stroke();
+        }
+        for (let v of [0, closedFinal*0.5, closedFinal]) {
+            const y = yFromV(v);
+            ctx.beginPath(); ctx.moveTo(plotX, y); ctx.lineTo(plotX+plotW, y); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+
+        // Axis
+        ctx.strokeStyle = c.muted; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(plotX, yFromV(0)); ctx.lineTo(plotX+plotW, yFromV(0));
+        ctx.stroke();
+
+        // Final value line (closed loop)
+        ctx.strokeStyle = c.green; ctx.setLineDash([4,4]); ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(plotX, yFromV(closedFinal)); ctx.lineTo(plotX+plotW, yFromV(closedFinal));
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Open-loop step: A0*(1 - exp(-wa t)) — but clipped to saturation shown in relative units
+        ctx.strokeStyle = c.blue;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        const N = 400;
+        for (let i = 0; i <= N; i++) {
+            const t = (i/N) * tMax;
+            let v = A0 * Vs * (1 - Math.exp(-wa*t));
+            v = Math.min(v, yMax);
+            const x = xFromT(t);
+            const y = yFromV(v);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Closed-loop step
+        ctx.strokeStyle = c.green;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (let i = 0; i <= N; i++) {
+            const t = (i/N) * tMax;
+            const v = closedFinal * (1 - Math.exp(-wcl*t));
+            const x = xFromT(t);
+            const y = yFromV(v);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Axis labels
+        ctx.fillStyle = c.muted;
+        ctx.font = "500 12px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        for (let i = 0; i <= 5; i++) {
+            const t = (i/5) * tMax;
+            const label = (t*1000 < 1 ? (t*1e6).toFixed(0) + ' µs' : (t*1000).toFixed(1) + ' ms');
+            ctx.fillText(label, xFromT(t), plotY + plotH + 6);
+        }
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        ctx.fillText(closedFinal.toFixed(1), plotX - 8, yFromV(closedFinal));
+        ctx.fillText('0', plotX - 8, yFromV(0));
+
+        ctx.fillStyle = c.dim;
+        ctx.font = "600 12px 'Inter', system-ui, sans-serif";
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillText('t', plotX + plotW/2, plotY + plotH + 22);
+        ctx.save();
+        ctx.translate(plotX - 50, plotY + plotH/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('v_o(t)', 0, 0);
+        ctx.restore();
+
+        // Legend
+        ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+        ctx.fillStyle = c.blue;
+        ctx.font = "600 12px 'JetBrains Mono', monospace";
+        ctx.fillText('— open loop  (rails fast)', plotX + plotW - 8, plotY + 4);
+        ctx.fillStyle = c.green;
+        ctx.fillText('— closed loop  (τ = 1/ω_cl)', plotX + plotW - 8, plotY + 22);
+
+        // Closed-loop final annotation
+        ctx.fillStyle = c.green;
+        ctx.font = "500 11px 'JetBrains Mono', monospace";
+        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText('G_cl · V_s', plotX + 10, yFromV(closedFinal) - 4);
+    }
+
+    function drawAll() {
+        drawSPlane();
+        drawBode();
+        drawStep();
+    }
+
+    window.addEventListener('resize', drawAll);
+    updateReadouts();
+    drawAll();
+})();
+
+// ══════════════════════════════════════════════════════════════
+// Scroll progress rail
+// ══════════════════════════════════════════════════════════════
+(function(){
+    const fill = document.getElementById('rail');
+    if (!fill) return;
+    function onScroll() {
+        const scr = window.scrollY;
+        const tot = document.documentElement.scrollHeight - window.innerHeight;
+        fill.style.width = (tot > 0 ? (scr/tot)*100 : 0) + '%';
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+})();
+
+// Polyfill roundRect for older browsers
+if (!CanvasRenderingContext2D.prototype.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+        if (typeof r === 'number') r = [r,r,r,r];
+        this.beginPath();
+        this.moveTo(x + r[0], y);
+        this.lineTo(x + w - r[1], y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r[1]);
+        this.lineTo(x + w, y + h - r[2]);
+        this.quadraticCurveTo(x + w, y + h, x + w - r[2], y + h);
+        this.lineTo(x + r[3], y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r[3]);
+        this.lineTo(x, y + r[0]);
+        this.quadraticCurveTo(x, y, x + r[0], y);
+        return this;
+    };
+}
+</script>
+
+</body>
+</html>

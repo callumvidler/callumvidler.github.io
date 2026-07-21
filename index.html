@@ -60,8 +60,8 @@
             padding: 100px 56px 120px;
         }
 
-        /* Brand (top-left) */
-        .brand {
+        /* Brand (top-left) — scoped as body>.brand to win over theme.css .brand */
+        body > .brand {
             position: fixed;
             top: 20px;
             left: 24px;
@@ -76,7 +76,7 @@
             gap: 10px;
         }
 
-        .brand .mark {
+        body > .brand .mark {
             width: 10px;
             height: 10px;
             border-radius: 50%;
@@ -482,7 +482,7 @@
                 grid-template-columns: 1fr;
             }
 
-            .brand {
+            body > .brand {
                 top: 16px;
                 left: 16px;
             }
@@ -812,6 +812,7 @@
                 </a>
             </div>
         </div>
+
 
         <footer>BMEN90033 · The University of Melbourne</footer>
     </div>

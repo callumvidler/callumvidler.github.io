@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <title>BMEN90033 2026: Volume Conductor Problem — 3D Visualisation</title>
   <style>
-    :root { --text: #ffffff; }
+    :root { --text: #ffffff; --accent: var(--site-accent); }
     [data-theme="light"] { --text: #1a1a1e; }
 
     * {
@@ -17,7 +17,7 @@
     body {
       background: #111;
       color: #ccc;
-      font-family: 'Inter', 'Helvetica Neue', sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       overflow: hidden;
     }
 
@@ -142,9 +142,9 @@
     }
 
     button.ctrl-btn.active {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.3);
-      color: var(--text);
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      color: var(--accent);
     }
 
     /* Tissue panel */
@@ -188,7 +188,7 @@
     .tissue-sigma {
       color: #666;
       font-size: 10px;
-      font-family: monospace;
+      font-family: 'JetBrains Mono', monospace;
     }
 
     .tissue-toggle {
